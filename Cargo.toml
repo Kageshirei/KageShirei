@@ -1,6 +1,8 @@
-[package]
-name = "rs2"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
+[workspace]
+members = [
+    "agent",
+    "server",
+    "command-and-control-gui/src-tauri"
+]
+resolver = "2"
+package = { rust-version = "1.71.0", authors = ["ebalo55"], edition = "2024" }
