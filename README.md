@@ -133,6 +133,12 @@ lots of dependencies to build it.
 Fortunately if you've previously built the `server`, you can use it to build the control panel as well.
 It will download all the dependencies, compile them and create the final executable for you, you just have to run it.
 
+To let the server do the job for you, you can run the following command:
+
+```bash
+./rs2-server compile gui
+```
+
 If for some reason you want to build the control panel manually, you can refer to the
 [control panel's own documentation](command-and-control-gui/README.md).
 

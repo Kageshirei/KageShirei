@@ -31,7 +31,13 @@ If you want to build the GUI manually, you can follow the instructions below.
    etc.)
 2) [NVM (Node Version Manager)](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating) - for Windows
    users, check also [this link](https://github.com/nvm-sh/nvm?tab=readme-ov-file#important-notes)
-3) PNPM
+3) PNPM - you can install it after installing NVM with the following command:
+   ```bash
+   nvm install lts/*
+   nvm use lts/*
+   nvm alias default lts/*
+   npm install -g pnpm
+   ```
 4) [Tauri's prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
 
 ### Building the GUI
@@ -52,3 +58,12 @@ find the binary in the root `target` folder under:
 - `target/release/bundle/deb/rs2-command-and-control_<version>_<arch>.deb` (linux)
 - `target/release/bundle/appimage/rs2-command-and-control_<version>_<arch>.AppImage` (linux)
 - `target/x86_64-pc-windows-msvc/release/rs2-command-and-control.exe` (windows)
+
+### Cross-compiling the GUI
+
+Cross compiling the GUI is possible, but it requires a bit more work, you can refer to the
+[Tauri's documentation](https://tauri.app/v1/guides/building/cross-platform) for more information, or, as strongly
+suggested,
+you can use the server component to build the GUI for you, it will take care of dependency management and
+cross-compilation
+for you.
