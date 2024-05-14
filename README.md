@@ -82,7 +82,8 @@ The project is still in its early stages, we have many features planned, we'll p
 
 ### Requirements
 
-The server should come with no dependencies at all, it should be able to run both on *nix and Windows systems.
+The server should come with no dependencies at all, most of its features should be able to run both on *nix and
+Windows systems.
 
 Compilation must be done before running it (sorry, no precompiled binaries yet). To compile the server only, clone the
 repository and run the following commands:
@@ -115,9 +116,11 @@ it a very versatile tool.
   with different configurations, features, and even different code. This is useful when you want to deploy the agent on
   different targets with different requirements.
 - **Control panel compilation**: The server can compile the control panel autonomously, this means that you don't have
-  to
-  worry about building the control panel, installing the dependencies (lots of), the server will do it for you.
+  to worry about building the control panel, installing the dependencies (lots of), the server will do it for you.
   Output the result and run a cleanup after the compilation.
+
+> **NOTE**:
+> Self compilation is only available on debian-based systems, this may be extended in the future to other systems.
 
 ## Control panel installation
 
@@ -129,6 +132,9 @@ lots of dependencies to build it.
 
 Fortunately if you've previously built the `server`, you can use it to build the control panel as well.
 It will download all the dependencies, compile them and create the final executable for you, you just have to run it.
+
+If for some reason you want to build the control panel manually, you can refer to the
+[control panel's own documentation](command-and-control-gui/README.md).
 
 ## Contributing
 
