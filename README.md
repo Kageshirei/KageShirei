@@ -116,8 +116,8 @@ it a very versatile tool.
   with different configurations, features, and even different code. This is useful when you want to deploy the agent on
   different targets with different requirements.
 - **Control panel compilation**: The server can compile the control panel autonomously, this means that you don't have
-  to worry about building the control panel, installing the dependencies (lots of), the server will do it for you.
-  Output the result and run a cleanup after the compilation.
+  to worry about building the control panel, installing the dependencies (lots of) as the server component will do it
+  for you.
 
 > **NOTE**:
 > Self compilation is only available on debian-based systems, this may be extended in the future to other systems.
