@@ -31,7 +31,7 @@ If you want to build the GUI manually, you can follow the instructions below.
    etc.)
 2) [NVM (Node Version Manager)](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating) - for Windows
    users, check also [this link](https://github.com/nvm-sh/nvm?tab=readme-ov-file#important-notes)
-3) PNPM - you can install it after installing NVM with the following command:
+3) PNPM - you can install it after installing NVM with the following commands:
    ```bash
    nvm install lts/*
    nvm use lts/*
