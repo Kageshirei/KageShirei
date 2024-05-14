@@ -1,0 +1,9 @@
+services:
+  server-dedicated-machine:
+    image: debian:latest
+    container_name: rs2-server-dedicated-machine
+    entrypoint: /app/target/debug/rs2-server
+    command:
+      - run something
+    volumes:
+      - ".:/app"

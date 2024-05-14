@@ -1,11 +1,10 @@
-#[macro_use]
-extern crate log;
-
 use clap::Parser;
+use log::trace;
 
-use crate::cli_interface::{CliArguments, Commands, CompileArguments, CompileSubcommands};
+use crate::cli_interface::{CliArguments, Commands, CompileSubcommands};
 
 mod cli_interface;
+mod compile;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
     let mut base_config = fern::Dispatch::new()
@@ -64,7 +63,7 @@ fn main() -> anyhow::Result<()> {
                     unimplemented!("Agent compilation not implemented yet");
                 }
                 CompileSubcommands::Gui => {
-                    info!("Compiling C2 GUI");
+                    compile::c2_gui::compile()?;
                 }
             }
         }

@@ -3,18 +3,21 @@ name = "rs2-server"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-anyhow = "1.0.82"
-clap = { version = "4.5.4", features = ["derive"] }
-log = { version = "0.4.21" }
-fern = { version = "0.6.2", features = ["colored"] }
-humantime = "2.1.0"
-
 [profile.release]
 strip = true
 opt-level = 3
 incremental = true
 debug-assertions = false
 lto = true
+
+[dependencies]
+anyhow = "1.0.82"
+clap = { version = "4.5.4", features = ["derive"] }
+log = { version = "0.4.21" }
+fern = { version = "0.6.2", features = ["colored"] }
+colored = "2.1.0"
+humantime = "2.1.0"
+nix = { version = "0.28.0", features = ["user"] }
+
 
 [features]
