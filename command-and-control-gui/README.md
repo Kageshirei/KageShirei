@@ -19,8 +19,7 @@ rs2-server compile gui
 This will download all the dependencies, compile them and create the final executable for you, you just have to run it.
 
 > **NOTE**:
-> The server component is able to compile the GUI only on debian-based systems, this may be extended in the future to
-> other systems.
+> The server component is able to compile the GUI **_ONLY_** on debian-based systems.
 
 ## Installation - manual method
 
@@ -34,3 +33,22 @@ If you want to build the GUI manually, you can follow the instructions below.
    users, check also [this link](https://github.com/nvm-sh/nvm?tab=readme-ov-file#important-notes)
 3) PNPM
 4) [Tauri's prerequisites](https://tauri.app/v1/guides/getting-started/prerequisites)
+
+### Building the GUI
+
+Assuming you'll compile the Control Panel from the system where you'll use it (Windows for Windows users etc.) the after
+you've installed the prerequisites, you can follow the steps below.
+
+Clone the repository and navigate to the GUI directory, then run the following commands:
+
+```bash
+pnpm run tauri:build
+```
+
+This will compile the GUI and the bundles (`.appimage`/`.deb` for linux, `.msi`/`*-installer.exe` for windows), you will
+find the binary in the root `target` folder under:
+
+- `target/release/rs2-command-and-control` (linux)
+- `target/release/bundle/deb/rs2-command-and-control_<version>_<arch>.deb` (linux)
+- `target/release/bundle/appimage/rs2-command-and-control_<version>_<arch>.AppImage` (linux)
+- `target/x86_64-pc-windows-msvc/release/rs2-command-and-control.exe` (windows)

@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug, PartialEq)]
 #[command(version, about, long_about = None)]
@@ -19,7 +19,7 @@ pub enum Commands {
 }
 
 /// Compilation arguments
-#[derive(Debug, PartialEq)]
+#[derive(Args, Debug, PartialEq)]
 pub struct CompileArguments {
     #[command(subcommand)]
     pub command: CompileSubcommands,

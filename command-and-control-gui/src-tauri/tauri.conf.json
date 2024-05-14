@@ -7,7 +7,7 @@
     "distDir": "../out"
   },
   "package": {
-    "productName": "command-and-control-gui",
+    "productName": "rs2-command-and-control",
     "version": "0.1.0"
   },
   "tauri": {
@@ -16,7 +16,7 @@
     },
     "bundle": {
       "active": true,
-      "category": "DeveloperTool",
+      "category": "Utility",
       "copyright": "",
       "deb": {
         "depends": []
@@ -29,7 +29,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
+      "identifier": "com.rs2.command-and-control",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
