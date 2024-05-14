@@ -78,7 +78,7 @@ The project is still in its early stages, we have many features planned, we'll p
 - Data persistence in databases.
 - Data wiping.
 
-## Installation
+## Server installation
 
 ### Requirements
 
@@ -105,6 +105,30 @@ Additionally, the executable will be quite large, as it will contain all the dep
 optimized for performances (instead of size such as the agent and the control panel).
 
 Refer to the [server's own documentation](server/README.md) for a list of commands and usage instructions.
+
+### The server component superpowers
+
+The server component apart from being the main component of the RS2 framework, it also has some superpowers that makes
+it a very versatile tool.
+
+- **Agent compilation on demand**: The server can compile the agent on demand, this means that you can compile the agent
+  with different configurations, features, and even different code. This is useful when you want to deploy the agent on
+  different targets with different requirements.
+- **Control panel compilation**: The server can compile the control panel autonomously, this means that you don't have
+  to
+  worry about building the control panel, installing the dependencies (lots of), the server will do it for you.
+  Output the result and run a cleanup after the compilation.
+
+## Control panel installation
+
+### Requirements
+
+Unfortunately building the control panel is far from being as easy as building the server.
+The control panel is an hybrid application built on top of Tauri + Next.js (React), this means that you'll need to have
+lots of dependencies to build it.
+
+Fortunately if you've previously built the `server`, you can use it to build the control panel as well.
+It will download all the dependencies, compile them and create the final executable for you, you just have to run it.
 
 ## Contributing
 
