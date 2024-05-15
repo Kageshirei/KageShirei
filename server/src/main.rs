@@ -1,3 +1,6 @@
+extern crate clap;
+extern crate log;
+
 use clap::Parser;
 use log::trace;
 

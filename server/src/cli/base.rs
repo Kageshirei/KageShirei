@@ -1,4 +1,4 @@
-use clap::{Args, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
 use crate::cli::compile::CompileArguments;
 use crate::cli::run::RunArguments;
