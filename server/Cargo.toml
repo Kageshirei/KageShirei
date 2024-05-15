@@ -1,7 +1,5 @@
 [package]
 name = "rs2-server"
-version = "0.1.0"
-edition = "2021"
 
 [profile.release]
 strip = true
@@ -11,13 +9,16 @@ debug-assertions = false
 lto = true
 
 [dependencies]
+# Command line parsing and advanced error handling
 anyhow = "1.0.82"
 clap = { version = "4.5.4", features = ["derive"] }
+# Non async logging
 log = { version = "0.4.21" }
 fern = { version = "0.6.2", features = ["colored"] }
-colored = "2.1.0"
+# Misc
 humantime = "2.1.0"
+colored = "2.1.0"
+# Unix related features, used by the compiler
 nix = { version = "0.28.0", features = ["user"] }
-
 
 [features]

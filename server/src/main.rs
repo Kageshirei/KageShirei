@@ -1,10 +1,10 @@
 use clap::Parser;
 use log::trace;
 
-use crate::cli_interface::{CliArguments, Commands, CompileSubcommands};
+use crate::cli::base::{CliArguments, Commands};
 
-mod cli_interface;
 mod compile;
+mod cli;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
     let mut base_config = fern::Dispatch::new()
@@ -59,13 +59,16 @@ fn main() -> anyhow::Result<()> {
     match args.command {
         Commands::Compile(compile_args) => {
             match compile_args.command {
-                CompileSubcommands::Agent => {
+                cli::compile::CompileSubcommands::Agent => {
                     unimplemented!("Agent compilation not implemented yet");
                 }
-                CompileSubcommands::Gui => {
+                cli::compile::CompileSubcommands::Gui => {
                     compile::c2_gui::compile()?;
                 }
             }
+        }
+        Commands::Run(run_args) => {
+            unimplemented!("Run command not implemented yet");
         }
     }
 
