@@ -1,11 +1,8 @@
-extern crate colored;
-
 use std::env;
 use std::process::Command;
 
+use colored::Colorize;
 use log::{error, info, warn};
-
-use self::colored::Colorize;
 
 /// List of required Debian packages
 const REQUIRED_PACKAGES: [&str; 15] = [

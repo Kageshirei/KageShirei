@@ -5,4 +5,4 @@ members = [
     "command-and-control-gui/src-tauri"
 ]
 resolver = "2"
-package = { rust-version = "1.71.0", authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2024", version = "0.1.0" }
+package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }

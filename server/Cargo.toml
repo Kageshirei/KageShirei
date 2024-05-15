@@ -1,5 +1,7 @@
 [package]
 name = "rs2-server"
+version = "0.1.0"
+edition = "2021"
 
 [profile.release]
 strip = true
@@ -18,7 +20,23 @@ fern = { version = "0.6.2", features = ["colored"] }
 # Misc
 humantime = "2.1.0"
 colored = "2.1.0"
+regex = "1.10.4"
 # Unix related features, used by the compiler
 nix = { version = "0.28.0", features = ["user"] }
+# Serialization & validation
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+validator = { version = "0.18.1", features = ["derive"] }
+# Async runtime and related
+tokio = { version = "1.0", features = ["full", "tracing"] }
+once_cell = "1.19.0"
+# Logging for async code
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# Web server and related
+jsonwebtoken = "9.3.0"
+
+[build]
+rustflags = ["--cfg", "tokio_unstable"]
 
 [features]
