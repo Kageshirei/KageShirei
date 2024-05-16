@@ -42,6 +42,7 @@ base64 = "0.22.1"
 diesel = { version = "2.1.6", features = ["postgres", "extras"] }
 diesel-async = { version = "0.4.1", features = ["postgres", "bb8"] }
 bb8 = { version = "0.8.3" }
+diesel_migrations = { version = "2.1.0", features = ["postgres"] }
 # Misc
 humantime = "2.1.0"
 colored = "2.1.0"

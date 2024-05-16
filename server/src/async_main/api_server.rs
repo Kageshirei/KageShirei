@@ -23,6 +23,7 @@ use tracing::{debug, error, info, info_span, instrument, Level, span, Span, warn
 use crate::async_main::api_server::jwt_keys::{API_SERVER_JWT_KEYS, Keys};
 use crate::config::config::SharedConfig;
 use crate::database::Pool;
+use crate::duration_extension::DurationExt;
 
 mod claims;
 mod jwt_keys;
@@ -78,9 +79,8 @@ pub async fn start(
 				})
 				.on_response(|response: &Response<_>, latency: Duration, span: &Span| {
 					let status = response.status();
-					let latency = format!("{} ms", latency.as_millis());
 
-					span.record("latency", &latency);
+					span.record("latency", humantime::format_duration(latency.round()).to_string());
 					span.record("status", format!("{} {}", status.as_str(), status.canonical_reason().unwrap_or("")));
 
 					info!("Request processed")

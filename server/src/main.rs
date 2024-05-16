@@ -13,6 +13,7 @@ mod async_main;
 mod config;
 mod generate;
 mod database;
+mod duration_extension;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()
