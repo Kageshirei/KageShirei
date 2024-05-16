@@ -1,6 +1,7 @@
 use log::error;
 use validator::{ValidationErrors, ValidationErrorsKind};
 
+/// Print validation errors to the SYNC log
 pub fn print_validation_error(validation_errors: ValidationErrors) -> anyhow::Result<()> {
 	for (field, errors) in validation_errors.errors() {
 		// Errors is an enum with 3 variants: Struct, List, Field
@@ -32,6 +33,7 @@ pub fn print_validation_error(validation_errors: ValidationErrors) -> anyhow::Re
 	Ok(())
 }
 
+/// Parse a field error into a human-readable string
 fn parse_field_error(field: &str, error: &validator::ValidationError) -> String {
 	match error.code.to_string().as_str() {
 		"__internal__" => {
