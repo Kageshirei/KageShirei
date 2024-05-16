@@ -1,18 +1,23 @@
 {
-  "api_server": {
-    "port": 3000,
-    "host": "127.0.0.1"
-  },
-  "log": {
-    "file": {
-      "enabled": false,
-      "path": "./target/logs/server.log"
+    "api_server": {
+        "port": 3000,
+        "host": "127.0.0.1"
     },
-    "console": {
-      "enabled": true
+    "log":        {
+        "file":    {
+            "enabled": false,
+            "path":    "./target/logs/server.log"
+        },
+        "console": {
+            "enabled": true,
+            "format":  "compact"
+        }
+    },
+    "jwt":        {
+        "secret": "TlwDBT0AKR+eRhG0s8nWCWZqggT3/ZNyFXZsOJBISH4u+t6Vs9wof7nAGzerhRmtm51u02rQ4yd3uIRDLxvwzw=="
+    },
+    "database":   {
+        "url":       "postgresql://rs2:rs2@localhost/rs2",
+        "pool_size": 10
     }
-  },
-  "jwt": {
-    "secret": "TlwDBT0AKR+eRhG0s8nWCWZqggT3/ZNyFXZsOJBISH4u+t6Vs9wof7nAGzerhRmtm51u02rQ4yd3uIRDLxvwzw=="
-  }
 }

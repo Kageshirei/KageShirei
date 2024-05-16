@@ -3,3 +3,4 @@ mod validators;
 pub mod log;
 mod jwt;
 mod api_server;
+mod database;

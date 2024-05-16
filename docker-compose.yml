@@ -4,6 +4,21 @@ services:
     container_name: rs2-server-dedicated-machine
     entrypoint: /app/target/debug/rs2-server
     command:
-      - run something
+      - run
+      - -c
+      - /app/server/sample-config.json
     volumes:
       - ".:/app"
+
+  # Development/testing database
+  postgres:
+    image: postgres:latest
+    container_name: rs2-postgres
+    restart: always
+    environment:
+      # Change these to your liking
+      POSTGRES_PASSWORD: rs2
+      POSTGRES_DB: rs2
+      POSTGRES_USER: rs2
+    ports:
+      - "5432:5432"
