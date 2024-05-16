@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 use crate::cli::compile::CompileArguments;
+use crate::cli::generate::GenerateArguments;
 use crate::cli::run::RunArguments;
 
 #[derive(Parser, Debug, PartialEq)]
@@ -19,5 +20,8 @@ pub struct CliArguments {
 pub enum Commands {
 	/// Compile agent or C2 gui
 	Compile(CompileArguments),
+	/// Run the server
 	Run(RunArguments),
+	/// Generate strings or configuration files
+	Generate(GenerateArguments),
 }

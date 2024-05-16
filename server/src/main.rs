@@ -1,14 +1,17 @@
 use clap::Parser;
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
 use validator::ValidationErrors;
 
+use crate::async_main::async_main;
 use crate::cli::base::{CliArguments, Commands};
-use crate::config::Config;
+use crate::config::config::RootConfig;
 
 mod compile;
 mod cli;
-mod config;
 mod print_validation_error;
+mod async_main;
+mod config;
+mod generate;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()
@@ -71,8 +74,15 @@ fn main() -> anyhow::Result<()> {
 				}
 			}
 		}
+		Commands::Generate(generate_args) => {
+			match generate_args.command {
+				cli::generate::GenerateSubcommands::Jwt => {
+					generate::jwt::generate_jwt()?;
+				}
+			}
+		}
 		Commands::Run(run_args) => {
-			let config = Config::load(&run_args.config);
+			let config = RootConfig::load(&run_args.config);
 
 			if let Err(e) = config {
 				error!("Failed to load configuration");
@@ -88,9 +98,23 @@ fn main() -> anyhow::Result<()> {
 				print_validation_error::print_validation_error(e)?;
 				return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
 			}
+			let config = config.unwrap();
 
-			debug!("Loaded configuration: {:?}", config);
-			info!("Configuration successfully loaded!");
+			tokio::runtime::Builder::new_multi_thread()
+				.enable_all()
+				.build()
+				.unwrap()
+				.block_on(async {
+					if args.debug > config.read().await.debug_level.unwrap_or(0) {
+						warn!("Command line debug level is higher than the defined in the configuration file, debug level will be overridden");
+						config.write().await.debug_level = Some(args.debug);
+					}
+
+					trace!("Loaded configuration: {:?}", config);
+					info!("Configuration successfully loaded!");
+					warn!("Switching context to the async server runtime...");
+					async_main(config).await.unwrap();
+				});
 		}
 	}
 
