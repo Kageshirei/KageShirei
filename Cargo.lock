@@ -130,6 +130,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25bdb32cbbdce2b519a9cd7df3a678443100e265d5e25ca763b7572a5104f5f3"
 
 [[package]]
+name = "argon2"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c3610892ee6e0cbce8ae2700349fcf8f98adb0dbfbee85aec3c9179d29cc072"
+dependencies = [
+    "base64ct",
+    "blake2",
+    "cpufeatures",
+    "password-hash",
+]
+
+[[package]]
 name = "async-compression"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -276,6 +288,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base64ct"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
+
+[[package]]
 name = "bb8"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -312,6 +330,15 @@ name = "bitflags"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf4b9d6a944f767f8e5e0db018570623c85f3d925ac718db4e06d0187adb21c1"
+
+[[package]]
+name = "blake2"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46502ad458c9a52b69d4d4d32775c788b7a1b85e8bc9d482d92250fc0e3f8efe"
+dependencies = [
+    "digest",
+]
 
 [[package]]
 name = "block"
@@ -2377,6 +2404,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "password-hash"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166"
+dependencies = [
+    "base64ct",
+    "rand_core 0.6.4",
+    "subtle",
+]
+
+[[package]]
 name = "pem"
 version = "3.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2935,6 +2973,7 @@ dependencies = [
     "once_cell",
     "rand 0.8.5",
     "regex",
+    "rs2_crypt",
     "rs2_utils",
     "serde",
     "serde_json",
@@ -2945,6 +2984,15 @@ dependencies = [
     "tracing",
     "tracing-subscriber",
     "validator",
+]
+
+[[package]]
+name = "rs2_crypt"
+version = "0.1.0"
+dependencies = [
+    "anyhow",
+    "argon2",
+    "rand 0.8.5",
 ]
 
 [[package]]
