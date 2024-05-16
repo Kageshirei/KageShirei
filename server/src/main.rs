@@ -12,6 +12,7 @@ mod print_validation_error;
 mod async_main;
 mod config;
 mod generate;
+mod database;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::config::config::SharedConfig;
+use crate::database::Pool;
 
 pub type ApiServerSharedState = Arc<ApiServerState>;
 
@@ -9,5 +10,6 @@ pub type ApiServerSharedState = Arc<ApiServerState>;
 pub struct ApiServerState {
 	/// The shared configuration
 	pub config: SharedConfig,
-
+	/// The database connection pool
+	pub db_pool: Pool
 }

@@ -5,6 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/agent/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/command-and-control-gui/src-tauri/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/server/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/libs/rs2_utils/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

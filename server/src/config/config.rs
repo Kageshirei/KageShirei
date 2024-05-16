@@ -6,6 +6,7 @@ use tokio::sync::{RwLock, RwLockReadGuard};
 use validator::Validate;
 
 use crate::config::api_server::ApiServerConfig;
+use crate::config::database::DatabaseConfig;
 use crate::config::jwt::JwtConfig;
 use crate::config::log::LogConfig;
 
@@ -26,6 +27,10 @@ pub struct RootConfig {
 	/// The JWT configuration
 	#[validate(nested)]
 	pub jwt: JwtConfig,
+
+	/// The database configuration
+	#[validate(nested)]
+	pub database: DatabaseConfig,
 
 	/// The level of debug output to provide, in the range 0-2
 	///

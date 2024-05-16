@@ -7,9 +7,39 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="8decee15-97dc-4669-85f3-e45da92d2f67" name="Changes" comment="docs: docs update">
+    <list default="true" id="8decee15-97dc-4669-85f3-e45da92d2f67" name="Changes" comment="feat: axum base server setup with shared state and request logging">
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/libs/rs2_utils/Cargo.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/libs/rs2_utils/src/lib.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/.env.example" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/diesel.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/migrations/.keep" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/migrations/00000000000000_diesel_initial_setup/down.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/migrations/00000000000000_diesel_initial_setup/up.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/migrations/2024-05-16-142244_create_users_table/down.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/migrations/2024-05-16-142244_create_users_table/up.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/src/config/database.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/src/database/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server/src/database/schema.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/rs2.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/rs2.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/server/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/sample-config.json" beforeDir="false" afterPath="$PROJECT_DIR$/server/sample-config.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/async_main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/async_main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/async_main/api_server.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/async_main/api_server.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/async_main/api_server/state.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/async_main/api_server/state.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/config/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/config/config.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/config/log.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/config/log.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/config/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/config/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/main.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,23 +96,42 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Cargo.Run rs2-agent.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Run rs2-server compile gui.executor&quot;: &quot;Run&quot;,
-    &quot;Cargo.Run rs2-server.executor&quot;: &quot;Run&quot;,
-    &quot;Docker.docker-compose.yml.server-dedicated-machine: Compose Deployment.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
-    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Cargo.Run rs2-agent.executor": "Run",
+    "Cargo.Run rs2-server compile gui.executor": "Run",
+    "Cargo.Run rs2-server.executor": "Run",
+    "Docker.docker-compose.yml.postgres: Compose Deployment.executor": "Run",
+    "Docker.docker-compose.yml.server-dedicated-machine: Compose Deployment.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "master",
+    "last_opened_file_path": "/home/ebalo/Desktop/Projects/rust/rs2",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.first.attach.projects": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "postgresql"
+    ]
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/server" />
+    </key>
+  </component>
   <component name="RunManager" selected="Cargo.Run rs2-server">
     <configuration name="Run rs2-agent" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --package rs2-agent --bin rs2-agent" />
@@ -137,7 +186,7 @@
       </method>
     </configuration>
     <configuration name="Run rs2-server" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-      <option name="command" value="run --package rs2-server --bin rs2-server -- --help" />
+      <option name="command" value="run --package rs2-server --bin rs2-server -- run -c server/sample-config.json" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
       <option name="emulateTerminal" value="true" />
@@ -176,6 +225,19 @@
       </deployment>
       <method v="2" />
     </configuration>
+    <configuration name="docker-compose.yml.postgres: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="services">
+            <list>
+              <option value="postgres" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
     <configuration name="docker-compose.yml.server-dedicated-machine: Compose Deployment" type="docker-deploy" factoryName="docker-compose.yml" temporary="true" server-name="Docker">
       <deployment type="docker-compose.yml">
         <settings>
@@ -195,10 +257,12 @@
       <item itemvalue="Cargo.Run rs2-server compile gui" />
       <item itemvalue="Cargo.Run rs2-server" />
       <item itemvalue="Cargo.Test rs2" />
+      <item itemvalue="Docker.docker-compose.yml.postgres: Compose Deployment" />
       <item itemvalue="Docker.docker-compose.yml.server-dedicated-machine: Compose Deployment" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Docker.docker-compose.yml.postgres: Compose Deployment" />
         <item itemvalue="Docker.docker-compose.yml.server-dedicated-machine: Compose Deployment" />
       </list>
     </recent_temporary>
@@ -215,6 +279,10 @@
       <option name="presentableId" value="Default" />
       <updated>1715674644072</updated>
       <workItem from="1715674645151" duration="20440000" />
+      <workItem from="1715837512429" duration="965000" />
+      <workItem from="1715866049058" duration="2847000" />
+      <workItem from="1715868903659" duration="93000" />
+      <workItem from="1715869003080" duration="1895000" />
     </task>
     <task id="LOCAL-00001" summary="feat: command and control gui compilation from server component">
       <option name="closed" value="true" />
@@ -248,7 +316,15 @@
       <option name="project" value="LOCAL" />
       <updated>1715697018592</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="feat: axum base server setup with shared state and request logging">
+      <option name="closed" value="true" />
+      <created>1715837785662</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1715837785662</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -256,9 +332,11 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="false" />
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="feat: command and control gui compilation from server component" />
     <MESSAGE value="docs: docs update" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs: docs update" />
+    <MESSAGE value="feat: axum base server setup with shared state and request logging" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: axum base server setup with shared state and request logging" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

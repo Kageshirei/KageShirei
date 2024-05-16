@@ -23,4 +23,18 @@ pub struct FileLogConfig {
 pub struct ConsoleLogConfig {
 	/// Whether to enable the logger
 	pub enabled: bool,
+	/// The format to use for the log output
+	pub format: ConsoleLogFormat,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ConsoleLogFormat {
+	#[serde(rename = "pretty")]
+	Pretty,
+	#[serde(rename = "full")]
+	Full,
+	#[serde(rename = "compact")]
+	Compact,
+	#[serde(rename = "json")]
+	Json,
 }
