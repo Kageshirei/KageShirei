@@ -19,10 +19,11 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
+use rs2_utils::duration_extension::DurationExt;
+
 use crate::config::config::{ReadOnlyConfig, SharedConfig};
 use crate::config::log::ConsoleLogFormat;
 use crate::database::Pool;
-use crate::duration_extension::DurationExt;
 
 mod api_server;
 

@@ -1,0 +1,12 @@
+[package]
+name = "rs2_crypt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.83"
+rand = { version = "0.8.5" }
+argon2 = { version = "0.5.3", optional = true }
+
+[features]
+argon2 = ["dep:argon2"]

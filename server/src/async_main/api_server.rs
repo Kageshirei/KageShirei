@@ -20,10 +20,11 @@ use tower_http::trace::TraceLayer;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tracing::{debug, error, info, info_span, instrument, Level, span, Span, warn};
 
+use rs2_utils::duration_extension::DurationExt;
+
 use crate::async_main::api_server::jwt_keys::{API_SERVER_JWT_KEYS, Keys};
 use crate::config::config::SharedConfig;
 use crate::database::Pool;
-use crate::duration_extension::DurationExt;
 
 mod claims;
 mod jwt_keys;
