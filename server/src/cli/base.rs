@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
 use crate::cli::compile::CompileArguments;
@@ -11,6 +13,12 @@ pub struct CliArguments {
 	#[arg(short, long, action = clap::ArgAction::Count, global = true)]
 	pub debug: u8,
 
+	/// Path to the configuration file
+	///
+	/// Reads the configuration from the specified file, relative to the current working directory.
+	#[arg(short, long, default_value = "config.json", global = true)]
+	pub config: PathBuf,
+
 	#[command(subcommand)]
 	pub command: Commands,
 }
@@ -23,5 +31,6 @@ pub enum Commands {
 	/// Run the server
 	Run(RunArguments),
 	/// Generate strings or configuration files
+	#[command(visible_alias = "make")]
 	Generate(GenerateArguments),
 }

@@ -6,6 +6,7 @@ use axum::handler::Handler;
 use diesel::{Connection, PgConnection};
 use diesel::migration::MigrationVersion;
 use diesel::pg::Pg;
+use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -26,8 +27,6 @@ use crate::config::log::ConsoleLogFormat;
 use crate::database::Pool;
 
 mod api_server;
-
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>>(debug_level: u8, format: ConsoleLogFormat) -> Box<dyn Layer<S> + Send + Sync + 'static> {
 	match format {
@@ -156,15 +155,14 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	setup_logging(&readonly_config)?;
 
 	// run the migrations on server startup
-	run_pending_migrations(&readonly_config.database.url)?;
+	crate::database::migration::run_pending(&readonly_config.database.url, false)?;
 
 	let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
 	let pool = Arc::new(
-		RwLock::new(bb8::Pool::builder()
+		bb8::Pool::builder()
 			.max_size(readonly_config.database.pool_size as u32)
 			.build(connection_manager)
 			.await?
-		)
 	);
 
 	// create a cancellation token to be used to signal the servers to shutdown
@@ -221,26 +219,4 @@ async fn handle_shutdown_signals(cancellation_token: CancellationToken) {
 			cancellation_token.cancel();
 		},
     }
-}
-
-/// Run any pending migrations on the database
-///
-/// Migrations are done synchronously as it is a blocking operation, this is fine as it is only done once on startup
-/// additionally, the migration process is scoped to drop the connection after the migration is complete and
-/// initiate a new connection pool shared by the servers
-#[instrument(name = "Database migration", skip_all, fields(latency))]
-fn run_pending_migrations<'a>(connection_string: &str) -> anyhow::Result<()> {
-	let latency = Instant::now();
-	info!("Running migrations");
-
-	let mut connection = PgConnection::establish(connection_string)
-		.map_err(|e| anyhow::anyhow!("Failed to connect to database: {}", e))?;
-	connection.run_pending_migrations(MIGRATIONS)
-	          .map_err(|e| anyhow::anyhow!("Failed to run migrations: {}", e))?;
-
-	tracing::Span::current()
-		.record("latency", humantime::format_duration(latency.elapsed().round()).to_string());
-	info!("Migrations completed successfully");
-
-	Ok(())
 }

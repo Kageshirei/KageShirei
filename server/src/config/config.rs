@@ -1,20 +1,22 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use log::error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, RwLockReadGuard};
-use validator::Validate;
+use validator::{Validate, ValidationErrors};
 
 use crate::config::api_server::ApiServerConfig;
 use crate::config::database::DatabaseConfig;
 use crate::config::jwt::JwtConfig;
 use crate::config::log::LogConfig;
+use crate::print_validation_error;
 
 pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;
 
 /// Root server configuration
-#[derive(Serialize, Deserialize, Debug, Validate, Clone)]
+#[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct RootConfig {
 	/// The api server configuration
 	#[validate(nested)]
@@ -48,13 +50,27 @@ impl RootConfig {
 	pub fn load(path: &PathBuf) -> anyhow::Result<SharedConfig> {
 		let path = std::env::current_dir().unwrap().join(path);
 		if !path.exists() {
-			return Err(anyhow::anyhow!(format!("Configuration file not found at {}", path.display())));
+			error!("Failed to load configuration");
+			error!("Cannot parse configuration file: Configuration file not found at {}", path.display());
+			return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
 		}
 
 		let file = std::fs::File::open(path)?;
 		let config: Self = serde_json::from_reader(file)?;
-		config.validate()?;
+
+		Self::handle_loading_errors(config.validate())?;
 
 		Ok(Arc::new(RwLock::new(config.clone())))
+	}
+
+	/// handle the loading errors if any, exiting if errors are found
+	fn handle_loading_errors(result: Result<(), ValidationErrors>) -> anyhow::Result<()> {
+		if let Err(e) = result {
+			error!("Failed to load configuration");
+			print_validation_error::print_validation_error(e)?;
+			return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
+		}
+
+		Ok(())
 	}
 }

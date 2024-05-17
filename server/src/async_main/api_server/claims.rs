@@ -1,12 +1,84 @@
+use axum::{async_trait, RequestPartsExt};
+use axum::extract::FromRequestParts;
+use axum::http::request::Parts;
+use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Bearer;
+use axum_extra::TypedHeader;
 use serde::{Deserialize, Serialize};
+
+use crate::async_main::api_server::errors::ApiServerError;
+use crate::async_main::api_server::jwt_keys::API_SERVER_JWT_KEYS;
 
 /// The JWT claims for the api server
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtClaims {
-	aud: String,         // Optional. Audience
-	exp: usize,          // Required (validate_exp defaults to true in validation). Expiration time (as UTC timestamp)
-	iat: usize,          // Optional. Issued at (as UTC timestamp)
-	iss: String,         // Optional. Issuer
-	nbf: usize,          // Optional. Not Before (as UTC timestamp)
-	sub: String,         // Optional. Subject (whom token refers to)
+	/// Expiration time (as UTC timestamp)
+	pub exp: u64,
+	/// Issued at (as UTC timestamp)
+	pub iat: u64,
+	/// Issuer
+	pub iss: String,
+	/// Not Before (as UTC timestamp)
+	pub nbf: u64,
+	/// Subject (whom token refers to, aka user id)
+	pub sub: String,
+}
+
+impl JwtClaims {
+	/// Create a new JWT claims object
+	///
+	/// # Arguments
+	///
+	/// * `sub` - The subject (whom token refers to, aka user id)
+	pub fn new(sub: String) -> Self {
+		let now = chrono::Utc::now();
+
+		Self {
+			exp: (now + chrono::Duration::minutes(15)).timestamp() as u64,
+			iat: now.timestamp() as u64,
+			iss: "rs2-api-server".to_string(),
+			nbf: now.timestamp() as u64,
+			sub,
+		}
+	}
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for JwtClaims
+	where
+		S: Send + Sync,
+{
+	type Rejection = ApiServerError;
+
+	async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+		// Extract the token from the authorization header
+		let TypedHeader(Authorization(bearer)) = parts
+			.extract::<TypedHeader<Authorization<Bearer>>>()
+			.await
+			.map_err(|_| ApiServerError::InvalidToken)?;
+
+		// extract the header from the token
+		let header = jsonwebtoken::decode_header(bearer.token())
+			.map_err(|_| ApiServerError::InvalidToken)?;
+
+		// Ensure the token is signed with HS512
+		if header.alg != jsonwebtoken::Algorithm::HS512 {
+			return Err(ApiServerError::InvalidToken);
+		}
+
+		let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS512);
+		validation.set_issuer(&["rs2-api-server"]);
+		validation.set_required_spec_claims(&["exp", "sub"]);
+		validation.leeway = 30; // 30 seconds leeway for clock skew
+
+		// Decode the user data
+		let token_data = jsonwebtoken::decode::<JwtClaims>(
+			bearer.token(),
+			&API_SERVER_JWT_KEYS.get().unwrap().decoding,
+			&validation,
+		)
+			.map_err(|_| ApiServerError::InvalidToken)?;
+
+		Ok(token_data.claims)
+	}
 }
