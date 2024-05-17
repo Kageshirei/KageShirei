@@ -4,15 +4,17 @@ use validator::ValidationErrors;
 
 use crate::async_main::async_main;
 use crate::cli::base::{CliArguments, Commands};
+use crate::cli::generate::GenerateSubcommands;
 use crate::config::config::RootConfig;
 
-mod compile;
+mod cli_cmd_compile;
 mod cli;
 mod print_validation_error;
 mod async_main;
 mod config;
-mod generate;
+mod cli_cmd_generate;
 mod database;
+mod async_ctx;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()
@@ -71,51 +73,33 @@ fn main() -> anyhow::Result<()> {
 					unimplemented!("Agent compilation not implemented yet");
 				}
 				cli::compile::CompileSubcommands::Gui => {
-					compile::c2_gui::compile()?;
+					cli_cmd_compile::c2_gui::compile()?;
 				}
 			}
 		}
 		Commands::Generate(generate_args) => {
 			match generate_args.command {
-				cli::generate::GenerateSubcommands::Jwt => {
-					generate::jwt::generate_jwt()?;
+				GenerateSubcommands::Jwt => {
+					cli_cmd_generate::jwt::generate_jwt()?;
+				}
+				GenerateSubcommands::Operator(generate_args) => {
+					let config = RootConfig::load(&args.config)?;
+
+					// requires async context to consume the configuration
+					async_ctx::enter(
+						cli_cmd_generate::operator::generate_operator(&generate_args, config)
+					)?;
 				}
 			}
 		}
 		Commands::Run(run_args) => {
-			let config = RootConfig::load(&run_args.config);
+			let config = RootConfig::load(&args.config)?;
 
-			if let Err(e) = config {
-				error!("Failed to load configuration");
-
-				let e = e.downcast::<ValidationErrors>();
-
-				if e.is_err() {
-					error!("Cannot parse configuration file: {:?}", e.err().unwrap());
-					return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
-				}
-				let e = e.unwrap();
-
-				print_validation_error::print_validation_error(e)?;
-				return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
-			}
-			let config = config.unwrap();
-
-			tokio::runtime::Builder::new_multi_thread()
-				.enable_all()
-				.build()
-				.unwrap()
-				.block_on(async {
-					if args.debug > config.read().await.debug_level.unwrap_or(0) {
-						warn!("Command line debug level is higher than the defined in the configuration file, debug level will be overridden");
-						config.write().await.debug_level = Some(args.debug);
-					}
-
-					trace!("Loaded configuration: {:?}", config);
-					info!("Configuration successfully loaded!");
-					warn!("Switching context to the async server runtime...");
-					async_main(config).await.unwrap();
-				});
+			async_ctx::enter(
+				async_ctx::init_context(
+					args.debug, config.clone(), async_main(config.clone()),
+				)
+			)?;
 		}
 	}
 

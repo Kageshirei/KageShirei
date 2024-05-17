@@ -5,8 +5,8 @@ pub static API_SERVER_JWT_KEYS: OnceCell<Keys> = OnceCell::new();
 
 /// JWT keypair for the api server
 pub struct Keys {
-	encoding: EncodingKey,
-	decoding: DecodingKey,
+	pub encoding: EncodingKey,
+	pub decoding: DecodingKey,
 }
 
 impl Keys {

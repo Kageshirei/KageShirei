@@ -2,7 +2,7 @@ use std::iter::once;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::extract::MatchedPath;
+use axum::extract::{DefaultBodyLimit, MatchedPath};
 use axum::http::header::AUTHORIZATION;
 use axum::http::Request;
 use axum::response::Response;
@@ -14,6 +14,7 @@ use tokio_util::sync::CancellationToken;
 use tower_http::body::UnsyncBoxBody;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
 use tower_http::trace::TraceLayer;
@@ -23,12 +24,16 @@ use tracing::{debug, error, info, info_span, instrument, Level, span, Span, warn
 use rs2_utils::duration_extension::DurationExt;
 
 use crate::async_main::api_server::jwt_keys::{API_SERVER_JWT_KEYS, Keys};
+use crate::async_main::api_server::state::ApiServerSharedState;
 use crate::config::config::SharedConfig;
 use crate::database::Pool;
 
 mod claims;
 mod jwt_keys;
 mod state;
+mod request_body_from_content_type;
+mod routes;
+mod errors;
 
 pub async fn start(
 	config: SharedConfig,
@@ -37,21 +42,22 @@ pub async fn start(
 ) -> anyhow::Result<()> {
 	let readonly_config = config.read().await;
 
+	// initialize the JWT keys
 	API_SERVER_JWT_KEYS.get_or_init(|| {
 		Keys::new(readonly_config.jwt.secret.as_bytes())
 	});
 	debug!(readonly_config.jwt.secret, "JWT keys initialized successfully!");
 
-	let shared_state = Arc::new(state::ApiServerState {
+	// create a shared state for the server
+	let shared_state: ApiServerSharedState = Arc::new(state::ApiServerState {
 		config: config.clone(),
-		db_pool: pool
+		db_pool: pool,
 	});
 
+	// init the router
 	let app = Router::new()
-		.route("/protected", get(|| async {
-			tokio::time::sleep(Duration::from_secs(2)).await;
-			"Protected data"
-		}))
+		.merge(routes::public::make_routes(shared_state.clone()))
+		.merge(routes::protected::make_routes(shared_state.clone()))
 		.with_state(shared_state)
 		.layer((
 			// add log tracing
@@ -92,14 +98,17 @@ pub async fn start(
 			CompressionLayer::new(),
 			// normalize paths before routing trimming trailing slashes
 			NormalizePathLayer::trim_trailing_slash(),
+			// limit request body size to 50mb
+			DefaultBodyLimit::disable(),
+			RequestBodyLimitLayer::new(
+				0x3200000, /* 50mb = (50 * 1024 * 1024) */
+			),
 			// validate request headers for content type accepting only json and form data (subtypes are allowed)
 			ValidateRequestHeaderLayer::accept("application/json"),
 			ValidateRequestHeaderLayer::accept("multipart/form-data"),
 			// set sensitive headers to be removed from logs
-			SetSensitiveHeadersLayer::new(once(AUTHORIZATION))
+			SetSensitiveHeadersLayer::new(once(AUTHORIZATION)),
 		));
-
-	// let mut make_service = app.into_make_service_with_connect_info::<SocketAddr>();
 
 	// start listening on the provided address
 	let listener = tokio::net::TcpListener::bind(
@@ -107,6 +116,7 @@ pub async fn start(
 	).await?;
 	info!(address = %listener.local_addr().unwrap(), "Api server listening");
 
+	// start serving requests
 	axum::serve(listener, app)
 		.with_graceful_shutdown(handle_graceful_shutdown(cancellation_token))
 		.await

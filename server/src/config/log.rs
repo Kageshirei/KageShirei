@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Serialize, Deserialize, Debug, Validate, Clone)]
+#[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct LogConfig {
 	/// Configuration for the file logger
 	pub file: FileLogConfig,
@@ -11,7 +11,7 @@ pub struct LogConfig {
 	pub console: ConsoleLogConfig,
 }
 
-#[derive(Serialize, Deserialize, Debug, Validate, Clone)]
+#[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct FileLogConfig {
 	/// The path to the log file
 	pub path: PathBuf,
@@ -19,7 +19,7 @@ pub struct FileLogConfig {
 	pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Validate, Clone)]
+#[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct ConsoleLogConfig {
 	/// Whether to enable the logger
 	pub enabled: bool,
@@ -27,11 +27,12 @@ pub struct ConsoleLogConfig {
 	pub format: ConsoleLogFormat,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum ConsoleLogFormat {
 	#[serde(rename = "pretty")]
 	Pretty,
 	#[serde(rename = "full")]
+	#[default]
 	Full,
 	#[serde(rename = "compact")]
 	Compact,

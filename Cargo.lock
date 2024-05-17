@@ -206,6 +206,7 @@ checksum = "3a6c9af12842a67734c9a2e355436e5d03b22383ed60cf13cd0c18fbfe3dcbcf"
 dependencies = [
     "async-trait",
     "axum-core",
+    "axum-macros",
     "bytes",
     "futures-util",
     "http 1.1.0",
@@ -252,6 +253,41 @@ dependencies = [
     "tower-layer",
     "tower-service",
     "tracing",
+]
+
+[[package]]
+name = "axum-extra"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0be6ea09c9b96cb5076af0de2e383bd2bc0c18f827cf1967bdd353e0b910d733"
+dependencies = [
+    "axum",
+    "axum-core",
+    "bytes",
+    "futures-util",
+    "headers",
+    "http 1.1.0",
+    "http-body",
+    "http-body-util",
+    "mime",
+    "pin-project-lite",
+    "serde",
+    "tower",
+    "tower-layer",
+    "tower-service",
+    "tracing",
+]
+
+[[package]]
+name = "axum-macros"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00c055ee2d014ae5981ce1016374e8213682aa14d9bf40e48ab48b5f3ef20eaa"
+dependencies = [
+    "heck 0.4.1",
+    "proc-macro2",
+    "quote",
+    "syn 2.0.63",
 ]
 
 [[package]]
@@ -532,8 +568,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
     "android-tzdata",
     "iana-time-zone",
+    "js-sys",
     "num-traits",
     "serde",
+    "wasm-bindgen",
     "windows-targets 0.52.5",
 ]
 
@@ -1550,6 +1588,30 @@ checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 dependencies = [
     "ahash",
     "allocator-api2",
+]
+
+[[package]]
+name = "headers"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "322106e6bd0cba2d5ead589ddb8150a13d7c4217cf80d7c4f682ca994ccc6aa9"
+dependencies = [
+    "base64 0.21.7",
+    "bytes",
+    "headers-core",
+    "http 1.1.0",
+    "httpdate",
+    "mime",
+    "sha1",
+]
+
+[[package]]
+name = "headers-core"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54b4a22553d4242c49fddb9ba998a99962b5cc6f22cb5a3482bec22522403ce4"
+dependencies = [
+    "http 1.1.0",
 ]
 
 [[package]]
@@ -2958,8 +3020,10 @@ version = "0.1.0"
 dependencies = [
     "anyhow",
     "axum",
+    "axum-extra",
     "base64 0.22.1",
     "bb8",
+    "chrono",
     "clap",
     "colored 2.1.0",
     "diesel",
@@ -2983,6 +3047,7 @@ dependencies = [
     "tower-http",
     "tracing",
     "tracing-subscriber",
+    "uuid",
     "validator",
 ]
 
@@ -3242,6 +3307,17 @@ checksum = "d98238b800e0d1576d8b6e3de32827c2d74bee68bb97748dcf5071fb53965432"
 dependencies = [
     "nodrop",
     "stable_deref_trait",
+]
+
+[[package]]
+name = "sha1"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3bf829a2d51ab4a5ddf1352d8470c140cadc8301b2ae1789db023f01cedd6ba"
+dependencies = [
+    "cfg-if",
+    "cpufeatures",
+    "digest",
 ]
 
 [[package]]
