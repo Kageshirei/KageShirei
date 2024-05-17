@@ -1,30 +1,18 @@
 use std::fs;
 use std::sync::Arc;
-use std::time::Duration;
 
-use axum::handler::Handler;
-use diesel::{Connection, PgConnection};
-use diesel::migration::MigrationVersion;
-use diesel::pg::Pg;
-use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use log::error;
 use tokio::{join, select, signal};
-use tokio::sync::RwLock;
-use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
-use tracing::{info, info_span, instrument, warn};
 use tracing::level_filters::LevelFilter;
+use tracing::warn;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
-use rs2_utils::duration_extension::DurationExt;
-
 use crate::config::config::{ReadOnlyConfig, SharedConfig};
 use crate::config::log::ConsoleLogFormat;
-use crate::database::Pool;
 
 mod api_server;
 

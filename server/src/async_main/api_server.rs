@@ -7,11 +7,7 @@ use axum::http::header::AUTHORIZATION;
 use axum::http::Request;
 use axum::response::Response;
 use axum::Router;
-use axum::routing::{get, post};
-use tokio::{select, signal};
-use tokio_util::bytes::Bytes;
 use tokio_util::sync::CancellationToken;
-use tower_http::body::UnsyncBoxBody;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
 use tower_http::limit::RequestBodyLimitLayer;
@@ -19,7 +15,7 @@ use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
 use tower_http::trace::TraceLayer;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
-use tracing::{debug, error, info, info_span, instrument, Level, span, Span, warn};
+use tracing::{debug, info, info_span, Span, warn};
 
 use rs2_utils::duration_extension::DurationExt;
 

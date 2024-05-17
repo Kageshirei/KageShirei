@@ -1,21 +1,17 @@
 use axum::{debug_handler, Json, Router};
-use axum::extract::{FromRef, FromRequestParts, State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::extract::State;
 use axum::routing::post;
 use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
-use diesel_async::AsyncPgConnection;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 use crate::async_main::api_server::claims::JwtClaims;
 use crate::async_main::api_server::errors::ApiServerError;
 use crate::async_main::api_server::jwt_keys::API_SERVER_JWT_KEYS;
 use crate::async_main::api_server::request_body_from_content_type::InferBody;
-use crate::async_main::api_server::state::{ApiServerSharedState, ApiServerState};
+use crate::async_main::api_server::state::ApiServerSharedState;
 use crate::database::models::user::User;
-use crate::database::Pool;
 
 #[derive(Debug, Deserialize)]
 struct AuthenticatePostPayload {
@@ -31,6 +27,7 @@ struct AuthenticatePostResponse {
 
 /// The handler for the public authentication route
 #[debug_handler]
+#[instrument(name = "POST /authenticate", skip(state))]
 async fn post_handler(
 	State(state): State<ApiServerSharedState>,
 	InferBody(payload): InferBody<AuthenticatePostPayload>,
@@ -87,19 +84,22 @@ mod tests {
 	use axum::response::Response;
 	use diesel::{Connection, PgConnection};
 	use diesel::associations::HasTable;
-	use diesel_async::RunQueryDsl;
+	use diesel_async::{AsyncPgConnection, RunQueryDsl};
+	use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 	use diesel_migrations::MigrationHarness;
 	use serde_json::json;
 	use tokio::sync::RwLock;
 	use tower::ServiceExt;
 
 	use crate::async_main::api_server::jwt_keys::Keys;
+	use crate::async_main::api_server::state::ApiServerState;
 	use crate::cli::generate::operator::GenerateOperatorArguments;
 	use crate::cli_cmd_generate::operator::generate_operator;
 	use crate::config::config::{RootConfig, SharedConfig};
 	use crate::config::database::DatabaseConfig;
 	use crate::database::migration::MIGRATIONS;
 	use crate::database::models::user::CreateUser;
+	use crate::database::Pool;
 	use crate::database::schema::users::dsl::users;
 	use crate::database::schema::users::id;
 
