@@ -1,6 +1,5 @@
 use clap::Parser;
-use log::{debug, error, info, trace, warn};
-use validator::ValidationErrors;
+use log::trace;
 
 use crate::async_main::async_main;
 use crate::cli::base::{CliArguments, Commands};
@@ -92,7 +91,7 @@ fn main() -> anyhow::Result<()> {
 				}
 			}
 		}
-		Commands::Run(run_args) => {
+		Commands::Run(_run_args) => {
 			let config = RootConfig::load(&args.config)?;
 
 			async_ctx::enter(

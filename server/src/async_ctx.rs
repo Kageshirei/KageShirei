@@ -2,7 +2,6 @@ use std::future::Future;
 
 use log::{info, trace, warn};
 
-use crate::async_main::async_main;
 use crate::config::config::SharedConfig;
 
 /// Run the given future in a tokio runtime
