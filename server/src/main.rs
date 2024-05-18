@@ -14,6 +14,7 @@ mod config;
 mod cli_cmd_generate;
 mod database;
 mod async_ctx;
+mod unrecoverable_error;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()

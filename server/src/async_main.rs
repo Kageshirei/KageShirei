@@ -3,11 +3,10 @@ use std::sync::Arc;
 
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use log::error;
 use tokio::{join, select, signal};
 use tokio_util::sync::CancellationToken;
+use tracing::{error, warn};
 use tracing::level_filters::LevelFilter;
-use tracing::warn;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
@@ -162,7 +161,11 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 		pool.clone(),
 	);
 	let api_server_thread = tokio::spawn(async move {
-		api_server_task.await.unwrap();
+		let exit_status = api_server_task.await;
+
+		if exit_status.is_err() {
+			error!("Api server died with error: {}", exit_status.err().unwrap())
+		}
 	});
 
 	let cancellation_handler_thread = tokio::spawn(async move {
