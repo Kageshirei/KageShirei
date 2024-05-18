@@ -11,6 +11,7 @@ use crate::config::database::DatabaseConfig;
 use crate::config::jwt::JwtConfig;
 use crate::config::log::LogConfig;
 use crate::print_validation_error;
+use crate::unrecoverable_error::unrecoverable_error;
 
 pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;
@@ -52,7 +53,7 @@ impl RootConfig {
 		if !path.exists() {
 			error!("Failed to load configuration");
 			error!("Cannot parse configuration file: Configuration file not found at {}", path.display());
-			return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
+			unrecoverable_error()?; // Exit with error state
 		}
 
 		let file = std::fs::File::open(path)?;
@@ -68,7 +69,7 @@ impl RootConfig {
 		if let Err(e) = result {
 			error!("Failed to load configuration");
 			print_validation_error::print_validation_error(e)?;
-			return Err(anyhow::anyhow!("Unrecoverable error(s) detected, exiting.")); // Exit with error state
+			unrecoverable_error()?; // Exit with error state
 		}
 
 		Ok(())
