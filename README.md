@@ -85,7 +85,7 @@ The project is still in its early stages, we have many features planned, we'll p
 The server should come with no dependencies at all, most of its features should be able to run both on *nix and
 Windows systems.
 
-Compilation must be done before running it (sorry, no precompiled binaries yet). To compile the server only, clone the
+Compilation must be done before running it (no precompiled binaries). To compile the server only, clone the
 repository and run the following commands:
 
 ```bash
