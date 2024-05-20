@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
 use log::{error, info};
 
 use crate::cli::generate::operator::GenerateOperatorArguments;
@@ -17,15 +16,14 @@ pub async fn generate_operator(args: &GenerateOperatorArguments, config: SharedC
 	let Some(mut connection) = crate::database::migration::run_pending(readonly_config.database.url.as_str(), true)?
 		else { unreachable!() };
 
-	/*
+
 	let user_exists = diesel::select(diesel::dsl::exists(users.filter(username.eq(&args.username))))
-		.get_result::<bool>(&mut connection);
+		.get_result::<bool>(&mut connection)?;
 
 	if user_exists {
 		error!("Operator with username '{}' already exists", args.username);
 		return Err(anyhow::anyhow!("User already exists"));
 	}
-	 */
 
 	// Insert the operator into the database
 	let user_id = diesel::insert_into(users)
