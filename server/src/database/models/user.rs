@@ -1,11 +1,10 @@
+use chrono::Utc;
 use diesel::prelude::*;
 
 /// The User model, identifies a RS2 operator
 #[derive(Debug, Queryable, Selectable, Clone, PartialEq)]
 #[diesel(table_name = crate::database::schema::users)]
-pub struct User/*<Tz>
-	where Tz: chrono::TimeZone*/
-{
+pub struct User {
 	/// The unique identifier for the user
 	pub id: uuid::Uuid,
 	/// The username for the user (unique)
@@ -13,9 +12,9 @@ pub struct User/*<Tz>
 	/// The user's password (hashed)
 	pub password: String,
 	// Creation date of the user
-	// pub created_at: chrono::DateTime<Tz>,
+	pub created_at: chrono::DateTime<Utc>,
 	// Last time the user was updated
-	// pub updated_at: chrono::DateTime<Tz>,
+	pub updated_at: chrono::DateTime<Utc>,
 }
 
 #[derive(Debug, Insertable)]

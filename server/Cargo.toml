@@ -40,7 +40,7 @@ jsonwebtoken = "9.3.0"
 rand = { version = "0.8.5" }
 base64 = "0.22.1"
 # Database
-diesel = { version = "2.1.6", features = ["postgres", "extras"] }
+diesel = { version = "2.1.6", features = ["postgres", "extras", "chrono"] }
 diesel-async = { version = "0.4.1", features = ["postgres", "bb8"] }
 bb8 = { version = "0.8.3" }
 diesel_migrations = { version = "2.1.0", features = ["postgres"] }
