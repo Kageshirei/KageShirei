@@ -60,24 +60,6 @@ The project is still in its early stages, we have many features planned, we'll p
 - DNS connection to the server.
 - Feature toggles. (conditional compilation)
 
-#### Server
-
-- Login system.
-- User management.
-- Configuration management.
-- Agent listing.
-- API to interact with the server.
-- Handle multiple agents.
-- Handle multiple connections per agent.
-- Handle agent protobuf communication.
-- Handle agent JSON communication.
-- Http/Https server.
-- DNS server.
-- Agent compilation status.
-- Agent compilation logs.
-- Data persistence in databases.
-- Data wiping.
-
 ## Server installation
 
 ### Requirements
