@@ -1,0 +1,163 @@
+{
+    "$schema":     "https://json-schema.org/draft/2020-12/schema",
+    "$id":         "https://example.com/product.schema.json",
+    "$vocabulary": {
+        "https://json-schema.org/draft/2020-12/vocab/format-annotation": true,
+        "https://json-schema.org/draft/2020-12/vocab/format-assertion":  true
+    },
+    "title":       "RS2 server",
+    "description": "RS2 server configuration schema",
+    "type":        "object",
+    "properties":  {
+        "api_server": {
+            "type":        "object",
+            "description": "The Api server section contains the configuration for the operator's API server.",
+            "properties":  {
+                "port": {
+                    "type":        "integer",
+                    "description": "The port on which the server will listen for incoming connections.",
+                    "minimum":     1,
+                    "maximum":     65535
+                },
+                "host": {
+                    "type":        "string",
+                    "format":      "ipv4",
+                    "description": "The host interface on which the server will listen for incoming connections, set it to 0.0.0.0 to listen on all interfaces."
+                },
+                "tls":  {
+                    "type":        "object",
+                    "description": "The TLS section contains the configuration for the server's TLS settings.",
+                    "properties":  {
+                        "enabled": {
+                            "type":        "boolean",
+                            "description": "Enable or disable TLS for the server."
+                        },
+                        "port":    {
+                            "type":        "integer",
+                            "description": "The port on which the server will listen for incoming TLS connections.",
+                            "minimum":     1,
+                            "maximum":     65535
+                        },
+                        "host":    {
+                            "type":        "string",
+                            "format":      "ipv4",
+                            "description": "The host interface on which the server will listen for incoming TLS connections, set it to 0.0.0.0 to listen on all interfaces.",
+                            "default":     "Inherited from the parent host field."
+                        },
+                        "cert":    {
+                            "type":        "string",
+                            "description": "The path to the certificate file in PEM format."
+                        },
+                        "key":     {
+                            "type":        "string",
+                            "description": "The path to the key file in PEM format."
+                        }
+                    },
+                    "required":    [
+                        "cert",
+                        "key",
+                        "enabled",
+                        "port"
+                    ]
+                }
+            },
+            "required":    [
+                "port",
+                "host"
+            ]
+        },
+        "log":        {
+            "type":        "object",
+            "description": "The log section contains the configuration for the server's logging system.",
+            "properties":  {
+                "file":    {
+                    "type":        "object",
+                    "description": "The file logging configuration.",
+                    "properties":  {
+                        "enabled": {
+                            "type":        "boolean",
+                            "description": "Enable or disable file logging."
+                        },
+                        "path":    {
+                            "type":        "string",
+                            "description": "The path to the log file."
+                        }
+                    },
+                    "required":    [
+                        "enabled",
+                        "path"
+                    ]
+                },
+                "console": {
+                    "type":        "object",
+                    "description": "The console logging configuration.",
+                    "properties":  {
+                        "enabled": {
+                            "type":        "boolean",
+                            "description": "Enable or disable console logging."
+                        },
+                        "format":  {
+                            "type":        "string",
+                            "enum":        [
+                                "pretty",
+                                "full",
+                                "compact",
+                                "json"
+                            ],
+                            "description": "The format of the log message. One of pretty, full, compact, json."
+                        }
+                    },
+                    "required":    [
+                        "enabled"
+                    ]
+                }
+            },
+            "required":    [
+                "file",
+                "console"
+            ]
+        },
+        "jwt":        {
+            "type":        "object",
+            "description": "The JWT section contains the configuration for the server's JWT system.",
+            "properties":  {
+                "secret": {
+                    "type":        "string",
+                    "description": "The secret key used to sign the JWT tokens.",
+                    "minLength":   88,
+                    "maxLength":   88
+                }
+            },
+            "required":    [
+                "secret"
+            ]
+        },
+        "database":   {
+            "type":        "object",
+            "description": "The database section contains the configuration for the server's database connection.",
+            "properties":  {
+                "url":       {
+                    "type":        "string",
+                    "format":      "uri",
+                    "description": "The URL of the database. Refer to https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS for more information about its format."
+                },
+                "pool_size": {
+                    "type":        "integer",
+                    "description": "The size of the database connection pool. Larger values will allow more connections to be open at the same time reducing the latency. Lower values will reduce the memory usage."
+                    "minimum":     1,
+                    "maximum":     100
+                }
+            },
+            "required":    [
+                "url",
+                "pool_size"
+            ]
+        }
+    },
+    "required":    [
+        "api_server",
+        "log",
+        "jwt",
+        "database"
+    ]
+}
