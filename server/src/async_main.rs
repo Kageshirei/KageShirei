@@ -152,7 +152,7 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 			.await?
 	);
 
-	// create a cancellation token to be used to signal the servers to shutdown
+	// create a cancellation token to be used to signal the servers to shut down
 	let cancellation_token = CancellationToken::new();
 
 	let api_server_task = api_server::start(
