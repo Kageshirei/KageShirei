@@ -1,0 +1,13 @@
+[package]
+name = "bofentry"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+bofhelper = { path = "../bofhelper" }
+bofalloc = { path = "../bofalloc", optional = true }
+bofentry_macro = { path = "../bofentry_macro" }
+
+[features]
+alloc = ["bofalloc"]

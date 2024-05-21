@@ -24,7 +24,11 @@ pub fn enter<F: Future>(future: F) -> F::Output {
 /// * `debug_level` - The debug level to use
 /// * `config` - The shared configuration
 /// * `future` - The future to run
-pub async fn init_context<F: Future>(debug_level: u8, config: SharedConfig, future: F) -> F::Output {
+pub async fn init_context<F: Future>(
+	debug_level: u8,
+	config: SharedConfig,
+	future: F,
+) -> F::Output {
 	info!("Initializing context...");
 	trace!("Starting async runtime...");
 

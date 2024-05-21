@@ -52,7 +52,10 @@ impl RootConfig {
 		let path = std::env::current_dir().unwrap().join(path);
 		if !path.exists() {
 			error!("Failed to load configuration");
-			error!("Cannot parse configuration file: Configuration file not found at {}", path.display());
+			error!(
+                "Cannot parse configuration file: Configuration file not found at {}",
+                path.display()
+            );
 			unrecoverable_error()?; // Exit with error state
 		}
 

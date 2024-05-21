@@ -37,7 +37,11 @@ pub fn print_validation_error(validation_errors: ValidationErrors) -> anyhow::Re
 fn parse_field_error(field: &str, error: &validator::ValidationError) -> String {
 	match error.code.to_string().as_str() {
 		"__internal__" => {
-			format!("Validation error in field '{}': {}", field, error.message.as_ref().unwrap())
+			format!(
+				"Validation error in field '{}': {}",
+				field,
+				error.message.as_ref().unwrap()
+			)
 		}
 		"range" => {
 			format!(
@@ -45,12 +49,16 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
 				field,
 				error.params.get("value").unwrap(),
 				error.params.get("min").unwrap_or(
-					error.params.get("exclusive_min")
-					     .unwrap_or(&serde_json::Value::String("(Unspecified)".to_string()))
+					error
+						.params
+						.get("exclusive_min")
+						.unwrap_or(&serde_json::Value::String("(Unspecified)".to_string()))
 				),
 				error.params.get("max").unwrap_or(
-					error.params.get("exclusive_max")
-					     .unwrap_or(&serde_json::Value::String("(Unspecified)".to_string()))
+					error
+						.params
+						.get("exclusive_max")
+						.unwrap_or(&serde_json::Value::String("(Unspecified)".to_string()))
 				),
 			)
 		}
@@ -58,16 +66,15 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
 			format!(
 				"Validation error in field '{}': {}",
 				field,
-				error.message.as_ref()
-				     .unwrap()
-				     .to_string()
-				     .replace(
-					     ":params.value",
-					     error.params.get("value")
-					          .unwrap_or(&serde_json::Value::String("Not found".to_string()))
-					          .as_str()
-					          .unwrap(),
-				     )
+				error.message.as_ref().unwrap().to_string().replace(
+					":params.value",
+					error
+						.params
+						.get("value")
+						.unwrap_or(&serde_json::Value::String("Not found".to_string()))
+						.as_str()
+						.unwrap(),
+				)
 			)
 		}
 		"length" => {
@@ -79,64 +86,52 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
 
 			if has_min && !has_max {
 				let value = error.params.get("value").unwrap();
-				message.push_str(
-					&format!(
-						"A minimum length of {} is required, {} given",
-						error.params.get("min").unwrap(),
-						if value.is_array() {
-							value.as_array().unwrap().len()
-						} else {
-							value.as_str().unwrap().len()
-						}
-					)
-				);
+				message.push_str(&format!(
+					"A minimum length of {} is required, {} given",
+					error.params.get("min").unwrap(),
+					if value.is_array() {
+						value.as_array().unwrap().len()
+					} else {
+						value.as_str().unwrap().len()
+					}
+				));
 			} else if !has_min && has_max {
 				let value = error.params.get("value").unwrap();
-				message.push_str(
-					&format!(
-						"A maximum length of {} is required, {} given",
-						error.params.get("max").unwrap(),
-						if value.is_array() {
-							value.as_array().unwrap().len()
-						} else {
-							value.as_str().unwrap().len()
-						}
-					)
-				);
+				message.push_str(&format!(
+					"A maximum length of {} is required, {} given",
+					error.params.get("max").unwrap(),
+					if value.is_array() {
+						value.as_array().unwrap().len()
+					} else {
+						value.as_str().unwrap().len()
+					}
+				));
 			} else if has_equal {
 				let value = error.params.get("value").unwrap();
-				message.push_str(
-					&format!(
-						"An exact length of {} is required, {} given",
-						error.params.get("equal").unwrap(),
-						if value.is_array() {
-							value.as_array().unwrap().len()
-						} else {
-							value.as_str().unwrap().len()
-						}
-					)
-				);
+				message.push_str(&format!(
+					"An exact length of {} is required, {} given",
+					error.params.get("equal").unwrap(),
+					if value.is_array() {
+						value.as_array().unwrap().len()
+					} else {
+						value.as_str().unwrap().len()
+					}
+				));
 			} else {
 				let value = error.params.get("value").unwrap();
-				message.push_str(
-					&format!(
-						"A length between {} and {} is required, {} given",
-						error.params.get("min").unwrap(),
-						error.params.get("max").unwrap(),
-						if value.is_array() {
-							value.as_array().unwrap().len()
-						} else {
-							value.as_str().unwrap().len()
-						}
-					)
-				);
+				message.push_str(&format!(
+					"A length between {} and {} is required, {} given",
+					error.params.get("min").unwrap(),
+					error.params.get("max").unwrap(),
+					if value.is_array() {
+						value.as_array().unwrap().len()
+					} else {
+						value.as_str().unwrap().len()
+					}
+				));
 			}
 
-			format!(
-				"Validation error in field '{}': {}",
-				field,
-				message
-			)
+			format!("Validation error in field '{}': {}", field, message)
 		}
 		_ => {
 			format!("Validation error in field '{}': {:?}", field, error)

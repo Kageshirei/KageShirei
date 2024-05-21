@@ -1,0 +1,12 @@
+[package]
+name = "bofhelper"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+paste = "1.0"
+
+[dependencies.windows-sys]
+version = "0.45.0"
+features = ["Win32_Foundation", "Win32_System_Threading"]

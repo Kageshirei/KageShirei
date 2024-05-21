@@ -8,4 +8,3 @@ pub fn unwrap_infallible<T>(result: Result<T, Infallible>) -> T {
 		Err(err) => match err {},
 	}
 }
-

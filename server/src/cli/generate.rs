@@ -3,8 +3,8 @@ use clap::{Args, Subcommand};
 use crate::cli::generate::certificate::GenerateCertificateArguments;
 use crate::cli::generate::operator::GenerateOperatorArguments;
 
-pub mod operator;
 pub mod certificate;
+pub mod operator;
 
 /// Generate/make arguments
 #[derive(Args, Debug, PartialEq)]

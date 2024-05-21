@@ -1,7 +1,7 @@
 use axum::{
-	http::StatusCode,
-	Json,
-	response::{IntoResponse, Response},
+    http::StatusCode,
+    Json,
+    response::{IntoResponse, Response},
 };
 use serde_json::json;
 
@@ -29,10 +29,10 @@ macro_rules! define_error_enum {
 }
 
 define_error_enum! {
-	ApiServerError,
-	WrongCredentials = (StatusCode::UNAUTHORIZED, "Invalid credentials"),
-	MissingCredentials = (StatusCode::BAD_REQUEST, "Username or password missing"),
-	TokenCreation = (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong while creating the token"),
-	InvalidToken = (StatusCode::BAD_REQUEST, "Invalid token"),
-	InternalServerError = (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong"),
+    ApiServerError,
+    WrongCredentials = (StatusCode::UNAUTHORIZED, "Invalid credentials"),
+    MissingCredentials = (StatusCode::BAD_REQUEST, "Username or password missing"),
+    TokenCreation = (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong while creating the token"),
+    InvalidToken = (StatusCode::BAD_REQUEST, "Invalid token"),
+    InternalServerError = (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong"),
 }

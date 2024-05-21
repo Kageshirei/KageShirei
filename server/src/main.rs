@@ -6,21 +6,22 @@ use crate::cli::base::{CliArguments, Commands};
 use crate::cli::generate::GenerateSubcommands;
 use crate::config::config::RootConfig;
 
-mod cli_cmd_compile;
-mod cli;
-mod print_validation_error;
-mod async_main;
-mod config;
-mod cli_cmd_generate;
-mod database;
 mod async_ctx;
+mod async_main;
+mod cli;
+mod cli_cmd_compile;
+mod cli_cmd_generate;
+mod config;
+mod database;
+mod print_validation_error;
 mod unrecoverable_error;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()
 		.format(|out, message, record| {
 			let level_padding = if record.level().to_string().len() < 5 {
-				" ".repeat(5 - record.level().to_string().len() + 1).to_string()
+				" ".repeat(5 - record.level().to_string().len() + 1)
+				   .to_string()
 			} else {
 				" ".to_string()
 			};
@@ -33,7 +34,11 @@ fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 				.trace(fern::colors::Color::Magenta);
 
 			let additional_info = if record.level() > log::LevelFilter::Debug {
-				format!(" [{}:{}]", record.file().unwrap_or(""), record.line().unwrap_or(0))
+				format!(
+					" [{}:{}]",
+					record.file().unwrap_or(""),
+					record.line().unwrap_or(0)
+				)
 			} else {
 				"".to_string()
 			};
@@ -67,16 +72,14 @@ fn main() -> anyhow::Result<()> {
 	trace!("Parsed arguments: {:?}", args);
 
 	match args.command {
-		Commands::Compile(compile_args) => {
-			match compile_args.command {
-				cli::compile::CompileSubcommands::Agent => {
-					unimplemented!("Agent compilation not implemented yet");
-				}
-				cli::compile::CompileSubcommands::Gui => {
-					cli_cmd_compile::c2_gui::compile()?;
-				}
+		Commands::Compile(compile_args) => match compile_args.command {
+			cli::compile::CompileSubcommands::Agent => {
+				unimplemented!("Agent compilation not implemented yet");
 			}
-		}
+			cli::compile::CompileSubcommands::Gui => {
+				cli_cmd_compile::c2_gui::compile()?;
+			}
+		},
 		Commands::Generate(generate_args) => {
 			match generate_args.command {
 				GenerateSubcommands::Jwt => {
@@ -86,9 +89,10 @@ fn main() -> anyhow::Result<()> {
 					let config = RootConfig::load(&args.config)?;
 
 					// requires async context to consume the configuration
-					async_ctx::enter(
-						cli_cmd_generate::operator::generate_operator(&generate_args, config)
-					)?;
+					async_ctx::enter(cli_cmd_generate::operator::generate_operator(
+						&generate_args,
+						config,
+					))?;
 				}
 				GenerateSubcommands::Certificate(generate_args) => {
 					cli_cmd_generate::certificate::make_tls(&generate_args)?;
@@ -98,11 +102,11 @@ fn main() -> anyhow::Result<()> {
 		Commands::Run(_run_args) => {
 			let config = RootConfig::load(&args.config)?;
 
-			async_ctx::enter(
-				async_ctx::init_context(
-					args.debug, config.clone(), async_main(config.clone()),
-				)
-			)?;
+			async_ctx::enter(async_ctx::init_context(
+				args.debug,
+				config.clone(),
+				async_main(config.clone()),
+			))?;
 		}
 	}
 

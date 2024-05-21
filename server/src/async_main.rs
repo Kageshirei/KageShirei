@@ -15,11 +15,17 @@ use crate::config::log::ConsoleLogFormat;
 
 mod api_server;
 
-fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>>(debug_level: u8, format: ConsoleLogFormat) -> Box<dyn Layer<S> + Send + Sync + 'static> {
+fn build_logger<
+	S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>,
+>(
+	debug_level: u8,
+	format: ConsoleLogFormat,
+) -> Box<dyn Layer<S> + Send + Sync + 'static> {
 	match format {
 		ConsoleLogFormat::Json => tracing_subscriber::fmt::layer()
 			.json()
-			.with_span_list(true).with_level(true)
+			.with_span_list(true)
+			.with_level(true)
 			.with_line_number(debug_level >= 1)
 			.with_thread_ids(true)
 			.with_thread_names(true)
@@ -33,7 +39,8 @@ fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry
 			.boxed(),
 		ConsoleLogFormat::Pretty => tracing_subscriber::fmt::layer()
 			.with_writer(std::io::stdout)
-			.pretty().with_level(true)
+			.pretty()
+			.with_level(true)
 			.with_line_number(debug_level >= 1)
 			.with_thread_ids(true)
 			.with_thread_names(true)
@@ -46,7 +53,8 @@ fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry
 			})
 			.boxed(),
 		ConsoleLogFormat::Full => tracing_subscriber::fmt::layer()
-			.with_writer(std::io::stdout).with_level(true)
+			.with_writer(std::io::stdout)
+			.with_level(true)
 			.with_line_number(debug_level >= 1)
 			.with_thread_ids(true)
 			.with_thread_names(true)
@@ -86,9 +94,10 @@ pub fn setup_logging(config: &ReadOnlyConfig) -> anyhow::Result<()> {
 	let mut layers = Vec::new();
 
 	if config.log.console.enabled {
-		layers.push(
-			build_logger(config.debug_level.unwrap_or(0), config.log.console.format.clone())
-		)
+		layers.push(build_logger(
+			config.debug_level.unwrap_or(0),
+			config.log.console.format.clone(),
+		))
 	}
 
 	if config.log.file.enabled {
@@ -123,12 +132,11 @@ pub fn setup_logging(config: &ReadOnlyConfig) -> anyhow::Result<()> {
 					1 => LevelFilter::DEBUG,
 					_ => LevelFilter::TRACE,
 				})
-				.boxed()
+				.boxed(),
 		);
 	}
 
-	let subscriber = tracing_subscriber::registry()
-		.with(layers);
+	let subscriber = tracing_subscriber::registry().with(layers);
 
 	tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
 
@@ -144,22 +152,20 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	// run the migrations on server startup
 	crate::database::migration::run_pending(&readonly_config.database.url, false)?;
 
-	let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
+	let connection_manager =
+		AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
 	let pool = Arc::new(
 		bb8::Pool::builder()
 			.max_size(readonly_config.database.pool_size as u32)
 			.build(connection_manager)
-			.await?
+			.await?,
 	);
 
 	// create a cancellation token to be used to signal the servers to shut down
 	let cancellation_token = CancellationToken::new();
 
-	let api_server_task = api_server::start(
-		config.clone(),
-		cancellation_token.clone(),
-		pool.clone(),
-	);
+	let api_server_task =
+		api_server::start(config.clone(), cancellation_token.clone(), pool.clone());
 	let api_server_thread = tokio::spawn(async move {
 		let exit_status = api_server_task.await;
 
@@ -173,10 +179,7 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	});
 
 	// wait for all the threads to finish
-	let _ = join!(
-		cancellation_handler_thread,
-		api_server_thread
-	);
+	let _ = join!(cancellation_handler_thread, api_server_thread);
 
 	Ok(())
 }
@@ -202,12 +205,12 @@ async fn handle_shutdown_signals(cancellation_token: CancellationToken) {
 
 	select! {
         _ = ctrl_c => {
-			warn!("Received Ctrl+C, shutting down ...");
-			cancellation_token.cancel();
-		},
+            warn!("Received Ctrl+C, shutting down ...");
+            cancellation_token.cancel();
+        },
         _ = terminate => {
-			warn!("Received termination signal, shutting down ...");
-			cancellation_token.cancel();
-		},
+            warn!("Received termination signal, shutting down ...");
+            cancellation_token.cancel();
+        },
     }
 }

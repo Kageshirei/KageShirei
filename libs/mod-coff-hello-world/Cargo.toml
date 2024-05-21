@@ -1,0 +1,29 @@
+[package]
+name = "mod-coff-hello-world"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bofhelper = { path = "../bofhelper" }
+bofentry = { path = "../bofentry" }
+bofalloc = { path = "../bofalloc" }
+
+[profile.dev]
+panic = "abort"
+overflow-checks = false
+codegen-units = 1
+strip = true
+opt-level = "z"
+incremental = true
+debug-assertions = false
+lto = true
+
+[profile.release]
+panic = "abort"
+overflow-checks = false
+codegen-units = 1
+strip = true
+opt-level = "z"
+incremental = true
+debug-assertions = false
+lto = true
