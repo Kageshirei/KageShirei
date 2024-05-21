@@ -1,2 +1,3 @@
 pub mod jwt;
-pub(crate) mod operator;
+pub mod operator;
+pub mod certificate;

@@ -90,6 +90,9 @@ fn main() -> anyhow::Result<()> {
 						cli_cmd_generate::operator::generate_operator(&generate_args, config)
 					)?;
 				}
+				GenerateSubcommands::Certificate(generate_args) => {
+					cli_cmd_generate::certificate::make_tls(&generate_args)?;
+				}
 			}
 		}
 		Commands::Run(_run_args) => {
