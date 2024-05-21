@@ -31,9 +31,7 @@ struct AuthenticatePostResponse {
 async fn post_handler(
 	State(state): State<ApiServerSharedState>,
 	InferBody(payload): InferBody<AuthenticatePostPayload>,
-)
-	-> Result<Json<AuthenticatePostResponse>, ApiServerError>
-{
+) -> Result<Json<AuthenticatePostResponse>, ApiServerError> {
 	use crate::database::schema::users::dsl::*;
 
 	// Ensure the username and password are not empty
@@ -41,14 +39,19 @@ async fn post_handler(
 		return Err(ApiServerError::MissingCredentials);
 	}
 
-	let mut connection = state.db_pool.get().await.map_err(|_| ApiServerError::InternalServerError)?;
+	let mut connection = state
+		.db_pool
+		.get()
+		.await
+		.map_err(|_| ApiServerError::InternalServerError)?;
 
 	// Fetch the user from the database
-	let user = users.filter(username.eq(&payload.username))
-	                .select(User::as_select())
-	                .first(&mut connection)
-	                .await
-	                .map_err(|_| ApiServerError::WrongCredentials)?;
+	let user = users
+		.filter(username.eq(&payload.username))
+		.select(User::as_select())
+		.first(&mut connection)
+		.await
+		.map_err(|_| ApiServerError::WrongCredentials)?;
 
 	// Verify the password
 	if !rs2_crypt::argon::Argon2::verify_password(&payload.password, &user.password) {
@@ -58,7 +61,11 @@ async fn post_handler(
 	// Create the JWT token
 	let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS512);
 	let claims = JwtClaims::new(user.id.to_string());
-	let token = jsonwebtoken::encode(&header, &claims, &API_SERVER_JWT_KEYS.get().unwrap().encoding)
+	let token = jsonwebtoken::encode(
+		&header,
+		&claims,
+		&API_SERVER_JWT_KEYS.get().unwrap().encoding,
+	)
 		.map_err(|_| ApiServerError::TokenCreation)?;
 
 	Ok(Json(AuthenticatePostResponse {
@@ -121,12 +128,15 @@ mod tests {
 		let mut connection = pool.get().await.unwrap();
 		diesel::insert_into(users::table())
 			.values(CreateUser::new("test".to_string(), "test".to_string()))
-			.execute(&mut connection).await.unwrap();
+			.execute(&mut connection)
+			.await
+			.unwrap();
 	}
 
 	async fn drop_database(shared_config: SharedConfig) {
 		let readonly_config = shared_config.read().await;
-		let mut connection = PgConnection::establish(readonly_config.database.url.as_str()).unwrap();
+		let mut connection =
+			PgConnection::establish(readonly_config.database.url.as_str()).unwrap();
 
 		connection.revert_all_migrations(MIGRATIONS).unwrap();
 		connection.run_pending_migrations(MIGRATIONS).unwrap();
@@ -135,13 +145,14 @@ mod tests {
 	async fn make_pool(shared_config: SharedConfig) -> Pool {
 		let readonly_config = shared_config.read().await;
 
-		let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
+		let connection_manager =
+			AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
 		Arc::new(
 			bb8::Pool::builder()
 				.max_size(1u32)
 				.build(connection_manager)
 				.await
-				.unwrap()
+				.unwrap(),
 		)
 	}
 
@@ -168,24 +179,35 @@ mod tests {
 		let app = route(route_state.clone());
 
 		// create the request
-		let request_body = Body::from(json!({
-			"username": "test",
-			"password": "test"
-		}).to_string());
+		let request_body = Body::from(
+			json!({
+                "username": "test",
+                "password": "test"
+            })
+				.to_string(),
+		);
 		let request = Request::post("/authenticate")
 			.header("Content-Type", "application/json")
 			.body(request_body)
 			.unwrap();
 
 		// send the request
-		let response = app.with_state(route_state.clone()).oneshot(request).await.unwrap();
+		let response = app
+			.with_state(route_state.clone())
+			.oneshot(request)
+			.await
+			.unwrap();
 
 		assert_eq!(response.status(), StatusCode::OK);
 
 		// unpack the response
 		let body = serde_json::from_slice::<AuthenticatePostResponse>(
-			to_bytes(response.into_body(), usize::MAX).await.unwrap().as_ref()
-		).unwrap();
+			to_bytes(response.into_body(), usize::MAX)
+				.await
+				.unwrap()
+				.as_ref(),
+		)
+			.unwrap();
 		assert_eq!(body.access_token, "bearer");
 		println!("Token: {}", body.token);
 

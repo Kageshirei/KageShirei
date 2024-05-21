@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use axum::extract::{DefaultBodyLimit, Host, MatchedPath};
 use axum::handler::HandlerWithoutStateExt;
-use axum::http::{Request, StatusCode, Uri};
 use axum::http::header::AUTHORIZATION;
+use axum::http::{Request, StatusCode, Uri};
 use axum::response::{Redirect, Response};
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
@@ -18,22 +18,22 @@ use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
 use tower_http::trace::TraceLayer;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
-use tracing::{debug, error, info, info_span, Span, warn};
+use tracing::{debug, error, info, info_span, warn, Span};
 
 use rs2_utils::duration_extension::DurationExt;
 
-use crate::async_main::api_server::jwt_keys::{API_SERVER_JWT_KEYS, Keys};
+use crate::async_main::api_server::jwt_keys::{Keys, API_SERVER_JWT_KEYS};
 use crate::async_main::api_server::state::ApiServerSharedState;
 use crate::config::config::SharedConfig;
 use crate::database::Pool;
 use crate::unrecoverable_error::unrecoverable_error;
 
 mod claims;
+mod errors;
 mod jwt_keys;
-mod state;
 mod request_body_from_content_type;
 mod routes;
-mod errors;
+mod state;
 
 pub async fn start(
 	config: SharedConfig,
@@ -43,10 +43,11 @@ pub async fn start(
 	let readonly_config = config.read().await;
 
 	// initialize the JWT keys
-	API_SERVER_JWT_KEYS.get_or_init(|| {
-		Keys::new(readonly_config.jwt.secret.as_bytes())
-	});
-	debug!(readonly_config.jwt.secret, "JWT keys initialized successfully!");
+	API_SERVER_JWT_KEYS.get_or_init(|| Keys::new(readonly_config.jwt.secret.as_bytes()));
+	debug!(
+        readonly_config.jwt.secret,
+        "JWT keys initialized successfully!"
+    );
 
 	// create a shared state for the server
 	let shared_state: ApiServerSharedState = Arc::new(state::ApiServerState {
@@ -66,20 +67,21 @@ pub async fn start(
 					let matched_path = if let Some(path) = request
 						.extensions()
 						.get::<MatchedPath>()
-						.map(MatchedPath::as_str) {
+						.map(MatchedPath::as_str)
+					{
 						path
 					} else {
 						"None"
 					};
 
 					info_span!(
-						"http_request",
-						method = %request.method(),
-						path = %request.uri().path(),
-						matched_path,
-						latency = tracing::field::Empty,
-						status = tracing::field::Empty,
-					)
+                        "http_request",
+                        method = %request.method(),
+                        path = %request.uri().path(),
+                        matched_path,
+                        latency = tracing::field::Empty,
+                        status = tracing::field::Empty,
+                    )
 				})
 				.on_request(|_request: &Request<_>, _span: &Span| {
 					info!("Started processing request")
@@ -87,8 +89,18 @@ pub async fn start(
 				.on_response(|response: &Response<_>, latency: Duration, span: &Span| {
 					let status = response.status();
 
-					span.record("latency", humantime::format_duration(latency.round()).to_string());
-					span.record("status", format!("{} {}", status.as_str(), status.canonical_reason().unwrap_or("")));
+					span.record(
+						"latency",
+						humantime::format_duration(latency.round()).to_string(),
+					);
+					span.record(
+						"status",
+						format!(
+							"{} {}",
+							status.as_str(),
+							status.canonical_reason().unwrap_or("")
+						),
+					);
 
 					info!("Request processed")
 				}),
@@ -100,9 +112,7 @@ pub async fn start(
 			NormalizePathLayer::trim_trailing_slash(),
 			// limit request body size to 50mb
 			DefaultBodyLimit::disable(),
-			RequestBodyLimitLayer::new(
-				0x3200000, /* 50mb = (50 * 1024 * 1024) */
-			),
+			RequestBodyLimitLayer::new(0x3200000 /* 50mb = (50 * 1024 * 1024) */),
 			// validate request headers for content type accepting only json and form data (subtypes are allowed)
 			ValidateRequestHeaderLayer::accept("application/json"),
 			ValidateRequestHeaderLayer::accept("multipart/form-data"),
@@ -121,22 +131,18 @@ pub async fn start(
 			cancellation_token.clone(),
 		));
 
-		let rustls_config = RustlsConfig::from_pem_file(
-			tls_config.cert,
-			tls_config.key,
-		).await?;
+		let rustls_config = RustlsConfig::from_pem_file(tls_config.cert, tls_config.key).await?;
 
-		let listener = tokio::net::TcpListener::bind(
-			format!(
-				"{}:{}",
-				if let Some(tls_host) = tls_config.host {
-					tls_host
-				} else {
-					readonly_config.api_server.host.clone()
-				},
-				tls_config.port
-			)
-		).await;
+		let listener = tokio::net::TcpListener::bind(format!(
+			"{}:{}",
+			if let Some(tls_host) = tls_config.host {
+				tls_host
+			} else {
+				readonly_config.api_server.host.clone()
+			},
+			tls_config.port
+		))
+			.await;
 
 		let listener = unwrap_listener_or_fail(
 			readonly_config.api_server.host.clone(),
@@ -147,17 +153,19 @@ pub async fn start(
 		info!(address = %listener.local_addr().unwrap(), "HTTPS api server listening");
 
 		select! {
-			_ = axum_server::from_tcp_rustls(listener.into_std()?, rustls_config).serve(app.into_make_service()) => {},
-			_ = handle_graceful_shutdown("HTTPS", cancellation_token) => {},
-		}
+            _ = axum_server::from_tcp_rustls(listener.into_std()?, rustls_config).serve(app.into_make_service()) => {},
+            _ = handle_graceful_shutdown("HTTPS", cancellation_token) => {},
+        }
 
 		return Ok(());
 	}
 
 	// start listening on the provided address
-	let listener = tokio::net::TcpListener::bind(
-		format!("{}:{}", readonly_config.api_server.host, readonly_config.api_server.port)
-	).await;
+	let listener = tokio::net::TcpListener::bind(format!(
+		"{}:{}",
+		readonly_config.api_server.host, readonly_config.api_server.port
+	))
+		.await;
 
 	let listener = unwrap_listener_or_fail(
 		readonly_config.api_server.host.clone(),
@@ -176,7 +184,11 @@ pub async fn start(
 }
 
 /// Unwraps the listener or fails with an unrecoverable error
-fn unwrap_listener_or_fail(host: String, port: u16, listener: std::io::Result<tokio::net::TcpListener>) -> tokio::net::TcpListener {
+fn unwrap_listener_or_fail(
+	host: String,
+	port: u16,
+	listener: std::io::Result<tokio::net::TcpListener>,
+) -> tokio::net::TcpListener {
 	if listener.is_err() {
 		error!("Cannot bind to {} at port {}", host, port);
 		unrecoverable_error().unwrap();
@@ -192,7 +204,12 @@ async fn handle_graceful_shutdown(context: &str, cancellation_token: Cancellatio
 }
 
 /// Redirects all http requests to https
-async fn redirect_http_to_https(host: String, http_port: u16, https_port: u16, cancellation_token: CancellationToken) -> anyhow::Result<()> {
+async fn redirect_http_to_https(
+	host: String,
+	http_port: u16,
+	https_port: u16,
+	cancellation_token: CancellationToken,
+) -> anyhow::Result<()> {
 	let redirect = move |Host(host): Host, uri: Uri| async move {
 		match make_https(host, uri.clone(), http_port, https_port) {
 			Ok(uri) => Ok(Redirect::permanent(&uri.to_string())),
@@ -204,15 +221,9 @@ async fn redirect_http_to_https(host: String, http_port: u16, https_port: u16, c
 	};
 
 	// start listening on the provided address
-	let listener = tokio::net::TcpListener::bind(
-		format!("{}:{}", host, http_port)
-	).await;
+	let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, http_port)).await;
 
-	let listener = unwrap_listener_or_fail(
-		host.clone(),
-		http_port,
-		listener,
-	);
+	let listener = unwrap_listener_or_fail(host.clone(), http_port, listener);
 
 	info!(address = %listener.local_addr().unwrap(), "HTTP api server listening");
 

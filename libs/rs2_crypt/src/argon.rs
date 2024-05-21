@@ -1,5 +1,5 @@
-use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::SaltString;
+use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use rand::thread_rng;
 
 pub struct Argon2;
@@ -17,8 +17,10 @@ impl Argon2 {
 		let config = argon2::Argon2::default();
 
 		// Hash password to PHC string ($argon2id$v=19$...)
-		let hash = config.hash_password(password.as_bytes(), &salt)
-		                 .map_err(|e| anyhow::anyhow!("{:?}", e))?.to_string();
+		let hash = config
+			.hash_password(password.as_bytes(), &salt)
+			.map_err(|e| anyhow::anyhow!("{:?}", e))?
+			.to_string();
 		Ok(hash)
 	}
 
@@ -26,11 +28,17 @@ impl Argon2 {
 	pub fn verify_password(password: &str, hash: &str) -> bool {
 		let parsed_hash = PasswordHash::new(hash).unwrap();
 
-		argon2::Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok()
+		argon2::Argon2::default()
+			.verify_password(password.as_bytes(), &parsed_hash)
+			.is_ok()
 	}
 
 	/// Derive a key from a password
-	pub fn derive_key(password: &str, salt: Option<Vec<u8>>, output_length: u32) -> anyhow::Result<Vec<u8>> {
+	pub fn derive_key(
+		password: &str,
+		salt: Option<Vec<u8>>,
+		output_length: u32,
+	) -> anyhow::Result<Vec<u8>> {
 		// initialize the salt if not provided
 		let salt = salt.unwrap_or_else(|| {
 			let rng = thread_rng();
@@ -38,11 +46,9 @@ impl Argon2 {
 		});
 
 		let mut result = vec![0u8; output_length as usize];
-		argon2::Argon2::default().hash_password_into(
-			password.as_bytes(),
-			&salt,
-			&mut result,
-		).map_err(|e| anyhow::anyhow!("{:?}", e))?;
+		argon2::Argon2::default()
+			.hash_password_into(password.as_bytes(), &salt, &mut result)
+			.map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
 		Ok(result)
 	}

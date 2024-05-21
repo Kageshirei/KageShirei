@@ -11,3 +11,4 @@ debug-assertions = false
 lto = true
 
 [dependencies]
+coffee-ldr = { path = "../libs/coffee" }

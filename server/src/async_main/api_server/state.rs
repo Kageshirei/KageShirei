@@ -11,5 +11,5 @@ pub struct ApiServerState {
 	/// The shared configuration
 	pub config: SharedConfig,
 	/// The database connection pool
-	pub db_pool: Pool
+	pub db_pool: Pool,
 }

@@ -20,7 +20,7 @@ const REQUIRED_PACKAGES: [&str; 15] = [
 	"llvm",
 	"clang",
 	"strace",
-	"bash"
+	"bash",
 ];
 
 /// Checks if the current user is root
@@ -37,17 +37,13 @@ fn check_root() -> anyhow::Result<()> {
 fn install_packages() -> anyhow::Result<()> {
 	info!("Installing packages ...");
 	let mut command = Command::new("apt");
-	command.arg("install")
-	       .arg("-y");
+	command.arg("install").arg("-y");
 
 	for package in REQUIRED_PACKAGES.iter() {
 		command.arg(package);
 	}
 
-	let status = command
-		.status()
-		.expect("Failed to install packages");
-
+	let status = command.status().expect("Failed to install packages");
 
 	if !status.success() {
 		error!("Failed to install one or more packages. Exiting.",);
@@ -132,7 +128,10 @@ fn source_rust_environment() -> anyhow::Result<()> {
 		.success()
 	{
 		let cargo_bin_path = format!("{}/.cargo/bin", env::var("HOME").unwrap());
-		env::set_var("PATH", format!("{}:{}", cargo_bin_path, env::var("PATH").unwrap()));
+		env::set_var(
+			"PATH",
+			format!("{}:{}", cargo_bin_path, env::var("PATH").unwrap()),
+		);
 	} else {
 		error!("Failed to source Rust environment. Exiting.");
 		return Err(anyhow::anyhow!("Failed to source Rust environment"));
@@ -222,7 +221,9 @@ fn install_nvm() -> anyhow::Result<()> {
 
 		if !status.success() {
 			error!("Failed to install the latest LTS Node.js version. Exiting.");
-			return Err(anyhow::anyhow!("Failed to install the latest LTS Node.js version"));
+			return Err(anyhow::anyhow!(
+                "Failed to install the latest LTS Node.js version"
+            ));
 		}
 	}
 
@@ -285,7 +286,10 @@ fn build_command_and_control() -> anyhow::Result<()> {
 	let home = env::var("HOME").unwrap();
 	let status = Command::new("sh")
 		.arg("-c")
-		.arg(format!(". {}/.bashrc && pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc", home))
+		.arg(format!(
+			". {}/.bashrc && pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
+			home
+		))
 		.status();
 
 	if status.is_err() || status.is_ok_and(|s| !s.success()) {
@@ -293,14 +297,18 @@ fn build_command_and_control() -> anyhow::Result<()> {
 	}
 
 	info!("Client application built successfully.");
-	info!(r"Find the compiled clients at:
+	info!(
+        r"Find the compiled clients at:
 {}
     - target/release/rs2-command-and-control
     - target/release/bundle/deb/rs2-command-and-control_<version>_<arch>.deb
     - target/release/bundle/appimage/rs2-command-and-control_<version>_<arch>.AppImage
 {}
     - target/x86_64-pc-windows-msvc/release/rs2-command-and-control.exe
-", "Linux".bold(), "Windows".bold());
+",
+        "Linux".bold(),
+        "Windows".bold()
+    );
 
 	Ok(())
 }

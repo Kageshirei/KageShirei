@@ -9,7 +9,9 @@ static NOT_BEFORE: Lazy<String> = Lazy::new(|| -> String {
 	duration
 });
 static NOT_AFTER: Lazy<String> = Lazy::new(|| -> String {
-	let duration = (chrono::Utc::now() + chrono::Duration::days(365)).format("%Y-%m-%d").to_string();
+	let duration = (chrono::Utc::now() + chrono::Duration::days(365))
+		.format("%Y-%m-%d")
+		.to_string();
 	duration
 });
 
