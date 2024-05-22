@@ -56,10 +56,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 1080,
         "resizable": true,
         "title": "RS2 Command & Control",
-        "width": 800
+        "width": 1920
       }
     ]
   }
