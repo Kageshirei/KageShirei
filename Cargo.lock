@@ -3564,7 +3564,6 @@ dependencies = [
 name = "rs2-agent"
 version = "0.1.0"
 dependencies = [
-    "libc",
     "wain-ast",
     "wain-exec",
     "wain-syntax-binary",
