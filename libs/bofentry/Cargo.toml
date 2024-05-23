@@ -6,8 +6,8 @@ edition.workspace = true
 
 [dependencies]
 bofhelper = { path = "../bofhelper" }
-bofalloc = { path = "../bofalloc", optional = true }
+#bofalloc = { path = "../bofalloc", optional = true }
 bofentry_macro = { path = "../bofentry_macro" }
 
 [features]
-alloc = ["bofalloc"]
+#alloc = ["bofalloc"]

@@ -1,0 +1,133 @@
+[config]
+skip_core_tasks = true
+default_to_workspace = false
+
+[env]
+# Force the child makefiles to extend this workspace (root) makefile
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+# Use a glob pattern to include all the child makefiles for the coff modules
+COFF_MODULES_MAKEFILE = { glob = "libs/mod-coff-*/Makefile.toml", include_files = true }
+
+[env.development]
+# Define the default target to build
+BUILD_MODE = "--locked"
+
+[env.release]
+# Define the default target to build
+BUILD_MODE = "--release --locked"
+
+# Define the default task to run
+[tasks.default]
+description = "Build all the targets in parallel"
+alias = "all"
+
+# Run all tasks in parallel
+[tasks.all]
+description = "Build all the targets in parallel"
+dependencies = [
+    "setup-env",
+]
+run_task = { parallel = true, name = [
+    "build-agent",
+    "build-coffee-ldr",
+    "build-server",
+    "build-mod-coff"
+] }
+
+# Define the tasks responsible for setting up the environment for the build
+[tasks.setup-env.linux]
+description = "Setup the environment for the build"
+install_script = '''
+    rustup target add x86_64-unknown-linux-gnu --force-non-host
+    rustup target add x86_64-pc-windows-gnu --force-non-host
+    rustup target add i686-pc-windows-gnu --force-non-host
+    rustup toolchain add nightly-i686-pc-windows-gnu
+    rustup toolchain add nightly-x86_64-pc-windows-gnu
+    rustup toolchain add nightly-x86_64-unknown-linux-gnu
+'''
+
+# Define the tasks responsible for setting up the environment for the build
+[tasks.setup-env.windows]
+description = "Setup the environment for the build"
+install_script = '''
+    rustup target add x86_64-unknown-linux-gnu --force-non-host
+    rustup target add x86_64-pc-windows-msvc --force-non-host
+    rustup target add i686-pc-windows-msvc --force-non-host
+    rustup toolchain add nightly-i686-pc-windows-msvc
+    rustup toolchain add nightly-x86_64-pc-windows-msvc
+    rustup toolchain add nightly-x86_64-unknown-linux-gnu
+'''
+
+# Define the tasks responsible for building the agent (linux and windows)
+[tasks.build-agent.linux]
+clear = true
+description = "Build the agent from linux (x86 and x64)"
+script_runner = "@shell"
+script = '''
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin rs2-agent"
+cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin rs2-agent
+echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin rs2-agent"
+cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin rs2-agent
+'''
+
+[tasks.build-agent.windows]
+clear = true
+description = "Build the agent from windows (x86 and x64)"
+script_runner = "@shell"
+script = '''
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin rs2-agent"
+cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin rs2-agent
+echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin rs2-agent"
+cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin rs2-agent
+'''
+
+# Define the tasks responsible for buildind coffee-ldr (linux and windows)
+[tasks.build-coffee-ldr.linux]
+clear = true
+description = "Build the coffee-ldr from linux (x86 and x64)"
+script_runner = "@shell"
+script = '''
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin coffee-ldr"
+cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin coffee-ldr
+echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin coffee-ldr"
+cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin coffee-ldr
+'''
+
+[tasks.build-coffee-ldr.windows]
+clear = true
+description = "Build the coffee-ldr from windows (x86 and x64)"
+script_runner = "@shell"
+script = '''
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin coffee-ldr"
+cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin coffee-ldr
+echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin coffee-ldr"
+cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin coffee-ldr
+'''
+
+# Define the tasks responsible for building the server (linux and windows)
+[tasks.build-server.linux]
+clear = true
+description = "Build the server from linux, for linux"
+script_runner = "@shell"
+script = '''
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server"
+cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server
+'''
+
+[tasks.build-server.windows]
+clear = true
+description = "Build the server from windows, for linux"
+script_runner = "@shell"
+script = '''
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server"
+cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server
+'''
+
+# Define the tasks responsible for building coff modules (linux and windows)
+[tasks.build-mod-coff.linux]
+clear = true
+description = "Build the coff modules from linux"
+
+[tasks.build-mod-coff.windows]
+clear = true
+description = "Build the coff modules from windows"

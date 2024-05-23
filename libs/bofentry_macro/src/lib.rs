@@ -46,8 +46,8 @@ pub fn bof(args: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             // Initialize the allocator if the "alloc" feature is enabled.
-            #[cfg(feature = "alloc")]
-            bofalloc::ALLOCATOR.initialize();
+            // #[cfg(feature = "alloc")]
+            // bofalloc::ALLOCATOR.initialize();
 
             // Inject the original function's attributes, visibility, signature, and statements.
             #(#attrs)* #vis #sig {
@@ -58,8 +58,8 @@ pub fn bof(args: TokenStream, input: TokenStream) -> TokenStream {
             #fn_ident(data);
 
             // Destroy the allocator if the "alloc" feature is enabled.
-            #[cfg(feature = "alloc")]
-            bofalloc::ALLOCATOR.destroy();
+            // #[cfg(feature = "alloc")]
+            // bofalloc::ALLOCATOR.destroy();
         }
     }.into() // Convert the generated code back into a TokenStream.
 }
