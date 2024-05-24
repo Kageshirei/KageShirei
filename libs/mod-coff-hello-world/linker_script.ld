@@ -9,8 +9,7 @@ SECTIONS
 {
   .text  :
   {
-    __text_start__ = .;
-*(.text)
+    *(.text)
   }
   /* The Cygwin32 library uses a section to avoid copying certain data
      on fork.  This used to be named ".data".  The linker used
@@ -19,15 +18,12 @@ SECTIONS
      ".data_cygwin_nocopy" and explicitly include it after __data_end__. */
   .data  :
   {
-    __data_start__ = .;
-*(.data)
+    *(.data)
     KEEP(*(.jcr))
   }
   .rdata  :
   {
-    __rdata_start__ = .;
-*(.rdata)
-*(.rdata$.refptr.*)
+    *(.rdata)
     . = ALIGN(4);
   }
   .eh_frame  :

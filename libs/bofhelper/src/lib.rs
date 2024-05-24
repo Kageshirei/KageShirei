@@ -1,6 +1,4 @@
-#![no_std]
-
-use core::ops::Deref;
+use std::ops::Deref;
 
 pub use paste::paste;
 use windows_sys::Win32::{

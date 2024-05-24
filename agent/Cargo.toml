@@ -14,18 +14,8 @@ panic = "abort"
 incremental = false
 
 [dependencies]
-#libc = { version = "0.2.155", default-features = false, features = [] }
-wee_alloc = "0.4.5"
-wasmer = { version = "4.2.8", default-features = false, features = ["engine"], optional = true }
-wasmtime = { version = "21.0.1", default-features = false, features = ["runtime"], optional = true }
-wasmi = { version = "0.31.2", optional = true }
-wain-syntax-binary = { version = "0.1.5", optional = true }
-wain-exec = { version = "0.3.1", optional = true }
-wain-ast = { version = "0.2.2", optional = true }
+wasmtime = { version = "21.0.1", default-features = false, features = ["runtime"] }
+coffee-ldr = { path = "../libs/coffee" }
 
 [features]
 default = []
-wasmer = ["dep:wasmer"]
-wasmtime = ["dep:wasmtime"]
-wasmi = ["dep:wasmi"]
-wain = ["dep:wain-syntax-binary", "dep:wain-exec", "dep:wain-ast"]
