@@ -37,13 +37,13 @@ pub fn bof(args: TokenStream, input: TokenStream) -> TokenStream {
 
             // Perform BOF relocation bootstrap.
             // If it fails, print an error message and return.
-            if bofhelper::bootstrap(data.get_data()).is_none() {
+            /*if bofhelper::bootstrap(data.get_data()).is_none() {
                 bofhelper::BeaconPrintf(
                     bofhelper::CALLBACK_ERROR,
                     "BOF relocation bootstrap failed\0".as_ptr(),
                 );
                 return;
-            }
+            }*/
 
             // Initialize the allocator if the "alloc" feature is enabled.
             // #[cfg(feature = "alloc")]
@@ -55,7 +55,7 @@ pub fn bof(args: TokenStream, input: TokenStream) -> TokenStream {
             }
 
             // Call the original function with the parsed BOF data.
-            #fn_ident(data);
+            #fn_ident(&mut data);
 
             // Destroy the allocator if the "alloc" feature is enabled.
             // #[cfg(feature = "alloc")]

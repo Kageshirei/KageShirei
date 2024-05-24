@@ -2,6 +2,12 @@
 skip_core_tasks = true
 default_to_workspace = false
 
+[env]
+TARGET = "x86_64-pc-windows-gnu"
+
+[env.linux]
+TARGET = "x86_64-unknown-linux-gnu"
+
 [tasks.default]
 clear = true
 alias = "strip"
@@ -10,10 +16,10 @@ alias = "strip"
 clear = true
 script_runner = "@shell"
 script = '''
-echo "$ cargo build --release --bin rs2-agent --target x86_64-pc-windows-gnu"
-cargo build --release --bin rs2-agent --target x86_64-pc-windows-gnu
+echo "$ cargo build --release --bin rs2-agent --target ${TARGET}"
+cargo build --release --bin rs2-agent --target ${TARGET}
 '''
-env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=-nostartfiles -C link-arg=-Wl,--nostdlib -C link-arg=-Wl,--entry,_start -C link-arg=-Wl,--gc-sections -C link-arg=-Wl,--strip-all" }
+env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=-Wl,--nostdlib -C link-arg=-Wl,--gc-sections -C link-arg=-Wl,--strip-all" }
 
 [tasks.build.windows]
 clear = true
