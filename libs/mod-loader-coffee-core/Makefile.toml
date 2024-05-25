@@ -51,7 +51,10 @@ env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=/SUBSYSTEM:console -C link-arg
 [tasks.strip.linux]
 clear = true
 script_runner = "@shell"
-script = "strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/mod_coffee_core.dll"
+script = '''
+strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/i686-pc-windows-gnu/release/mod_coffee_core.dll
+strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/mod_coffee_core.dll
+'''
 dependencies = ["build"]
 
 [tasks.strip.windows]
