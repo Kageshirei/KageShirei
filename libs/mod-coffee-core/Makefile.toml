@@ -2,9 +2,6 @@
 skip_core_tasks = true
 default_to_workspace = false
 
-[env]
-TARGET = "x86_64-pc-windows-gnu"
-
 [tasks.default]
 clear = true
 alias = "strip"
@@ -54,9 +51,10 @@ env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=/SUBSYSTEM:console -C link-arg
 [tasks.strip.linux]
 clear = true
 script_runner = "@shell"
-script = "strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/rs2-agent.exe"
+script = "strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/mod_coffee_core.dll"
 dependencies = ["build"]
 
 [tasks.strip.windows]
 clear = true
 run_task = "build"
+

@@ -1,9 +1,9 @@
-// mod wasmtime_imp;
-
-use coffee_ldr::loader::Coffee;
-
 fn main() {
-	// wasmtime_imp::run();
-	Coffee::new().run();
+	loop {
+		#[cfg(feature = "bof-loader")] {
+			// let buf = vec![0u8; 1024].as_slice();
+			// Coffee::new(buf).unwrap().execute()
+		}
+	}
 }
 

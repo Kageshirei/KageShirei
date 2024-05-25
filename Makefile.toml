@@ -5,8 +5,7 @@ default_to_workspace = false
 [env]
 # Force the child makefiles to extend this workspace (root) makefile
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
-# Use a glob pattern to include all the child makefiles for the coff modules
-COFF_MODULES_MAKEFILE = { glob = "libs/mod-coff-*/Makefile.toml", include_files = true }
+CARGO_MAKE_WORKSPACE_SKIP_MEMBERS = "libs/*"
 
 [env.development]
 # Define the default target to build
@@ -31,7 +30,6 @@ run_task = { parallel = true, name = [
     "build-agent",
     "build-coffee-ldr",
     "build-server",
-    "build-mod-coff"
 ] }
 
 # Define the tasks responsible for setting up the environment for the build
@@ -59,53 +57,38 @@ install_script = '''
 '''
 
 # Define the tasks responsible for building the agent (linux and windows)
-[tasks.build-agent.linux]
+[tasks.build-agent]
 clear = true
 description = "Build the agent from linux (x86 and x64)"
-script_runner = "@shell"
-script = '''
-echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin rs2-agent"
-cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin rs2-agent
-echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin rs2-agent"
-cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin rs2-agent
-'''
-
-[tasks.build-agent.windows]
-clear = true
-description = "Build the agent from windows (x86 and x64)"
-script_runner = "@shell"
-script = '''
-echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin rs2-agent"
-cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin rs2-agent
-echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin rs2-agent"
-cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin rs2-agent
-'''
+env = { CARGO_MAKE_WORKSPACE_EMULATION = true, CARGO_MAKE_CRATE_WORKSPACE_MEMBERS = "agent" }
+run_task = { name = "build-agent-task", fork = true }
 
 # Define the tasks responsible for buildind coffee-ldr (linux and windows)
 [tasks.build-coffee-ldr.linux]
 clear = true
 description = "Build the coffee-ldr from linux (x86 and x64)"
-script_runner = "@shell"
-script = '''
-echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin coffee-ldr"
-cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-gnu --bin coffee-ldr
-echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin coffee-ldr"
-cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-gnu --bin coffee-ldr
-'''
+env = { TARGET = "-pc-windows-gnu" }
+run_task = "build-coffee-common"
 
 [tasks.build-coffee-ldr.windows]
+clear = true
+description = "Build the coffee-ldr from linux (x86 and x64)"
+env = { TARGET = "-pc-windows-msvc" }
+run_task = "build-coffee-common"
+
+[tasks.build-coffee-common]
 clear = true
 description = "Build the coffee-ldr from windows (x86 and x64)"
 script_runner = "@shell"
 script = '''
-echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin coffee-ldr"
-cargo +nightly build ${BUILD_MODE} --target x86_64-pc-windows-msvc --bin coffee-ldr
-echo "\$ cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin coffee-ldr"
-cargo +nightly build ${BUILD_MODE} --target i686-pc-windows-msvc --bin coffee-ldr
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64${TARGET} --bin coffee-ldr"
+cargo +nightly build ${BUILD_MODE} --target x86_64${TARGET} --bin coffee-ldr
+echo "\$ cargo +nightly build ${BUILD_MODE} --target i686${TARGET} --bin coffee-ldr"
+cargo +nightly build ${BUILD_MODE} --target i686${TARGET} --bin coffee-ldr
 '''
 
 # Define the tasks responsible for building the server (linux and windows)
-[tasks.build-server.linux]
+[tasks.build-server]
 clear = true
 description = "Build the server from linux, for linux"
 script_runner = "@shell"
@@ -113,21 +96,3 @@ script = '''
 echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server"
 cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server
 '''
-
-[tasks.build-server.windows]
-clear = true
-description = "Build the server from windows, for linux"
-script_runner = "@shell"
-script = '''
-echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server"
-cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server
-'''
-
-# Define the tasks responsible for building coff modules (linux and windows)
-[tasks.build-mod-coff.linux]
-clear = true
-description = "Build the coff modules from linux"
-
-[tasks.build-mod-coff.windows]
-clear = true
-description = "Build the coff modules from windows"

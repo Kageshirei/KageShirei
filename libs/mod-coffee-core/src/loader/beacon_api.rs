@@ -2,27 +2,30 @@
 // for most of the functions and the idea of how to implement them.
 use core::slice;
 use std::{
-    alloc::Layout,
-    ffi::{c_char, c_int, c_short, CStr},
-    intrinsics, ptr,
+	alloc::Layout,
+	ffi::{c_char, c_int, c_short, CStr},
+	intrinsics, ptr,
 };
 
+#[cfg(feature = "tracing")]
 use tracing::warn;
 use windows::Win32::{
-    Foundation::{BOOL, CloseHandle, FALSE, HANDLE, TRUE},
-    Security::{GetTokenInformation, RevertToSelf, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation},
-    System::{
-        Diagnostics::Debug::WriteProcessMemory,
-        Memory::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, VirtualAllocEx},
-        Threading::{
-            CreateRemoteThread, GetCurrentProcess, OpenProcess, OpenProcessToken, PROCESS_INFORMATION,
-            PROCESS_VM_OPERATION, PROCESS_VM_WRITE, SetThreadToken, STARTUPINFOA,
-        },
-    },
+	Foundation::{BOOL, CloseHandle, FALSE, HANDLE, TRUE},
+	Security::{GetTokenInformation, RevertToSelf, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation},
+	System::{
+		Diagnostics::Debug::WriteProcessMemory,
+		Memory::{MEM_COMMIT, MEM_RESERVE, PAGE_EXECUTE_READWRITE, VirtualAllocEx},
+		Threading::{
+			CreateRemoteThread, GetCurrentProcess, OpenProcess, OpenProcessToken, PROCESS_INFORMATION,
+			PROCESS_VM_OPERATION, PROCESS_VM_WRITE, SetThreadToken, STARTUPINFOA,
+		},
+	},
 };
-use windows_sys::Win32::System::LibraryLoader::{
-    FreeLibrary, GetModuleHandleA, GetProcAddress, LoadLibraryA,
-};
+use windows_sys::Win32::Foundation::FreeLibrary;
+use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress, LoadLibraryA};
+
+#[cfg(not(feature = "tracing"))]
+use crate::warn;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -568,13 +571,18 @@ unsafe extern "C" fn beacon_printf(_type: c_int, fmt: *mut c_char, mut args: ...
 /// Apply the specified token as Beacon's current thread token. This will report the new token to the user too. Returns TRUE if successful. FALSE is not.
 #[no_mangle]
 extern "C" fn beacon_use_token(token: HANDLE) -> BOOL {
-	unsafe { SetThreadToken(Some(std::ptr::null()), token) }
+	unsafe {
+		if SetThreadToken(Some(ptr::null()), token).is_err() {
+			return FALSE;
+		}
+		return TRUE;
+	}
 }
 
 /// Drop the current thread token. Use this over direct calls to RevertToSelf. This function cleans up other state information about the token.
 #[no_mangle]
 extern "C" fn beacon_revert_token() {
-	if !unsafe { RevertToSelf() }.as_bool() {
+	if !unsafe { RevertToSelf() }.is_ok() {
 		warn!("RevertToSelf Failed!");
 	}
 
@@ -588,7 +596,7 @@ extern "C" fn beacon_is_admin() -> BOOL {
 	let mut token_elevated: TOKEN_ELEVATION = TOKEN_ELEVATION { TokenIsElevated: 0 };
 
 	unsafe {
-		if !OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token).as_bool() {
+		if !OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token).is_ok() {
 			return FALSE;
 		}
 	}
@@ -599,10 +607,8 @@ extern "C" fn beacon_is_admin() -> BOOL {
 			TokenElevation,
 			Some(&mut token_elevated as *const _ as *mut _),
 			std::mem::size_of::<TOKEN_ELEVATION>() as u32,
-			std::ptr::null_mut(),
-		)
-			.as_bool()
-		{
+			ptr::null_mut(),
+		).is_ok() {
 			return FALSE;
 		}
 	}
@@ -660,8 +666,7 @@ extern "C" fn beacon_inject_process(
 			payload_slice.as_ptr() as *const _,
 			payload_slice.len(),
 			None,
-		)
-			.as_bool()
+		).is_ok()
 		{
 			CloseHandle(process_handle);
 			return;
@@ -675,8 +680,7 @@ extern "C" fn beacon_inject_process(
 			None,
 			0,
 			None,
-		)
-			.unwrap();
+		).unwrap();
 
 		CloseHandle(process_handle);
 		CloseHandle(thread);
