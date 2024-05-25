@@ -1,33 +1,40 @@
 use std::{ffi::c_void, intrinsics, ops::Add};
+use std::error::Error;
 
-use color_eyre::{eyre, Result};
 use goblin::pe::{
-    Coff,
-    header::{COFF_MACHINE_X86, COFF_MACHINE_X86_64},
-    relocation::{
-        IMAGE_REL_AMD64_ADDR32, IMAGE_REL_AMD64_ADDR32NB, IMAGE_REL_AMD64_ADDR64,
-        IMAGE_REL_AMD64_REL32, IMAGE_REL_I386_DIR32, IMAGE_REL_I386_REL32,
-    },
-    symbol::Symbol,
+	Coff,
+	header::{COFF_MACHINE_X86, COFF_MACHINE_X86_64},
+	relocation::{
+		IMAGE_REL_AMD64_ADDR32, IMAGE_REL_AMD64_ADDR32NB, IMAGE_REL_AMD64_ADDR64,
+		IMAGE_REL_AMD64_REL32, IMAGE_REL_I386_DIR32, IMAGE_REL_I386_REL32,
+	},
+	symbol::Symbol,
 };
+#[cfg(feature = "tracing")]
 use tracing::{debug, info, warn};
 use widestring::WideCString;
 use windows::{
-    core::{PCSTR, PCWSTR},
-    Win32::System::{
-        LibraryLoader::{GetProcAddress, LoadLibraryW},
-        Memory::{
-            MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READWRITE, VIRTUAL_ALLOCATION_TYPE,
-            VirtualAlloc, VirtualFree,
-        },
-        SystemServices::MEM_TOP_DOWN,
-    },
+	core::{PCSTR, PCWSTR},
+	Win32::System::{
+		LibraryLoader::{GetProcAddress, LoadLibraryW},
+		Memory::{
+			MEM_COMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_EXECUTE_READWRITE, VIRTUAL_ALLOCATION_TYPE,
+			VirtualAlloc, VirtualFree,
+		},
+		SystemServices::MEM_TOP_DOWN,
+	},
 };
 
 use self::beacon_api::{beacon_get_output_data, get_function_ptr, INTERNAL_FUNCTION_NAMES};
 
 pub mod beacon_api;
 pub mod beacon_pack;
+
+#[cfg(not(feature = "tracing"))]
+#[macro_use]
+mod no_tracing;
+
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
 struct MappedFunction {
@@ -154,7 +161,7 @@ impl<'a> Coffee<'a> {
 		match self.coff.header.machine {
 			COFF_MACHINE_X86 => Ok("__imp__"),
 			COFF_MACHINE_X86_64 => Ok("__imp_"),
-			_ => Err(eyre::eyre!("Unsupported architecture")),
+			_ => Err("Unsupported architecture".into()),
 		}
 	}
 
@@ -163,7 +170,7 @@ impl<'a> Coffee<'a> {
 		match self.coff.header.machine {
 			COFF_MACHINE_X86 => Ok(true),
 			COFF_MACHINE_X86_64 => Ok(false),
-			_ => Err(eyre::eyre!("Unsupported architecture")),
+			_ => Err("Unsupported architecture".into()),
 		}
 	}
 
@@ -172,7 +179,7 @@ impl<'a> Coffee<'a> {
 		match self.coff.header.machine {
 			COFF_MACHINE_X86 => Ok(false),
 			COFF_MACHINE_X86_64 => Ok(true),
-			_ => Err(eyre::eyre!("Unsupported architecture")),
+			_ => Err("Unsupported architecture".into()),
 		}
 	}
 

@@ -14,8 +14,8 @@ panic = "abort"
 incremental = false
 
 [dependencies]
-wasmtime = { version = "21.0.1", default-features = false, features = ["runtime"] }
-coffee-ldr = { path = "../libs/coffee" }
+mod-coffee-core = { path = "../libs/mod-coffee-core", optional = true }
 
 [features]
-default = []
+default = ["bof-loader"]
+bof-loader = ["dep:mod-coffee-core"]

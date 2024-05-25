@@ -1,0 +1,47 @@
+[package]
+name = "mod-coffee-core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = "z"
+codegen-units = 1
+lto = true
+strip = true
+debug = false
+debug-assertions = false
+panic = "abort"
+incremental = false
+
+[dependencies]
+# For parsing COFF files. object can be used too.
+goblin = { version = "0.7.1", features = ["alloc"] }
+# For wide string support.
+widestring = "1.0.2"
+# Pure type definitions for Windows APIs.
+windows = { version = "0.56.0", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Memory",
+    "Win32_System_LibraryLoader",
+    "Win32_System_SystemServices",
+    "Win32_System_Threading",
+    "Win32_System_Diagnostics_Debug"
+] }
+windows-sys = { version = "0.52.0", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+] }
+# For printf formatting.
+printf-compat = "0.1.1"
+# For endianess conversion.
+byteorder = "1.4.3"
+# For logging.
+tracing = { version = "0.1.37", optional = true }
+
+[features]
+default = []
+tracing = ["dep:tracing"]

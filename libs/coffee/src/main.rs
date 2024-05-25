@@ -8,9 +8,7 @@ use color_eyre::Result;
 use tracing::{debug, info};
 use tracing_subscriber::filter::LevelFilter;
 
-use loader::{beacon_pack::BeaconPack, Coffee};
-
-mod loader;
+use mod_coffee_core::loader::{beacon_pack::BeaconPack, Coffee};
 
 #[derive(Parser, Debug)]
 #[command(name = "Coffee")]
