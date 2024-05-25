@@ -3203,6 +3203,10 @@ dependencies = [
 [[package]]
 name = "rs2-indirect-syscall"
 version = "0.1.0"
+dependencies = [
+    "lazy_static",
+    "windows 0.56.0",
+]
 
 [[package]]
 name = "rs2-server"
