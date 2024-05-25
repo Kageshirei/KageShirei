@@ -14,7 +14,7 @@ panic = "abort"
 incremental = false
 
 [dependencies]
-mod-coffee-core = { path = "../libs/mod-coffee-core", optional = true }
+mod-coffee-core = { path = "../libs/mod-loader-coffee-core", optional = true }
 
 [features]
 default = ["bof-loader"]
