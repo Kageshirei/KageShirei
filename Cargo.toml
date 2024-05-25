@@ -3,10 +3,10 @@ members = [
     "agent",
     "server",
     "command-and-control-gui/src-tauri",
-    "libs/rs2_utils",
-    "libs/rs2_crypt",
+    "libs/rs2-utils",
+    "libs/rs2-crypt",
     "libs/coffee",
-    "libs/mod-loader-coffee-core",
+    "modules/mod-loader-coffee-core", "modules/mod-protocol-json", "libs/rs2-indirect-syscall",
 ]
 resolver = "2"
 package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }
