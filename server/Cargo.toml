@@ -51,8 +51,8 @@ humantime = "2.1.0"
 colored = "2.1.0"
 regex = "1.10.4"
 chrono = { version = "0.4.38" }
-rs2_utils = { path = "../libs/rs2_utils" }
-rs2_crypt = { path = "../libs/rs2_crypt", features = ["argon2"] }
+rs2_utils = { path = "../libs/rs2-utils" }
+rs2_crypt = { path = "../libs/rs2-crypt", features = ["argon2"] }
 uuid = { version = "1.8.0", features = ["v4"] }
 
 [features]

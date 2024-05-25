@@ -1,5 +1,5 @@
-use argon2::password_hash::SaltString;
 use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
+use argon2::password_hash::SaltString;
 use rand::thread_rng;
 
 pub struct Argon2;
