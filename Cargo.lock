@@ -2412,12 +2412,14 @@ dependencies = [
 name = "mod-protocol-json"
 version = "0.1.0"
 dependencies = [
+    "axum",
     "bytes",
     "reqwest",
     "rs2-communication-protocol",
  "serde",
  "serde_json",
     "tokio",
+    "tokio-util",
     "uuid",
 ]
 
