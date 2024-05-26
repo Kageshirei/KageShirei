@@ -164,6 +164,7 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	// create a cancellation token to be used to signal the servers to shut down
 	let cancellation_token = CancellationToken::new();
 
+	// start the operator api server
 	let api_server_task = start(config.clone(), cancellation_token.clone(), pool.clone());
 	let api_server_thread = tokio::spawn(async move {
 		let exit_status = api_server_task.await;
