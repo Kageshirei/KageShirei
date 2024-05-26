@@ -5,7 +5,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-use crate::config::validators;
+use crate::validators;
 
 static IP_V4_REGEX: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r"^(?:(?:[0-9]{1,3}\.){3}[0-9]{1,3}|localhost)$").unwrap());

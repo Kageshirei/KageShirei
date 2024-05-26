@@ -3,7 +3,7 @@ use diesel::prelude::*;
 
 /// The User model, identifies a RS2 operator
 #[derive(Debug, Queryable, Selectable, Clone, PartialEq)]
-#[diesel(table_name = crate::database::schema::users)]
+#[diesel(table_name = crate::schema::users)]
 pub struct User {
 	/// The unique identifier for the user
 	pub id: uuid::Uuid,
@@ -18,9 +18,11 @@ pub struct User {
 }
 
 #[derive(Debug, Insertable)]
-#[diesel(table_name = crate::database::schema::users)]
+#[diesel(table_name = crate::schema::users)]
 pub struct CreateUser {
+	/// The username for the user (unique)
 	pub username: String,
+	/// The user's password (hashed)
 	pub password: String,
 }
 

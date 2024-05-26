@@ -1,4 +1,4 @@
 /**/target
 /**/.env*
 /**/.idea
-!/**/.env.example
+!/modules/srv-mod-database/.env.example
