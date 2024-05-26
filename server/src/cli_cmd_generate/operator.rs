@@ -1,15 +1,17 @@
-use diesel::prelude::*;
 use log::{error, info};
 
+use srv_mod_config::SharedConfig;
+use srv_mod_database::models::user::CreateUser;
+use srv_mod_database::uuid::Uuid;
+
 use crate::cli::generate::operator::GenerateOperatorArguments;
-use crate::config::config::SharedConfig;
-use crate::database::models::user::CreateUser;
 
 pub async fn generate_operator(
 	args: &GenerateOperatorArguments,
 	config: SharedConfig,
 ) -> anyhow::Result<()> {
-	use crate::database::schema::users::dsl::*;
+	use srv_mod_database::schema::users::dsl::*;
+	use srv_mod_database::diesel::prelude::*;
 
 	let readonly_config = config.read().await;
 
@@ -17,7 +19,7 @@ pub async fn generate_operator(
 	// operator.
 	// It is safe here to unpack and the option in an unique statement as if the migration fails, the program will exit
 	let Some(mut connection) =
-		crate::database::migration::run_pending(readonly_config.database.url.as_str(), true)?
+		srv_mod_database::migration::run_pending(readonly_config.database.url.as_str(), true)?
 		else {
 			unreachable!()
 		};
@@ -39,7 +41,7 @@ pub async fn generate_operator(
 			args.password.clone(),
 		))
 		.returning(id)
-		.get_result::<uuid::Uuid>(&mut connection);
+		.get_result::<Uuid>(&mut connection);
 
 	// If the user_id is an error, log the error and exit
 	if let Err(e) = user_id {

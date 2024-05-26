@@ -1,17 +1,18 @@
 use axum::{debug_handler, Json, Router};
 use axum::extract::State;
 use axum::routing::post;
-use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
-use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
-use crate::async_main::api_server::claims::JwtClaims;
-use crate::async_main::api_server::errors::ApiServerError;
-use crate::async_main::api_server::jwt_keys::API_SERVER_JWT_KEYS;
-use crate::async_main::api_server::request_body_from_content_type::InferBody;
-use crate::async_main::api_server::state::ApiServerSharedState;
-use crate::database::models::user::User;
+use srv_mod_database::diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
+use srv_mod_database::diesel_async::RunQueryDsl;
+use srv_mod_database::models::user::User;
+
+use crate::claims::JwtClaims;
+use crate::errors::ApiServerError;
+use crate::jwt_keys::API_SERVER_JWT_KEYS;
+use crate::request_body_from_content_type::InferBody;
+use crate::state::ApiServerSharedState;
 
 #[derive(Debug, Deserialize)]
 struct AuthenticatePostPayload {
@@ -32,7 +33,7 @@ async fn post_handler(
 	State(state): State<ApiServerSharedState>,
 	InferBody(payload): InferBody<AuthenticatePostPayload>,
 ) -> Result<Json<AuthenticatePostResponse>, ApiServerError> {
-	use crate::database::schema::users::dsl::*;
+	use srv_mod_database::schema::users::dsl::*;
 
 	// Ensure the username and password are not empty
 	if payload.username.is_empty() || payload.password.is_empty() {
@@ -89,26 +90,23 @@ mod tests {
 	use axum::body::{Body, to_bytes};
 	use axum::http::{Request, StatusCode};
 	use axum::response::Response;
-	use diesel::{Connection, PgConnection};
-	use diesel::associations::HasTable;
-	use diesel_async::{AsyncPgConnection, RunQueryDsl};
-	use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-	use diesel_migrations::MigrationHarness;
 	use serde_json::json;
 	use tokio::sync::RwLock;
 	use tower::ServiceExt;
 
-	use crate::async_main::api_server::jwt_keys::Keys;
-	use crate::async_main::api_server::state::ApiServerState;
-	use crate::cli::generate::operator::GenerateOperatorArguments;
-	use crate::cli_cmd_generate::operator::generate_operator;
-	use crate::config::config::{RootConfig, SharedConfig};
-	use crate::config::database::DatabaseConfig;
-	use crate::database::migration::MIGRATIONS;
-	use crate::database::models::user::CreateUser;
-	use crate::database::Pool;
-	use crate::database::schema::users::dsl::users;
-	use crate::database::schema::users::id;
+	use srv_mod_config::{RootConfig, SharedConfig};
+	use srv_mod_config::database::DatabaseConfig;
+	use srv_mod_database::{bb8, diesel, Pool};
+	use srv_mod_database::diesel::{Connection, PgConnection};
+	use srv_mod_database::diesel_async::{AsyncPgConnection, RunQueryDsl};
+	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+	use srv_mod_database::diesel_migrations::MigrationHarness;
+	use srv_mod_database::migration::MIGRATIONS;
+	use srv_mod_database::models::user::CreateUser;
+	use srv_mod_database::schema::users;
+
+	use crate::jwt_keys::Keys;
+	use crate::state::ApiServerState;
 
 	use super::*;
 
@@ -126,7 +124,7 @@ mod tests {
 
 	async fn generate_test_user(pool: Pool) {
 		let mut connection = pool.get().await.unwrap();
-		diesel::insert_into(users::table())
+		diesel::insert_into(users::table)
 			.values(CreateUser::new("test".to_string(), "test".to_string()))
 			.execute(&mut connection)
 			.await

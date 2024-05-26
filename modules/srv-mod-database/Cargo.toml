@@ -1,0 +1,18 @@
+[package]
+name = "srv-mod-database"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+diesel = { version = "2.1.6", features = ["postgres", "extras", "chrono"] }
+diesel-async = { version = "0.4.1", features = ["postgres", "bb8"] }
+bb8 = { version = "0.8.3" }
+diesel_migrations = { version = "2.1.0", features = ["postgres"] }
+tokio = { version = "1.0", features = ["full", "tracing", "test-util"] }
+tracing = "0.1"
+rs2_utils = { path = "../../libs/rs2-utils" }
+anyhow = "1.0.86"
+humantime = "2.1.0"
+chrono = "0.4.38"
+uuid = { version = "1.8.0" }
+rs2_crypt = { path = "../../libs/rs2-crypt", features = ["argon2"] }

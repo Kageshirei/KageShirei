@@ -6,8 +6,8 @@ use axum_extra::headers::authorization::Bearer;
 use axum_extra::TypedHeader;
 use serde::{Deserialize, Serialize};
 
-use crate::async_main::api_server::errors::ApiServerError;
-use crate::async_main::api_server::jwt_keys::API_SERVER_JWT_KEYS;
+use super::errors::ApiServerError;
+use super::jwt_keys::API_SERVER_JWT_KEYS;
 
 /// The JWT claims for the api server
 #[derive(Debug, Serialize, Deserialize)]

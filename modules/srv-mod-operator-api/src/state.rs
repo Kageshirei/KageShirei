@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use crate::config::config::SharedConfig;
-use crate::database::Pool;
+use srv_mod_config::SharedConfig;
+use srv_mod_database::Pool;
 
 pub type ApiServerSharedState = Arc<ApiServerState>;
 

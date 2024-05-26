@@ -3,7 +3,7 @@ use std::time::Duration;
 use axum::Router;
 use axum::routing::get;
 
-use crate::async_main::api_server::state::ApiServerSharedState;
+use crate::state::ApiServerSharedState;
 
 pub fn make_routes(state: ApiServerSharedState) -> Router<ApiServerSharedState> {
 	Router::new()

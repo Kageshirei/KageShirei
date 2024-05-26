@@ -1,10 +1,8 @@
-use std::convert::Infallible;
-
+#[cfg(feature = "duration-extension")]
 pub mod duration_extension;
-
-pub fn unwrap_infallible<T>(result: Result<T, Infallible>) -> T {
-	match result {
-		Ok(value) => value,
-		Err(err) => match err {},
-	}
-}
+#[cfg(feature = "unrecoverable-error")]
+pub mod unrecoverable_error;
+#[cfg(feature = "unwrap-infallible")]
+pub mod unwrap_infallible;
+#[cfg(feature = "print-validation-error")]
+pub mod print_validation_error;

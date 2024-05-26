@@ -1,19 +1,19 @@
 use std::fs;
 use std::sync::Arc;
 
-use diesel_async::AsyncPgConnection;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use tokio::{join, select, signal};
-use tokio_util::sync::CancellationToken;
-use tracing::{error, warn};
-use tracing::level_filters::LevelFilter;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
-use crate::config::config::{ReadOnlyConfig, SharedConfig};
-use crate::config::log::ConsoleLogFormat;
-
-mod api_server;
+use srv_mod_config::{ReadOnlyConfig, SharedConfig};
+use srv_mod_config::logging::ConsoleLogFormat;
+use srv_mod_database::bb8;
+use srv_mod_database::diesel_async::AsyncPgConnection;
+use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use srv_mod_operator_api::{start, tokio, tracing};
+use srv_mod_operator_api::tokio::{join, select, signal};
+use srv_mod_operator_api::tokio_util::sync::CancellationToken;
+use srv_mod_operator_api::tracing::{error, warn};
+use srv_mod_operator_api::tracing::level_filters::LevelFilter;
 
 fn build_logger<
 	S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>,
@@ -150,7 +150,7 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	setup_logging(&readonly_config)?;
 
 	// run the migrations on server startup
-	crate::database::migration::run_pending(&readonly_config.database.url, false)?;
+	srv_mod_database::migration::run_pending(&readonly_config.database.url, false)?;
 
 	let connection_manager =
 		AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
@@ -164,8 +164,7 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	// create a cancellation token to be used to signal the servers to shut down
 	let cancellation_token = CancellationToken::new();
 
-	let api_server_task =
-		api_server::start(config.clone(), cancellation_token.clone(), pool.clone());
+	let api_server_task = start(config.clone(), cancellation_token.clone(), pool.clone());
 	let api_server_thread = tokio::spawn(async move {
 		let exit_status = api_server_task.await;
 

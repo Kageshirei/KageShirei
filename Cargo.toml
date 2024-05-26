@@ -6,7 +6,7 @@ members = [
     "libs/rs2-utils",
     "libs/rs2-crypt",
     "libs/coffee",
-    "modules/mod-loader-coffee-core", "modules/mod-protocol-json", "libs/rs2-indirect-syscall", "libs/rs2-communication-protocol",
+    "modules/mod-loader-coffee-core", "modules/mod-protocol-json", "libs/rs2-indirect-syscall", "libs/rs2-communication-protocol", "modules/srv-mod-operator-api", "modules/srv-mod-config", "modules/srv-mod-database",
 ]
 resolver = "2"
 package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }
