@@ -1,0 +1,11 @@
+[package]
+name = "srv-mod-http-handler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+srv-mod-operator-api = { path = "../srv-mod-operator-api" }
+srv-mod-config = { path = "../srv-mod-config" }
+srv-mod-database = { path = "../srv-mod-database" }
+rs2-utils = { path = "../../libs/rs2-utils" }
+anyhow = "1.0.86"

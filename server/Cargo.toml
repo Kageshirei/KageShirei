@@ -23,8 +23,8 @@ serde_json = "1.0" # used
 rand = { version = "0.8.5" } # used
 base64 = "0.22.1" # used
 rcgen = { version = "0.13.1" }# used
-rs2_utils = { path = "../libs/rs2-utils" }
-rs2_crypt = { path = "../libs/rs2-crypt", features = ["argon2"] }
+rs2-utils = { path = "../libs/rs2-utils" }
+rs2-crypt = { path = "../libs/rs2-crypt", features = ["argon2"] }
 srv-mod-config = { path = "../modules/srv-mod-config" }
 srv-mod-operator-api = { path = "../modules/srv-mod-operator-api" }
 srv-mod-database = { path = "../modules/srv-mod-database" }

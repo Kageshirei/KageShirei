@@ -18,8 +18,8 @@ tower = { version = "0.4.4" }
 tower-http = { version = "0.5.2", features = ["catch-panic", "normalize-path", "sensitive-headers", "trace", "validate-request", "compression-full", "limit"] }
 tracing = "0.1"
 jsonwebtoken = "9.3.0"
-rs2_utils = { path = "../../libs/rs2-utils" }
-rs2_crypt = { path = "../../libs/rs2-crypt", features = ["argon2"] }
+rs2-utils = { path = "../../libs/rs2-utils" }
+rs2-crypt = { path = "../../libs/rs2-crypt", features = ["argon2"] }
 chrono = "0.4.38"
 srv-mod-config = { path = "../srv-mod-config" }
 srv-mod-database = { path = "../srv-mod-database" }

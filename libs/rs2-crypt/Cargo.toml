@@ -1,5 +1,5 @@
 [package]
-name = "rs2_crypt"
+name = "rs2-crypt"
 version = "0.1.0"
 edition = "2021"
 

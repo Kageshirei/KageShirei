@@ -3374,6 +3374,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rs2-crypt"
+version = "0.1.0"
+dependencies = [
+    "anyhow",
+    "argon2",
+    "rand 0.8.5",
+]
+
+[[package]]
 name = "rs2-indirect-syscall"
 version = "0.1.0"
 dependencies = [
@@ -3395,8 +3404,8 @@ dependencies = [
  "once_cell",
  "rand 0.8.5",
  "rcgen",
- "rs2_crypt",
- "rs2_utils",
+    "rs2-crypt",
+    "rs2-utils",
  "serde",
  "serde_json",
  "srv-mod-config",
@@ -3406,16 +3415,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rs2_crypt"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "rand 0.8.5",
-]
-
-[[package]]
-name = "rs2_utils"
+name = "rs2-utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -3925,7 +3925,7 @@ dependencies = [
  "nix",
  "once_cell",
  "regex",
- "rs2_utils",
+    "rs2-utils",
  "serde",
  "serde_json",
  "tokio",
@@ -3943,11 +3943,22 @@ dependencies = [
  "diesel-async",
  "diesel_migrations",
  "humantime",
- "rs2_crypt",
- "rs2_utils",
+    "rs2-crypt",
+    "rs2-utils",
  "tokio",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "srv-mod-http-handler"
+version = "0.1.0"
+dependencies = [
+    "anyhow",
+    "rs2-utils",
+    "srv-mod-config",
+    "srv-mod-database",
+    "srv-mod-operator-api",
 ]
 
 [[package]]
@@ -3962,8 +3973,8 @@ dependencies = [
  "humantime",
  "jsonwebtoken",
  "once_cell",
- "rs2_crypt",
- "rs2_utils",
+    "rs2-crypt",
+    "rs2-utils",
  "serde",
  "serde_json",
  "srv-mod-config",
