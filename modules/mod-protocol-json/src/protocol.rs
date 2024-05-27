@@ -1,17 +1,17 @@
-use std::error::Error;
-
-use bytes::Bytes;
+use anyhow::Result;
+use bytes::{Buf, Bytes};
 use reqwest::{Client, ClientBuilder};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use rs2_communication_protocol::encryptor::Encryptor;
 use rs2_communication_protocol::metadata::{Metadata, WithMetadata};
 use rs2_communication_protocol::protocol::Protocol;
 use rs2_communication_protocol::sender::Sender;
+use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
 
 /// Define the JSON protocol for sending and receiving data.
-pub struct JsonProtocol {
+pub struct JsonProtocol<E>
+	where E: EncryptionAlgorithm {
 	/// The HTTP client used to send requests. This is an instance of the reqwest crate.
 	/// It is configured to accept invalid certificates, use a maximum of 2 idle connections per host,
 	/// and have a timeout of 30 seconds.
@@ -31,12 +31,14 @@ pub struct JsonProtocol {
 	/// This is used only if an encryptor is not provided when sending or receiving data.
 	/// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as fallback;
 	/// if the global encryptor is not set, data is sent and received without encryption.
-	global_encryptor: Option<Box<dyn Encryptor>>,
+	global_encryptor: Option<E>,
 }
 
-unsafe impl Send for JsonProtocol {}
+unsafe impl<E> Send for JsonProtocol<E>
+	where E: EncryptionAlgorithm {}
 
-impl JsonProtocol {
+impl<E> JsonProtocol<E>
+	where E: EncryptionAlgorithm {
 	/// Create a new JSON protocol.
 	pub fn new(base_url: String) -> Self {
 		JsonProtocol {
@@ -54,7 +56,7 @@ impl JsonProtocol {
 	}
 
 	/// Set the global encryptor used to encrypt and decrypt data.
-	pub fn set_global_encryptor(&mut self, encryptor: Option<Box<dyn Encryptor>>) -> &Self {
+	pub fn set_global_encryptor(&mut self, encryptor: Option<E>) -> &Self {
 		self.global_encryptor = encryptor;
 
 		self
@@ -62,11 +64,10 @@ impl JsonProtocol {
 
 	/// Get the encryptor to use for encryption or decryption, falling back to the global encryptor
 	/// if necessary.
-	fn encryptor_or_global<'a, E>(&'a self, encryptor: Option<&'a E>) -> Option<&'a dyn Encryptor>
-		where E: Encryptor {
-		encryptor.map(|e| e as &dyn Encryptor).or(
-			if let Some(encryptor) = self.global_encryptor.as_ref() {
-				Some(encryptor.as_ref())
+	fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> {
+		encryptor.or(
+			if let Some(encryptor) = self.global_encryptor.clone() {
+				Some(encryptor)
 			} else {
 				None
 			}
@@ -74,14 +75,15 @@ impl JsonProtocol {
 	}
 }
 
-impl Sender for JsonProtocol {
+impl<E> Sender for JsonProtocol<E>
+	where E: EncryptionAlgorithm {
 	fn set_is_checkin(&mut self, is_checkin: bool) -> &Self {
 		self.is_checkin = is_checkin;
 
 		self
 	}
 
-	async fn send(&mut self, data: Bytes, metadata: Metadata) -> Result<Bytes, Box<dyn Error>> {
+	async fn send(&mut self, data: Bytes, metadata: Metadata) -> Result<Bytes> {
 		let mut url = self.base_url.clone();
 
 		// Ensure the URL ends with a slash.
@@ -117,16 +119,16 @@ impl Sender for JsonProtocol {
 	}
 }
 
-impl Protocol for JsonProtocol {
-	fn read<S, E>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, Box<dyn Error>>
-		where S: DeserializeOwned,
-		      E: Encryptor {
+impl<E> Protocol<E> for JsonProtocol<E>
+	where E: EncryptionAlgorithm + Send {
+	fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S>
+		where S: DeserializeOwned {
 		// Use the global encryptor if an encryptor is not provided.
-		let encryptor = self.encryptor_or_global(encryptor.as_ref());
+		let encryptor = self.encryptor_or_global(encryptor);
 
 		// Decrypt the data if an encryptor is provided.
 		let data = if let Some(encryptor) = encryptor {
-			encryptor.decrypt(data)?
+			encryptor.decrypt(Bytes::from(data))?
 		} else {
 			data
 		};
@@ -134,19 +136,22 @@ impl Protocol for JsonProtocol {
 		serde_json::from_slice(data.iter().as_slice()).map_err(|e| e.into())
 	}
 
-	async fn write<D, E>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes, Box<dyn Error>>
-		where D: Serialize + WithMetadata + Send,
-		      E: Encryptor + Send {
+	async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>
+		where D: Serialize + WithMetadata + Send {
 		let metadata = data.get_metadata();
 		let data = Bytes::from(serde_json::to_vec(&data)?);
 
-		// Use the global encryptor if an encryptor is not provided.
-		let encryptor = self.encryptor_or_global(encryptor.as_ref());
+		let data = {
+			// Use the global encryptor if an encryptor is not provided.
+			let mut encryptor = self.encryptor_or_global(encryptor);
 
-		// Encrypt the data if an encryptor is provided.
-		let data = if let Some(encryptor) = encryptor {
-			encryptor.encrypt(data)?
-		} else {
+			// Encrypt the data if an encryptor is provided.
+			let data = if let Some(mut encryptor) = encryptor.as_mut() {
+				encryptor.encrypt(data)?
+			} else {
+				data
+			};
+
 			data
 		};
 
@@ -156,11 +161,6 @@ impl Protocol for JsonProtocol {
 
 #[cfg(test)]
 mod tests {
-	use std::future::Future;
-	use std::io;
-	use std::sync::{Arc, Mutex};
-
-	use axum::handler::Handler;
 	use axum::http::HeaderMap;
 	use axum::Router;
 	use axum::routing::get;
@@ -169,31 +169,9 @@ mod tests {
 	use tokio_util::sync::CancellationToken;
 	use uuid::uuid;
 
-	use rs2_communication_protocol::encryptor::ident_encryptor::IdentEncryptor;
+	use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
 	use super::*;
-
-	/// Capture the output of a closure that writes to stdout.
-	async fn capture_stdout<F: Future + Send + 'static>(f: F) -> String {
-		// Mutex to capture the output.
-		let output = Arc::new(Mutex::new(Vec::new()));
-		let output_clone = output.clone();
-
-		// Redirect stdout to our output mutex.
-		let old_stdout = io::set_output_capture(Some(output.clone()));
-
-		let handle = tokio::spawn(async move {
-			f.await;
-		});
-		handle.await.unwrap();
-
-		// Restore the original stdout.
-		io::set_output_capture(old_stdout);
-
-		// Collect the output and convert it to a String.
-		let output = output_clone.lock().unwrap();
-		String::from_utf8_lossy(&output).to_string()
-	}
 
 	async fn make_dummy_server(cancellation_token: CancellationToken, router: Router<()>) {
 		let listener = tokio::net::TcpListener::bind("127.0.0.1:8080").await.unwrap();
@@ -208,7 +186,7 @@ mod tests {
 			.unwrap();
 	}
 
-	#[derive(Serialize, Deserialize)]
+	#[derive(Serialize, Deserialize, Debug)]
 	struct SampleData {
 		foo: String,
 	}
@@ -225,10 +203,10 @@ mod tests {
 
 	#[test]
 	fn test_read() {
-		let protocol = JsonProtocol::new("http://localhost:8080".to_string());
 		let encryptor = IdentEncryptor;
+		let protocol = JsonProtocol::new("http://localhost:8080".to_string());
 		let data = Bytes::from("{\"foo\":\"bar\"}");
-		let result = protocol.read::<SampleData, _>(data, Some(encryptor));
+		let result = protocol.read::<SampleData>(data, Some(encryptor));
 		assert!(result.is_ok());
 		let value = result.unwrap();
 		assert_eq!(value.foo, "bar");
@@ -252,11 +230,11 @@ mod tests {
 			call.await;
 		});
 
-		let mut protocol = JsonProtocol::new("http://localhost:8080".to_string());
 		let encryptor = IdentEncryptor;
+		let mut protocol = JsonProtocol::new("http://localhost:8080".to_string());
 		let data = SampleData { foo: "bar".to_string() };
 
-		let result = protocol.write(data, Some(encryptor)).await;
+		let _result = protocol.write(data, Some(encryptor)).await;
 
 		cancellation_token.cancel();
 		server_handle.await.unwrap();

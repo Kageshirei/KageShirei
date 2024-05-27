@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::Result;
 use bytes::Bytes;
 
 use crate::metadata::Metadata;
@@ -25,7 +24,7 @@ impl Sender for TerminalSender {
         self
     }
 
-    async fn send(&mut self, data: Bytes, _metadata: Metadata) -> Result<Bytes, Box<dyn Error>> {
+    async fn send(&mut self, data: Bytes, _metadata: Metadata) -> Result<Bytes> {
         println!("{:?}", data);
         Ok(data)
     }

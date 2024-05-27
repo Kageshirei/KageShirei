@@ -1,5 +1,4 @@
-use std::error::Error;
-
+use anyhow::Result;
 use bytes::Bytes;
 
 use crate::metadata::Metadata;
@@ -21,5 +20,5 @@ pub trait Sender {
     /// # Returns
     ///
     /// A result indicating success or failure.
-    fn send(&mut self, data: Bytes, metadata: Metadata) -> impl std::future::Future<Output=Result<Bytes, Box<dyn Error>>> + Send;
+    fn send(&mut self, data: Bytes, metadata: Metadata) -> impl std::future::Future<Output = Result<Bytes>> + Send;
 }
