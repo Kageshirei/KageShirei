@@ -1,9 +1,10 @@
 use anyhow::Result;
-use bytes::{Buf, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use reqwest::{Client, ClientBuilder};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use rs2_communication_protocol::magic_numbers;
 use rs2_communication_protocol::metadata::{Metadata, WithMetadata};
 use rs2_communication_protocol::protocol::Protocol;
 use rs2_communication_protocol::sender::Sender;
@@ -128,19 +129,38 @@ impl<E> Protocol<E> for JsonProtocol<E>
 
 		// Decrypt the data if an encryptor is provided.
 		let data = if let Some(encryptor) = encryptor {
-			encryptor.decrypt(Bytes::from(data))?
+			encryptor.decrypt(Bytes::from(data), None)?
 		} else {
 			data
 		};
 
-		serde_json::from_slice(data.iter().as_slice()).map_err(|e| e.into())
+		if data.len() < magic_numbers::JSON.len() {
+			return Err(anyhow::anyhow!("Invalid data length"));
+		}
+
+		// Check if the magic number is correct.
+		if data[..magic_numbers::JSON.len()] != magic_numbers::JSON {
+			return Err(anyhow::anyhow!("Invalid magic number"));
+		}
+
+		serde_json::from_slice(data.get(magic_numbers::JSON.len()..).unwrap()).map_err(|e| e.into())
 	}
 
 	async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>
 		where D: Serialize + WithMetadata + Send {
 		let metadata = data.get_metadata();
-		let data = Bytes::from(serde_json::to_vec(&data)?);
 
+		let serialized = serde_json::to_string(&data)?;
+		let data_length = serialized.len() + magic_numbers::JSON.len();
+		let mut data = BytesMut::with_capacity(data_length);
+
+		// Write the magic number and the serialized data to the buffer.
+		for byte in magic_numbers::JSON.iter() {
+			data.put_u8(*byte);
+		}
+		data.put(serialized.as_bytes());
+
+		let data = data.freeze();
 		let data = {
 			// Use the global encryptor if an encryptor is not provided.
 			let mut encryptor = self.encryptor_or_global(encryptor);
@@ -205,7 +225,15 @@ mod tests {
 	fn test_read() {
 		let encryptor = IdentEncryptor;
 		let protocol = JsonProtocol::new("http://localhost:8080".to_string());
-		let data = Bytes::from("{\"foo\":\"bar\"}");
+
+		let mut check = BytesMut::new();
+		for i in magic_numbers::JSON.iter() {
+			check.put_u8(*i);
+		}
+		for i in "{\"foo\":\"bar\"}".as_bytes() {
+			check.put_u8(*i);
+		}
+		let data = check.freeze();
 		let result = protocol.read::<SampleData>(data, Some(encryptor));
 		assert!(result.is_ok());
 		let value = result.unwrap();
@@ -219,7 +247,16 @@ mod tests {
 			assert_eq!(headers.get("content-type").unwrap(), "text/plain");
 			assert_eq!(headers.get("cf-ray").unwrap(), "00000000-0000-0000-0000-000000000000");
 			assert_eq!(headers.get("cf-worker").unwrap(), "00000000-0000-0000-0000-000000000000");
-			assert_eq!(body, Bytes::from("{\"foo\":\"bar\"}"));
+
+			let mut check = BytesMut::new();
+			for i in magic_numbers::JSON.iter() {
+				check.put_u8(*i);
+			}
+			for i in "{\"foo\":\"bar\"}".as_bytes() {
+				check.put_u8(*i);
+			}
+
+			assert_eq!(body, check.freeze());
 			"Ok"
 		};
 		let router = Router::new()
