@@ -2,6 +2,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use log::error;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use validator::{Validate, ValidationErrors};
@@ -11,6 +13,7 @@ use rs2_utils::unrecoverable_error::unrecoverable_error;
 
 use crate::api_server::ApiServerConfig;
 use crate::database::DatabaseConfig;
+use crate::handlers::HandlerConfig;
 use crate::jwt::JwtConfig;
 use crate::logging::LogConfig;
 
@@ -19,6 +22,7 @@ pub mod database;
 pub mod jwt;
 pub mod logging;
 mod validators;
+pub mod handlers;
 
 pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;
@@ -41,6 +45,10 @@ pub struct RootConfig {
 	/// The database configuration
 	#[validate(nested)]
 	pub database: DatabaseConfig,
+
+	/// The handlers configuration
+	#[validate(nested)]
+	pub handlers: Vec<HandlerConfig>,
 
 	/// The level of debug output to provide, in the range 0-2
 	///
