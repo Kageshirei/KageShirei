@@ -28,7 +28,7 @@ pub struct AsymmetricAlgorithm<T> {
 	receiver: Option<Arc<PublicKey>>,
 	/// The last used key for encryption, useful to retrieve the last key used for encryption in order to decrypt the
 	/// message if the key has been rotated
-	last_used_key: Option<Bytes>,
+	last_used_key: Option<Arc<Bytes>>,
 }
 
 /// The size of the salt used for the HKDF key derivation function (128 bytes)
@@ -266,7 +266,7 @@ mod test {
 		// alice receives the message from bob
 		alice.set_receiver(bob.public_key.clone());
 
-		let decrypted = alice.decrypt(encrypted, used_key).unwrap();
+		let decrypted = alice.decrypt(encrypted, Some(used_key.unwrap().as_ref().clone())).unwrap();
 		println!("Decrypted: {:?}", decrypted);
 
 		assert_eq!(data, decrypted);
@@ -314,7 +314,7 @@ mod test {
 			// alice receives the message from bob
 			alice.set_receiver(bob.public_key.clone());
 
-			let decrypted = alice.decrypt(encrypted, last_used_key.clone()).unwrap();
+			let decrypted = alice.decrypt(encrypted, Some(last_used_key.clone().unwrap().as_ref().clone())).unwrap();
 			assert_eq!(data, decrypted);
 			assert_ne!(previous_round_encrypted, last_encrypted);
 

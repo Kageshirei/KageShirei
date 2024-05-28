@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use bytes::Bytes;
 #[cfg(feature = "hkdf")]
@@ -32,12 +34,12 @@ impl SymmetricEncryptionAlgorithm for IdentEncryptor {
 		self
 	}
 
-	fn get_nonce(&self) -> Bytes {
-		Bytes::new()
+	fn get_nonce(&self) -> Arc<Bytes> {
+		Arc::new(Bytes::new())
 	}
 
-	fn get_key(&self) -> Bytes {
-		Bytes::new()
+	fn get_key(&self) -> Arc<Bytes> {
+		Arc::new(Bytes::new())
 	}
 }
 
