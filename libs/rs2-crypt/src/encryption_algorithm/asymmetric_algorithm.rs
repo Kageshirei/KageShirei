@@ -3,7 +3,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use hkdf::Hkdf;
 use hkdf::hmac::SimpleHmac;
 use k256::{FieldBytes, PublicKey, SecretKey};
@@ -139,7 +139,7 @@ impl<T> From<Bytes> for AsymmetricAlgorithm<T>
 				// than panicking
 				let mut new_key = BytesMut::with_capacity(32);
 				// Fill the new key with zeros
-				new_key.fill(0);
+				new_key.put_bytes(0, new_key.capacity());
 				// Copy the original key to the new key (overriding the zeros)
 				new_key.copy_from_slice(&key[..]);
 
