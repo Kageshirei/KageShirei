@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use bytes::{Bytes, BytesMut};
@@ -12,18 +13,19 @@ use sha3::Sha3_512;
 use crate::encryption_algorithm::{EncryptionAlgorithm, WithKeyDerivation};
 use crate::symmetric_encryption_algorithm::SymmetricEncryptionAlgorithm;
 
+/// An asymmetric encryption algorithm that uses a symmetric encryption algorithm for encryption and decryption
 pub struct AsymmetricAlgorithm<T> {
 	/// The secret key of the pair
-	secret_key: SecretKey,
+	secret_key: Arc<SecretKey>,
 	/// The public key of the pair
-	public_key: PublicKey,
+	public_key: Arc<PublicKey>,
 	/// The implementation of a symmetric algorithm to use with this asymmetric algorithm
 	algorithm_instance: T,
 	/// The number of encrypted messages, this is a counter used to internally rotate the keys after a certain number
 	/// of messages have been encrypted
 	encrypted_messages: u16,
 	/// The public key of the receiver of the encrypted text
-	receiver: Option<PublicKey>,
+	receiver: Option<Arc<PublicKey>>,
 	/// The last used key for encryption, useful to retrieve the last key used for encryption in order to decrypt the
 	/// message if the key has been rotated
 	last_used_key: Option<Bytes>,
@@ -34,6 +36,8 @@ const HKDF_SALT_SIZE: usize = 0x80;
 /// The threshold of encrypted messages before rotating the key (1024 messages)
 const KEY_ROTATION_THRESHOLD: u16 = 0x400;
 
+unsafe impl<T> Send for AsymmetricAlgorithm<T> {}
+
 impl<T> AsymmetricAlgorithm<T>
 	where T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation {
 
@@ -41,8 +45,8 @@ impl<T> AsymmetricAlgorithm<T>
 	pub fn new() -> Self {
 		let mut rng = rand::thread_rng();
 
-		let secret_key = SecretKey::random(&mut rng);
-		let public_key = secret_key.public_key();
+		let secret_key = Arc::new(SecretKey::random(&mut rng));
+		let public_key = Arc::new(secret_key.public_key());
 
 		Self {
 			public_key,
@@ -74,7 +78,7 @@ impl<T> AsymmetricAlgorithm<T>
 	/// # Returns
 	///
 	/// The updated current instance
-	pub fn set_receiver(&mut self, public_key: PublicKey) -> &mut Self {
+	pub fn set_receiver(&mut self, public_key: Arc<PublicKey>) -> &mut Self {
 		self.receiver = Some(public_key);
 		self
 	}
@@ -88,7 +92,7 @@ impl<T> AsymmetricAlgorithm<T>
 	/// # Returns
 	///
 	/// A new key derivation function instance for secure-key generation
-	pub fn derive_shared_secret(&mut self, public_key: &PublicKey) -> Hkdf<Sha3_512, SimpleHmac<Sha3_512>> {
+	pub fn derive_shared_secret(&mut self, public_key: Arc<PublicKey>) -> Hkdf<Sha3_512, SimpleHmac<Sha3_512>> {
 		// set the receiver public key to easily reuse it later
 		self.receiver = Some(public_key.clone());
 
@@ -149,8 +153,8 @@ impl<T> From<Bytes> for AsymmetricAlgorithm<T>
 
 		let field_bytes = FieldBytes::from_slice(key.get(..).unwrap());
 
-		let secret_key = SecretKey::from_bytes(&field_bytes).unwrap();
-		let public_key = secret_key.public_key();
+		let secret_key = Arc::new(SecretKey::from_bytes(&field_bytes).unwrap());
+		let public_key = Arc::new(secret_key.public_key());
 
 		Self {
 			public_key,
@@ -195,8 +199,7 @@ impl<T> EncryptionAlgorithm for AsymmetricAlgorithm<T>
 			return Err(anyhow!(AsymmetricEncryptionAlgorithmError::MissingReceiverPublicKey));
 		}
 
-		let receiver = self.receiver.clone().unwrap();
-		let derived_key = self.derive_shared_secret(&receiver);
+		let derived_key = self.derive_shared_secret(self.receiver.clone().unwrap());
 		self.algorithm_instance.derive_key(derived_key)?;
 
 		Ok(self)
