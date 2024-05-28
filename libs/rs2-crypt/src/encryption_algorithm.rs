@@ -10,9 +10,11 @@ use hkdf::hmac::digest::OutputSizeUser;
 pub mod ident_algorithm;
 #[cfg(any(feature = "symmetric-encryption", feature = "xchacha20poly1305"))]
 pub mod xchacha20poly1305_algorithm;
+#[cfg(feature = "asymmetric-encryption")]
+pub mod asymmetric_algorithm;
 
 /// A trait to abstract the encryption and decryption mechanism.
-pub trait EncryptionAlgorithm: Send + Any + Clone {
+pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
 	/// Encrypts a slice of bytes and returns the encrypted data.
 	///
 	/// # Arguments
@@ -29,33 +31,27 @@ pub trait EncryptionAlgorithm: Send + Any + Clone {
 	/// # Arguments
 	///
 	/// * `data` - A slice of bytes representing the data to be decrypted suffixed with the nonce
+	/// * `key` - An optional key to use for decryption, if not provided the instance key will be used
 	///
 	/// # Returns
 	///
 	/// * `Result<Vec<u8>, Box<dyn Error>>` - A result containing the decrypted data or an error.
-	fn decrypt(&self, data: Bytes) -> Result<Bytes>;
+	fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes>;
 
 	/// Create a new instance
 	fn new() -> Self;
-
-	/// Create a new instance with a given key
-	///
-	/// # Arguments
-	///
-	/// * `key` - The key to use for encryption
-	///
-	/// # Returns
-	///
-	/// The new instance
-	fn from(key: Bytes) -> Self;
 
 	/// Create a new key
 	///
 	/// # Returns
 	///
 	/// The updated current instance
-	fn make_key(&mut self) -> &mut Self;
+	fn make_key(&mut self) -> Result<&mut Self>;
+}
 
+#[cfg(feature = "hkdf")]
+/// A trait to abstract the key derivation mechanism.
+pub trait WithKeyDerivation {
 	/// Derive a key from a given key derivation function instance
 	///
 	/// # Arguments
@@ -65,7 +61,6 @@ pub trait EncryptionAlgorithm: Send + Any + Clone {
 	/// # Returns
 	///
 	/// The updated current instance
-	#[cfg(feature = "hkdf")]
 	fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> Result<&Self>
 		where
 			H: OutputSizeUser,
