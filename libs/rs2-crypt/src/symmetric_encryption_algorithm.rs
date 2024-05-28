@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use std::sync::Arc;
 
 use anyhow::Result;
 use bytes::Bytes;
@@ -47,14 +48,14 @@ pub trait SymmetricEncryptionAlgorithm {
 	/// # Returns
 	///
 	/// The nonce
-	fn get_nonce(&self) -> Bytes;
+	fn get_nonce(&self) -> Arc<Bytes>;
 
 	/// Get the key
 	///
 	/// # Returns
 	///
 	/// The key
-	fn get_key(&self) -> Bytes;
+	fn get_key(&self) -> Arc<Bytes>;
 }
 
 pub enum SymmetricEncryptionAlgorithmError {
