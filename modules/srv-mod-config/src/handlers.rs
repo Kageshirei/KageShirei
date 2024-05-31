@@ -30,7 +30,7 @@ pub struct HandlerConfig {
 	pub security: HandlerSecurityConfig,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
 pub enum HandlerType {
 	/// The handler is an HTTP handler
 	#[serde(rename = "http")]
@@ -38,7 +38,7 @@ pub enum HandlerType {
 	Http,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
 pub enum Protocol {
 	/// The protocol used during the communication is JSON
 	#[serde(rename = "json")]
@@ -53,7 +53,7 @@ pub struct HandlerSecurityConfig {
 	pub encoder: Option<Encoder>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
 pub enum EncryptionScheme {
 	/// No encryption is used
 	#[serde(rename = "plain")]

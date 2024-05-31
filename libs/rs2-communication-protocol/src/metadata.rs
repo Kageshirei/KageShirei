@@ -1,14 +1,20 @@
-use uuid::Uuid;
+use std::sync::Arc;
 
+/// Define the metadata struct responsible for holding metadata about a struct used during the communication.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Metadata {
-    pub request_id: Uuid,
-    pub command_id: Uuid,
-    pub path: Option<String>,
+	/// The request identifier (Cuid2)
+	pub request_id: String,
+	/// The command identifier (Cuid2)
+	pub command_id: String,
+	/// The agent identifier (Cuid2)
+	pub agent_id: String,
+	/// An optional path for path-based protocols (e.g. HTTP) where the request should be sent
+	pub path: Option<String>,
 }
 
 /// Define the metadata trait responsible for providing metadata about a type.
 pub trait WithMetadata {
-    /// Get the metadata for the type.
-    fn get_metadata(&self) -> Metadata;
+	/// Get the metadata for the type.
+	fn get_metadata(&self) -> Arc<Metadata>;
 }

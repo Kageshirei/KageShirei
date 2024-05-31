@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::SaltString;
 use bytes::Bytes;
@@ -19,7 +20,8 @@ impl Argon2 {
 
 		// Hash password to PHC string ($argon2id$v=19$...)
 		let hash = config
-			.hash_password(password.as_bytes(), &salt)?
+			.hash_password(password.as_bytes(), &salt)
+			.map_err(|e| anyhow!(e))?
 			.to_string();
 
 		Ok(hash)
