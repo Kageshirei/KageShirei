@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use serde::{Deserialize, Serialize};
+
 /// Define the metadata struct responsible for holding metadata about a struct used during the communication.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Metadata {
 	/// The request identifier (Cuid2)
 	pub request_id: String,

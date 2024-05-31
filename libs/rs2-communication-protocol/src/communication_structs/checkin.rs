@@ -47,7 +47,6 @@ pub struct Checkin {
 	/// Whether the agent is running as elevated
 	pub elevated: bool,
 	/// The metadata of the struct
-	#[serde(skip_serializing, skip_deserializing)]
 	metadata: Option<Arc<Metadata>>,
 }
 
@@ -75,7 +74,7 @@ impl Checkin {
 
 impl WithMetadata for Checkin {
 	fn get_metadata(&self) -> Arc<Metadata> {
-		self.metadata.clone().unwrap().clone()
+		self.metadata.as_ref().unwrap().clone()
 	}
 }
 
@@ -92,4 +91,35 @@ pub struct CheckinResponse {
 	pub polling_interval: u64,
 	/// The agent polling jitter in milliseconds
 	pub polling_jitter: u64,
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_checkin() {
+		let mut checkin = Checkin::new(PartialCheckin {
+			operative_system: "Windows".to_string(),
+			hostname: "DESKTOP-PC".to_string(),
+			domain: "WORKGROUP".to_string(),
+			username: "user".to_string(),
+			ip: "10.2.123.45".to_string(),
+			process_id: 1234,
+			parent_process_id: 5678,
+			process_name: "agent.exe".to_string(),
+			elevated: true,
+		});
+
+		let metadata = Metadata {
+			request_id: "request_id".to_string(),
+			command_id: "command_id".to_string(),
+			agent_id: "agent_id".to_string(),
+			path: None,
+		};
+
+		checkin.with_metadata(metadata);
+
+		println!("{}", serde_json::to_string_pretty(&checkin).unwrap());
+	}
 }
