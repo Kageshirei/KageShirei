@@ -3674,6 +3674,7 @@ dependencies = [
     "hex-literal",
     "rs2-crypt",
  "serde",
+    "serde_json",
 ]
 
 [[package]]
