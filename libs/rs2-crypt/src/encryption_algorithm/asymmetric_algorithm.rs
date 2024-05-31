@@ -58,6 +58,13 @@ impl<T> AsymmetricAlgorithm<T>
 		}
 	}
 
+	/// Create a temporary secret key and return it as a bytes representation
+	pub fn make_temporary_secret_key() -> Bytes {
+		let mut rng = rand::thread_rng();
+		let secret_key = SecretKey::random(&mut rng).to_bytes();
+		Bytes::from(secret_key.to_vec())
+	}
+
 	/// Crate a bytes representation of the public key
 	pub fn serialize_public_key(&self) -> Bytes {
 		Bytes::from(self.public_key.to_sec1_bytes())

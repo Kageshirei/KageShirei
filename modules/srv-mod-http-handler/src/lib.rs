@@ -2,40 +2,40 @@ use std::iter::once;
 use std::sync::Arc;
 use std::time::Duration;
 
+use axum::extract::{DefaultBodyLimit, Host, MatchedPath};
+use axum::handler::HandlerWithoutStateExt;
+use axum::http::{Request, StatusCode, Uri};
+use axum::http::header::AUTHORIZATION;
+use axum::response::{Redirect, Response};
+use axum::Router;
+use axum_server::tls_rustls::RustlsConfig;
+use tokio::select;
+use tokio_util::sync::CancellationToken;
+use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::compression::CompressionLayer;
+use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::normalize_path::NormalizePathLayer;
+use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
+use tower_http::trace::TraceLayer;
+use tower_http::validate_request::ValidateRequestHeaderLayer;
+use tracing::{debug, error, info, info_span, instrument, Span, warn};
+
 use rs2_utils::duration_extension::DurationExt;
 use rs2_utils::unrecoverable_error::unrecoverable_error;
+use srv_mod_config::handlers::HandlerConfig;
 use srv_mod_config::SharedConfig;
 use srv_mod_database::{humantime, Pool};
-use srv_mod_operator_api::{axum, axum_server, tokio, tracing};
-use srv_mod_operator_api::axum::extract::{DefaultBodyLimit, Host, MatchedPath};
-use srv_mod_operator_api::axum::handler::HandlerWithoutStateExt;
-use srv_mod_operator_api::axum::http::{Request, StatusCode, Uri};
-use srv_mod_operator_api::axum::http::header::AUTHORIZATION;
-use srv_mod_operator_api::axum::response::{Redirect, Response};
-use srv_mod_operator_api::axum::Router;
-use srv_mod_operator_api::axum_server::tls_rustls::RustlsConfig;
-use srv_mod_operator_api::tokio::select;
-use srv_mod_operator_api::tokio_util::sync::CancellationToken;
-use srv_mod_operator_api::tower_http::catch_panic::CatchPanicLayer;
-use srv_mod_operator_api::tower_http::compression::CompressionLayer;
-use srv_mod_operator_api::tower_http::limit::RequestBodyLimitLayer;
-use srv_mod_operator_api::tower_http::normalize_path::NormalizePathLayer;
-use srv_mod_operator_api::tower_http::sensitive_headers::SetSensitiveHeadersLayer;
-use srv_mod_operator_api::tower_http::trace::TraceLayer;
-use srv_mod_operator_api::tower_http::validate_request::ValidateRequestHeaderLayer;
-use srv_mod_operator_api::tracing::{debug, error, info, info_span, Span, warn};
 use state::HttpHandlerSharedState;
 
 mod routes;
 mod state;
 
+#[instrument(name = "HTTP handler", skip_all)]
 pub async fn start(
-	config: SharedConfig,
+	config: Arc<HandlerConfig>,
 	cancellation_token: CancellationToken,
 	pool: Pool,
 ) -> anyhow::Result<()> {
-	let readonly_config = config.read().await;
-
 	// create a shared state for the server
 	let shared_state: HttpHandlerSharedState = Arc::new(state::HttpHandlerState {
 		config: config.clone(),
@@ -98,45 +98,43 @@ pub async fn start(
 			NormalizePathLayer::trim_trailing_slash(),
 			// limit request body size to 50mb
 			DefaultBodyLimit::disable(),
-			RequestBodyLimitLayer::new(0x3200000 /* 50mb = (50 * 1024 * 1024) */),
-			// validate request headers for content type accepting only json and form data (subtypes are allowed)
-			ValidateRequestHeaderLayer::accept("application/json"),
-			ValidateRequestHeaderLayer::accept("multipart/form-data"),
-			// set sensitive headers to be removed from logs
-			SetSensitiveHeadersLayer::new(once(AUTHORIZATION)),
+			RequestBodyLimitLayer::new(0x6400000), /* 100mb = (100 * 1024 * 1024) */
+			// validate request headers for content type accepting only text/plain, this is to avoid allowing potential
+			// blue-teams to identify the protocol used during the communication simply by looking at the content type
+			ValidateRequestHeaderLayer::accept("text/plain"),
 		));
 
-	if let Some(tls_config) = readonly_config.api_server.tls.clone() {
-		info!("Starting API server with TLS support");
+	if let Some(tls_config) = config.tls.as_ref() {
+		info!("Starting HTTP handler with TLS support");
 		warn!("Plain http server will be automatically redirected to https");
 
 		tokio::spawn(redirect_http_to_https(
-			readonly_config.api_server.host.clone(),
-			readonly_config.api_server.port,
+			config.host.clone(),
+			config.port,
 			tls_config.port,
 			cancellation_token.clone(),
 		));
 
-		let rustls_config = RustlsConfig::from_pem_file(tls_config.cert, tls_config.key).await?;
+		let rustls_config = RustlsConfig::from_pem_file(tls_config.cert.clone(), tls_config.key.clone()).await?;
 
 		let listener = tokio::net::TcpListener::bind(format!(
 			"{}:{}",
-			if let Some(tls_host) = tls_config.host {
+			if let Some(tls_host) = tls_config.host.clone() {
 				tls_host
 			} else {
-				readonly_config.api_server.host.clone()
+				config.host.clone()
 			},
 			tls_config.port
 		))
 			.await;
 
 		let listener = unwrap_listener_or_fail(
-			readonly_config.api_server.host.clone(),
+			config.host.clone(),
 			tls_config.port,
 			listener,
 		);
 
-		info!(address = %listener.local_addr().unwrap(), "HTTPS api server listening");
+		info!(address = %listener.local_addr().unwrap(), "HTTP handler with tls listening");
 
 		select! {
             _ = axum_server::from_tcp_rustls(listener.into_std()?, rustls_config).serve(app.into_make_service()) => {},
@@ -149,17 +147,17 @@ pub async fn start(
 	// start listening on the provided address
 	let listener = tokio::net::TcpListener::bind(format!(
 		"{}:{}",
-		readonly_config.api_server.host, readonly_config.api_server.port
+		config.host, config.port
 	))
 		.await;
 
 	let listener = unwrap_listener_or_fail(
-		readonly_config.api_server.host.clone(),
-		readonly_config.api_server.port,
+		config.host.clone(),
+		config.port,
 		listener,
 	);
 
-	info!(address = %listener.local_addr().unwrap(), "Api server listening");
+	info!(address = %listener.local_addr().unwrap(), "HTTP handler listening");
 
 	// start serving requests
 	axum::serve(listener, app)
@@ -186,7 +184,7 @@ fn unwrap_listener_or_fail(
 /// Handle the shutdown signal gracefully closing all connections and waiting for all requests to complete
 async fn handle_graceful_shutdown(context: &str, cancellation_token: CancellationToken) {
 	cancellation_token.cancelled().await;
-	warn!("{context} api server shutting down");
+	warn!("{context} HTTP handler shutting down");
 }
 
 /// Redirects all http requests to https
@@ -211,7 +209,7 @@ async fn redirect_http_to_https(
 
 	let listener = unwrap_listener_or_fail(host.clone(), http_port, listener);
 
-	info!(address = %listener.local_addr().unwrap(), "HTTP api server listening");
+	info!(address = %listener.local_addr().unwrap(), "HTTP handler listening");
 
 	axum::serve(listener, redirect.into_make_service())
 		.with_graceful_shutdown(handle_graceful_shutdown("HTTP", cancellation_token))

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use bytes::Bytes;
 
@@ -24,7 +26,7 @@ impl Sender for TerminalSender {
         self
     }
 
-    async fn send(&mut self, data: Bytes, _metadata: Metadata) -> Result<Bytes> {
+	async fn send(&mut self, data: Bytes, _metadata: Arc<Metadata>) -> Result<Bytes> {
         println!("{:?}", data);
         Ok(data)
     }

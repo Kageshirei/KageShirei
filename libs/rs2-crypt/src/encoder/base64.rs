@@ -3,6 +3,7 @@ use bytes::Bytes;
 
 use crate::encoder::Encoder;
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Base64Encoder;
 
 impl Encoder for Base64Encoder {

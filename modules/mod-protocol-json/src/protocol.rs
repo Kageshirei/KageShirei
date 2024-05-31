@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use reqwest::{Client, ClientBuilder};
@@ -84,7 +86,7 @@ impl<E> Sender for JsonProtocol<E>
 		self
 	}
 
-	async fn send(&mut self, data: Bytes, metadata: Metadata) -> Result<Bytes> {
+	async fn send(&mut self, data: Bytes, metadata: Arc<Metadata>) -> Result<Bytes> {
 		let mut url = self.base_url.clone();
 
 		// Ensure the URL ends with a slash.

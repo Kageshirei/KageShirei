@@ -7,10 +7,11 @@ edition = "2021"
 anyhow = "1.0.86"
 log = { version = "0.4.21", optional = true }
 validator = { version = "0.18.1", features = ["derive"], optional = true }
+serde_json = { version = "1.0.117", optional = true }
 
 [features]
 default = ["duration-extension", "unrecoverable-error", "unwrap-infallible"]
 duration-extension = []
 unrecoverable-error = []
 unwrap-infallible = []
-print-validation-error = ["dep:log", "dep:validator"]
+print-validation-error = ["dep:log", "dep:validator", "dep:serde_json"]

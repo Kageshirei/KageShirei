@@ -11,6 +11,6 @@ validator = { version = "0.18.1", features = ["derive"] }
 rs2-utils = { path = "../../libs/rs2-utils", features = ["print-validation-error"] }
 anyhow = "1.0.86"
 serde_json = "1.0.117"
-nix = "0.29.0"
+nix = { version = "0.29.0", features = ["user"] }
 once_cell = "1.19.0"
 regex = "1.10.4"

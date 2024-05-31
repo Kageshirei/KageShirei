@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use srv_mod_config::SharedConfig;
+use srv_mod_config::handlers::HandlerConfig;
 use srv_mod_database::Pool;
 
 pub type HttpHandlerSharedState = Arc<HttpHandlerState>;
@@ -9,7 +9,7 @@ pub type HttpHandlerSharedState = Arc<HttpHandlerState>;
 #[derive(Debug, Clone)]
 pub struct HttpHandlerState {
 	/// The shared configuration
-	pub config: SharedConfig,
+	pub config: Arc<HandlerConfig>,
 	/// The database connection pool
 	pub db_pool: Pool,
 }
