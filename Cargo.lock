@@ -3386,7 +3386,6 @@ dependencies = [
 name = "rs2-indirect-syscall"
 version = "0.1.0"
 dependencies = [
- "lazy_static",
  "libc-print",
 ]
 
