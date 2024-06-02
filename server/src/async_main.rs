@@ -14,7 +14,6 @@ use srv_mod_config::logging::ConsoleLogFormat;
 use srv_mod_database::bb8;
 use srv_mod_database::diesel_async::AsyncPgConnection;
 use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use srv_mod_operator_api::start;
 
 use crate::servers::{api_server, http_handler};
 

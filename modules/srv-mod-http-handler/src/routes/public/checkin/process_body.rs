@@ -1,31 +1,21 @@
-use std::collections::HashMap;
-use std::error::Error;
-
 use anyhow::{anyhow, Result};
 use axum::body::{Body, Bytes};
 use axum::http::StatusCode;
 use axum::Json;
 use axum::response::{IntoResponse, Response};
-use tracing::{info_span, instrument, warn};
+use tracing::{instrument, warn};
 
 use mod_protocol_json::protocol::JsonProtocol;
-use rs2_communication_protocol::{communication_structs, magic_numbers};
-use rs2_communication_protocol::communication_structs::checkin::{Checkin, CheckinResponse};
+use rs2_communication_protocol::communication_structs::checkin::Checkin;
+use rs2_communication_protocol::magic_numbers;
 use rs2_communication_protocol::protocol::Protocol;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
-use srv_mod_database::diesel::prelude::*;
-use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::humantime;
 use srv_mod_database::models::agent::Agent;
-use srv_mod_database::models::agent_profile::AgentProfile;
-use srv_mod_database::models::filter::Filter;
-use srv_mod_database::schema::agent_profiles::dsl::agent_profiles;
-use srv_mod_database::schema::filters::dsl::filters;
-use srv_mod_database::schema_extension::{FilterOperator, LogicalOperator};
 
-use crate::routes::public::checkin::{agent, process_body};
+use crate::routes::public::checkin::agent;
 use crate::routes::public::checkin::agent_profiles::apply_filters;
 use crate::state::HttpHandlerSharedState;
 
@@ -80,7 +70,7 @@ pub async fn process_body(state: HttpHandlerSharedState, body: Bytes) -> Respons
 					);
 
 					// if the data is not a checkin struct, drop the request
-					if (data.is_err()) {
+					if data.is_err() {
 						return (StatusCode::OK, "").into_response();
 					}
 
@@ -108,7 +98,7 @@ pub async fn process_body(state: HttpHandlerSharedState, body: Bytes) -> Respons
 }
 
 /// Process the body as a JSON protocol
-#[instrument(name = "JSON protocol", skip(body), latency = tracing::field::Empty)]
+#[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
 fn process_json(body: Bytes) -> Result<Checkin> {
 	let now = std::time::Instant::now();
 
