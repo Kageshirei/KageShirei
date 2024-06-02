@@ -30,11 +30,11 @@ impl JwtClaims {
 	/// # Arguments
 	///
 	/// * `sub` - The subject (whom token refers to, aka user id)
-	pub fn new(sub: String) -> Self {
+	pub fn new(sub: String, lifetime: chrono::Duration) -> Self {
 		let now = chrono::Utc::now();
 
 		Self {
-			exp: (now + chrono::Duration::minutes(15)).timestamp() as u64,
+			exp: (now + lifetime).timestamp() as u64,
 			iat: now.timestamp() as u64,
 			iss: "rs2-api-server".to_string(),
 			nbf: now.timestamp() as u64,
