@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use chacha20poly1305::{AeadCore, Key, KeyInit, XNonce};
 use chacha20poly1305::aead::{Aead, Payload};
 use chacha20poly1305::XChaCha20Poly1305;

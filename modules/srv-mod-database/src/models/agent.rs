@@ -55,7 +55,6 @@ impl Agent {
 			AgentFields::ServerSecretKey => Some(self.server_secret_key.clone()),
 			AgentFields::SecretKey => Some(self.secret_key.clone()),
 			AgentFields::Signature => Some(self.signature.clone()),
-			_ => None,
 		}
 	}
 }

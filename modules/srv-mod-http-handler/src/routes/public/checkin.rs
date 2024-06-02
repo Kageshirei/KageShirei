@@ -1,21 +1,17 @@
 use axum::{debug_handler, Router};
-use axum::body::{Body, Bytes, HttpBody};
+use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::post;
-use serde::{Deserialize, Serialize};
 use tracing::{instrument, warn};
 
-use rs2_communication_protocol::protocol::Protocol;
 use rs2_crypt::encoder::base32::Base32Encoder;
 use rs2_crypt::encoder::base64::Base64Encoder;
 use rs2_crypt::encoder::Encoder as CryptEncoder;
 use rs2_crypt::encoder::hex::HexEncoder;
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
-use srv_mod_database::diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
-use srv_mod_database::diesel_async::RunQueryDsl;
 
 use crate::state::HttpHandlerSharedState;
 

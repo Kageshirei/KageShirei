@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use reqwest::{Client, ClientBuilder};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -168,7 +168,7 @@ impl<E> Protocol<E> for JsonProtocol<E>
 			let mut encryptor = self.encryptor_or_global(encryptor);
 
 			// Encrypt the data if an encryptor is provided.
-			let data = if let Some(mut encryptor) = encryptor.as_mut() {
+			let data = if let Some(encryptor) = encryptor.as_mut() {
 				encryptor.encrypt(data)?
 			} else {
 				data

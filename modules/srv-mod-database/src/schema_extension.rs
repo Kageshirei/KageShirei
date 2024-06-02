@@ -4,7 +4,6 @@ use diesel::{AsExpression, deserialize, FromSqlRow, QueryId, serialize, SqlType}
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
-use diesel::sql_types::*;
 
 /// Represent the list of fields that can be used to filter agents
 #[derive(Debug, Clone, PartialEq, FromSqlRow, QueryId, AsExpression, SqlType, Eq)]

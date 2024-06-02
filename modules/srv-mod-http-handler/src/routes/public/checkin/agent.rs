@@ -1,9 +1,5 @@
-use std::error::Error;
-
 use anyhow::{anyhow, Result};
-use axum::body::Body;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
 use tracing::{info, warn};
 
 use rs2_communication_protocol::communication_structs::checkin::Checkin;
@@ -11,11 +7,9 @@ use rs2_crypt::encoder::base64::Base64Encoder;
 use rs2_crypt::encoder::Encoder;
 use rs2_crypt::encryption_algorithm::asymmetric_algorithm::AsymmetricAlgorithm;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use rs2_crypt::encryption_algorithm::xchacha20poly1305_algorithm::XChaCha20Poly1305Algorithm;
 use srv_mod_database::diesel;
 use srv_mod_database::diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
-use srv_mod_database::diesel::pg::Pg;
-use srv_mod_database::diesel_async::{AsyncConnection, AsyncPgConnection, RunQueryDsl};
+use srv_mod_database::diesel_async::{AsyncPgConnection, RunQueryDsl};
 use srv_mod_database::models::agent::{Agent, CreateAgent};
 
 use crate::routes::public::checkin::signature::make_signature;
@@ -107,23 +101,23 @@ pub async fn create_or_update(agent: CreateAgent, connection: &mut AsyncPgConnec
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+	use std::sync::Arc;
 
-    use anyhow::anyhow;
+	use anyhow::anyhow;
 
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
-    use srv_mod_database::{bb8, Pool};
-    use srv_mod_database::diesel::{Connection, PgConnection};
-    use srv_mod_database::diesel::ExpressionMethods;
-    use srv_mod_database::diesel::QueryDsl;
-    use srv_mod_database::diesel_async::{AsyncPgConnection, RunQueryDsl};
-    use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-    use srv_mod_database::diesel_migrations::MigrationHarness;
-    use srv_mod_database::migration::MIGRATIONS;
+	use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
+	use srv_mod_database::{bb8, Pool};
+	use srv_mod_database::diesel::{Connection, PgConnection};
+	use srv_mod_database::diesel::ExpressionMethods;
+	use srv_mod_database::diesel::QueryDsl;
+	use srv_mod_database::diesel_async::{AsyncPgConnection, RunQueryDsl};
+	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+	use srv_mod_database::diesel_migrations::MigrationHarness;
+	use srv_mod_database::migration::MIGRATIONS;
 
-    use crate::routes::public::checkin::agent::ensure_checkin_is_valid;
+	use crate::routes::public::checkin::agent::ensure_checkin_is_valid;
 
-    async fn drop_database(url: String) {
+	async fn drop_database(url: String) {
 		let mut connection = PgConnection::establish(url.as_str()).unwrap();
 
 		connection.revert_all_migrations(MIGRATIONS).unwrap();

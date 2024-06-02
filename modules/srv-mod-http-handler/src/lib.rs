@@ -1,11 +1,9 @@
-use std::iter::once;
 use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::{DefaultBodyLimit, Host, MatchedPath};
 use axum::handler::HandlerWithoutStateExt;
 use axum::http::{Request, StatusCode, Uri};
-use axum::http::header::AUTHORIZATION;
 use axum::response::{Redirect, Response};
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
@@ -15,15 +13,13 @@ use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::normalize_path::NormalizePathLayer;
-use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
 use tower_http::trace::TraceLayer;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
-use tracing::{debug, error, info, info_span, instrument, Span, warn};
+use tracing::{error, info, info_span, instrument, Span, warn};
 
 use rs2_utils::duration_extension::DurationExt;
 use rs2_utils::unrecoverable_error::unrecoverable_error;
 use srv_mod_config::handlers::HandlerConfig;
-use srv_mod_config::SharedConfig;
 use srv_mod_database::{humantime, Pool};
 use state::HttpHandlerSharedState;
 

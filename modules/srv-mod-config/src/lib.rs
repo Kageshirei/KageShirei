@@ -2,8 +2,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use log::error;
-use once_cell::sync::Lazy;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use validator::{Validate, ValidationErrors};
