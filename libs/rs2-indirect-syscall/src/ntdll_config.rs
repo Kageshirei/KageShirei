@@ -153,6 +153,12 @@ pub struct NtdllConfig {
     pub module_base: *mut u8,
 }
 
+/// We implement Sync for NtdllConfig to ensure that it can be safely shared
+/// across multiple threads. This is necessary because lazy_static requires
+/// the types it manages to be Sync. Since NtdllConfig only contains raw pointers
+/// and does not perform any interior mutability, it is safe to implement Sync manually.
+unsafe impl Sync for NtdllConfig {}
+
 impl NtdllConfig {
     /// Creates a new instance of `NtdllConfig` by retrieving and validating the necessary NTDLL data.
     ///

@@ -15,6 +15,12 @@ pub struct NtSyscall {
     pub hash: usize,
 }
 
+/// We implement Sync for NtSyscall to ensure that it can be safely shared
+/// across multiple threads. This is necessary because lazy_static requires
+/// the types it manages to be Sync. Since NtSyscall only contains raw pointers
+/// and does not perform any interior mutability, it is safe to implement Sync manually.
+unsafe impl Sync for NtSyscall {}
+
 /// Retrieves the syscall number from a given address.
 ///     
 /// ### Safety
