@@ -23,7 +23,6 @@ rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
 rs2-crypt = { path = "../../libs/rs2-crypt" }
 reqwest = { version = "0.12.4", features = ["rustls-tls", "stream"] }
 bytes = "1.6.0"
-uuid = { version = "1.8.0", features = ["v4"] }
 anyhow = "1.0.86"
 
 [dev-dependencies]

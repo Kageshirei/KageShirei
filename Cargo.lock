@@ -2639,7 +2639,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
- "uuid",
 ]
 
 [[package]]
@@ -3710,6 +3709,7 @@ dependencies = [
  "clap",
  "colored 2.1.0",
  "fern",
+    "futures",
  "log",
  "nix",
  "once_cell",
@@ -3721,7 +3721,11 @@ dependencies = [
  "serde_json",
  "srv-mod-config",
  "srv-mod-database",
+    "srv-mod-http-handler",
  "srv-mod-operator-api",
+    "tokio",
+    "tokio-util",
+    "tracing",
  "tracing-subscriber",
 ]
 

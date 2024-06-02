@@ -1,19 +1,22 @@
 use std::fs;
 use std::sync::Arc;
 
+use tokio::{select, signal};
+use tokio_util::sync::CancellationToken;
+use tracing::{error, warn};
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 
 use srv_mod_config::{ReadOnlyConfig, SharedConfig};
+use srv_mod_config::handlers::HandlerType;
 use srv_mod_config::logging::ConsoleLogFormat;
 use srv_mod_database::bb8;
 use srv_mod_database::diesel_async::AsyncPgConnection;
 use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use srv_mod_operator_api::{start, tokio, tracing};
-use srv_mod_operator_api::tokio::{join, select, signal};
-use srv_mod_operator_api::tokio_util::sync::CancellationToken;
-use srv_mod_operator_api::tracing::{error, warn};
-use srv_mod_operator_api::tracing::level_filters::LevelFilter;
+use srv_mod_operator_api::start;
+
+use crate::servers::{api_server, http_handler};
 
 fn build_logger<
 	S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>,
@@ -164,22 +167,34 @@ pub async fn async_main(config: SharedConfig) -> anyhow::Result<()> {
 	// create a cancellation token to be used to signal the servers to shut down
 	let cancellation_token = CancellationToken::new();
 
-	// start the operator api server
-	let api_server_task = start(config.clone(), cancellation_token.clone(), pool.clone());
-	let api_server_thread = tokio::spawn(async move {
-		let exit_status = api_server_task.await;
+	let api_server_thread = api_server::spawn(config.clone(), cancellation_token.clone(), pool.clone());
 
-		if exit_status.is_err() {
-			error!("Api server died with error: {}", exit_status.err().unwrap())
+	// create a vector to hold all the threads
+	let mut pending_threads = vec![api_server_thread];
+
+	// iterate over all the handlers and start the ones that are enabled
+	for handler in readonly_config.handlers.iter() {
+		// if the handler is not enabled skip it
+		if !handler.enabled {
+			continue;
 		}
-	});
+
+		match handler.r#type {
+			HandlerType::Http => {
+				pending_threads.push(
+					http_handler::spawn(Arc::new(handler.clone()), cancellation_token.clone(), pool.clone())
+				);
+			}
+		}
+	}
 
 	let cancellation_handler_thread = tokio::spawn(async move {
 		handle_shutdown_signals(cancellation_token).await;
 	});
+	pending_threads.push(cancellation_handler_thread);
 
 	// wait for all the threads to finish
-	let _ = join!(cancellation_handler_thread, api_server_thread);
+	futures::future::join_all(pending_threads).await;
 
 	Ok(())
 }
