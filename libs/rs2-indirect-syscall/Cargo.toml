@@ -3,8 +3,5 @@ name = "rs2-indirect-syscall"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-windows = { version = "0.56.0", default-features = false, features = [
-    "Win32_System_Kernel"
-] }
-lazy_static = "1.4.0"
+[dev-dependencies]
+libc-print = "0.1.23"
