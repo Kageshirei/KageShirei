@@ -4,7 +4,8 @@ import {Notifications} from "@mantine/notifications";
 
 import type {Metadata} from "next";
 import {Nunito} from "next/font/google";
-import "@mantine/core/styles.css";
+import '@mantine/core/styles.css';
+import 'mantine-datatable/styles.css';
 import '@mantine/notifications/styles.css';
 import {ReactNode} from "react";
 
