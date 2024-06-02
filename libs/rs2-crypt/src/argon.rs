@@ -1,5 +1,7 @@
+use anyhow::anyhow;
 use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::SaltString;
+use bytes::Bytes;
 use rand::thread_rng;
 
 pub struct Argon2;
@@ -19,8 +21,9 @@ impl Argon2 {
 		// Hash password to PHC string ($argon2id$v=19$...)
 		let hash = config
 			.hash_password(password.as_bytes(), &salt)
-			.map_err(|e| anyhow::anyhow!("{:?}", e))?
+			.map_err(|e| anyhow!(e))?
 			.to_string();
+
 		Ok(hash)
 	}
 
@@ -38,7 +41,7 @@ impl Argon2 {
 		password: &str,
 		salt: Option<Vec<u8>>,
 		output_length: u32,
-	) -> anyhow::Result<Vec<u8>> {
+	) -> anyhow::Result<Bytes> {
 		// initialize the salt if not provided
 		let salt = salt.unwrap_or_else(|| {
 			let rng = thread_rng();
@@ -50,7 +53,7 @@ impl Argon2 {
 			.hash_password_into(password.as_bytes(), &salt, &mut result)
 			.map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
-		Ok(result)
+		Ok(Bytes::from(result))
 	}
 }
 

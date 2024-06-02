@@ -1,8 +1,10 @@
 use axum::{debug_handler, Json, Router};
 use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::routing::post;
 use serde::{Deserialize, Serialize};
-use tracing::instrument;
+use tracing::{info, instrument};
 
 use srv_mod_database::diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
 use srv_mod_database::diesel_async::RunQueryDsl;
@@ -21,8 +23,9 @@ struct AuthenticatePostPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct AuthenticatePostResponse {
+pub struct AuthenticatePostResponse {
 	pub access_token: String,
+	pub expires_in: u64,
 	pub token: String,
 }
 
@@ -61,7 +64,8 @@ async fn post_handler(
 
 	// Create the JWT token
 	let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS512);
-	let claims = JwtClaims::new(user.id.to_string());
+	let token_lifetime = chrono::Duration::minutes(15);
+	let claims = JwtClaims::new(user.id.to_string(), token_lifetime);
 	let token = jsonwebtoken::encode(
 		&header,
 		&claims,
@@ -69,8 +73,11 @@ async fn post_handler(
 	)
 		.map_err(|_| ApiServerError::TokenCreation)?;
 
+	info!("User {} authenticated", user.username);
+
 	Ok(Json(AuthenticatePostResponse {
 		access_token: "bearer".to_string(),
+		expires_in: token_lifetime.num_seconds() as u64,
 		token,
 	}))
 }
