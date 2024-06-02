@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::error::Error;
 
 use anyhow::{anyhow, Result};
@@ -14,10 +15,18 @@ use rs2_communication_protocol::protocol::Protocol;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
+use srv_mod_database::diesel::prelude::*;
+use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::humantime;
 use srv_mod_database::models::agent::Agent;
+use srv_mod_database::models::agent_profile::AgentProfile;
+use srv_mod_database::models::filter::Filter;
+use srv_mod_database::schema::agent_profiles::dsl::agent_profiles;
+use srv_mod_database::schema::filters::dsl::filters;
+use srv_mod_database::schema_extension::{FilterOperator, LogicalOperator};
 
 use crate::routes::public::checkin::{agent, process_body};
+use crate::routes::public::checkin::agent_profiles::apply_filters;
 use crate::state::HttpHandlerSharedState;
 
 /// Ensure that the body is not empty by returning a response if it is
@@ -45,7 +54,7 @@ fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
 }
 
 /// Persist the checkin data into the database as an agent
-async fn persist(data: Result<Checkin>, state: HttpHandlerSharedState) -> Agent {
+async fn persist(data: Result<Checkin>, state: &HttpHandlerSharedState) -> Agent {
 	let create_agent_instance = agent::prepare(data.unwrap());
 
 	let mut connection = state.db_pool.get().await.unwrap();
@@ -75,19 +84,14 @@ pub async fn process_body(state: HttpHandlerSharedState, body: Bytes) -> Respons
 						return (StatusCode::OK, "").into_response();
 					}
 
-					let agent = persist(data, state).await;
+					let agent = persist(data, &state).await;
 
-					// TODO: Load the agent's configuration from the database and return it in the response, the following
-					//       is a placeholder
+					// apply filters to the agent
+					let config = apply_filters(&agent, &state).await;
+
 					(
 						StatusCode::OK,
-						Json(CheckinResponse {
-							id: agent.id,
-							working_hours: None,
-							kill_date: None,
-							polling_jitter: 10_000, // 10 seconds of jitter (polling range from 20 to 40 seconds)
-							polling_interval: 30_000, // 30 seconds of polling interval
-						}),
+						Json(config),
 					).into_response()
 				}
 			}
@@ -270,7 +274,7 @@ mod test {
 			db_pool: pool,
 		});
 
-		let agent = super::persist(Ok(obj_checkin), route_state).await;
+		let agent = super::persist(Ok(obj_checkin), &route_state).await;
 
 		assert_eq!(agent.operative_system, "Windows");
 		assert_eq!(agent.hostname, "DESKTOP-PC");

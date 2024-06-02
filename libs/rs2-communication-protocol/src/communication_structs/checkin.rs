@@ -84,13 +84,13 @@ pub struct CheckinResponse {
 	/// The unique identifier of the agent, required to poll for tasks
 	pub id: String,
 	/// The unix timestamp of the kill date, if any
-	pub kill_date: Option<u64>,
+	pub kill_date: Option<i64>,
 	/// The working hours of for the current day (unix timestamp), if any
-	pub working_hours: Option<u64>,
+	pub working_hours: Option<Vec<Option<i64>>>,
 	/// The agent polling interval in milliseconds
-	pub polling_interval: u64,
+	pub polling_interval: i64,
 	/// The agent polling jitter in milliseconds
-	pub polling_jitter: u64,
+	pub polling_jitter: i64,
 }
 
 #[cfg(test)]

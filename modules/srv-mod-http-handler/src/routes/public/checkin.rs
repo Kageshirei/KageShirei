@@ -22,6 +22,7 @@ use crate::state::HttpHandlerSharedState;
 mod agent;
 mod process_body;
 mod signature;
+mod agent_profiles;
 
 /// Converts a byte array to a string
 fn body_to_string(body: Bytes) -> String {

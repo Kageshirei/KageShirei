@@ -3,6 +3,7 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use rs2_communication_protocol::communication_structs::checkin::Checkin;
 
 use crate::CUID2;
+use crate::schema_extension::AgentFields;
 
 #[derive(Debug, Queryable, Selectable, Clone, PartialEq)]
 #[diesel(table_name = crate::schema::agents)]
@@ -37,6 +38,26 @@ pub struct Agent {
 	pub created_at: chrono::DateTime<chrono::Utc>,
 	/// The agent's last update date
 	pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl Agent {
+	pub fn get_field_value(&self, field: &AgentFields) -> Option<String> {
+		match field {
+			AgentFields::OperativeSystem => Some(self.operative_system.clone()),
+			AgentFields::Hostname => Some(self.hostname.clone()),
+			AgentFields::Domain => Some(self.domain.clone()),
+			AgentFields::Username => Some(self.username.clone()),
+			AgentFields::Ip => Some(self.ip.clone()),
+			AgentFields::ProcessId => Some(self.process_id.to_string()),
+			AgentFields::ParentProcessId => Some(self.parent_process_id.to_string()),
+			AgentFields::ProcessName => Some(self.process_name.clone()),
+			AgentFields::Elevated => Some(self.elevated.to_string()),
+			AgentFields::ServerSecretKey => Some(self.server_secret_key.clone()),
+			AgentFields::SecretKey => Some(self.secret_key.clone()),
+			AgentFields::Signature => Some(self.signature.clone()),
+			_ => None,
+		}
+	}
 }
 
 #[derive(Debug, Insertable, AsChangeset)]

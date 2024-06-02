@@ -19,6 +19,7 @@ pub static CUID2: Lazy<CuidConstructor> = Lazy::new(|| {
 pub mod migration;
 pub mod schema;
 pub mod models;
+pub mod schema_extension;
 
 pub type Pool = Arc<bb8::Pool<AsyncDieselConnectionManager<AsyncPgConnection>>>;
 
