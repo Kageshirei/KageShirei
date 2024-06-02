@@ -13,6 +13,7 @@ mod async_main;
 mod cli;
 mod cli_cmd_compile;
 mod cli_cmd_generate;
+mod servers;
 
 fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	let mut base_config = fern::Dispatch::new()

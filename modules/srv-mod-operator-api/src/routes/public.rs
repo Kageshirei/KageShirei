@@ -2,7 +2,7 @@ use axum::Router;
 
 use crate::state::ApiServerSharedState;
 
-mod authenticate;
+pub mod authenticate;
 
 /// Create the public routes for the API server
 pub fn make_routes(state: ApiServerSharedState) -> Router<ApiServerSharedState> {

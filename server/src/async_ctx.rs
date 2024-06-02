@@ -1,9 +1,9 @@
 use std::future::Future;
 
 use log::{info, trace, warn};
+use tokio;
 
 use srv_mod_config::SharedConfig;
-use srv_mod_operator_api::tokio;
 
 /// Run the given future in a tokio runtime
 ///

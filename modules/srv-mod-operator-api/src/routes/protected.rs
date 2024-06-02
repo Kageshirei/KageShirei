@@ -1,18 +1,11 @@
-use std::time::Duration;
-
 use axum::Router;
-use axum::routing::get;
 
 use crate::state::ApiServerSharedState;
 
+mod refresh_token;
+
 pub fn make_routes(state: ApiServerSharedState) -> Router<ApiServerSharedState> {
 	Router::new()
-		.route(
-			"/protected",
-			get(|| async {
-				tokio::time::sleep(Duration::from_secs(2)).await;
-				"Protected data"
-			}),
-		)
+		.merge(refresh_token::route(state.clone()))
 		.with_state(state)
 }
