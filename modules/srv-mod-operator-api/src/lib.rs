@@ -1,31 +1,28 @@
+#![feature(let_chains)]
+
 use std::iter::once;
 use std::sync::Arc;
 use std::time::Duration;
 
-pub use axum;
 use axum::extract::{DefaultBodyLimit, Host, MatchedPath};
 use axum::handler::HandlerWithoutStateExt;
-use axum::http::{Request, StatusCode, Uri};
+use axum::http::{Method, Request, StatusCode, Uri};
 use axum::http::header::AUTHORIZATION;
 use axum::response::{Redirect, Response};
 use axum::Router;
-pub use axum_extra;
-pub use axum_server;
+use axum::routing::post;
 use axum_server::tls_rustls::RustlsConfig;
-pub use tokio;
 use tokio::select;
-pub use tokio_util;
 use tokio_util::sync::CancellationToken;
-pub use tower_http;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::compression::CompressionLayer;
+use tower_http::cors::{Any, Cors, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::sensitive_headers::SetSensitiveHeadersLayer;
 use tower_http::trace::TraceLayer;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tracing::{debug, error, info, info_span, Span, warn};
-pub use tracing;
 
 use jwt_keys::{API_SERVER_JWT_KEYS, Keys};
 use rs2_utils::duration_extension::DurationExt;
@@ -124,9 +121,10 @@ pub async fn start(
 			ValidateRequestHeaderLayer::accept("multipart/form-data"),
 			// set sensitive headers to be removed from logs
 			SetSensitiveHeadersLayer::new(once(AUTHORIZATION)),
+			CorsLayer::very_permissive(),
 		));
 
-	if let Some(tls_config) = readonly_config.api_server.tls.clone() {
+	if let Some(tls_config) = readonly_config.api_server.tls.clone() && tls_config.enabled {
 		info!("Starting API server with TLS support");
 		warn!("Plain http server will be automatically redirected to https");
 
@@ -226,6 +224,16 @@ async fn redirect_http_to_https(
 		}
 	};
 
+	let app = Router::new()
+		.route("/*key", post(redirect).get(redirect).put(redirect).delete(redirect))
+		.layer((
+			// normalize paths before routing trimming trailing slashes
+			NormalizePathLayer::trim_trailing_slash(),
+			// limit request body size to 50mb
+			DefaultBodyLimit::disable(),
+			CorsLayer::very_permissive(),
+		));
+
 	// start listening on the provided address
 	let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, http_port)).await;
 
@@ -233,7 +241,7 @@ async fn redirect_http_to_https(
 
 	info!(address = %listener.local_addr().unwrap(), "HTTP api server listening");
 
-	axum::serve(listener, redirect.into_make_service())
+	axum::serve(listener, app)
 		.with_graceful_shutdown(handle_graceful_shutdown("HTTP", cancellation_token))
 		.await
 		.unwrap();
