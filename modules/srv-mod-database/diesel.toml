@@ -3,7 +3,8 @@
 
 [print_schema]
 with_docs = true
-custom_type_derives = ["diesel::query_builder::QueryId", "diesel::sql_types::SqlType", "std::fmt::Debug"]
+file = "src/schema.rs"
+custom_type_derives = ["diesel::query_builder::QueryId", "diesel::sql_types::SqlType", "std::fmt::Debug", "Clone", "PartialEq"]
 
 [migrations_directory]
 dir = "migrations"

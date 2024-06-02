@@ -1,8 +1,8 @@
 use log::{error, info};
 
 use srv_mod_config::SharedConfig;
+use srv_mod_database::diesel;
 use srv_mod_database::models::user::CreateUser;
-use srv_mod_database::uuid::Uuid;
 
 use crate::cli::generate::operator::GenerateOperatorArguments;
 
@@ -41,7 +41,7 @@ pub async fn generate_operator(
 			args.password.clone(),
 		))
 		.returning(id)
-		.get_result::<Uuid>(&mut connection);
+		.get_result::<String>(&mut connection);
 
 	// If the user_id is an error, log the error and exit
 	if let Err(e) = user_id {
