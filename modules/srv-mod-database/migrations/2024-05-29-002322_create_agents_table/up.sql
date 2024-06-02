@@ -18,8 +18,8 @@ create table if not exists agents
     server_secret_key varchar(255) not null,
     secret_key        varchar(255) not null,
     signature         varchar(255) not null unique,
-    created_at        timestamptz  not null default now(),
-    updated_at        timestamptz  not null default now()
+    created_at timestamptz not null default current_timestamp,
+    updated_at timestamptz not null default current_timestamp
 );
 
 -- ref: https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-HASH
