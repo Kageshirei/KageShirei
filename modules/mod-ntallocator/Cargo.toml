@@ -18,6 +18,7 @@ incremental = false
 
 [dependencies]
 rs2-indirect-syscall = { path = "../../libs/rs2-indirect-syscall" }
+rs2-winapi = { path = "../../libs/rs2-winapi" }
 lazy_static = "1.4.0"
 
 [dev-dependencies]
