@@ -7,9 +7,9 @@ use core::cmp;
 use core::ffi::c_void;
 use core::ptr::{copy_nonoverlapping, null_mut};
 
-use rs2_indirect_syscall::{init_syscall, run_syscall, NtSyscall, NtdllConfig};
-
 use lazy_static::lazy_static;
+use rs2_indirect_syscall::{init_syscall, run_syscall, NtSyscall};
+use rs2_winapi::ntdll_config::NtdllConfig;
 
 // Dbj2 hash of NT functions
 const NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2: usize = 0xf783b8ec;
