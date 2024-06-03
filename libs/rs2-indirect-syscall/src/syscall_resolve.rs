@@ -1,7 +1,7 @@
 use core::ptr;
 
-use crate::utils::{dbj2_hash, get_cstr_len};
 use rs2_winapi::ntdll_config::NtdllConfig;
+use rs2_winapi::utils::{dbj2_hash, get_cstr_len};
 
 const UP: isize = -32;
 const DOWN: usize = 32;
