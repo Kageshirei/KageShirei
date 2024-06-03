@@ -58,7 +58,7 @@ pub struct ImageExportDirectory {
 
 #[cfg(target_arch = "x86_64")]
 #[repr(C)]
-pub struct ImageNtHeaders64 {
+pub struct ImageNtHeaders {
     pub signature: u32,
     pub file_header: ImageFileHeader,
     pub optional_header: ImageOptionalHeader64,
@@ -137,7 +137,7 @@ pub struct ImageOptionalHeader32 {
 
 #[cfg(target_arch = "x86")]
 #[repr(C)]
-pub struct ImageNtHeaders32 {
+pub struct ImageNtHeaders {
     pub signature: u32,
     pub file_header: ImageFileHeader,
     pub optional_header: ImageOptionalHeader32,

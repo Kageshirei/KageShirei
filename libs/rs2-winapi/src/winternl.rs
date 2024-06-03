@@ -1,24 +1,7 @@
 use core::arch::asm;
 use core::ffi::{c_ulong, c_void};
 
-type HANDLE = *const c_void;
-type PVOID = *const c_void;
-
-// Definition of UNICODE_STRING
-#[repr(C)]
-pub struct UnicodeString {
-    pub length: u16,
-    pub maximum_length: u16,
-    pub buffer: *mut u16,
-}
-
-// Definition of LIST_ENTRY
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct ListEntry {
-    pub flink: *mut ListEntry,
-    pub blink: *mut ListEntry,
-}
+use crate::ntdef::{ListEntry, UnicodeString, HANDLE, PVOID};
 
 #[repr(C)]
 #[derive(Copy, Clone)]
