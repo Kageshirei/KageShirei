@@ -166,10 +166,11 @@ mod tests {
 
     #[test]
     fn run_syscall() {
-        use crate::{ntdll_config::NtdllConfig, syscall_resolve::init_syscall};
+        use crate::syscall_resolve::init_syscall;
         use core::ffi::c_void;
         use core::ptr;
         use libc_print::libc_println;
+        use rs2_winapi::ntdll_config::NtdllConfig;
 
         const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
 

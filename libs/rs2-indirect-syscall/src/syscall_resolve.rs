@@ -1,7 +1,7 @@
 use core::ptr;
 
-use crate::ntdll_config::NtdllConfig;
 use crate::utils::{dbj2_hash, get_cstr_len};
+use rs2_winapi::ntdll_config::NtdllConfig;
 
 const UP: isize = -32;
 const DOWN: usize = 32;
@@ -215,9 +215,9 @@ mod tests {
     #[test]
     fn resolve_syscall() {
         use super::init_syscall;
-        use crate::ntdll_config::NtdllConfig;
         use core::ptr;
         use libc_print::libc_println;
+        use rs2_winapi::ntdll_config::NtdllConfig;
 
         const NT_OPEN_PROCESS_HASH: usize = 0x4b82f718;
         const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
