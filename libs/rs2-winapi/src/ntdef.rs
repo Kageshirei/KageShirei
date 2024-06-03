@@ -8,6 +8,7 @@ use crate::utils::string_length_w;
 pub type HANDLE = *mut c_void;
 pub type ULONG = u32;
 pub type PVOID = *mut c_void;
+pub type AccessMask = ULONG;
 
 // Definition of LIST_ENTRY
 #[repr(C)]
@@ -55,6 +56,8 @@ impl UnicodeString {
     }
 }
 
+pub const OBJ_CASE_INSENSITIVE: ULONG = 0x40;
+
 #[repr(C)]
 pub struct ObjectAttributes {
     pub length: ULONG,
@@ -66,6 +69,17 @@ pub struct ObjectAttributes {
 }
 
 impl ObjectAttributes {
+    pub fn new() -> Self {
+        ObjectAttributes {
+            length: 0,
+            root_directory: ptr::null_mut(),
+            object_name: ptr::null_mut(),
+            attributes: 0,
+            security_descriptor: ptr::null_mut(),
+            security_quality_of_service: ptr::null_mut(),
+        }
+    }
+
     //InitializeObjectAttributes
     pub fn initialize(
         p: &mut ObjectAttributes,
@@ -81,6 +95,24 @@ impl ObjectAttributes {
         p.security_descriptor = s;
         p.security_quality_of_service = ptr::null_mut();
     }
+}
+
+// Constant definitions
+pub const STANDARD_RIGHTS_READ: AccessMask = 0x00020000;
+pub const KEY_QUERY_VALUE: AccessMask = 0x0001;
+pub const KEY_ENUMERATE_SUB_KEYS: AccessMask = 0x0008;
+pub const KEY_NOTIFY: AccessMask = 0x0010;
+pub const SYNCHRONIZE: AccessMask = 0x00100000;
+
+pub const KEY_READ: AccessMask =
+    (STANDARD_RIGHTS_READ | KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | KEY_NOTIFY) & (!SYNCHRONIZE);
+
+#[repr(C)]
+pub struct KeyValuePartialInformation {
+    pub title_index: ULONG,
+    pub data_type: ULONG,
+    pub data_length: ULONG,
+    pub data: [u8; 1], // Flexible array member in C, single element array in Rust
 }
 
 #[cfg(test)]
