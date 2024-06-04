@@ -6,12 +6,6 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-extern crate mod_ntallocator;
-use mod_ntallocator::NtAllocator;
-
-#[global_allocator]
-static GLOBAL: NtAllocator = NtAllocator;
-
 use rs2_winapi::ntdef::{
     KeyValuePartialInformation, ObjectAttributes, UnicodeString, KEY_READ, OBJ_CASE_INSENSITIVE,
     ULONG,
