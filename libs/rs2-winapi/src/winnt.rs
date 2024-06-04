@@ -1,3 +1,7 @@
+use core::ffi::c_void;
+
+use crate::ntdef::AccessMask;
+
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
 pub const IMAGE_NT_SIGNATURE: u32 = 0x00004550; // "PE\0\0"
 
@@ -142,3 +146,65 @@ pub struct ImageNtHeaders {
     pub file_header: ImageFileHeader,
     pub optional_header: ImageOptionalHeader32,
 }
+
+pub struct TokenInformationClass(pub i32);
+pub struct TokenAccessMask(pub u32);
+// pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(8u32);
+pub const TOKEN_READ: TokenAccessMask = TokenAccessMask(131080u32);
+// pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(0x0008);
+// pub const TOKEN_ADJUST_PRIVILEGES: TokenAccessMask = TokenAccessMask(0x0020);
+
+pub const TOKEN_QUERY: AccessMask = 0x0008;
+pub const TOKEN_ADJUST_PRIVILEGES: AccessMask = 0x0020;
+pub const TOKEN_INTEGRITY_LEVEL: u32 = 25;
+
+pub const SECURITY_MANDATORY_UNTRUSTED_RID: u32 = 0x00000000;
+pub const SECURITY_MANDATORY_LOW_RID: u32 = 0x00001000;
+pub const SECURITY_MANDATORY_MEDIUM_RID: u32 = 0x00002000;
+pub const SECURITY_MANDATORY_HIGH_RID: u32 = 0x00003000;
+pub const SECURITY_MANDATORY_SYSTEM_RID: u32 = 0x00004000;
+
+#[repr(C)]
+pub struct Sid {
+    pub revision: u8,
+    pub sub_authority_count: u8,
+    pub identifier_authority: [u8; 6],
+    pub sub_authority: [u32; 1], // Note: This is a flexible array member in C
+}
+
+#[repr(C)]
+pub struct SidAndAttributes {
+    pub sid: *mut Sid,
+    pub attributes: u32,
+}
+
+#[repr(C)]
+pub struct TokenMandatoryLabel {
+    pub label: SidAndAttributes,
+}
+
+#[repr(C)]
+pub struct TokenMandatoryPolicy {
+    policy: u32,
+}
+
+#[repr(C)]
+pub struct LUID {
+    pub low_part: u32,
+    pub high_part: i32,
+}
+
+#[repr(C)]
+pub struct LuidAndAttributes {
+    pub luid: LUID,
+    pub attributes: u32,
+}
+
+#[repr(C)]
+pub struct TokenPrivileges {
+    pub privilege_count: u32,
+    pub privileges: [LuidAndAttributes; 1],
+}
+
+pub const SE_PRIVILEGE_ENABLED: u32 = 0x00000002;
+pub const SE_DEBUG_NAME: &str = "SeDebugPrivilege";
