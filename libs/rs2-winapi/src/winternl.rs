@@ -177,3 +177,53 @@ pub fn find_peb() -> *const PEB {
 }
 
 //TODO: TEB
+
+pub const SYSTEM_BASIC_INFORMATION: u32 = 0;
+
+#[repr(C)]
+pub struct SystemBasicInformation {
+    pub reserved: [u8; 4],
+    pub maximum_increment: u32,
+    pub physical_page_size: u32,
+    pub number_of_physical_pages: u32,
+    pub lowest_physical_page_number: u32,
+    pub highest_physical_page_number: u32,
+    pub allocation_granularity: u32,
+    pub minimum_user_mode_address: *mut c_void,
+    pub maximum_user_mode_address: *mut c_void,
+    pub active_processors_affinity_mask: usize,
+    pub number_of_processors: u8,
+}
+
+#[repr(C)]
+pub struct OSVersionInfo {
+    pub dw_os_version_info_size: u32,
+    pub dw_major_version: u32,
+    pub dw_minor_version: u32,
+    pub dw_build_number: u32,
+    pub dw_platform_id: u32,
+    pub sz_csd_version: [u16; 128], // WCHAR is usually represented as u16 in Rust
+    pub dw_os_version_info_size_2: u32,
+    pub dw_major_version_2: u32,
+    pub dw_minor_version_2: u32,
+    pub dw_build_number_2: u32,
+    pub dw_platform_id_2: u32,
+}
+
+impl OSVersionInfo {
+    pub fn new() -> Self {
+        OSVersionInfo {
+            dw_os_version_info_size: core::mem::size_of::<OSVersionInfo>() as u32,
+            dw_major_version: 0,
+            dw_minor_version: 0,
+            dw_build_number: 0,
+            dw_platform_id: 0,
+            sz_csd_version: [0; 128],
+            dw_os_version_info_size_2: core::mem::size_of::<OSVersionInfo>() as u32,
+            dw_major_version_2: 0,
+            dw_minor_version_2: 0,
+            dw_build_number_2: 0,
+            dw_platform_id_2: 0,
+        }
+    }
+}
