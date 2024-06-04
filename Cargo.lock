@@ -2641,6 +2641,18 @@ dependencies = [
  "lazy_static",
  "libc-print",
  "rs2-indirect-syscall",
+ "rs2-winapi",
+]
+
+[[package]]
+name = "mod-ntapi"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "libc-print",
+ "mod-ntallocator",
+ "rs2-indirect-syscall",
+ "rs2-winapi",
 ]
 
 [[package]]
@@ -3669,9 +3681,16 @@ dependencies = [
 name = "rs2-agent"
 version = "0.1.0"
 dependencies = [
+ "lazy_static",
  "libc-print",
  "mod-coffee-core",
  "mod-ntallocator",
+ "mod-ntapi",
+ "mod-protocol-json",
+ "rs2-communication-protocol",
+ "rs2-indirect-syscall",
+ "rs2-winapi",
+ "serde_json",
 ]
 
 [[package]]
@@ -3717,6 +3736,7 @@ name = "rs2-indirect-syscall"
 version = "0.1.0"
 dependencies = [
  "libc-print",
+ "rs2-winapi",
 ]
 
 [[package]]
@@ -3756,6 +3776,13 @@ dependencies = [
  "log",
  "serde_json",
  "validator",
+]
+
+[[package]]
+name = "rs2-winapi"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
 ]
 
 [[package]]
