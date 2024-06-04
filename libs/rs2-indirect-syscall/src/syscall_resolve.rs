@@ -51,9 +51,10 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
         && address.add(6).read() == 0x00
         && address.add(7).read() == 0x00
     {
-        let high = address.add(5).read();
-        let low = address.add(4).read();
-        return ((high.overflowing_shl(8).0) | low) as u16;
+        let high = address.add(5).read() as u16;
+        let low = address.add(4).read() as u16;
+        return ((high << 8) | low) as u16;
+        // return ((high.overflowing_shl(8).0) | low) as u16;
     }
 
     // Halo's Gate Patch
@@ -67,9 +68,11 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
                 && address.add(6 + idx * DOWN).read() == 0x00
                 && address.add(7 + idx * DOWN).read() == 0x00
             {
-                let high: u8 = address.add(5 + idx * DOWN).read();
-                let low: u8 = address.add(4 + idx * DOWN).read();
-                return ((high.overflowing_shl(8).0) | low - idx as u8) as u16;
+                let high = address.add(5 + idx * DOWN).read() as u16;
+                let low = address.add(4 + idx * DOWN).read() as u16;
+                return (high << 8) | (low.wrapping_sub(idx as u16));
+
+                // return ((high.overflowing_shl(8).0) | low - idx as u8) as u16;
             }
 
             // if hooked check the neighborhood to find clean syscall (upwards)
@@ -80,9 +83,11 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
                 && address.offset(6 + idx as isize * UP).read() == 0x00
                 && address.offset(7 + idx as isize * UP).read() == 0x00
             {
-                let high: u8 = address.offset(5 + idx as isize * UP).read();
-                let low: u8 = address.offset(4 + idx as isize * UP).read();
-                return ((high.overflowing_shl(8).0) | low + idx as u8) as u16;
+                let high = address.offset(5 + idx as isize * UP).read() as u16;
+                let low = address.offset(4 + idx as isize * UP).read() as u16;
+                return (high << 8) | (low.wrapping_add(idx as u16));
+
+                // return ((high.overflowing_shl(8).0) | low + idx as u8) as u16;
             }
         }
     }
@@ -97,9 +102,13 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
                 && address.add(6 + idx * DOWN).read() == 0x00
                 && address.add(7 + idx * DOWN).read() == 0x00
             {
-                let high: u8 = address.add(5 + idx * DOWN).read();
-                let low: u8 = address.add(4 + idx * DOWN).read();
-                return ((high.overflowing_shl(8).0) | low - idx as u8) as u16;
+                // let high: u8 = address.add(5 + idx * DOWN).read();
+                // let low: u8 = address.add(4 + idx * DOWN).read();
+                // return ((high.overflowing_shl(8).0) | low - idx as u8) as u16;
+
+                let high = address.add(5 + idx * DOWN).read() as u16;
+                let low = address.add(4 + idx * DOWN).read() as u16;
+                return (high << 8) | (low.wrapping_sub(idx as u16));
             }
 
             // if hooked check the neighborhood to find clean syscall (upwards)
@@ -110,9 +119,13 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
                 && address.offset(6 + idx as isize * UP).read() == 0x00
                 && address.offset(7 + idx as isize * UP).read() == 0x00
             {
-                let high: u8 = address.offset(5 + idx as isize * UP).read();
-                let low: u8 = address.offset(4 + idx as isize * UP).read();
-                return ((high.overflowing_shl(8).0) | low + idx as u8) as u16;
+                // let high: u8 = address.offset(5 + idx as isize * UP).read();
+                // let low: u8 = address.offset(4 + idx as isize * UP).read();
+                // return ((high.overflowing_shl(8).0) | low + idx as u8) as u16;
+
+                let high = address.offset(5 + idx as isize * UP).read() as u16;
+                let low = address.offset(4 + idx as isize * UP).read() as u16;
+                return (high << 8) | (low.wrapping_add(idx as u16));
             }
         }
     }
@@ -201,6 +214,8 @@ pub fn init_syscall(ntdll_config: &NtdllConfig, hash: usize) -> NtSyscall {
     // Resolve function address from NTDLL
     nt_syscall.address = unsafe { get_syscall_addr(ntdll_config, hash) };
 
+    // nt_syscall.number = unsafe { *((nt_syscall.address as u64 + 4) as *const u16) };
+
     // Get syscall number using Hell's, Halo's, and Tartarus' Gate approach
     nt_syscall.number = unsafe { get_syscall_number(nt_syscall.address) };
 
@@ -224,6 +239,7 @@ mod tests {
         const NT_PROTECT_VIRTUAL_MEMORY: usize = 0x50e92888;
         const NT_WRITE_VIRTUAL_MEMORY: usize = 0xc3170192;
         const NT_CREATE_THREAD_EX: usize = 0xaf18cfb0;
+        const NT_OPEN_PARTITION: usize = 0x969d3173;
 
         let ntdll_config = match unsafe { NtdllConfig::instance() } {
             Ok(ntdll_config) => ntdll_config,
@@ -235,6 +251,9 @@ mod tests {
 
         let nt_open_process_table = init_syscall(&ntdll_config, NT_OPEN_PROCESS_HASH);
         assert_ne!(nt_open_process_table.address, ptr::null_mut());
+
+        let nt_open_partition = init_syscall(&ntdll_config, NT_OPEN_PARTITION);
+        assert_ne!(nt_open_partition.address, ptr::null_mut());
 
         let nt_allocate_virtual_memory_table =
             init_syscall(&ntdll_config, NT_ALLOCATE_VIRTUAL_MEMORY);
