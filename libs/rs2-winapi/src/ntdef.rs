@@ -10,6 +10,16 @@ pub type ULONG = u32;
 pub type PVOID = *mut c_void;
 pub type AccessMask = ULONG;
 
+pub type HRESULT = i32;
+pub type HSTRING = *mut ::core::ffi::c_void;
+pub type IUnknown = *mut ::core::ffi::c_void;
+pub type IInspectable = *mut ::core::ffi::c_void;
+pub type PSTR = *mut u8;
+pub type PWSTR = *mut u16;
+pub type PCSTR = *const u8;
+pub type PCWSTR = *const u16;
+pub type BSTR = *const u16;
+
 // Definition of LIST_ENTRY
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -94,6 +104,21 @@ impl ObjectAttributes {
         p.object_name = n;
         p.security_descriptor = s;
         p.security_quality_of_service = ptr::null_mut();
+    }
+}
+
+#[repr(C)]
+pub struct ClientId {
+    pub unique_process: HANDLE,
+    pub unique_thread: HANDLE,
+}
+
+impl ClientId {
+    pub fn new() -> Self {
+        ClientId {
+            unique_process: ptr::null_mut(),
+            unique_thread: ptr::null_mut(),
+        }
     }
 }
 
