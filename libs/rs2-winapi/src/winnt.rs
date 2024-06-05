@@ -1,5 +1,3 @@
-use core::ffi::c_void;
-
 use crate::ntdef::AccessMask;
 
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
