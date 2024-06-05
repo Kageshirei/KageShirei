@@ -6,14 +6,13 @@ extern crate alloc;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use rs2_winapi::ntdef::{
-    KeyValuePartialInformation, ObjectAttributes, UnicodeString, KEY_READ, OBJ_CASE_INSENSITIVE,
-    ULONG,
-};
+use rs2_winapi::ntdef::{UnicodeString, ULONG};
 
+use rs2_winapi::ntregapi::{KeyValuePartialInformation, REG_SZ};
 use rs2_winapi::ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL};
 
-use crate::{nt_close, nt_open_key, nt_query_value_key};
+use crate::nt_reg_api::open_key;
+use crate::{nt_close, nt_query_value_key};
 
 /// Retrieves the computer name from the registry.
 ///
@@ -41,31 +40,11 @@ pub unsafe fn get_computer_name_from_registry(
         return false;
     }
 
-    // Initialize the Unicode string for the registry key
-    let mut key_name = UnicodeString::new();
-    let utf16_string: Vec<u16> = registry_key.encode_utf16().collect();
-    key_name.init(utf16_string.as_ptr());
-
-    // Initialize object attributes for the registry key
-    let mut object_attributes = ObjectAttributes::new();
-
-    ObjectAttributes::initialize(
-        &mut object_attributes,
-        &mut key_name,
-        OBJ_CASE_INSENSITIVE, // 0x40
-        ptr::null_mut(),
-        ptr::null_mut(),
-    );
-
-    // Open the registry key with NtOpenKey
-    let mut key_handle: *mut c_void = ptr::null_mut();
-    let ntstatus = nt_open_key(&mut key_handle, KEY_READ, &mut object_attributes);
-
-    // Check if opening the key was successful
-    if ntstatus < 0 {
-        // libc_println!("NtOpenKey failed with status: {:#X}", ntstatus);
-        return false;
-    }
+    // Open the registry key and obtain a handle
+    let key_handle = match open_key(registry_key) {
+        Ok(handle) => handle,
+        Err(_) => return false,
+    };
 
     // Initialize the Unicode string for the registry value name
     let value_utf16_string: Vec<u16> = value_name_str.encode_utf16().collect();
@@ -113,8 +92,6 @@ pub unsafe fn get_computer_name_from_registry(
         nt_close(key_handle);
         return false;
     }
-
-    const REG_SZ: u32 = 0x1;
 
     // Process the key_info data
     let key_info_ptr = key_info.as_ptr() as *const KeyValuePartialInformation;
@@ -177,7 +154,7 @@ pub enum ComputerNameFormat {
 ///
 /// * `true` if the operation was successful, `false` otherwise. If the function fails, the buffer and
 ///   size are not modified.
-pub unsafe fn nt_get_computer_name_ex(
+pub unsafe fn get_computer_name_ex(
     name_type: ComputerNameFormat,
     lp_buffer: &mut Vec<u16>,
     n_size: &mut u32,
@@ -232,6 +209,7 @@ pub unsafe fn nt_get_computer_name_ex(
         ),
     }
 }
+
 #[cfg(test)]
 mod tests {
     use alloc::string::String;
@@ -265,7 +243,7 @@ mod tests {
         unsafe {
             let mut buffer = Vec::new();
             let mut size: u32 = 0;
-            let success = nt_get_computer_name_ex(
+            let success = get_computer_name_ex(
                 ComputerNameFormat::ComputerNameNetBIOS,
                 &mut buffer,
                 &mut size,
@@ -285,7 +263,7 @@ mod tests {
         unsafe {
             let mut buffer = Vec::new();
             let mut size: u32 = 0;
-            let success = nt_get_computer_name_ex(
+            let success = get_computer_name_ex(
                 ComputerNameFormat::ComputerNameDnsDomain,
                 &mut buffer,
                 &mut size,
@@ -305,7 +283,7 @@ mod tests {
         unsafe {
             let mut buffer = Vec::new();
             let mut size: u32 = 0;
-            let success = nt_get_computer_name_ex(
+            let success = get_computer_name_ex(
                 ComputerNameFormat::ComputerNameDnsHostname,
                 &mut buffer,
                 &mut size,
@@ -345,7 +323,7 @@ mod tests {
         unsafe {
             let mut buffer = Vec::new();
             let mut size: u32 = 0;
-            let success = nt_get_computer_name_ex(
+            let success = get_computer_name_ex(
                 ComputerNameFormat::ComputerNamePhysicalDnsHostname,
                 &mut buffer,
                 &mut size,

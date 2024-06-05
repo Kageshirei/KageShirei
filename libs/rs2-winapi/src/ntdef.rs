@@ -2,9 +2,7 @@ use core::{ffi::c_void, ptr};
 
 use crate::utils::string_length_w;
 
-// use crate::utils::string_length_w;
-
-// Definition of HANDLE and ULONG
+// Definition of Windows types
 pub type HANDLE = *mut c_void;
 pub type ULONG = u32;
 pub type PVOID = *mut c_void;
@@ -19,6 +17,19 @@ pub type PWSTR = *mut u16;
 pub type PCSTR = *const u8;
 pub type PCWSTR = *const u16;
 pub type BSTR = *const u16;
+
+// Constant definitions
+pub const STANDARD_RIGHTS_READ: AccessMask = 0x00020000;
+pub const STANDARD_RIGHTS_REQUIRED: AccessMask = 0x000F0000;
+
+pub const SYNCHRONIZE: AccessMask = 0x00100000;
+
+pub const FILE_SYNCHRONOUS_IO_NONALERT: AccessMask = 0x00000020;
+pub const FILE_SHARE_READ: AccessMask = 0x00000001;
+pub const FILE_SHARE_WRITE: AccessMask = 0x00000002;
+pub const FILE_ANY_ACCESS: u32 = 0;
+pub const FILE_DEVICE_NETWORK: u32 = 0x12;
+pub const FILE_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x1FF;
 
 // Definition of LIST_ENTRY
 #[repr(C)]
@@ -120,24 +131,6 @@ impl ClientId {
             unique_thread: ptr::null_mut(),
         }
     }
-}
-
-// Constant definitions
-pub const STANDARD_RIGHTS_READ: AccessMask = 0x00020000;
-pub const KEY_QUERY_VALUE: AccessMask = 0x0001;
-pub const KEY_ENUMERATE_SUB_KEYS: AccessMask = 0x0008;
-pub const KEY_NOTIFY: AccessMask = 0x0010;
-pub const SYNCHRONIZE: AccessMask = 0x00100000;
-
-pub const KEY_READ: AccessMask =
-    (STANDARD_RIGHTS_READ | KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | KEY_NOTIFY) & (!SYNCHRONIZE);
-
-#[repr(C)]
-pub struct KeyValuePartialInformation {
-    pub title_index: ULONG,
-    pub data_type: ULONG,
-    pub data_length: ULONG,
-    pub data: [u8; 1], // Flexible array member in C, single element array in Rust
 }
 
 #[cfg(test)]
