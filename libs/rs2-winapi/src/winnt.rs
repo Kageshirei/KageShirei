@@ -1,4 +1,6 @@
-use crate::ntdef::AccessMask;
+use core::ffi::c_void;
+
+use crate::ntdef::{AccessMask, ULONG};
 
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
 pub const IMAGE_NT_SIGNATURE: u32 = 0x00004550; // "PE\0\0"
@@ -206,3 +208,23 @@ pub struct TokenPrivileges {
 
 pub const SE_PRIVILEGE_ENABLED: u32 = 0x00000002;
 pub const SE_DEBUG_NAME: &str = "SeDebugPrivilege";
+
+#[repr(C)]
+pub union IO_STATUS_BLOCK_u {
+    pub status: i32,
+    pub pointer: *mut c_void,
+}
+
+#[repr(C)]
+pub struct IoStatusBlock {
+    pub u: IO_STATUS_BLOCK_u,
+    pub information: ULONG,
+}
+
+#[repr(C)]
+pub enum EventType {
+    NotificationEvent = 0,
+    SynchronizationEvent = 1,
+}
+
+pub type PEventType = *mut EventType;

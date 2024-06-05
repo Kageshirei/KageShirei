@@ -19,13 +19,12 @@ use rs2_indirect_syscall::{init_syscall, run_syscall, NtSyscall};
 use rs2_winapi::{
     ntdef::{AccessMask, ObjectAttributes, UnicodeString, HANDLE, ULONG},
     ntdll_config::NtdllConfig,
-    tdiinfo::{IoStatusBlock, PEventType},
-    winnt::TokenPrivileges,
+    winnt::{IoStatusBlock, PEventType, TokenPrivileges},
 };
 
-extern crate mod_ntallocator;
+// extern crate mod_ntallocator;
 
-use mod_ntallocator::NtAllocator;
+// use mod_ntallocator::NtAllocator;
 
 // #[global_allocator]
 // static GLOBAL: NtAllocator = NtAllocator;
