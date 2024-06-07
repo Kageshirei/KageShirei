@@ -15,6 +15,9 @@ module.exports = {
         extend: {
             fontFamily: {
                 sans: ["var(--font-app)", "sans-serif"],
+            },
+            animation: {
+                "fast-pulse": "pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite",
             }
         },
     },

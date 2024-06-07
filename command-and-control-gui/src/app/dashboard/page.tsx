@@ -3,7 +3,6 @@
  import { useRouter } from "next/navigation";*/
 
 import SplitPane from "@/components/split-pane/split-pane";
-import {AuthenticationCtx} from "@/context/authentication";
 import {
     ActionIcon,
     Menu,
@@ -13,7 +12,6 @@ import {
     MenuLabel,
     MenuTarget,
     Text,
-    Textarea,
     Tooltip,
 } from "@mantine/core";
 import {
@@ -32,9 +30,10 @@ import {
 } from "@tabler/icons-react";
 import {DataTable, DataTableSortStatus, useDataTableColumns,} from "mantine-datatable";
 import {alphabetical} from "radash";
-import {useEffect, useState,} from "react";
+import {useEffect, useState} from "react";
 import "./page.css";
 import "@/components/split-pane/style.css";
+import {Terminal} from "@/components/terminal";
 
 interface Agent {
     /**
@@ -336,22 +335,7 @@ export default function Page() {
                 columns={effectiveColumns}
                 storeColumnsKey={column_toggle_key}
             />
-            <div className="w-full px-4 py-4 bg-zinc-900 mt-2 rounded">
-                <Textarea leftSection={
-                    <span className="text-[#A6E22E] font-semibold">
-                        {AuthenticationCtx.username || "operator"}@host1:~$
-                    </span>
-                }
-                          autosize
-                          leftSectionWidth={150}
-                          leftSectionProps={{
-                              style: {
-                                  verticalAlign: "top"
-                              }
-                          }}
-                          variant={"unstyled"}
-                ></Textarea>
-            </div>
+            <Terminal hostname={"host1"} username={"ebalo"} cwd={"/home/ebalo"}/>
         </SplitPane>
     );
 }
