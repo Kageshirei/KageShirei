@@ -39,7 +39,7 @@ export default function RootLayout(
 ) {
     return (
         <html lang="en"
-              className="dark overflow-x-hidden"
+              className="dark overflow-hidden"
         >
         <body className={nunito.className}>
         <MantineProvider theme={theme}

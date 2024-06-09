@@ -212,3 +212,24 @@
         -0.04em -0.025em 0 #fffc00;
     }
 }
+
+::-webkit-scrollbar {
+    width: 8px
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #52525b;
+    border-radius: 5px;
+
+}
+
+@supports not selector(::-webkit-scrollbar) {
+    body {
+        scrollbar-color: #52525b transparent;
+    }
+}

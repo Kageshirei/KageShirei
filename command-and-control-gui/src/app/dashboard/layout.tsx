@@ -1,6 +1,5 @@
 "use client";
 import {Logo} from "@/components/logo";
-import {AuthenticationCtx} from "@/context/authentication";
 import {
     ActionIcon,
     AppShell,
@@ -58,7 +57,10 @@ export default function Layout({children}: {
                     />
                 </AppShellSection>
                 <AppShellSection>
-                    <Button onClick={() => AuthenticationCtx.logout(router)}
+                    <Button onClick={async () => {
+                        const {AuthenticationCtx} = await import("@/context/authentication");
+                        AuthenticationCtx.logout(router)
+                    }}
                             fullWidth
                             color={"dark.9"}
                             rightSection={<IconLogout size={20}/>}
@@ -67,7 +69,8 @@ export default function Layout({children}: {
                     </Button>
                 </AppShellSection>
             </AppShellNavbar>
-            <AppShellMain>
+            <AppShellMain id={"main"}>
+
                 {children}
             </AppShellMain>
             <AppShellAside p="md">

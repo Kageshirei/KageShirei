@@ -1,11 +1,14 @@
-import {FC, KeyboardEvent, useCallback, useEffect, useState} from "react";
-import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
+import {NATIVE_COMMANDS} from "@/components/terminal/native-commands";
 import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
+import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
+import Ansi from "ansi-to-react";
+import {CSSProperties, FC, KeyboardEvent, useCallback, useEffect, useState,} from "react";
 
 interface TerminalProps {
     hostname: string;
     username: string;
     cwd: string;
+    style?: CSSProperties;
 }
 
 export const Terminal: FC<TerminalProps> = (
@@ -13,61 +16,111 @@ export const Terminal: FC<TerminalProps> = (
         cwd,
         username,
         hostname,
-    }
+        style,
+    },
 ) => {
     const [terminal_fragments, set_terminal_fragments] = useState([
-        <TerminalOpenerSection key={"none"} username={username} hostname={hostname} cwd={cwd}/>,
-    ])
+        <TerminalOpenerSection key={0}
+                               username={username}
+                               hostname={hostname}
+                               cwd={cwd}
+        />,
+    ]);
 
-    const handle_terminal_keydown = useCallback((e: KeyboardEvent<HTMLSpanElement>) => {
-        // handle the enter command
-        if (e.key === "Enter") {
-            e.preventDefault();
-            e.stopPropagation();
-
+    const handle_terminal_keydown = useCallback(
+        async (e: KeyboardEvent<HTMLSpanElement>) => {
             const command = e.currentTarget.innerText.trim();
+            const {AuthenticationCtx} = await import("@/context/authentication");
 
-            switch (command) {
-                case "clear":
-                    set_terminal_fragments([
-                        <TerminalOpenerSection key={"none"} username={username} hostname={hostname} cwd={cwd}/>,
-                        <TerminalInputLine key={"input"} handle_terminal_keydown={handle_terminal_keydown}/>
-                    ])
-                    return;
-                case "help":
-                    set_terminal_fragments((old) => [
-                        ...old,
-                        <div key={"help"}>
-                            <ul>
-                                <li>clear - clear the terminal</li>
-                                <li>help - show this help message</li>
-                            </ul>
-                        </div>,
-                        <TerminalInputLine key={"input"} handle_terminal_keydown={handle_terminal_keydown}/>
-                    ])
-                    return;
-                default:
+            // handle the enter command
+            if (e.key === "Enter") {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // if (NATIVE_COMMANDS[command]) {
+                const response = await fetch(`http://${AuthenticationCtx.host}/terminal`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${AuthenticationCtx.bearer}`,
+                    },
+                    body: JSON.stringify({
+                        command,
+                        session_id: null,
+                    }),
+                });
+                const json = await response.json();
+                console.log(json);
+
+                if (json.response === "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__") {
+                    NATIVE_COMMANDS.clear.handler({
+                        args: JSON.parse(json.command),
+                        cwd,
+                        username,
+                        hostname,
+                        set_cwd: () => {
+                        },
+                        set_terminal_fragments,
+                        terminal_fragments,
+                    });
+                } else {
                     set_terminal_fragments(old => [
                         ...old,
-                        <span key={"command"}>{command}</span>,
-                        <TerminalInputLine key={"input"} handle_terminal_keydown={handle_terminal_keydown}/>
-                    ])
+                        <pre key={old.length + 1}
+                             className="break-all"
+                        >
+                                <Ansi>
+                                {json.response}
+                                </Ansi>
+                            </pre>,
+                    ]);
+                }
+
+                // append a new input line
+                set_terminal_fragments(old => [
+                    ...old,
+                    <TerminalOpenerSection key={old.length + 1}
+                                           username={username}
+                                           hostname={hostname}
+                                           cwd={cwd}
+                    />,
+                    <TerminalInputLine key={old.length + 2}
+                                       handle_terminal_keydown={handle_terminal_keydown}
+                                       hostname={hostname}
+                    />,
+                ]);
+
+                // focus on the input line
+                setTimeout(() => {
+                    ([...document.querySelectorAll(`#${hostname}-terminal-input-line`)].at(-1) as HTMLSpanElement | undefined)?.focus();
+                }, 50);
             }
-        }
-    }, [cwd, hostname, terminal_fragments, username])
+        },
+        [
+            cwd,
+            hostname,
+            username,
+        ],
+    );
 
     useEffect(() => {
         set_terminal_fragments(old => [
             ...old,
-            <TerminalInputLine key={"input"} handle_terminal_keydown={handle_terminal_keydown}/>
-        ])
+            <TerminalInputLine key={1}
+                               handle_terminal_keydown={handle_terminal_keydown}
+                               hostname={hostname}
+            />,
+        ]);
     }, []);
 
     return (
-        <div className="w-full px-4 py-4 bg-zinc-900 mt-2 rounded font-mono items-center relative">
+        <div className="w-full px-4 py-4 bg-zinc-900 mt-2 rounded font-mono items-center relative min-h-[inherit]
+        max-h-[inherit] h-full overflow-x-hidden overflow-y-auto pr-2 text-sm"
+             style={style}
+        >
             {
                 terminal_fragments.map(v => v)
             }
         </div>
-    )
-}
+    );
+};
