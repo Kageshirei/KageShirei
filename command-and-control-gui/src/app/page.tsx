@@ -1,11 +1,10 @@
 "use client";
 
-import {AuthenticationCtx} from "@/context/authentication";
 import {Button, Card, PasswordInput, rgba, Stack, TextInput, Title, useMantineTheme,} from "@mantine/core";
 import {useForm} from "@mantine/form";
 import Image from "next/image";
 import {useRouter,} from "next/navigation";
-import {useCallback} from "react";
+import {useCallback, useEffect,} from "react";
 
 const authenticate = async (values: {
     host: string,
@@ -28,9 +27,14 @@ const authenticate = async (values: {
 
 export default function Home() {
     const router = useRouter();
-    if (AuthenticationCtx.is_authenticated) {
-        router.push("/dashboard")
-    }
+
+    useEffect(() => {
+        import("@/context/authentication").then(({AuthenticationCtx}) => {
+            if (AuthenticationCtx.is_authenticated) {
+                router.push("/dashboard")
+            }
+        })
+    }, [router]);
 
     const theme = useMantineTheme();
 
@@ -43,6 +47,7 @@ export default function Home() {
     });
 
     const handleAuthentication = useCallback(async (values: typeof form["values"]) => {
+        const {AuthenticationCtx} = await import("@/context/authentication");
         const response = await authenticate(values);
 
         if (response.error) {
@@ -53,7 +58,7 @@ export default function Home() {
         } else {
             AuthenticationCtx.authenticate({
                 host: values.host,
-                bearer: response.bearer,
+                bearer: response.token,
                 username: values.username,
                 expires_in: response.expires_in,
             });

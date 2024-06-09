@@ -15,11 +15,11 @@ export const TerminalOpenerSection: FC<TerminalOpenerSectionProps> = (
 ) => {
     return (
         <>
-            <span className="text-[#A6E22E] font-semibold text-base">
+            <span className="text-[#A6E22E] font-semibold">
                 {username}@{hostname}
             </span>
             :
-            <span className="text-[#66D9EF] font-semibold text-base">
+            <span className="text-[#66D9EF] font-semibold">
                 {cwd}
             </span>
             $&nbsp;

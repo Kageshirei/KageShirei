@@ -1,8 +1,5 @@
 "use client";
-/*import { AuthenticationCtx } from "@/context/authentication";
- import { useRouter } from "next/navigation";*/
-
-import SplitPane from "@/components/split-pane/split-pane";
+import {Terminal} from "@/components/terminal";
 import {
     ActionIcon,
     Menu,
@@ -11,7 +8,12 @@ import {
     MenuItem,
     MenuLabel,
     MenuTarget,
+    Tabs,
+    TabsList,
+    TabsPanel,
+    TabsTab,
     Text,
+    ThemeIcon,
     Tooltip,
 } from "@mantine/core";
 import {
@@ -29,11 +31,11 @@ import {
     IconX,
 } from "@tabler/icons-react";
 import {DataTable, DataTableSortStatus, useDataTableColumns,} from "mantine-datatable";
+import {useRouter} from "next/navigation";
 import {alphabetical} from "radash";
-import {useEffect, useState} from "react";
+import {useEffect, useState,} from "react";
 import "./page.css";
-import "@/components/split-pane/style.css";
-import {Terminal} from "@/components/terminal";
+import Resizable from "react-resizable-layout";
 
 interface Agent {
     /**
@@ -108,10 +110,16 @@ const sample_data: Agent[] = [
 const column_toggle_key = "agents-toggleable";
 
 export default function Page() {
-    /*const router = useRouter();
-     if (!AuthenticationCtx.is_authenticated) {
-     router.push("/");
-     }*/
+    // Redirect to the login page if the user is not authenticated
+    const router = useRouter();
+
+    useEffect(() => {
+        import("@/context/authentication").then(({AuthenticationCtx}) => {
+            if (!AuthenticationCtx.is_authenticated) {
+                router.push("/");
+            }
+        })
+    }, [router]);
 
     const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Agent>>({
         columnAccessor: "id",
@@ -300,42 +308,97 @@ export default function Page() {
     });
 
     return (
-        <SplitPane split={"horizontal"}
-                   minSize={400}
-                   defaultSize={600}
+        <Resizable axis={"y"}
+                   min={200}
+                   max={500}
+                   initial={500}
         >
-            <DataTable
-                className="w-full"
-                mx={"xl"}
-                my={"md"}
-                withRowBorders
-                withColumnBorders
-                horizontalSpacing={"xs"}
-                verticalSpacing={"sm"}
-                fz={"sm"}
-                verticalAlign={"center"}
-                highlightOnHover
-                minHeight={200}
-                maxHeight={600}
-                noRecordsText={"No agents found"}
-                noRecordsIcon={<IconBug size={30}
-                                        className="mb-2"
-                />}
-                sortStatus={sortStatus}
-                onSortStatusChange={setSortStatus}
-                sortIcons={{
-                    sorted: <IconChevronUp size={14}/>,
-                    unsorted: <IconSelector size={14}/>,
-                }}
-                selectedRecords={selectedRecords}
-                onSelectedRecordsChange={setSelectedRecords}
-                selectionTrigger={"cell"}
-                records={records}
-                // @ts-ignore
-                columns={effectiveColumns}
-                storeColumnsKey={column_toggle_key}
-            />
-            <Terminal hostname={"host1"} username={"ebalo"} cwd={"/home/ebalo"}/>
-        </SplitPane>
+            {
+                ({
+                     position,
+                     separatorProps,
+                 }) => (
+                    <>
+                        <DataTable
+                            mx={"xl"}
+                            my={"md"}
+                            withRowBorders
+                            withColumnBorders
+                            horizontalSpacing={"xs"}
+                            verticalSpacing={"sm"}
+                            fz={"sm"}
+                            verticalAlign={"center"}
+                            highlightOnHover
+                            minHeight={200}
+                            maxHeight={600}
+                            noRecordsText={"No agents found"}
+                            noRecordsIcon={<IconBug size={30}
+                                                    className="mb-2"
+                            />}
+                            sortStatus={sortStatus}
+                            onSortStatusChange={setSortStatus}
+                            sortIcons={{
+                                sorted: <IconChevronUp size={14}/>,
+                                unsorted: <IconSelector size={14}/>,
+                            }}
+                            selectedRecords={selectedRecords}
+                            onSelectedRecordsChange={setSelectedRecords}
+                            selectionTrigger={"cell"}
+                            records={records}
+                            // @ts-ignore
+                            columns={effectiveColumns}
+                            storeColumnsKey={column_toggle_key}
+                            style={{
+                                height: position,
+                            }}
+                        />
+                        <div
+                            className="cursor-row-resize h-0.5 w-full bg-transparent border-solid border-0 border-t border-t-zinc-600 py-1"
+                            {...separatorProps} />
+                        <Tabs variant={"outline"}
+                              defaultValue={"global"}
+                              style={{
+                                  minHeight: `calc(100dvh - ${position}px - var(--mantine-spacing-md, 0) * 5)`,
+                              }}
+                        >
+                            <TabsList>
+                                <TabsTab value={"global"}>
+                                    <ThemeIcon variant={"filled"}
+                                               size={"sm"}
+                                    >
+                                        <IconTerminal size={12}/>
+                                    </ThemeIcon>
+                                </TabsTab>
+                                <TabsTab value={"host1"}>
+                                    <Text size={"xs"}>
+                                        @host1
+                                    </Text>
+                                </TabsTab>
+                            </TabsList>
+                            <TabsPanel value={"global"}>
+                                <Terminal hostname={"RS2"}
+                                          username={"ebalo"}
+                                          cwd={"~"}
+                                          style={{
+                                              minHeight: `calc(100dvh - ${position}px - var(--mantine-spacing-xl, 0) * 4)`,
+                                              maxHeight: `calc(100dvh - ${position}px - var(--mantine-spacing-xl, 0) * 4)`,
+                                          }}
+                                />
+                            </TabsPanel>
+                            <TabsPanel value={"host1"}>
+                                <Terminal hostname={"host1"}
+                                          username={"ebalo"}
+                                          cwd={"/home/ebalo"}
+                                          style={{
+                                              minHeight: `calc(100dvh - ${position}px - var(--mantine-spacing-xl, 0) * 4)`,
+                                              maxHeight: `calc(100dvh - ${position}px - var(--mantine-spacing-xl, 0) * 4)`,
+                                          }}
+                                />
+                            </TabsPanel>
+                        </Tabs>
+                    </>
+                )
+            }
+        </Resizable>
     );
 }
