@@ -30,6 +30,9 @@ pub enum Commands {
 	/// Clear the terminal screen
 	#[serde(rename = "clear")]
 	Clear,
+	/// Exit the terminal session, closing the terminal emulator
+	#[serde(rename = "exit")]
+	Exit,
 }
 
 impl TerminalEmulatorCommands {
@@ -47,6 +50,12 @@ impl TerminalEmulatorCommands {
 
 				// Signal the frontend terminal emulator to clear the terminal screen
 				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
+			}
+			Commands::Exit => {
+				info!("Terminal exit command received");
+
+				// Signal the frontend terminal emulator to exit the terminal session
+				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
 			}
 		}
 	}

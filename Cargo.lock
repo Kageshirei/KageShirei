@@ -4210,8 +4210,8 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89e515aa4699a88148ed5ef96413ceef0048ce95b43fbc955a33bde0a70fcae6"
 dependencies = [
-    "lazy_static",
-    "regex",
+ "lazy_static",
+ "regex",
 ]
 
 [[package]]
@@ -4406,7 +4406,7 @@ dependencies = [
  "serde_json",
  "srv-mod-config",
  "srv-mod-database",
-    "srv-mod-terminal-emulator-commands",
+ "srv-mod-terminal-emulator-commands",
  "tokio",
  "tokio-util",
  "tower",
@@ -4419,11 +4419,11 @@ dependencies = [
 name = "srv-mod-terminal-emulator-commands"
 version = "0.1.0"
 dependencies = [
-    "anyhow",
-    "clap",
-    "serde",
-    "shellwords",
-    "tracing",
+ "anyhow",
+ "clap",
+ "serde",
+ "shellwords",
+ "tracing",
 ]
 
 [[package]]
