@@ -1,17 +1,14 @@
-use clap::{Args, Subcommand};
+use clap::{ArgAction, Args};
+use serde::Serialize;
 
-/// Compilation arguments
-#[derive(Args, Debug, PartialEq)]
-pub struct CompileArguments {
-	#[command(subcommand)]
-	pub command: CompileSubcommands,
+/// Terminal session arguments for the global session terminal
+#[derive(Args, Debug, PartialEq, Serialize)]
+pub struct GlobalSessionTerminalSessionArguments {
+	/// List all available sessions
+	#[arg(short, long)]
+	pub list: bool,
+	/// The list of session IDs to open terminal sessions for
+	#[arg(short, long, action = ArgAction::Append)]
+	pub ids: Vec<String>
 }
 
-/// Compilation subcommands
-#[derive(Subcommand, Debug, PartialEq)]
-pub enum CompileSubcommands {
-	/// Compile the agent
-	Agent,
-	/// Compile the C2 GUI
-	Gui,
-}
