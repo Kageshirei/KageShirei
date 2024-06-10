@@ -7,7 +7,10 @@ use axum::routing::post;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, instrument};
 
-use srv_mod_terminal_emulator_commands::TerminalEmulatorCommands;
+use srv_mod_terminal_emulator_commands::{Command, StyledStr};
+use srv_mod_terminal_emulator_commands::command_handler::{CommandHandler, SerializableCommandHandler};
+use srv_mod_terminal_emulator_commands::global_session::GlobalSessionTerminalEmulatorCommands;
+use srv_mod_terminal_emulator_commands::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
 use crate::claims::JwtClaims;
 use crate::errors::ApiServerError;
@@ -45,7 +48,11 @@ async fn post_handler(
 ) -> Result<Json<TerminalCommandResponse>, Response> {
 	info!("Received terminal command");
 
-	let cmd = TerminalEmulatorCommands::from_raw(body.command.clone());
+	let cmd: Result<Box<Command>, StyledStr> = if let Some(session) = body.session_id.clone() {
+		Command::from_raw(Some(session), body.command.clone())
+	} else {
+		Command::from_raw(None, body.command.clone())
+	};
 
 	debug!("Parsed command: {:?}", cmd);
 

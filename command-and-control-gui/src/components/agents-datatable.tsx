@@ -1,4 +1,4 @@
-import { Agent } from "@/interfaces/agent";
+import {Agent} from "@/interfaces/agent";
 import {
     ActionIcon,
     Menu,
@@ -24,22 +24,13 @@ import {
     IconTerminal,
     IconX,
 } from "@tabler/icons-react";
-import {
-    DataTable,
-    DataTableSortStatus,
-    useDataTableColumns,
-} from "mantine-datatable";
-import { alphabetical } from "radash";
-import {
-    CSSProperties,
-    FC,
-    useEffect,
-    useState,
-} from "react";
+import {DataTable, DataTableSortStatus, useDataTableColumns,} from "mantine-datatable";
+import {alphabetical} from "radash";
+import {CSSProperties, FC, useEffect, useState,} from "react";
 
 interface AgentsDatatableProps {
     agents: Agent[];
-    addTerminalHandle: (hostname: string, cwd: string) => void;
+    addTerminalHandle: (hostname: string, cwd: string, id: string) => void;
     style?: CSSProperties;
 }
 
@@ -237,7 +228,7 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
                             <MenuLabel>
                                 Actions
                             </MenuLabel>
-                            <MenuItem onClick={ () => addTerminalHandle(hostname, cwd) }
+                            <MenuItem onClick={() => addTerminalHandle(hostname, cwd, id)}
                                       leftSection={ <IconTerminal size={ 14 } /> }
                             >
                                 Terminal

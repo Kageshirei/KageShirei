@@ -1,59 +1,40 @@
 "use client";
-import { AgentsDatatable } from "@/components/agents-datatable";
-import { Terminal } from "@/components/terminal";
-import { Agent } from "@/interfaces/agent";
-import {
-    ActionIcon,
-    Group,
-    Tabs,
-    TabsList,
-    TabsPanel,
-    TabsTab,
-    Text,
-    ThemeIcon,
-    Tooltip,
-} from "@mantine/core";
-import {
-    IconLayoutColumns,
-    IconLayoutRows,
-    IconTerminal,
-} from "@tabler/icons-react";
-import { useRouter } from "next/navigation";
-import {
-    JSX,
-    useCallback,
-    useEffect,
-    useState,
-} from "react";
+import {AgentsDatatable} from "@/components/agents-datatable";
+import {Terminal} from "@/components/terminal";
+import {Agent} from "@/interfaces/agent";
+import {Tabs, TabsList, TabsPanel, TabsTab, Text, ThemeIcon,} from "@mantine/core";
+import {IconTerminal} from "@tabler/icons-react";
+import {useRouter} from "next/navigation";
+import {JSX, useCallback, useEffect, useState,} from "react";
 import "./page.css";
 import Resizable from "react-resizable-layout";
 
 const sample_data: Agent[] = [
     {
-        id:               "aa112233",
+        id: "aa112233",
         operative_system: "Windows",
-        hostname:         "host1",
-        domain:           "example.com",
-        username:         "user1",
-        ip:               "1.1.1.1",
-        process_id:       1234,
+        hostname: "host1",
+        domain: "example.com",
+        username: "user1",
+        ip: "1.1.1.1",
+        process_id: 1234,
         parent_process_id: 5678,
-        process_name:     "cmd.exe",
-        elevated:         false,
-        cwd:              "C:\\Users\\user1",
+        process_name: "cmd.exe",
+        elevated: false,
+        cwd: "C:\\Users\\user1",
     },
     {
-        id:               "bb445566",
+        id: "bb445566",
         operative_system: "Linux",
-        hostname:         "host2",
-        domain:           "example.com",
-        username:         "user2",
-        ip:               "2.2.2.2",
-        process_id:       2345,
+        hostname: "host2",
+        domain: "example.com",
+        username: "user2",
+        ip: "2.2.2.2",
+        process_id: 2345,
         parent_process_id: 6789,
-        process_name:     "bash",
-        elevated:         true,
-        cwd:              "/home/user2",
+        process_name: "bash",
+        elevated: true,
+        cwd: "/home/user2",
     },
 ];
 
@@ -110,6 +91,7 @@ export default function Page() {
                                       maxHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
                                   } }
                                   dropTerminalHandle={ dropTerminalHandle }
+                                  session_id={null}
                         />
                     ),
                 };
@@ -117,7 +99,8 @@ export default function Page() {
         });
     }, []);
 
-    const addTerminalHandle = useCallback((hostname: string, cwd: string) => {
+    const addTerminalHandle = useCallback(
+        (hostname: string, cwd: string, id: string) => {
             set_terminals((terminals) => {
                 set_active_tab(hostname);
                 return {
@@ -131,8 +114,9 @@ export default function Page() {
                                       maxHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
                                   } }
                                   dropTerminalHandle={ dropTerminalHandle }
+                                  session_id={id}
                         />
-                ),
+                    ),
                 };
             });
         },
@@ -171,37 +155,41 @@ export default function Page() {
                               value={ active_tab }
                               onChange={ set_active_tab }
                         >
-                            <Group className={ "absolute right-0 top-0 translate-y-1/2" }
-                                   gap={ "xs" }
-                            >
-                                <Tooltip label={ "Split terminal vertically" }
-                                         withArrow
-                                         arrowSize={ 10 }
-                                         arrowRadius={ 3 }
-                                         color={ "dark.9" }
-                                >
-                                    <ActionIcon variant={ "light" }
-                                                onClick={ () => console.log("Split terminal vertically") }
-                                                size={ "sm" }
-                                    >
-                                        <IconLayoutColumns size={ 16 } />
-                                    </ActionIcon>
-                                </Tooltip>
-                                <Tooltip label={ "Split terminal horizontally" }
-                                         withArrow
-                                         arrowSize={ 10 }
-                                         arrowRadius={ 3 }
-                                         color={ "dark.9" }
-                                >
-                                    <ActionIcon variant={ "light" }
-                                                onClick={ () => console.log("Split terminal horizontally") }
-                                                size={ "sm" }
-                                    >
-                                        <IconLayoutRows size={ 16 } />
-                                    </ActionIcon>
-                                </Tooltip>
-                            </Group>
-                            <TabsList className="flex-nowrap overflow-x-auto w-[94%]">
+                            {/*
+                             TODO: Implement split terminal functionality
+                             <Group className={ "absolute right-0 top-0 translate-y-1/2" }
+                             gap={ "xs" }
+                             >
+                             <Tooltip label={ "Split terminal vertically" }
+                             withArrow
+                             arrowSize={ 10 }
+                             arrowRadius={ 3 }
+                             color={ "dark.9" }
+                             >
+                             <ActionIcon variant={ "light" }
+                             onClick={ () => console.log("Split terminal vertically") }
+                             size={ "sm" }
+                             >
+                             <IconLayoutColumns size={ 16 } />
+                             </ActionIcon>
+                             </Tooltip>
+                             <Tooltip label={ "Split terminal horizontally" }
+                             withArrow
+                             arrowSize={ 10 }
+                             arrowRadius={ 3 }
+                             color={ "dark.9" }
+                             >
+                             <ActionIcon variant={ "light" }
+                             onClick={ () => console.log("Split terminal horizontally") }
+                             size={ "sm" }
+                             >
+                             <IconLayoutRows size={ 16 } />
+                             </ActionIcon>
+                             </Tooltip>
+                             </Group>
+                             <TabsList className="flex-nowrap overflow-x-auto w-[94%]">
+                             */}
+                            <TabsList className="flex-nowrap overflow-x-auto">
                                 {
                                     Object.keys(terminals).map((tab) => (
                                         <TabsTab key={ tab }
