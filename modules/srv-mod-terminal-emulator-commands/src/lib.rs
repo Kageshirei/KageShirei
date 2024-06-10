@@ -1,62 +1,68 @@
-use anyhow::Result;
 use clap::{Parser, Subcommand};
-use clap::builder::StyledStr;
-use serde::Serialize;
-use tracing::info;
+pub use clap::builder::StyledStr;
+use serde::{Serialize, Serializer};
 
-#[derive(Parser, Debug, PartialEq, Serialize)]
-#[command(about, long_about = None, no_binary_name(true), bin_name = "")]
-pub struct TerminalEmulatorCommands {
-	/// Turn debugging information on
-	#[arg(
-		short,
-		long,
-		action = clap::ArgAction::Count,
-		global = true,
-		long_help = r#"Turn debugging information on.
+use crate::command_handler::{CommandHandler, SerializableCommandHandler};
+use crate::global_session::GlobalSessionTerminalEmulatorCommands;
+use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
-The more occurrences increase the verbosity level
-- 0: No debugging information
-- 1: Debugging information
-- 2: Debug and trace information"#)]
-	pub debug: u8,
+pub mod global_session;
+pub mod command_handler;
+pub mod session_terminal_emulator;
 
-	#[command(subcommand)]
-	pub command: Commands,
+#[derive(Debug, PartialEq)]
+pub enum Command {
+	SessionTerminalEmulatorCommands(SessionTerminalEmulatorCommands),
+	GlobalSessionTerminalEmulatorCommands(GlobalSessionTerminalEmulatorCommands),
 }
 
-#[derive(Subcommand, Debug, PartialEq, Serialize)]
-pub enum Commands {
-	/// Clear the terminal screen
-	#[serde(rename = "clear")]
-	Clear,
-	/// Exit the terminal session, closing the terminal emulator
-	#[serde(rename = "exit")]
-	Exit,
-}
-
-impl TerminalEmulatorCommands {
-	pub fn from_raw(value: String) -> Result<TerminalEmulatorCommands, StyledStr> {
-		let parsed_command = shellwords::split(value.as_str()).unwrap();
-		Self::try_parse_from(parsed_command).map_err(|e| e.render())
+impl Serialize for Command {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+		where S: Serializer,
+	{
+		match self {
+			Self::SessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
+			Self::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
+		}
 	}
+}
 
-	pub fn handle_command(&self) -> Result<String> {
-		match &self.command {
-			Commands::Clear => {
-				info!("Terminal clear command received");
+impl Command {
+	pub fn from_raw(session_id: Option<String>, value: String) -> Result<Box<Self>, StyledStr> {
+		// if a session_id is provided, parse the command as a SessionTerminalEmulatorCommands
+		return if session_id.is_some() {
+			let parsed_command = shellwords::split(value.as_str()).unwrap();
+			let cmd = SessionTerminalEmulatorCommands::try_parse_from(parsed_command)
+				.map_err(|e| e.render())
+				.map(|c| Box::new(c));
 
-				// TODO: Implement the clear command hiding the output of previous commands (not dropping it by default)
-
-				// Signal the frontend terminal emulator to clear the terminal screen
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
+			// if the command is successfully parsed, return it
+			if let Ok(cmd) = cmd {
+				return Ok(Box::new(Command::SessionTerminalEmulatorCommands(*cmd)));
 			}
-			Commands::Exit => {
-				info!("Terminal exit command received");
+			Err(cmd.err().unwrap())
+		}
+		// otherwise, parse the command as a GlobalSessionTerminalEmulatorCommands
+		else {
+			let parsed_command = shellwords::split(value.as_str()).unwrap();
+			let cmd = GlobalSessionTerminalEmulatorCommands::try_parse_from(parsed_command)
+				.map_err(|e| e.render())
+				.map(|c| Box::new(c));
 
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
+			// if the command is successfully parsed, return it
+			if let Ok(cmd) = cmd {
+				return Ok(Box::new(Command::GlobalSessionTerminalEmulatorCommands(*cmd)));
 			}
+			Err(cmd.err().unwrap())
+		};
+	}
+}
+
+impl CommandHandler for Command {
+	fn handle_command(&self) -> anyhow::Result<String> {
+		match self {
+			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(),
+			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(),
 		}
 	}
 }

@@ -1,24 +1,14 @@
-import {
-    NATIVE_COMMANDS,
-    NativeHandler,
-} from "@/components/terminal/native-commands";
-import { TerminalInputLine } from "@/components/terminal/terminal-input-line";
-import { TerminalOpenerSection } from "@/components/terminal/terminal-opener-section";
+import {NATIVE_COMMANDS, NativeHandler,} from "@/components/terminal/native-commands";
+import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
+import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
 import Ansi from "ansi-to-react";
-import {
-    CSSProperties,
-    FC,
-    JSX,
-    KeyboardEvent,
-    useCallback,
-    useEffect,
-    useState,
-} from "react";
+import {CSSProperties, FC, JSX, KeyboardEvent, useCallback, useEffect, useState,} from "react";
 
 interface TerminalProps {
     hostname: string;
     username: string;
     cwd: string;
+    session_id: string | null;
     dropTerminalHandle: (hostname: string) => void;
     style?: CSSProperties;
 }
@@ -29,6 +19,7 @@ export const Terminal: FC<TerminalProps> = ({
     hostname,
     style,
     dropTerminalHandle,
+                                                session_id,
 }) => {
     const [ requires_input_line_append, set_requires_input_line_append ] = useState(true);
     const [ terminal_fragments, set_terminal_fragments ] = useState<JSX.Element[]>([]);
@@ -64,7 +55,7 @@ export const Terminal: FC<TerminalProps> = ({
                             },
                             body:    JSON.stringify({
                                 command,
-                                session_id: null,
+                                session_id,
                             }),
                         });
 
