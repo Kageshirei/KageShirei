@@ -1,7 +1,7 @@
-import {dayjs} from "@/helpers/dayjs";
-import {notifications} from "@mantine/notifications";
-import {AppRouterInstance} from "next/dist/shared/lib/app-router-context.shared-runtime";
-import {proxy} from "valtio";
+import { dayjs } from "@/helpers/dayjs";
+import { notifications } from "@mantine/notifications";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { proxy } from "valtio";
 
 export interface IAuthenticate {
     host: string;
@@ -143,6 +143,12 @@ class Authentication {
                     message: (await response.json()).error,
                     color: "red",
                 });
+
+                // remove the auth data and reload the page
+                localStorage.removeItem("auth");
+                this._is_authenticated = false;
+                location.reload();
+
                 return;
             }
 

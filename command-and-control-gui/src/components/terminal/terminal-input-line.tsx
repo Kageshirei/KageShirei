@@ -1,4 +1,11 @@
-import {createRef, FC, KeyboardEvent, useCallback, useEffect, useState,} from "react";
+import {
+    createRef,
+    FC,
+    KeyboardEvent,
+    useCallback,
+    useEffect,
+    useState,
+} from "react";
 
 interface TerminalInputLineProps {
     handle_terminal_keydown: (e: KeyboardEvent<HTMLSpanElement>) => void;
@@ -6,14 +13,16 @@ interface TerminalInputLineProps {
 }
 
 export const TerminalInputLine: FC<TerminalInputLineProps> = ({
-                                                                  handle_terminal_keydown,
-                                                                  hostname,
-                                                              }) => {
-    const [is_editable, set_is_editable] = useState(true);
+    handle_terminal_keydown,
+    hostname,
+}) => {
+    const [ is_editable, set_is_editable ] = useState(true);
     const ref = createRef<HTMLSpanElement>();
 
     const wrapped_terminal_keydown_handler = useCallback(
-        (e: KeyboardEvent<HTMLSpanElement>) => {
+        (
+            e: KeyboardEvent<HTMLSpanElement>,
+        ) => {
             // disable the input line if the user presses enter
             if (e.key === "Enter") {
                 set_is_editable(false);
@@ -55,12 +64,12 @@ export const TerminalInputLine: FC<TerminalInputLineProps> = ({
     }, []);
 
     return (
-        <span ref={ref}
-              contentEditable={is_editable}
+        <span ref={ ref }
+              contentEditable={ is_editable }
               className="appearance-none font-mono outline-none border-none shadow-none
               before:content-['\feff'] min-w-full w-full h-3 break-all"
-              onKeyDown={wrapped_terminal_keydown_handler}
-              id={`${hostname}-terminal-input-line`}
+              onKeyDown={ wrapped_terminal_keydown_handler }
+              id={ `${ hostname }-terminal-input-line` }
         />
     );
 };
