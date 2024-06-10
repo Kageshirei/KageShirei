@@ -2,9 +2,10 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use clap::builder::StyledStr;
 use serde::Serialize;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::command_handler::{CommandHandler, SerializableCommandHandler};
+use crate::global_session::session::GlobalSessionTerminalSessionArguments;
 use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
 mod session;
@@ -38,14 +39,15 @@ pub enum Commands {
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
-	Session,
+	/// Start a new terminal session
+	Session(GlobalSessionTerminalSessionArguments),
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 	fn handle_command(&self) -> Result<String> {
 		match &self.command {
 			Commands::Clear => {
-				info!("Terminal clear command received");
+				debug!("Terminal clear command received");
 
 				// TODO: Implement the clear command hiding the output of previous commands (not dropping it by default)
 
@@ -53,13 +55,14 @@ impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
 			}
 			Commands::Exit => {
-				info!("Terminal exit command received");
+				debug!("Terminal exit command received");
 
 				// Signal the frontend terminal emulator to exit the terminal session
 				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
 			}
-			Commands::Session => {
-				info!("Terminal session command received");
+			Commands::Session(_args) => {
+				todo!("Implement session command handling");
+				debug!("Terminal session command received");
 
 				// Signal the frontend terminal emulator to exit the terminal session
 				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_SESSION__".to_string())
