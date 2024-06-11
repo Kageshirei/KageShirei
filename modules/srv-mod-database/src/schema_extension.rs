@@ -130,3 +130,40 @@ impl FromSql<FilterOperator, Pg> for FilterOperator {
 		}
 	}
 }
+
+/// Represent the list of valid log levels
+#[derive(Debug, Clone, PartialEq, FromSqlRow, QueryId, SqlType, AsExpression, Eq)]
+#[diesel(postgres_type(name = "log_level"), sql_type = LogLevel)]
+pub enum LogLevel {
+	INFO,
+	WARN,
+	ERROR,
+	DEBUG,
+	TRACE,
+}
+
+impl ToSql<LogLevel, Pg> for LogLevel {
+	fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+		match *self {
+			Self::INFO => out.write_all(b"INFO")?,
+			Self::WARN => out.write_all(b"WARN")?,
+			Self::ERROR => out.write_all(b"ERROR")?,
+			Self::DEBUG => out.write_all(b"DEBUG")?,
+			Self::TRACE => out.write_all(b"TRACE")?,
+		}
+		Ok(IsNull::No)
+	}
+}
+
+impl FromSql<LogLevel, Pg> for LogLevel {
+	fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
+		match bytes.as_bytes() {
+			b"INFO" => Ok(Self::INFO),
+			b"WARN" => Ok(Self::WARN),
+			b"ERROR" => Ok(Self::ERROR),
+			b"DEBUG" => Ok(Self::DEBUG),
+			b"TRACE" => Ok(Self::TRACE),
+			_ => Err("Unrecognized enum variant".into()),
+		}
+	}
+}
