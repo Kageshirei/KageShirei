@@ -52,7 +52,7 @@ session --ids agent-id-1 --ids agent-id-2 --ids agent-id-3"#)]
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
-	fn handle_command(&self) -> Result<String> {
+	fn handle_command(&self, session_id: &str) -> Result<String> {
 		match &self.command {
 			Commands::Clear => {
 				debug!("Terminal clear command received");
