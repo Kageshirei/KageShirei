@@ -9,3 +9,4 @@ shellwords = "1.1.0"
 anyhow = "1.0.86"
 tracing = "0.1.40"
 serde = { version = "1.0.203", features = ["derive"] }
+srv-mod-database = { path = "../srv-mod-database" }

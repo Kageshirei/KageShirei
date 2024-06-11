@@ -37,7 +37,7 @@ pub enum Commands {
 }
 
 impl CommandHandler for SessionTerminalEmulatorCommands {
-	fn handle_command(&self) -> anyhow::Result<String> {
+	fn handle_command(&self, session_id: &str) -> anyhow::Result<String> {
 		match &self.command {
 			Commands::Clear => {
 				info!("Terminal clear command received");
