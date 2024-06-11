@@ -12,7 +12,7 @@ create table if not exists logs (
     level      log_level not null,
     message    text,
     title      text,
-    extra      json               default '{}'::json,
-    created_at timestamp not null default current_timestamp,
-    updated_at timestamp not null default current_timestamp
+    extra      jsonb                default '{}'::jsonb,
+    created_at timestamptz not null default current_timestamp,
+    updated_at timestamptz not null default current_timestamp
 )

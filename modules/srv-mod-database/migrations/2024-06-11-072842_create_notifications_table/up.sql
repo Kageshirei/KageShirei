@@ -4,6 +4,6 @@ create table if not exists notifications (
     level      log_level not null,
     message    text      not null,
     title      text      not null,
-    created_at timestamp not null default current_timestamp,
-    updated_at timestamp not null default current_timestamp
+    created_at timestamptz not null default current_timestamp,
+    updated_at timestamptz not null default current_timestamp
 )

@@ -9,9 +9,9 @@ create table if not exists commands (
     output      text,
     exit_code   integer,
     -- Soft delete for the `clear` command.
-    deleted_at  timestamp,
+    deleted_at  timestamptz,
     -- Restore timestamp for the `history` command.
-    restored_at timestamp,
-    created_at  timestamp   not null default current_timestamp,
-    updated_at  timestamp   not null default current_timestamp
+    restored_at timestamptz,
+    created_at  timestamptz not null default current_timestamp,
+    updated_at  timestamptz not null default current_timestamp
 )

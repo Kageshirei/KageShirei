@@ -1,6 +1,5 @@
 -- Your SQL goes here
-create table if not exists agents
-(
+create table if not exists agents (
     id                varchar(32) primary key,
     operative_system  varchar(255) not null,
     hostname          varchar(255) not null,
