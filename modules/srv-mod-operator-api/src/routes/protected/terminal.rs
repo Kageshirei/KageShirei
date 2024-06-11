@@ -152,6 +152,7 @@ async fn post_handler(
 
 	let cmd = cmd.unwrap();
 
+	// Handle the command
 	let response = cmd.handle_command(session_id.as_str())
 	                  .map_err(|e| ApiServerError::make_terminal_emulator_error(
 		                  session_id.as_str(),
