@@ -40,6 +40,14 @@ pub enum Commands {
 	#[serde(rename = "exit")]
 	Exit,
 	/// Start a new terminal session
+	#[command(long_about = r#"Start a new terminal session
+
+This command is used to start a new terminal session. The session ID is used to identify the terminal session (aka agent id).
+
+Example:
+session --list
+session --ids agent-id-1 --ids agent-id-2 --ids agent-id-3"#)]
+	#[serde(rename = "session")]
 	Session(GlobalSessionTerminalSessionArguments),
 }
 
