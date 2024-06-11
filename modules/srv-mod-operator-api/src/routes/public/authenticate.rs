@@ -31,7 +31,7 @@ pub struct AuthenticatePostResponse {
 
 /// The handler for the public authentication route
 #[debug_handler]
-#[instrument(name = "POST /authenticate", skip(state))]
+#[instrument(name = "POST /authenticate", skip_all)]
 async fn post_handler(
 	State(state): State<ApiServerSharedState>,
 	InferBody(payload): InferBody<AuthenticatePostPayload>,

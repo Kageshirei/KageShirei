@@ -33,3 +33,4 @@ chrono = "0.4.38"
 srv-mod-config = { path = "../srv-mod-config" }
 srv-mod-database = { path = "../srv-mod-database" }
 humantime = "2.1.0"
+srv-mod-terminal-emulator-commands = { path = "../srv-mod-terminal-emulator-commands" }
