@@ -13,7 +13,8 @@ export interface IAuthenticate {
 /**
  * The authentication context used to store the authentication data
  *
- * Note: This does not persist the data, it is only stored in memory, so if the page is refreshed the data will be lost
+ * NOTE: This file must be dynamically imported in order to prevent server side rendering errors (aka
+ *  window/localStorage is not defined)
  */
 class Authentication {
     private _elapses_at: dayjs.Dayjs | null = null;
@@ -21,7 +22,7 @@ class Authentication {
     private _expires_in: number = 0;
 
     constructor() {
-        if (!window || !localStorage) {
+        if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
             return;
         }
 
@@ -74,7 +75,9 @@ class Authentication {
             return;
         }
 
-        window.localStorage.setItem("auth", JSON.stringify(data));
+        if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+            window.localStorage.setItem("auth", JSON.stringify(data));
+        }
 
         // Clear the interval if it exists
         if (this._refresh_interval) {
@@ -128,11 +131,11 @@ class Authentication {
             console.log("Token about to expire, refreshing");
 
             // send a request to refresh the token
-            const response = await fetch(`http://${this._host}/refresh-token`, {
-                method: "POST",
+            const response = await fetch(`http://${ this._host }/refresh-token`, {
+                method:  "POST",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${this._bearer}`,
+                    "Content-Type":  "application/json",
+                    "Authorization": `Bearer ${ this._bearer }`,
                 },
             });
 
@@ -145,7 +148,9 @@ class Authentication {
                 });
 
                 // remove the auth data and reload the page
-                localStorage.removeItem("auth");
+                if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+                    localStorage.removeItem("auth");
+                }
                 this._is_authenticated = false;
                 location.reload();
 
@@ -158,12 +163,14 @@ class Authentication {
             this._expires_in = data.expires_in;
 
             // update the local storage
-            localStorage.setItem("auth", JSON.stringify({
-                host: this._host,
-                bearer: this._bearer,
-                expires_in: this._expires_in,
-                username: this._username,
-            }));
+            if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+                localStorage.setItem("auth", JSON.stringify({
+                    host:       this._host,
+                    bearer:     this._bearer,
+                    expires_in: this._expires_in,
+                    username:   this._username,
+                }));
+            }
 
             // and update the elapses_at
             this._elapses_at = dayjs.utc().add(this._expires_in, "second").subtract(1, "minute");

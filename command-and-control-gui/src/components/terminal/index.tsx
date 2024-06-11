@@ -1,8 +1,20 @@
-import {NATIVE_COMMANDS, NativeHandler,} from "@/components/terminal/native-commands";
-import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
-import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
+import {
+    NATIVE_COMMANDS,
+    NativeHandler,
+} from "@/components/terminal/native-commands";
+import { TerminalInputLine } from "@/components/terminal/terminal-input-line";
+import { TerminalOpenerSection } from "@/components/terminal/terminal-opener-section";
+import { AuthenticationCtx } from "@/context/authentication";
 import Ansi from "ansi-to-react";
-import {CSSProperties, FC, JSX, KeyboardEvent, useCallback, useEffect, useState,} from "react";
+import {
+    CSSProperties,
+    FC,
+    JSX,
+    KeyboardEvent,
+    useCallback,
+    useEffect,
+    useState,
+} from "react";
 
 interface TerminalProps {
     hostname: string;
@@ -19,7 +31,7 @@ export const Terminal: FC<TerminalProps> = ({
     hostname,
     style,
     dropTerminalHandle,
-                                                session_id,
+    session_id,
 }) => {
     const [ requires_input_line_append, set_requires_input_line_append ] = useState(true);
     const [ terminal_fragments, set_terminal_fragments ] = useState<JSX.Element[]>([]);
@@ -27,7 +39,7 @@ export const Terminal: FC<TerminalProps> = ({
     const [ history_index, set_history_index ] = useState<number | null>(null);
 
     const handle_terminal_keydown = useCallback(
-        (e: KeyboardEvent<HTMLSpanElement>) => {
+        async (e: KeyboardEvent<HTMLSpanElement>) => {
             if (e.key === "Enter") {
                 e.preventDefault();
                 e.stopPropagation();
@@ -46,74 +58,72 @@ export const Terminal: FC<TerminalProps> = ({
                     });
 
                     // send the command to the backend
-                    import("@/context/authentication").then(async ({ AuthenticationCtx }) => {
-                        const response = await fetch(`http://${ AuthenticationCtx.host }/terminal`, {
-                            method:  "POST",
-                            headers: {
-                                "Content-Type":  "application/json",
-                                "Authorization": `Bearer ${ AuthenticationCtx.bearer }`,
-                            },
-                            body:    JSON.stringify({
-                                command,
-                                session_id,
-                            }),
-                        });
+                    const response = await fetch(`http://${ AuthenticationCtx.host }/terminal`, {
+                        method:  "POST",
+                        headers: {
+                            "Content-Type":  "application/json",
+                            "Authorization": `Bearer ${ AuthenticationCtx.bearer }`,
+                        },
+                        body:    JSON.stringify({
+                            command,
+                            session_id,
+                        }),
+                    });
 
-                        const json = await response.json();
+                    const json = await response.json();
 
-                        console.log(json);
+                    console.log(json);
 
-                        // handle frontend commands
-                        if ([
-                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
-                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
-                        ].includes(json.response)) {
-                            let internal_call: NativeHandler | null = null;
+                    // handle frontend commands
+                    if ([
+                        "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
+                        "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
+                    ].includes(json.response)) {
+                        let internal_call: NativeHandler | null = null;
 
-                            switch (json.response) {
-                                case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__":
-                                    internal_call = "clear";
-                                    break;
-                                case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__":
-                                    internal_call = "exit";
-                                    break;
-                            }
-
-                            if (internal_call) {
-                                await NATIVE_COMMANDS[internal_call].handler({
-                                    args:    JSON.parse(json.command),
-                                    cwd,
-                                    username,
-                                    hostname,
-                                    set_cwd: () => { },
-                                    set_terminal_fragments,
-                                    terminal_fragments,
-                                    hooks:   {
-                                        dropTerminalHandle,
-                                    },
-                                });
-                            }
+                        switch (json.response) {
+                            case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__":
+                                internal_call = "clear";
+                                break;
+                            case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__":
+                                internal_call = "exit";
+                                break;
                         }
-                        else {
-                            set_terminal_fragments(old => [
-                                ...old,
-                                <pre key={ `${ hostname }-out-${ old.length + 1 }` }
-                                     className="break-all"
-                                >
+
+                        if (internal_call) {
+                            await NATIVE_COMMANDS[internal_call].handler({
+                                args:    JSON.parse(json.command),
+                                cwd,
+                                username,
+                                hostname,
+                                set_cwd: () => { },
+                                set_terminal_fragments,
+                                terminal_fragments,
+                                hooks:   {
+                                    dropTerminalHandle,
+                                },
+                            });
+                        }
+                    }
+                    else {
+                        set_terminal_fragments(old => [
+                            ...old,
+                            <pre key={ `${ hostname }-out-${ old.length + 1 }` }
+                                 className="break-all"
+                            >
                                     <Ansi>
                                         { json.response }
                                     </Ansi>
                                 </pre>,
-                            ]);
-                        }
+                        ]);
+                    }
 
-                        set_requires_input_line_append(true);
+                    set_requires_input_line_append(true);
 
-                        // focus on the input line
-                        setTimeout(() => {
-                            ([ ...document.querySelectorAll(`#${ hostname }-terminal-input-line`) ].at(-1) as HTMLSpanElement | undefined)?.focus();
-                        }, 50);
-                    });
+                    // focus on the input line
+                    setTimeout(() => {
+                        ([ ...document.querySelectorAll(`#${ hostname }-terminal-input-line`) ].at(-1) as HTMLSpanElement | undefined)?.focus();
+                    }, 50);
                 }
             }
             // handle the up arrow key
@@ -203,7 +213,7 @@ export const Terminal: FC<TerminalProps> = ({
     );
 
     return (
-        <div className="w-full px-4 py-4 bg-zinc-900 mt-2 rounded font-mono items-center relative min-h-[inherit]
+        <div className="w-full p-4 bg-zinc-900 mt-2 rounded font-mono items-center relative min-h-[inherit]
         max-h-[inherit] h-full overflow-x-hidden overflow-y-auto pr-2 text-sm"
              style={ style }
         >

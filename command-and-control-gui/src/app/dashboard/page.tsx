@@ -1,53 +1,64 @@
 "use client";
-import {AgentsDatatable} from "@/components/agents-datatable";
-import {Terminal} from "@/components/terminal";
-import {Agent} from "@/interfaces/agent";
-import {Tabs, TabsList, TabsPanel, TabsTab, Text, ThemeIcon,} from "@mantine/core";
-import {IconTerminal} from "@tabler/icons-react";
-import {useRouter} from "next/navigation";
-import {JSX, useCallback, useEffect, useState,} from "react";
+import { AgentsDatatable } from "@/components/agents-datatable";
+import { Terminal } from "@/components/terminal";
+import { AuthenticationCtx } from "@/context/authentication";
+import {
+    getFromLocalStorage,
+    persistInLocalStorage,
+} from "@/helpers/local-storage";
+import { useEnsureUserIsAuthenticated } from "@/hooks/use-ensure-user-is-authenticated";
+import { Agent } from "@/interfaces/agent";
+import {
+    Tabs,
+    TabsList,
+    TabsPanel,
+    TabsTab,
+    Text,
+    ThemeIcon,
+} from "@mantine/core";
+import { IconTerminal } from "@tabler/icons-react";
+import {
+    JSX,
+    useCallback,
+    useEffect,
+    useState,
+} from "react";
 import "./page.css";
-import Resizable from "react-resizable-layout";
+import Resizable, { ResizeCallbackArgs } from "react-resizable-layout";
 
 const sample_data: Agent[] = [
     {
-        id: "aa112233",
+        id:               "aa112233",
         operative_system: "Windows",
-        hostname: "host1",
-        domain: "example.com",
-        username: "user1",
-        ip: "1.1.1.1",
-        process_id: 1234,
+        hostname:         "host1",
+        domain:           "example.com",
+        username:         "user1",
+        ip:               "1.1.1.1",
+        process_id:       1234,
         parent_process_id: 5678,
-        process_name: "cmd.exe",
-        elevated: false,
-        cwd: "C:\\Users\\user1",
+        process_name:     "cmd.exe",
+        elevated:         false,
+        cwd:              "C:\\Users\\user1",
     },
     {
-        id: "bb445566",
+        id:               "bb445566",
         operative_system: "Linux",
-        hostname: "host2",
-        domain: "example.com",
-        username: "user2",
-        ip: "2.2.2.2",
-        process_id: 2345,
+        hostname:         "host2",
+        domain:           "example.com",
+        username:         "user2",
+        ip:               "2.2.2.2",
+        process_id:       2345,
         parent_process_id: 6789,
-        process_name: "bash",
-        elevated: true,
-        cwd: "/home/user2",
+        process_name:     "bash",
+        elevated:         true,
+        cwd:              "/home/user2",
     },
 ];
 
+const split_storage_key = "agents-terminal-split";
+
 export default function Page() {
-    // Redirect to the login page if the user is not authenticated
-    const router = useRouter();
-    useEffect(() => {
-        import("@/context/authentication").then(({ AuthenticationCtx }) => {
-            if (!AuthenticationCtx.is_authenticated) {
-                router.push("/");
-            }
-        });
-    }, [ router ]);
+    useEnsureUserIsAuthenticated();
 
     // control the active tab
     const [ active_tab, set_active_tab ] = useState<string | null>("global");
@@ -57,9 +68,9 @@ export default function Page() {
         [x: string]: (position: number) => JSX.Element
     }>({});
 
+    // Drop a terminal from the list of terminals
     const dropTerminalHandle = useCallback((hostname: string) => {
         set_terminals((terminals) => {
-
             // If the active tab is the one being closed, set the active tab to the previous tab
             const keys = Object.keys(terminals);
             const index = keys.indexOf(hostname);
@@ -76,29 +87,28 @@ export default function Page() {
     // Get the username from the authentication context
     const [ username, set_username ] = useState("");
     useEffect(() => {
-        import("@/context/authentication").then(({ AuthenticationCtx }) => {
-            set_username(AuthenticationCtx.username);
+        set_username(AuthenticationCtx.username);
 
-            set_terminals((terminals) => {
-                return {
-                    ...terminals,
-                    global: (position) => (
-                        <Terminal hostname={ "RS2" }
-                                  username={ AuthenticationCtx.username }
-                                  cwd={ "~" }
-                                  style={ {
-                                      minHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
-                                      maxHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
-                                  } }
-                                  dropTerminalHandle={ dropTerminalHandle }
-                                  session_id={null}
-                        />
-                    ),
-                };
-            });
+        set_terminals((terminals) => {
+            return {
+                ...terminals,
+                global: (position) => (
+                    <Terminal hostname={ "RS2" }
+                              username={ AuthenticationCtx.username }
+                              cwd={ "~" }
+                              style={ {
+                                  minHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
+                                  maxHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
+                              } }
+                              dropTerminalHandle={ dropTerminalHandle }
+                              session_id={ null }
+                    />
+                ),
+            };
         });
     }, []);
 
+    // Add a terminal to the list of terminals
     const addTerminalHandle = useCallback(
         (hostname: string, cwd: string, id: string) => {
             set_terminals((terminals) => {
@@ -114,7 +124,7 @@ export default function Page() {
                                       maxHeight: `calc(100dvh - ${ position }px - var(--mantine-spacing-xl, 0) * 4)`,
                                   } }
                                   dropTerminalHandle={ dropTerminalHandle }
-                                  session_id={id}
+                                  session_id={ id }
                         />
                     ),
                 };
@@ -130,7 +140,10 @@ export default function Page() {
         <Resizable axis={ "y" }
                    min={ 200 }
                    max={ 500 }
-                   initial={ 500 }
+                   initial={ getFromLocalStorage<ResizeCallbackArgs>(split_storage_key)?.position ?? 500 }
+                   onResizeEnd={ (args) => {
+                       persistInLocalStorage(split_storage_key, args);
+                   } }
         >
             {
                 ({
@@ -188,7 +201,7 @@ export default function Page() {
                              </Tooltip>
                              </Group>
                              <TabsList className="flex-nowrap overflow-x-auto w-[94%]">
-                             */}
+                             */ }
                             <TabsList className="flex-nowrap overflow-x-auto">
                                 {
                                     Object.keys(terminals).map((tab) => (
