@@ -47,7 +47,7 @@ export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
             // run global commands. Even if the global terminal cannot be closed dropping it will break the line input,
             // this is the reason why the global terminal is not closed.
             if (hostname === "RS2") {
-                // if the terminal is the global terminal, do not exit
+                // if the terminal is the global terminal, do not exit and show an error message
                 set_terminal_fragments(old => [
                     ...old,
                     <pre key={ `${ hostname }-out-${ old.length + 1 }` }
@@ -58,6 +58,7 @@ export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
                         </Ansi>
                     </pre>,
                 ]);
+
                 return;
             }
 
