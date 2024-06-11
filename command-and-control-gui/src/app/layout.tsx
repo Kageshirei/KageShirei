@@ -1,12 +1,13 @@
-import {createTheme, MantineProvider,} from "@mantine/core";
+import {
+    createTheme,
+    MantineProvider,
+} from "@mantine/core";
 import "./tailwind.css";
-import {Notifications} from "@mantine/notifications";
 
-import type {Metadata} from "next";
-import {Nunito} from "next/font/google";
+import type { Metadata } from "next";
+import { Nunito } from "next/font/google";
 import "@mantine/core/styles.css";
-import '@mantine/notifications/styles.css';
-import {ReactNode} from "react";
+import { ReactNode } from "react";
 
 const nunito = Nunito({
     subsets: [
@@ -38,17 +39,17 @@ export default function RootLayout(
 ) {
     return (
         <html lang="en"
-              className="dark overflow-x-hidden"
+              className="dark overflow-hidden"
+              suppressHydrationWarning
         >
-        <body className={nunito.className}>
-        <MantineProvider theme={theme}
-                         defaultColorScheme={"dark"}
-                         forceColorScheme={"dark"}
-                         withCssVariables
-        >
-            <Notifications/>
-            {children}
-        </MantineProvider>
+        <body className={ nunito.className }>
+            <MantineProvider theme={ theme }
+                             defaultColorScheme={ "dark" }
+                             forceColorScheme={ "dark" }
+                             withCssVariables
+            >
+                { children }
+            </MantineProvider>
         </body>
         </html>
     );
