@@ -3,7 +3,8 @@ use serde::Serialize;
 
 use srv_mod_database::Pool;
 
-use crate::command_handler::{CommandHandler, SerializableCommandHandler};
+use crate::command_handler::CommandHandler;
+use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 
 pub(crate) mod clear;
 pub(crate) mod exit;
@@ -33,7 +34,7 @@ The more occurrences increase the verbosity level
 pub enum Commands {
 	/// Clear the terminal screen
 	#[serde(rename = "clear")]
-	Clear,
+	Clear(TerminalSessionClearArguments),
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
@@ -42,10 +43,8 @@ pub enum Commands {
 impl CommandHandler for SessionTerminalEmulatorCommands {
 	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> anyhow::Result<String> {
 		match &self.command {
-			Commands::Clear => clear::handle(session_id, db_pool).await,
+			Commands::Clear(args) => clear::handle(session_id, db_pool, args).await,
 			Commands::Exit => exit::handle(session_id).await,
 		}
 	}
 }
-
-impl SerializableCommandHandler for SessionTerminalEmulatorCommands {}

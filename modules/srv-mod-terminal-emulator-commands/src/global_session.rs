@@ -1,14 +1,13 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use clap::builder::StyledStr;
 use serde::Serialize;
-use tracing::{debug, info};
+use tracing::debug;
 
 use srv_mod_database::Pool;
 
-use crate::command_handler::{CommandHandler, SerializableCommandHandler};
+use crate::command_handler::CommandHandler;
 use crate::global_session::session::GlobalSessionTerminalSessionArguments;
-use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
+use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 
 mod session;
 
@@ -37,7 +36,7 @@ The more occurrences increase the verbosity level
 pub enum Commands {
 	/// Clear the terminal screen
 	#[serde(rename = "clear")]
-	Clear,
+	Clear(TerminalSessionClearArguments),
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
@@ -56,7 +55,7 @@ session --ids agent-id-1 --ids agent-id-2 --ids agent-id-3"#)]
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> Result<String> {
 		match &self.command {
-			Commands::Clear => crate::session_terminal_emulator::clear::handle(session_id, db_pool).await,
+			Commands::Clear(args) => crate::session_terminal_emulator::clear::handle(session_id, db_pool, args).await,
 			Commands::Exit => crate::session_terminal_emulator::exit::handle(session_id).await,
 			Commands::Session(_args) => {
 				debug!("Terminal session command received");
@@ -69,5 +68,3 @@ impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 		}
 	}
 }
-
-impl SerializableCommandHandler for GlobalSessionTerminalEmulatorCommands {}
