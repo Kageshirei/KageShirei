@@ -68,7 +68,9 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHis
 			                             commands::deleted_at.is_null()
 			                                                 .or(
 				                                                 commands::restored_at.is_not_null()
-				                                                                      .and(commands::restored_at.gt(commands::deleted_at))
+					                                                 .and(
+						                                                 commands::restored_at.gt(commands::deleted_at)
+					                                                 )
 			                                                 )
 		                             )
 		                             .order_by(commands::created_at.asc())

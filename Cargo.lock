@@ -4450,6 +4450,7 @@ dependencies = [
  "anyhow",
     "chrono",
  "clap",
+    "rs2-communication-protocol",
  "rs2-srv-test-helper",
  "serde",
     "serde_json",
