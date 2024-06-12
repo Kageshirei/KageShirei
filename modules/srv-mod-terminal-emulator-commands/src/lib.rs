@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 pub use clap::builder::StyledStr;
 use serde::{Serialize, Serializer};
 
+use srv_mod_database::Pool;
+
 use crate::command_handler::{CommandHandler, SerializableCommandHandler};
 use crate::global_session::GlobalSessionTerminalEmulatorCommands;
 use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
@@ -41,6 +43,7 @@ macro_rules! make_result_from_cmd {
 
 
 impl Command {
+	/// Parse the command from the raw string to the specified type
 	fn internal_parse<T>(value: &str) -> Result<Box<T>, StyledStr>
 		where T: Parser {
 		let parsed_command = shellwords::split(value).unwrap();
@@ -67,10 +70,10 @@ impl Command {
 }
 
 impl CommandHandler for Command {
-	fn handle_command(&self, session_id: &str) -> anyhow::Result<String> {
+	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> anyhow::Result<String> {
 		match self {
-			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(session_id),
-			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(session_id),
+			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(session_id, db_pool).await,
+			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(session_id, db_pool).await,
 		}
 	}
 }

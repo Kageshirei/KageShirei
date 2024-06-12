@@ -68,11 +68,11 @@ fn update_command_state(
 			// when the update is attempted.
 			// If the update fails, sleep for 1 second before retrying.
 			let result = diesel::update(commands::dsl::commands::table())
+				.filter(commands::id.eq(storable_command_id))
 				.set((
 					commands::dsl::output.eq(movable_response),
 					commands::dsl::exit_code.eq(1),
 				))
-				.filter(commands::id.eq(storable_command_id))
 				.execute(&mut connection)
 				.await;
 
@@ -153,7 +153,8 @@ async fn post_handler(
 	let cmd = cmd.unwrap();
 
 	// Handle the command
-	let response = cmd.handle_command(session_id.as_str())
+	let response = cmd.handle_command(session_id.as_str(), state.db_pool.clone())
+	                  .await
 	                  .map_err(|e| ApiServerError::make_terminal_emulator_error(
 		                  session_id.as_str(),
 		                  body.command,
