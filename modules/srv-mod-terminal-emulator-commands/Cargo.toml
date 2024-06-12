@@ -14,3 +14,4 @@ srv-mod-database = { path = "../srv-mod-database" }
 [dev-dependencies]
 tokio = "1.37.0"
 serial_test = "3.1.1"
+rs2-srv-test-helper = { path = "../../libs/rs2-srv-test-helper" }
