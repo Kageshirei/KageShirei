@@ -5,9 +5,11 @@ use srv_mod_database::Pool;
 
 use crate::command_handler::CommandHandler;
 use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
+use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
 pub(crate) mod clear;
 pub(crate) mod exit;
+pub(crate) mod history;
 
 #[derive(Parser, Debug, PartialEq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
@@ -38,6 +40,9 @@ pub enum Commands {
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
+	/// Get the history of the terminal session and operate on it
+	#[serde(rename = "history")]
+	History(TerminalSessionHistoryArguments),
 }
 
 impl CommandHandler for SessionTerminalEmulatorCommands {
@@ -45,6 +50,7 @@ impl CommandHandler for SessionTerminalEmulatorCommands {
 		match &self.command {
 			Commands::Clear(args) => clear::handle(session_id, db_pool, args).await,
 			Commands::Exit => exit::handle(session_id).await,
+			Commands::History(args) => history::handle(session_id, db_pool, args).await,
 		}
 	}
 }

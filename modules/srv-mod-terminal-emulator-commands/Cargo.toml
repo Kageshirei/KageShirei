@@ -10,6 +10,8 @@ anyhow = "1.0.86"
 tracing = "0.1.40"
 serde = { version = "1.0.203", features = ["derive"] }
 srv-mod-database = { path = "../srv-mod-database" }
+serde_json = { version = "1.0.117" }
+chrono = { version = "0.4.38", features = ["serde"] }
 
 [dev-dependencies]
 tokio = "1.37.0"
