@@ -17,3 +17,4 @@ chrono = { version = "0.4.38", features = ["serde"] }
 tokio = "1.37.0"
 serial_test = "3.1.1"
 rs2-srv-test-helper = { path = "../../libs/rs2-srv-test-helper" }
+rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }

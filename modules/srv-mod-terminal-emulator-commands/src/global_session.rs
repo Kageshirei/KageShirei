@@ -1,12 +1,11 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use tracing::debug;
 
 use srv_mod_database::Pool;
 
 use crate::command_handler::CommandHandler;
-use crate::global_session::session::GlobalSessionTerminalSessionArguments;
+use crate::global_session::session::GlobalSessionTerminalSessionsArguments;
 use crate::session_terminal_emulator::{clear, exit, history};
 use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
@@ -45,16 +44,9 @@ pub enum Commands {
 	/// Get the history of the terminal session and operate on it
 	#[serde(rename = "history")]
 	History(TerminalSessionHistoryArguments),
-	/// Start a new terminal session
-	#[command(long_about = r#"Start a new terminal session
-
-This command is used to start a new terminal session. The session ID is used to identify the terminal session (aka agent id).
-
-Example:
-session --list
-session agent-id-1 agent-id-2 agent-id-3"#)]
-	#[serde(rename = "session")]
-	Session(GlobalSessionTerminalSessionArguments),
+	/// List terminal sessions or open the terminal session for the provided hostnames
+	#[serde(rename = "sessions")]
+	Sessions(GlobalSessionTerminalSessionsArguments),
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
@@ -63,14 +55,7 @@ impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 			Commands::Clear(args) => clear::handle(session_id, db_pool, args).await,
 			Commands::Exit => exit::handle(session_id).await,
 			Commands::History(args) => history::handle(session_id, db_pool, args).await,
-			Commands::Session(_args) => {
-				debug!("Terminal session command received");
-
-				// TODO: Implement the session command
-
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_SESSION__".to_string())
-			}
+			Commands::Sessions(args) => session::handle(db_pool, args).await,
 		}
 	}
 }
