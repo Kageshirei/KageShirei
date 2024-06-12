@@ -4,6 +4,8 @@ use clap::builder::StyledStr;
 use serde::Serialize;
 use tracing::{debug, info};
 
+use srv_mod_database::Pool;
+
 use crate::command_handler::{CommandHandler, SerializableCommandHandler};
 use crate::global_session::session::GlobalSessionTerminalSessionArguments;
 use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
@@ -52,25 +54,14 @@ session --ids agent-id-1 --ids agent-id-2 --ids agent-id-3"#)]
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
-	fn handle_command(&self, session_id: &str) -> Result<String> {
+	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> Result<String> {
 		match &self.command {
-			Commands::Clear => {
-				debug!("Terminal clear command received");
-
-				// TODO: Implement the clear command hiding the output of previous commands (not dropping it by default)
-
-				// Signal the frontend terminal emulator to clear the terminal screen
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
-			}
-			Commands::Exit => {
-				debug!("Terminal exit command received");
-
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
-			}
+			Commands::Clear => crate::session_terminal_emulator::clear::handle(session_id, db_pool).await,
+			Commands::Exit => crate::session_terminal_emulator::exit::handle(session_id).await,
 			Commands::Session(_args) => {
-				todo!("Implement session command handling");
 				debug!("Terminal session command received");
+
+				// TODO: Implement the session command
 
 				// Signal the frontend terminal emulator to exit the terminal session
 				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_SESSION__".to_string())

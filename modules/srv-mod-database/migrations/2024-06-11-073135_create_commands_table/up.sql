@@ -14,4 +14,6 @@ create table if not exists commands (
     restored_at timestamptz,
     created_at  timestamptz not null default current_timestamp,
     updated_at  timestamptz not null default current_timestamp
-)
+);
+
+create index if not exists idx_commands_session_id on commands (session_id);

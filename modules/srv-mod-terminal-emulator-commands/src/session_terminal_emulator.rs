@@ -1,9 +1,12 @@
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use tracing::info;
+
+use srv_mod_database::Pool;
 
 use crate::command_handler::{CommandHandler, SerializableCommandHandler};
-use crate::StyledStr;
+
+pub(crate) mod clear;
+pub(crate) mod exit;
 
 #[derive(Parser, Debug, PartialEq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
@@ -37,22 +40,10 @@ pub enum Commands {
 }
 
 impl CommandHandler for SessionTerminalEmulatorCommands {
-	fn handle_command(&self, session_id: &str) -> anyhow::Result<String> {
+	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> anyhow::Result<String> {
 		match &self.command {
-			Commands::Clear => {
-				info!("Terminal clear command received");
-
-				// TODO: Implement the clear command hiding the output of previous commands (not dropping it by default)
-
-				// Signal the frontend terminal emulator to clear the terminal screen
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
-			}
-			Commands::Exit => {
-				info!("Terminal exit command received");
-
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
-			}
+			Commands::Clear => clear::handle(session_id, db_pool).await,
+			Commands::Exit => exit::handle(session_id).await,
 		}
 	}
 }
