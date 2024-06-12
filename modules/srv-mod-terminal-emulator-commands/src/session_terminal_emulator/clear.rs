@@ -55,53 +55,14 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionCle
 
 #[cfg(test)]
 mod tests {
-	use std::sync::Arc;
-
 	use serial_test::serial;
 
-	use srv_mod_database::bb8;
-	use srv_mod_database::diesel::{Connection, PgConnection};
-	use srv_mod_database::diesel_async::AsyncPgConnection;
-	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-	use srv_mod_database::diesel_migrations::MigrationHarness;
-	use srv_mod_database::migration::MIGRATIONS;
+	use rs2_srv_test_helper::tests::*;
 	use srv_mod_database::models::command::CreateCommand;
-	use srv_mod_database::models::user::{CreateUser, User};
-	use srv_mod_database::schema::users;
 
 	use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 
 	use super::*;
-
-	async fn drop_database() {
-		let mut connection = PgConnection::establish("postgresql://rs2:rs2@localhost/rs2").unwrap();
-
-		connection.revert_all_migrations(MIGRATIONS).unwrap();
-		connection.run_pending_migrations(MIGRATIONS).unwrap();
-	}
-
-	async fn make_pool() -> Pool {
-		let connection_manager =
-			AsyncDieselConnectionManager::<AsyncPgConnection>::new("postgresql://rs2:rs2@localhost/rs2");
-
-		Arc::new(
-			bb8::Pool::builder()
-				.max_size(1u32)
-				.build(connection_manager)
-				.await
-				.unwrap(),
-		)
-	}
-
-	async fn generate_test_user(pool: Pool) -> User {
-		let mut connection = pool.get().await.unwrap();
-		diesel::insert_into(users::table)
-			.values(CreateUser::new("test".to_string(), "test".to_string()))
-			.returning(User::as_select())
-			.get_result(&mut connection)
-			.await
-			.unwrap()
-	}
 
 	#[tokio::test]
 	#[serial]
