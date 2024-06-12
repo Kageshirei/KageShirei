@@ -1,10 +1,10 @@
-use clap::{Parser, Subcommand};
 pub use clap::builder::StyledStr;
+use clap::Parser;
 use serde::{Serialize, Serializer};
 
 use srv_mod_database::Pool;
 
-use crate::command_handler::{CommandHandler, SerializableCommandHandler};
+use crate::command_handler::CommandHandler;
 use crate::global_session::GlobalSessionTerminalEmulatorCommands;
 use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
