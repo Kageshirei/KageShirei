@@ -4448,9 +4448,11 @@ name = "srv-mod-terminal-emulator-commands"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+    "chrono",
  "clap",
  "rs2-srv-test-helper",
  "serde",
+    "serde_json",
  "serial_test",
  "shellwords",
  "srv-mod-database",

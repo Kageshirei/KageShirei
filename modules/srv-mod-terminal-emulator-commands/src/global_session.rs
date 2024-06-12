@@ -7,7 +7,9 @@ use srv_mod_database::Pool;
 
 use crate::command_handler::CommandHandler;
 use crate::global_session::session::GlobalSessionTerminalSessionArguments;
+use crate::session_terminal_emulator::{clear, exit, history};
 use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
+use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
 mod session;
 
@@ -40,6 +42,9 @@ pub enum Commands {
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
+	/// Get the history of the terminal session and operate on it
+	#[serde(rename = "history")]
+	History(TerminalSessionHistoryArguments),
 	/// Start a new terminal session
 	#[command(long_about = r#"Start a new terminal session
 
@@ -55,8 +60,9 @@ session agent-id-1 agent-id-2 agent-id-3"#)]
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> Result<String> {
 		match &self.command {
-			Commands::Clear(args) => crate::session_terminal_emulator::clear::handle(session_id, db_pool, args).await,
-			Commands::Exit => crate::session_terminal_emulator::exit::handle(session_id).await,
+			Commands::Clear(args) => clear::handle(session_id, db_pool, args).await,
+			Commands::Exit => exit::handle(session_id).await,
+			Commands::History(args) => history::handle(session_id, db_pool, args).await,
 			Commands::Session(_args) => {
 				debug!("Terminal session command received");
 
