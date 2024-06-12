@@ -8,7 +8,7 @@ pub struct GlobalSessionTerminalSessionArguments {
 	#[arg(short, long)]
 	pub list: bool,
 	/// The list of session IDs to open terminal sessions for
-	#[arg(short, long, action = ArgAction::Append)]
+	#[arg(action = ArgAction::Append)]
 	pub ids: Vec<String>
 }
 

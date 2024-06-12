@@ -4443,10 +4443,10 @@ dependencies = [
  "anyhow",
  "clap",
  "serde",
-    "serial_test",
+ "serial_test",
  "shellwords",
  "srv-mod-database",
-    "tokio",
+ "tokio",
  "tracing",
 ]
 

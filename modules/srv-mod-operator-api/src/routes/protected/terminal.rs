@@ -17,7 +17,7 @@ use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::models::command::CreateCommand;
 use srv_mod_database::schema::commands;
 use srv_mod_terminal_emulator_commands::{Command, StyledStr};
-use srv_mod_terminal_emulator_commands::command_handler::{CommandHandler, SerializableCommandHandler};
+use srv_mod_terminal_emulator_commands::command_handler::CommandHandler;
 use srv_mod_terminal_emulator_commands::global_session::GlobalSessionTerminalEmulatorCommands;
 use srv_mod_terminal_emulator_commands::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
@@ -52,6 +52,7 @@ fn update_command_state(
 	movable_response: String,
 	storable_command_id: String,
 	cloned_state: Arc<ApiServerSharedState>,
+	exit_code: i32,
 ) -> JoinHandle<()> {
 	tokio::spawn(async move {
 		let movable_response = movable_response.as_str();
@@ -71,17 +72,17 @@ fn update_command_state(
 				.filter(commands::id.eq(storable_command_id))
 				.set((
 					commands::dsl::output.eq(movable_response),
-					commands::dsl::exit_code.eq(1),
+					commands::dsl::exit_code.eq(exit_code),
 				))
 				.execute(&mut connection)
 				.await;
 
-			if result.is_ok() {
+			if let Ok(affected_rows) = result && affected_rows > 0 {
 				break;
 			}
 
 			// Sleep for a second before retrying
-			tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+			tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 		}
 	})
 }
@@ -138,7 +139,7 @@ async fn post_handler(
 		let cloned_state = state.clone();
 
 		// Update the command in the database, in a separate thread to avoid blocking the response
-		pending_handlers.push(update_command_state(movable_response, storable_command_id, cloned_state));
+		pending_handlers.push(update_command_state(movable_response, storable_command_id, cloned_state, 1));
 
 		// Wait for all the pending handlers to finish
 		futures::future::join_all(pending_handlers).await;
@@ -154,18 +155,36 @@ async fn post_handler(
 
 	// Handle the command
 	let response = cmd.handle_command(session_id.as_str(), state.db_pool.clone())
-	                  .await
-	                  .map_err(|e| ApiServerError::make_terminal_emulator_error(
-		                  session_id.as_str(),
-		                  body.command,
-		                  e.to_string().as_str(),
-	                  ))?;
+		.await;
+
+	let response = match response {
+		Ok(response) => response,
+		Err(e) => {
+			let response = e.to_string();
+			let movable_response = response.clone();
+			let cloned_state = state.clone();
+
+			// Update the command in the database, in a separate thread to avoid blocking the response
+			pending_handlers.push(update_command_state(movable_response, storable_command_id, cloned_state, 1));
+
+			// Wait for all the pending handlers to finish
+			futures::future::join_all(pending_handlers).await;
+
+			return Err(
+				ApiServerError::make_terminal_emulator_error(
+					session_id.as_str(),
+					body.command,
+					e.to_string().as_str(),
+				)
+			);
+		}
+	};
 
 	let movable_response = response.clone();
 	let cloned_state = state.clone();
 
 	// Update the command in the database, in a separate thread to avoid blocking the response
-	pending_handlers.push(update_command_state(movable_response, storable_command_id, cloned_state));
+	pending_handlers.push(update_command_state(movable_response, storable_command_id, cloned_state, 0));
 
 	// Wait for all the pending handlers to finish
 	futures::future::join_all(pending_handlers).await;

@@ -47,7 +47,7 @@ This command is used to start a new terminal session. The session ID is used to 
 
 Example:
 session --list
-session --ids agent-id-1 --ids agent-id-2 --ids agent-id-3"#)]
+session agent-id-1 agent-id-2 agent-id-3"#)]
 	#[serde(rename = "session")]
 	Session(GlobalSessionTerminalSessionArguments),
 }
