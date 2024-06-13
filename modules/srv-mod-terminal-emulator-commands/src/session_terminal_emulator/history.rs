@@ -52,16 +52,16 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 		                           .await
 		                           .map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
 
-		let history = commands::table.inner_join(users::table)
-		                             .select((
+		let mut history = commands::table.inner_join(users::table)
+		                                 .select((
 			                             commands::sequence_counter.nullable(),
 			                             commands::command,
 			                             commands::exit_code.nullable(),
 			                             users::username,
 			                             commands::created_at
 		                             ))
-			.filter(commands::session_id.eq(&config.session.session_id))
-			.into_boxed();
+		                                 .filter(commands::session_id.eq(&config.session.session_id))
+		                                 .into_boxed();
 
 		// If the full flag is not set, filter out the commands that have been deleted
 		if !args.full {
