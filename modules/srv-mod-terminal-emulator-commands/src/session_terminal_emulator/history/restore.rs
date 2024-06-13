@@ -12,9 +12,7 @@ use srv_mod_database::schema::commands;
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
 pub struct TerminalSessionHistoryRestoreArguments {
-	/// Delete the command permanently, removing it from the database.
-	///
-	/// This is a hard delete and cannot be undone.
+	/// The list of command ids to restore
 	pub command_ids: Vec<String>,
 }
 
