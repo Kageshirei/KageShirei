@@ -9,6 +9,7 @@ use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::schema::agents;
 
 use crate::command_handler::CommandHandlerArguments;
+use crate::post_process_result::PostProcessResult;
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
@@ -24,7 +25,7 @@ pub struct SessionRecord {
 	pub domain: String,
 	pub username: String,
 	pub ip: String,
-	pub elevated: bool,
+	pub integrity_level: i16,
 	pub operative_system: String,
 }
 
@@ -51,7 +52,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTermina
 			agents::domain,
 			agents::username,
 			agents::ip,
-			agents::elevated,
+			agents::integrity_level,
 			agents::operative_system,
 		))
 		.get_results::<SessionRecord>(&mut connection)
@@ -60,8 +61,12 @@ pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTermina
 
 	// Serialize the result
 	Ok(
-		serde_json::to_string(&result)
-			.map_err(|e| anyhow::anyhow!(e))?,
+		serde_json::to_string(
+			&PostProcessResult {
+				r#type: "sessions".to_string(),
+				data: result,
+			}
+		).map_err(|e| anyhow::anyhow!(e))?
 	)
 }
 

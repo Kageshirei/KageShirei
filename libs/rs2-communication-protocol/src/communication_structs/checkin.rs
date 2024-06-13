@@ -21,8 +21,10 @@ pub struct PartialCheckin {
 	pub parent_process_id: i64,
 	/// The process name of the agent
 	pub process_name: String,
-	/// Whether the agent is running as elevated
-	pub elevated: bool,
+	/// The integrity level of the agent
+	pub integrity_level: i16,
+	/// The current working directory of the agent
+	pub cwd: String,
 }
 
 /// The checkin struct used to check in the agent
@@ -44,8 +46,10 @@ pub struct Checkin {
 	pub parent_process_id: i64,
 	/// The process name of the agent
 	pub process_name: String,
-	/// Whether the agent is running as elevated
-	pub elevated: bool,
+	/// The integrity level of the agent
+	pub integrity_level: i16,
+	/// The current working directory of the agent
+	pub cwd: String,
 	/// The metadata of the struct
 	metadata: Option<Arc<Metadata>>,
 }
@@ -61,7 +65,8 @@ impl Checkin {
 			process_id: partial.process_id,
 			parent_process_id: partial.parent_process_id,
 			process_name: partial.process_name,
-			elevated: partial.elevated,
+			integrity_level: partial.integrity_level,
+			cwd: partial.cwd,
 			metadata: None,
 		}
 	}
@@ -108,7 +113,8 @@ mod tests {
 			process_id: 1234,
 			parent_process_id: 5678,
 			process_name: "agent.exe".to_string(),
-			elevated: true,
+			integrity_level: 0,
+			cwd: "C:\\Users\\user".to_string(),
 		});
 
 		let metadata = Metadata {

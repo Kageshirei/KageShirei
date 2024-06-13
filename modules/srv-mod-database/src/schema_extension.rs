@@ -18,10 +18,11 @@ pub enum AgentFields {
 	ProcessId,
 	ParentProcessId,
 	ProcessName,
-	Elevated,
 	ServerSecretKey,
 	SecretKey,
 	Signature,
+	IntegrityLevel,
+	Cwd,
 }
 
 impl ToSql<AgentFields, Pg> for AgentFields {
@@ -35,10 +36,11 @@ impl ToSql<AgentFields, Pg> for AgentFields {
 			Self::ProcessId => out.write_all(b"process_id")?,
 			Self::ParentProcessId => out.write_all(b"parent_process_id")?,
 			Self::ProcessName => out.write_all(b"process_name")?,
-			Self::Elevated => out.write_all(b"elevated")?,
 			Self::ServerSecretKey => out.write_all(b"server_secret_key")?,
 			Self::SecretKey => out.write_all(b"secret_key")?,
 			Self::Signature => out.write_all(b"signature")?,
+			Self::IntegrityLevel => out.write_all(b"integrity_level")?,
+			Self::Cwd => out.write_all(b"cwd")?,
 		}
 		Ok(IsNull::No)
 	}
@@ -55,7 +57,8 @@ impl FromSql<AgentFields, Pg> for AgentFields {
 			b"process_id" => Ok(Self::ProcessId),
 			b"parent_process_id" => Ok(Self::ParentProcessId),
 			b"process_name" => Ok(Self::ProcessName),
-			b"elevated" => Ok(Self::Elevated),
+			b"integrity_level" => Ok(Self::IntegrityLevel),
+			b"cwd" => Ok(Self::Cwd),
 			b"server_secret_key" => Ok(Self::ServerSecretKey),
 			b"secret_key" => Ok(Self::SecretKey),
 			b"signature" => Ok(Self::Signature),
