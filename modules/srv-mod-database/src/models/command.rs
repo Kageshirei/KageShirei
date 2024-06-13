@@ -1,4 +1,5 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
 
 use crate::CUID2;
 
@@ -63,4 +64,25 @@ impl CreateCommand {
 			restored_at: None,
 		}
 	}
+}
+
+/// A restore-able command represented with its full output
+#[derive(Debug, Serialize, Deserialize, Queryable)]
+pub struct FullHistoryRecord {
+	id: String,
+	command: String,
+	output: Option<String>,
+	exit_code: Option<i32>,
+	ran_by: String,
+	created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// A compact command representation used to quickly and efficiently display a list of commands
+#[derive(Debug, Serialize, Deserialize, Queryable)]
+pub struct HistoryRecord {
+	id: String,
+	command: String,
+	exit_code: Option<i32>,
+	ran_by: String,
+	created_at: chrono::DateTime<chrono::Utc>,
 }

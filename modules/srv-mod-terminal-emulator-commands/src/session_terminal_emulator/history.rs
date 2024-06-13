@@ -4,8 +4,10 @@ use tracing::{debug, instrument};
 
 use srv_mod_database::{diesel, Pool};
 use srv_mod_database::diesel::{BoolExpressionMethods, ExpressionMethods, NullableExpressionMethods, Queryable, QueryDsl, SelectableHelper};
+use srv_mod_database::diesel::query_builder::BoxedSelectStatement;
+use srv_mod_database::diesel::sql_types::Varchar;
 use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::command::Command;
+use srv_mod_database::models::command::{Command, HistoryRecord};
 use srv_mod_database::schema::commands;
 use srv_mod_database::schema::users;
 
@@ -25,15 +27,6 @@ pub enum HistorySubcommands {
 	/// Restore a list of commands from the history
 	#[serde(rename = "restore")]
 	Restore(TerminalSessionHistoryRestoreArguments),
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable)]
-pub struct HistoryRecord {
-	id: String,
-	command: String,
-	exit_code: Option<i32>,
-	ran_by: String,
-	created_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// Handle the history command
