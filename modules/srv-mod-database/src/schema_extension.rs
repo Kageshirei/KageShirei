@@ -4,6 +4,7 @@ use diesel::{AsExpression, deserialize, FromSqlRow, QueryId, serialize, SqlType}
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
+use serde::{Deserialize, Serialize};
 
 /// Represent the list of fields that can be used to filter agents
 #[derive(Debug, Clone, PartialEq, FromSqlRow, QueryId, AsExpression, SqlType, Eq)]
@@ -132,13 +133,29 @@ impl FromSql<FilterOperator, Pg> for FilterOperator {
 }
 
 /// Represent the list of valid log levels
-#[derive(Debug, Clone, PartialEq, FromSqlRow, QueryId, SqlType, AsExpression, Eq)]
+#[derive(
+	Debug,
+	Clone,
+	PartialEq,
+	FromSqlRow,
+	QueryId,
+	SqlType,
+	AsExpression,
+	Eq,
+	Serialize,
+	Deserialize
+)]
 #[diesel(postgres_type(name = "log_level"), sql_type = LogLevel)]
 pub enum LogLevel {
+	#[serde(rename = "INFO")]
 	INFO,
+	#[serde(rename = "WARN")]
 	WARN,
+	#[serde(rename = "ERROR")]
 	ERROR,
+	#[serde(rename = "DEBUG")]
 	DEBUG,
+	#[serde(rename = "TRACE")]
 	TRACE,
 }
 

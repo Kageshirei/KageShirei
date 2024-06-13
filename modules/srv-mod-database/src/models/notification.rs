@@ -1,9 +1,10 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
+use serde::Serialize;
 
 use crate::CUID2;
 use crate::schema_extension::LogLevel;
 
-#[derive(Debug, Queryable, Selectable, Clone, PartialEq)]
+#[derive(Debug, Queryable, Selectable, Clone, PartialEq, Serialize)]
 #[diesel(table_name = crate::schema::notifications)]
 pub struct Notification {
 	/// The unique identifier for the notification (cuid2)
