@@ -13,12 +13,13 @@ create table if not exists agents (
     -- complement errors (first bit is assigned to the sign of the number) we use bigint
     parent_process_id bigint       not null default 0,
     process_name      varchar(255) not null,
-    elevated          bool         not null default false,
+    integrity_level int2        not null,
+    cwd             text        not null,
     server_secret_key varchar(255) not null,
     secret_key        varchar(255) not null,
     signature         varchar(255) not null unique,
-    created_at timestamptz not null default current_timestamp,
-    updated_at timestamptz not null default current_timestamp
+    created_at      timestamptz not null default current_timestamp,
+    updated_at      timestamptz not null default current_timestamp
 );
 
 -- ref: https://www.postgresql.org/docs/current/indexes-types.html#INDEXES-TYPES-HASH

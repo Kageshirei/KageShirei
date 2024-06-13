@@ -16,7 +16,8 @@ pub fn make_signature(checkin: &Checkin) -> String {
 	hasher.update(checkin.process_id.to_le_bytes());
 	hasher.update(checkin.parent_process_id.to_le_bytes());
 	hasher.update(checkin.process_name.as_bytes());
-	hasher.update(&[if checkin.elevated { 1 } else { 0 }]);
+	hasher.update(checkin.integrity_level.to_le_bytes());
+	hasher.update(checkin.cwd.as_bytes());
 
 	let hash = hasher.finalize();
 	let hash = Bytes::from(hash.to_vec());

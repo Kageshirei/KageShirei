@@ -26,8 +26,10 @@ pub struct Agent {
 	pub parent_process_id: i64,
 	/// The process name of the agent
 	pub process_name: String,
-	/// Whether the agent is running as elevated
-	pub elevated: bool,
+	/// The integrity level of the agent
+	pub integrity_level: i16,
+	/// The current working directory of the agent
+	pub cwd: String,
 	/// The secret key of the server when communicating with the agent
 	pub server_secret_key: String,
 	/// The secret key of the agent
@@ -51,7 +53,8 @@ impl Agent {
 			AgentFields::ProcessId => Some(self.process_id.to_string()),
 			AgentFields::ParentProcessId => Some(self.parent_process_id.to_string()),
 			AgentFields::ProcessName => Some(self.process_name.clone()),
-			AgentFields::Elevated => Some(self.elevated.to_string()),
+			AgentFields::IntegrityLevel => Some(self.integrity_level.to_string()),
+			AgentFields::Cwd => Some(self.cwd.clone()),
 			AgentFields::ServerSecretKey => Some(self.server_secret_key.clone()),
 			AgentFields::SecretKey => Some(self.secret_key.clone()),
 			AgentFields::Signature => Some(self.signature.clone()),
@@ -80,8 +83,10 @@ pub struct CreateAgent {
 	pub parent_process_id: i64,
 	/// The process name of the agent
 	pub process_name: String,
-	/// Whether the agent is running as elevated
-	pub elevated: bool,
+	/// The integrity level of the agent
+	pub integrity_level: i16,
+	/// The current working directory of the agent
+	pub cwd: String,
 	/// The secret key of the server when communicating with the agent
 	pub server_secret_key: String,
 	/// The secret key of the agent
@@ -102,7 +107,8 @@ impl From<Checkin> for CreateAgent {
 			process_id: checkin.process_id,
 			parent_process_id: checkin.parent_process_id,
 			process_name: checkin.process_name,
-			elevated: checkin.elevated,
+			integrity_level: checkin.integrity_level,
+			cwd: checkin.cwd,
 			server_secret_key: "".to_string(),
 			secret_key: "".to_string(),
 			signature: "".to_string(),

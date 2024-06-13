@@ -1,9 +1,5 @@
 import Ansi from "ansi-to-react";
-import {
-    Dispatch,
-    JSX,
-    SetStateAction,
-} from "react";
+import {Dispatch, JSX, SetStateAction,} from "react";
 
 interface CommandHandlerArguments {
     args: string[];
@@ -15,6 +11,7 @@ interface CommandHandlerArguments {
     terminal_fragments: JSX.Element[];
     hooks: {
         dropTerminalHandle: (hostname: string) => void;
+        addTerminalHandle: (hostname: string, cwd: string, id: string) => void;
     };
 }
 
@@ -25,16 +22,16 @@ interface CommandDefinition {
     handler: CommandHandler;
 }
 
-export type NativeHandler = "clear" | "exit";
+export type NativeHandler = "clear" | "exit" | "open_session";
 
 export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
     clear: {
         description: "Clear the terminal",
-        handler: ({ set_terminal_fragments }) => {
+        handler: ({set_terminal_fragments}) => {
             set_terminal_fragments([]);
         },
     },
-    exit:  {
+    exit: {
         description: "Exit the current terminal",
         handler:     ({
             hooks,
@@ -63,6 +60,17 @@ export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
             }
 
             hooks.dropTerminalHandle(hostname);
+        },
+    },
+    open_session: {
+        description: "Open a new terminal session",
+        handler: ({
+                      hooks,
+                      cwd,
+                      args,
+                  }) => {
+            console.log(args)
+            // hooks.addTerminalHandle(hostname, cwd, "1");
         },
     },
 };

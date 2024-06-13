@@ -21,18 +21,18 @@ mod restore;
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
 pub struct TerminalSessionHistoryArguments {
-    /// Display the full history including the commands hidden using `clear`
-    #[arg(short, long)]
-    pub full: bool,
-    #[command(subcommand)]
-    pub command: Option<HistorySubcommands>,
+	/// Display the full history including the commands hidden using `clear`
+	#[arg(short, long)]
+	pub full: bool,
+	#[command(subcommand)]
+	pub command: Option<HistorySubcommands>,
 }
 
 #[derive(Subcommand, Debug, PartialEq, Serialize)]
 pub enum HistorySubcommands {
-    /// Restore a list of commands from the history
-    #[serde(rename = "restore")]
-    Restore(TerminalSessionHistoryRestoreArguments),
+	/// Restore a list of commands from the history
+	#[serde(rename = "restore")]
+	Restore(TerminalSessionHistoryRestoreArguments),
 }
 
 /// Handle the history command
@@ -54,12 +54,12 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 
 		let mut history = commands::table.inner_join(users::table)
 		                                 .select((
-			                             commands::sequence_counter.nullable(),
-			                             commands::command,
-			                             commands::exit_code.nullable(),
-			                             users::username,
-			                             commands::created_at
-		                             ))
+			                                 commands::sequence_counter.nullable(),
+			                                 commands::command,
+			                                 commands::exit_code.nullable(),
+			                                 users::username,
+			                                 commands::created_at
+		                                 ))
 		                                 .filter(commands::session_id.eq(&config.session.session_id))
 		                                 .into_boxed();
 
@@ -84,14 +84,14 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 		                     .map_err(|e| anyhow::anyhow!(e))?;
 
 		Ok(
-            serde_json::to_string(
-                &PostProcessResult {
-                    r#type: "history".to_string(),
-                    data: history,
-                }
-            ).unwrap()
-        )
-    }
+			serde_json::to_string(
+				&PostProcessResult {
+					r#type: "history".to_string(),
+					data: history,
+				}
+			).map_err(|e| anyhow::anyhow!(e))?
+		)
+	}
 }
 
 #[cfg(test)]

@@ -1,4 +1,5 @@
 import {PostProcessHistory} from "@/components/post-process-command/history";
+import {PostProcessSessions} from "@/components/post-process-command/sessions";
 import {NATIVE_COMMANDS, NativeHandler,} from "@/components/terminal/native-commands";
 import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
 import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
@@ -12,6 +13,7 @@ interface TerminalProps {
     cwd: string;
     session_id: string | null;
     dropTerminalHandle: (hostname: string) => void;
+    addTerminalHandle: (hostname: string, cwd: string, id: string) => void;
     style?: CSSProperties;
 }
 
@@ -21,6 +23,7 @@ export const Terminal: FC<TerminalProps> = ({
                                                 hostname,
                                                 style,
                                                 dropTerminalHandle,
+                                                addTerminalHandle,
                                                 session_id,
                                             }) => {
     const [requires_input_line_append, set_requires_input_line_append] = useState(true);
@@ -69,6 +72,7 @@ export const Terminal: FC<TerminalProps> = ({
                         [
                             "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
                             "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
+                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__",
                         ].includes(json.response)
                     ) {
                         let internal_call: NativeHandler | null = null;
@@ -79,6 +83,9 @@ export const Terminal: FC<TerminalProps> = ({
                                 break;
                             case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__":
                                 internal_call = "exit";
+                                break;
+                            case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__":
+                                internal_call = "open_session";
                                 break;
                         }
 
@@ -94,6 +101,7 @@ export const Terminal: FC<TerminalProps> = ({
                                 terminal_fragments,
                                 hooks: {
                                     dropTerminalHandle,
+                                    addTerminalHandle,
                                 },
                             });
                         }
@@ -109,6 +117,16 @@ export const Terminal: FC<TerminalProps> = ({
                         // parse the json in the "data" field
                         if ("type" in json) {
                             switch (json.type) {
+                                case "sessions":
+                                    set_terminal_fragments(old => [
+                                        ...old,
+                                        <div key={`${hostname}-out-${old.length + 1}`}
+                                             className="break-all whitespace-pre-wrap"
+                                        >
+                                            <PostProcessSessions sessions={json.data}/>
+                                        </div>,
+                                    ]);
+                                    break;
                                 case "history":
                                     set_terminal_fragments(old => [
                                         ...old,
@@ -142,7 +160,7 @@ export const Terminal: FC<TerminalProps> = ({
                                      className="break-all whitespace-pre-wrap"
                                 >
                                     <Ansi>
-                                        {JSON.stringify(json)}
+                                        {json.response}
                                     </Ansi>
                                 </div>,
                             ]);
