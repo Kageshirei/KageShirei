@@ -1,9 +1,7 @@
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 
-use srv_mod_database::Pool;
-
-use crate::command_handler::CommandHandler;
+use crate::command_handler::{CommandHandler, CommandHandlerArguments};
 use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
@@ -46,11 +44,11 @@ pub enum Commands {
 }
 
 impl CommandHandler for SessionTerminalEmulatorCommands {
-	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> anyhow::Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> anyhow::Result<String> {
 		match &self.command {
-			Commands::Clear(args) => clear::handle(session_id, db_pool, args).await,
-			Commands::Exit => exit::handle(session_id).await,
-			Commands::History(args) => history::handle(session_id, db_pool, args).await,
+			Commands::Clear(args) => clear::handle(config, args).await,
+			Commands::Exit => exit::handle(config).await,
+			Commands::History(args) => history::handle(config, args).await,
 		}
 	}
 }

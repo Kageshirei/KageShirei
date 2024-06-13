@@ -2,9 +2,7 @@ pub use clap::builder::StyledStr;
 use clap::Parser;
 use serde::{Serialize, Serializer};
 
-use srv_mod_database::Pool;
-
-use crate::command_handler::CommandHandler;
+use crate::command_handler::{CommandHandler, CommandHandlerArguments};
 use crate::global_session::GlobalSessionTerminalEmulatorCommands;
 use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
@@ -70,10 +68,10 @@ impl Command {
 }
 
 impl CommandHandler for Command {
-	async fn handle_command(&self, session_id: &str, db_pool: Pool) -> anyhow::Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> anyhow::Result<String> {
 		match self {
-			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(session_id, db_pool).await,
-			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(session_id, db_pool).await,
+			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
+			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
 		}
 	}
 }

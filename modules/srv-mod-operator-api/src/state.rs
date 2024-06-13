@@ -12,4 +12,6 @@ pub struct ApiServerState {
 	pub config: SharedConfig,
 	/// The database connection pool
 	pub db_pool: Pool,
+	/// The broadcast sender for the API server
+	pub broadcast_sender: tokio::sync::broadcast::Sender<String>,
 }

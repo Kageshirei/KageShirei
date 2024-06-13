@@ -35,3 +35,5 @@ srv-mod-database = { path = "../srv-mod-database" }
 humantime = "2.1.0"
 srv-mod-terminal-emulator-commands = { path = "../srv-mod-terminal-emulator-commands" }
 futures = "0.3.30"
+futures-util = "0.3.30"
+tokio-stream = { version = "0.1.15", features = ["sync"] }

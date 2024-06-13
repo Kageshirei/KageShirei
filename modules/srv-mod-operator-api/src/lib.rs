@@ -37,6 +37,7 @@ mod jwt_keys;
 mod request_body_from_content_type;
 mod routes;
 mod state;
+pub mod events;
 
 pub async fn start(
 	config: SharedConfig,
@@ -52,10 +53,15 @@ pub async fn start(
         "JWT keys initialized successfully!"
     );
 
+	// create a broadcast channel for the server this is where events will be broadcasted to and retrieved by the sse
+	// endpoint
+	let (broadcast_sender, _) = tokio::sync::broadcast::channel(128);
+
 	// create a shared state for the server
 	let shared_state: ApiServerSharedState = Arc::new(state::ApiServerState {
 		config: config.clone(),
 		db_pool: pool,
+		broadcast_sender,
 	});
 
 	// init the router

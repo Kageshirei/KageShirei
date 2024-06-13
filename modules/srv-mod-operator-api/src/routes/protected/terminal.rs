@@ -13,11 +13,13 @@ use srv_mod_database::{diesel, models};
 use srv_mod_database::diesel::associations::HasTable;
 use srv_mod_database::diesel::ExpressionMethods;
 use srv_mod_database::diesel::Insertable;
+use srv_mod_database::diesel::QueryDsl;
 use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::models::command::CreateCommand;
+use srv_mod_database::schema::{agents, users};
 use srv_mod_database::schema::commands;
 use srv_mod_terminal_emulator_commands::{Command, StyledStr};
-use srv_mod_terminal_emulator_commands::command_handler::CommandHandler;
+use srv_mod_terminal_emulator_commands::command_handler::{CommandHandler, HandleArguments, HandleArgumentsSession, HandleArgumentsUser};
 use srv_mod_terminal_emulator_commands::global_session::GlobalSessionTerminalEmulatorCommands;
 use srv_mod_terminal_emulator_commands::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
@@ -153,8 +155,43 @@ async fn post_handler(
 
 	let cmd = cmd.unwrap();
 
+	let hostname = if session_id == "global" {
+		"RS2".to_string()
+	} else {
+		let mut connection = state.db_pool.get().await.unwrap();
+		agents::table
+			.select((agents::hostname))
+			.filter(agents::id.eq(session_id.as_str()))
+			.first::<String>(&mut connection)
+			.await
+			.map_err(|e| ApiServerError::make_terminal_emulator_error(
+				session_id.as_str(),
+				body.command.as_str(),
+				e.to_string().as_str(),
+			))?
+	};
+
+	let username = {
+		let mut connection = state.db_pool.get().await.unwrap();
+		users::table
+			.select(users::username)
+			.filter(users::id.eq(jwt_claims.sub.as_str()))
+			.first::<String>(&mut connection)
+			.await
+			.map_err(|e| ApiServerError::make_terminal_emulator_error(
+				session_id.as_str(),
+				body.command.as_str(),
+				e.to_string().as_str(),
+			))?
+	};
+
 	// Handle the command
-	let response = cmd.handle_command(session_id.as_str(), state.db_pool.clone())
+	let response = cmd.handle_command(Arc::new(HandleArguments {
+		session: HandleArgumentsSession { session_id: session_id.clone(), hostname },
+		user: HandleArgumentsUser { user_id: jwt_claims.sub, username },
+		db_pool: state.db_pool.clone(),
+		broadcast_sender: state.broadcast_sender.clone(),
+	}))
 		.await;
 
 	let response = match response {
@@ -173,7 +210,7 @@ async fn post_handler(
 			return Err(
 				ApiServerError::make_terminal_emulator_error(
 					session_id.as_str(),
-					body.command,
+					body.command.as_str(),
 					e.to_string().as_str(),
 				)
 			);

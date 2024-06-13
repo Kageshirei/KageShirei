@@ -40,9 +40,9 @@ define_error_enum! {
 
 impl ApiServerError {
 	/// Create a new `ApiServerError::TerminalEmulatorError` with the given error message
-	pub fn make_terminal_emulator_error(session_id: &str, command: String, error: &str) -> Response {
+	pub fn make_terminal_emulator_error(session_id: &str, command: &str, error: &str) -> Response {
 		let body = Json(json!({
-			"session_id": session_id.to_string(),
+			"session_id": session_id,
 			"command": command,
             "response": error,
         }));

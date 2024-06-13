@@ -8,6 +8,8 @@ use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
 use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::schema::agents;
 
+use crate::command_handler::CommandHandlerArguments;
+
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
 pub struct GlobalSessionTerminalSessionsArguments {
@@ -28,13 +30,13 @@ pub struct SessionRecord {
 
 /// Handle the sessions command
 #[instrument]
-pub async fn handle(db_pool: Pool, args: &GlobalSessionTerminalSessionsArguments) -> anyhow::Result<String> {
+pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTerminalSessionsArguments) -> anyhow::Result<String> {
 	debug!("Terminal command received");
 
-	let mut connection = db_pool
-		.get()
-		.await
-		.map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
+	let mut connection = config.db_pool
+	                           .get()
+	                           .await
+	                           .map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
 
 	// If the ids are provided, return the terminal emulator internal handle open sessions command
 	if args.ids.is_some() {
