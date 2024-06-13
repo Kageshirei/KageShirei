@@ -218,7 +218,8 @@ async fn get_handler(
 		.await
 		.map_err(|_| ApiServerError::InternalServerError)?;
 
-	let session_id_v = params.get("session_id").unwrap_or(&"global".to_string());
+	let fallback_session_id = "global".to_string();
+	let session_id_v = params.get("session_id").unwrap_or(&fallback_session_id);
 
 	let page = params.get("page").and_then(|page| page.parse::<u32>().ok()).unwrap_or(1);
 	let page_size = 50;
