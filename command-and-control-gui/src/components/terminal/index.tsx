@@ -1,20 +1,10 @@
-import {
-    NATIVE_COMMANDS,
-    NativeHandler,
-} from "@/components/terminal/native-commands";
-import { TerminalInputLine } from "@/components/terminal/terminal-input-line";
-import { TerminalOpenerSection } from "@/components/terminal/terminal-opener-section";
-import { AuthenticationCtx } from "@/context/authentication";
+import {NATIVE_COMMANDS, NativeHandler,} from "@/components/terminal/native-commands";
+import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
+import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
+import {AuthenticationCtx} from "@/context/authentication";
 import Ansi from "ansi-to-react";
-import {
-    CSSProperties,
-    FC,
-    JSX,
-    KeyboardEvent,
-    useCallback,
-    useEffect,
-    useState,
-} from "react";
+import {CSSProperties, FC, JSX, KeyboardEvent, useCallback, useEffect, useState,} from "react";
+import {PostProcessHistory} from "@/components/post-process-command/history";
 
 interface TerminalProps {
     hostname: string;
@@ -26,17 +16,17 @@ interface TerminalProps {
 }
 
 export const Terminal: FC<TerminalProps> = ({
-    cwd,
-    username,
-    hostname,
-    style,
-    dropTerminalHandle,
-    session_id,
-}) => {
-    const [ requires_input_line_append, set_requires_input_line_append ] = useState(true);
-    const [ terminal_fragments, set_terminal_fragments ] = useState<JSX.Element[]>([]);
-    const [ terminal_history, set_terminal_history ] = useState<string[]>([]);
-    const [ history_index, set_history_index ] = useState<number | null>(null);
+                                                cwd,
+                                                username,
+                                                hostname,
+                                                style,
+                                                dropTerminalHandle,
+                                                session_id,
+                                            }) => {
+    const [requires_input_line_append, set_requires_input_line_append] = useState(true);
+    const [terminal_fragments, set_terminal_fragments] = useState<JSX.Element[]>([]);
+    const [terminal_history, set_terminal_history] = useState<string[]>([]);
+    const [history_index, set_history_index] = useState<number | null>(null);
 
     const handle_terminal_keydown = useCallback(
         async (e: KeyboardEvent<HTMLSpanElement>) => {
@@ -58,27 +48,29 @@ export const Terminal: FC<TerminalProps> = ({
                     });
 
                     // send the command to the backend
-                    const response = await fetch(`http://${ AuthenticationCtx.host }/terminal`, {
-                        method:  "POST",
+                    const response = await fetch(`http://${AuthenticationCtx.host}/terminal`, {
+                        method: "POST",
                         headers: {
-                            "Content-Type":  "application/json",
-                            "Authorization": `Bearer ${ AuthenticationCtx.bearer }`,
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${AuthenticationCtx.bearer}`,
                         },
-                        body:    JSON.stringify({
+                        body: JSON.stringify({
                             command,
                             session_id,
                         }),
                     });
 
-                    const json = await response.json();
+                    let json = await response.json();
 
                     console.log(json);
 
                     // handle frontend commands
-                    if ([
-                        "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
-                        "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
-                    ].includes(json.response)) {
+                    if (
+                        [
+                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
+                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
+                        ].includes(json.response)
+                    ) {
                         let internal_call: NativeHandler | null = null;
 
                         switch (json.response) {
@@ -92,37 +84,76 @@ export const Terminal: FC<TerminalProps> = ({
 
                         if (internal_call) {
                             await NATIVE_COMMANDS[internal_call].handler({
-                                args:    JSON.parse(json.command),
+                                args: JSON.parse(json.command),
                                 cwd,
                                 username,
                                 hostname,
-                                set_cwd: () => { },
+                                set_cwd: () => {
+                                },
                                 set_terminal_fragments,
                                 terminal_fragments,
-                                hooks:   {
+                                hooks: {
                                     dropTerminalHandle,
                                 },
                             });
                         }
-                    }
-                    else {
-                        set_terminal_fragments(old => [
-                            ...old,
-                            <pre key={ `${ hostname }-out-${ old.length + 1 }` }
-                                 className="break-all"
-                            >
+                    } else {
+                        try {
+                            json = JSON.parse(json.response);
+                            console.log("parsed json", json);
+                        } catch (e) {
+                            // pass
+                        }
+
+                        // post parsing is required, so we need to handle the response manually and based on its type
+                        // parse the json in the "data" field
+                        if ("type" in json) {
+                            switch (json.type) {
+                                case "history":
+                                    set_terminal_fragments(old => [
+                                        ...old,
+                                        <div key={`${hostname}-out-${old.length + 1}`}
+                                             className="break-all whitespace-pre-wrap"
+                                        >
+                                            <PostProcessHistory history={json.data}/>
+                                        </div>,
+                                    ]);
+                                    break;
+                                default:
+                                    set_terminal_fragments(old => [
+                                        ...old,
+                                        <div key={`${hostname}-out-${old.length + 1}`}
+                                             className="break-all whitespace-pre-wrap"
+                                        >
+                                            Response requires post-parsing, but no handler was found.
+                                            <br/>
+                                            <br/>
+                                            <Ansi>
+                                                {JSON.stringify(json)}
+                                            </Ansi>
+                                        </div>,
+                                    ]);
+                                    break;
+                            }
+                        } else {
+                            set_terminal_fragments(old => [
+                                ...old,
+                                <div key={`${hostname}-out-${old.length + 1}`}
+                                     className="break-all whitespace-pre-wrap"
+                                >
                                     <Ansi>
-                                        { json.response }
+                                        {json.response}
                                     </Ansi>
-                                </pre>,
-                        ]);
+                                </div>,
+                            ]);
+                        }
                     }
 
                     set_requires_input_line_append(true);
 
                     // focus on the input line
                     setTimeout(() => {
-                        ([ ...document.querySelectorAll(`#${ hostname }-terminal-input-line`) ].at(-1) as HTMLSpanElement | undefined)?.focus();
+                        ([...document.querySelectorAll(`#${hostname}-terminal-input-line`)].at(-1) as HTMLSpanElement | undefined)?.focus();
                     }, 50);
                 }
             }
@@ -145,8 +176,7 @@ export const Terminal: FC<TerminalProps> = ({
                         return new_index;
                     });
                 }
-            }
-            else if (e.key === "ArrowDown") {
+            } else if (e.key === "ArrowDown") {
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -190,14 +220,14 @@ export const Terminal: FC<TerminalProps> = ({
 
                     return [
                         ...old,
-                        <TerminalOpenerSection key={ `${ hostname }-tos-${ old.length + 1 }` }
-                                               username={ username }
-                                               hostname={ hostname }
-                                               cwd={ cwd }
+                        <TerminalOpenerSection key={`${hostname}-tos-${old.length + 1}`}
+                                               username={username}
+                                               hostname={hostname}
+                                               cwd={cwd}
                         />,
-                        <TerminalInputLine key={ `${ hostname }-til-${ old.length + 2 }` }
-                                           handle_terminal_keydown={ handle_terminal_keydown }
-                                           hostname={ hostname }
+                        <TerminalInputLine key={`${hostname}-til-${old.length + 2}`}
+                                           handle_terminal_keydown={handle_terminal_keydown}
+                                           hostname={hostname}
                         />,
                     ];
                 });
@@ -215,7 +245,7 @@ export const Terminal: FC<TerminalProps> = ({
     return (
         <div className="w-full p-4 bg-zinc-900 mt-2 rounded font-mono items-center relative min-h-[inherit]
         max-h-[inherit] h-full overflow-x-hidden overflow-y-auto pr-2 text-sm"
-             style={ style }
+             style={style}
         >
             {
                 terminal_fragments.map(v => v)

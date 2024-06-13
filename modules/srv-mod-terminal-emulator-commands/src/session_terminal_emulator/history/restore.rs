@@ -17,10 +17,8 @@ use crate::command_handler::CommandHandlerArguments;
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
 pub struct TerminalSessionHistoryRestoreArguments {
-	/// Delete the command permanently, removing it from the database.
-	///
-	/// This is a hard delete and cannot be undone.
-	pub command_ids: Vec<String>,
+	/// The list of command ids to restore
+	pub command_ids: Vec<i64>,
 }
 
 /// Handle the clear command
@@ -36,7 +34,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 	// clear commands marking them as deleted (soft delete)
 	let result = diesel::update(commands::table)
 		.filter(commands::session_id.eq(&config.session.session_id))
-		.filter(commands::id.eq_any(&args.command_ids))
+		.filter(commands::sequence_counter.eq_any(&args.command_ids))
 		.set((
 			commands::restored_at.eq(chrono::Utc::now()),
 		))
