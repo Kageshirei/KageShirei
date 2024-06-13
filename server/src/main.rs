@@ -7,6 +7,7 @@ use srv_mod_database::humantime;
 use crate::async_main::async_main;
 use crate::cli::base::{CliArguments, Commands};
 use crate::cli::generate::GenerateSubcommands;
+use crate::cli_cmd_generate::dummy_data::make_dummy_data;
 
 mod async_ctx;
 mod async_main;
@@ -95,6 +96,10 @@ fn main() -> anyhow::Result<()> {
 				}
 				GenerateSubcommands::Certificate(generate_args) => {
 					cli_cmd_generate::certificate::make_tls(&generate_args)?;
+				}
+				GenerateSubcommands::DummyData => {
+					let config = RootConfig::load(&args.config)?;
+					async_ctx::enter(make_dummy_data(config))?;
 				}
 			}
 		}

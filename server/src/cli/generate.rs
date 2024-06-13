@@ -23,4 +23,6 @@ pub enum GenerateSubcommands {
 	Operator(GenerateOperatorArguments),
 	/// Generate a new self-signed tls certificate for the server
 	Certificate(GenerateCertificateArguments),
+	/// Generate dummy data for the server, this must be used only for testing purposes
+	DummyData,
 }
