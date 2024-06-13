@@ -7,7 +7,7 @@ interface PostParseHistoryProps {
     history: HistoryRecord[];
 }
 
-export const PostParseHistory: FC<PostParseHistoryProps> = ({history}) => {
+export const PostProcessHistory: FC<PostParseHistoryProps> = ({history}) => {
     return (
         <TableScrollContainer minWidth={700}>
             <Table withColumnBorders withRowBorders my={"sm"}>
@@ -24,8 +24,7 @@ export const PostParseHistory: FC<PostParseHistoryProps> = ({history}) => {
                         history.map((history_line, index) => (
                             <HistoryLine
                                 history_line={history_line}
-                                index={index}
-                                key={index}
+                                key={history_line.sequence_counter}
                             />
                         ))
                     }
@@ -37,14 +36,13 @@ export const PostParseHistory: FC<PostParseHistoryProps> = ({history}) => {
 
 interface HistoryLineProps {
     history_line: HistoryRecord;
-    index: number;
 }
 
-const HistoryLine: FC<HistoryLineProps> = ({history_line, index}) => {
+const HistoryLine: FC<HistoryLineProps> = ({history_line}) => {
     return (
         <TableTr>
             <TableTd className="font-semibold text-gray-500 break-keep whitespace-nowrap" align={"right"}>
-                {index + 1}
+                {history_line.sequence_counter}
             </TableTd>
             <TableTd className="break-keep whitespace-nowrap">
                 {history_line.ran_by}

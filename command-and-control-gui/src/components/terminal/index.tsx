@@ -4,7 +4,7 @@ import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-secti
 import {AuthenticationCtx} from "@/context/authentication";
 import Ansi from "ansi-to-react";
 import {CSSProperties, FC, JSX, KeyboardEvent, useCallback, useEffect, useState,} from "react";
-import {PostParseHistory} from "@/components/post-parse/history";
+import {PostProcessHistory} from "@/components/post-process-command/history";
 
 interface TerminalProps {
     hostname: string;
@@ -107,7 +107,7 @@ export const Terminal: FC<TerminalProps> = ({
 
                         // post parsing is required, so we need to handle the response manually and based on its type
                         // parse the json in the "data" field
-                        if ("post_parse" in json && json.post_parse === true) {
+                        if ("type" in json) {
                             switch (json.type) {
                                 case "history":
                                     set_terminal_fragments(old => [
@@ -115,7 +115,7 @@ export const Terminal: FC<TerminalProps> = ({
                                         <div key={`${hostname}-out-${old.length + 1}`}
                                              className="break-all whitespace-pre-wrap"
                                         >
-                                            <PostParseHistory history={json.data}/>
+                                            <PostProcessHistory history={json.data}/>
                                         </div>,
                                     ]);
                                     break;

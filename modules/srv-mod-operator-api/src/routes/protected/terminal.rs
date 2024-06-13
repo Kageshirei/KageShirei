@@ -227,7 +227,7 @@ async fn get_handler(
 	// fetch the latest commands and their output from the database
 	let mut retrieved_commands = commands::table.inner_join(users::table)
 		.select((
-			commands::id,
+            commands::sequence_counter.nullable(),
 			commands::command,
 			commands::output.nullable(),
 			commands::exit_code.nullable(),

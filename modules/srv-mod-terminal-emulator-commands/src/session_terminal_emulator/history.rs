@@ -12,6 +12,7 @@ use srv_mod_database::models::command::{Command, HistoryRecord};
 use srv_mod_database::schema::commands;
 use srv_mod_database::schema::users;
 
+use crate::post_process_result::PostProcessResult;
 use crate::session_terminal_emulator::history::restore::TerminalSessionHistoryRestoreArguments;
 
 mod restore;
@@ -52,7 +53,7 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHis
     } else {
         let mut history = commands::table.inner_join(users::table)
             .select((
-                commands::id,
+                commands::sequence_counter.nullable(),
                 commands::command,
                 commands::exit_code.nullable(),
                 users::username,
@@ -82,11 +83,12 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHis
             .map_err(|e| anyhow::anyhow!(e))?;
 
         Ok(
-            json!({
-				"post_parse": true,
-				"type": "history",
-				"data": history,
-			}).to_string()
+            serde_json::to_string(
+                &PostProcessResult {
+                    r#type: "history".to_string(),
+                    data: history,
+                }
+            ).unwrap()
         )
     }
 }
