@@ -1,21 +1,23 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::{debug_handler, Json, Router};
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use serde::{Deserialize, Serialize};
 use tokio::task::JoinHandle;
-use tracing::{debug, info, instrument};
+use tracing::{debug, error, info, instrument};
 
 use srv_mod_database::{diesel, models};
+use srv_mod_database::diesel::{BoolExpressionMethods, ExpressionMethods, NullableExpressionMethods, Queryable, QueryDsl};
 use srv_mod_database::diesel::associations::HasTable;
-use srv_mod_database::diesel::ExpressionMethods;
 use srv_mod_database::diesel::Insertable;
 use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::command::CreateCommand;
-use srv_mod_database::schema::commands;
+use srv_mod_database::models::command::{CreateCommand, FullHistoryRecord};
+use srv_mod_database::models::notification::Notification;
+use srv_mod_database::schema::{commands, notifications, users};
 use srv_mod_terminal_emulator_commands::{Command, StyledStr};
 use srv_mod_terminal_emulator_commands::command_handler::CommandHandler;
 use srv_mod_terminal_emulator_commands::global_session::GlobalSessionTerminalEmulatorCommands;
@@ -196,9 +198,74 @@ async fn post_handler(
 	}))
 }
 
+/// The handler for the notifications route
+///
+/// This handler fetches the notifications from the database and returns them as a JSON response
+///
+/// # Request parameters
+///
+/// - `page` (optional): The page number to fetch. Defaults to 1
+#[debug_handler]
+#[instrument(name = "GET /terminal", skip(state))]
+async fn get_handler(
+	State(state): State<ApiServerSharedState>,
+	jwt_claims: JwtClaims,
+	Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Vec<FullHistoryRecord>>, ApiServerError> {
+	let mut connection = state
+		.db_pool
+		.get()
+		.await
+		.map_err(|_| ApiServerError::InternalServerError)?;
+
+	let session_id_v = params.get("session_id").unwrap_or(&"global".to_string());
+
+	let page = params.get("page").and_then(|page| page.parse::<u32>().ok()).unwrap_or(1);
+	let page_size = 50;
+
+	// fetch the latest commands and their output from the database
+	let mut retrieved_commands = commands::table.inner_join(users::table)
+		.select((
+			commands::id,
+			commands::command,
+			commands::output.nullable(),
+			commands::exit_code.nullable(),
+			users::username,
+			commands::created_at
+		))
+		.filter(commands::session_id.eq(session_id_v))
+		.filter(
+			// Select only commands that are not deleted or have been restored after deletion
+			// deleted_at == null || (restored_at != null && restored_at > deleted_at)
+			commands::deleted_at.is_null()
+				.or(
+					commands::restored_at.is_not_null()
+						.and(
+							commands::restored_at.gt(commands::deleted_at)
+						)
+				)
+		)
+		.order_by(commands::created_at.desc())
+		.offset(((page - 1) * page_size) as i64)
+		.limit(page_size as i64)
+		.get_results::<FullHistoryRecord>(&mut connection)
+		.await
+		.map_err(|e| {
+			error!("Failed to fetch commands: {}", e.to_string());
+			ApiServerError::InternalServerError
+		})?;
+
+	// Reverse the logs so the newest logs are at the bottom, this is required as the ordering of
+	// elements must have most recent logs on top in order to split the logs into pages and
+	// display them in the correct order
+	retrieved_commands.reverse();
+
+	Ok(Json(retrieved_commands))
+}
+
 /// Creates the public authentication routes
 pub fn route(state: ApiServerSharedState) -> Router<ApiServerSharedState> {
 	Router::new()
-		.route("/terminal", post(post_handler))
+		.route("/terminal", post(post_handler).get(get_handler))
 		.with_state(state)
 }
