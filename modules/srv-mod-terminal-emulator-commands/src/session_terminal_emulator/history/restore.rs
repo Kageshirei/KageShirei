@@ -13,7 +13,7 @@ use srv_mod_database::schema::commands;
 #[derive(Args, Debug, PartialEq, Serialize)]
 pub struct TerminalSessionHistoryRestoreArguments {
 	/// The list of command ids to restore
-	pub command_ids: Vec<String>,
+	pub command_ids: Vec<i64>,
 }
 
 /// Handle the clear command
@@ -29,7 +29,7 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHis
 	// clear commands marking them as deleted (soft delete)
 	let result = diesel::update(commands::table)
 		.filter(commands::session_id.eq(session_id_v))
-		.filter(commands::id.eq_any(&args.command_ids))
+		.filter(commands::sequence_counter.eq_any(&args.command_ids))
 		.set((
 			commands::restored_at.eq(chrono::Utc::now()),
 		))
