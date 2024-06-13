@@ -1,8 +1,10 @@
 use tracing::{debug, instrument};
 
+use crate::command_handler::CommandHandlerArguments;
+
 /// Handle the exit command
 #[instrument]
-pub async fn handle(_session_id: &str) -> anyhow::Result<String> {
+pub async fn handle(_config: CommandHandlerArguments) -> anyhow::Result<String> {
 	debug!("Terminal command received");
 
 	// Signal the frontend terminal emulator to exit the terminal session

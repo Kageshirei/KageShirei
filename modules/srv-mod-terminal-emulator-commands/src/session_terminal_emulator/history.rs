@@ -9,6 +9,7 @@ use srv_mod_database::models::command::Command;
 use srv_mod_database::schema::commands;
 use srv_mod_database::schema::users;
 
+use crate::command_handler::CommandHandlerArguments;
 use crate::session_terminal_emulator::history::restore::TerminalSessionHistoryRestoreArguments;
 
 mod restore;
@@ -38,21 +39,21 @@ pub struct HistoryRecord {
 
 /// Handle the history command
 #[instrument]
-pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHistoryArguments) -> anyhow::Result<String> {
+pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHistoryArguments) -> anyhow::Result<String> {
 	debug!("Terminal command received");
-
-	let mut connection = db_pool
-		.get()
-		.await
-		.map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
 
 	if let Some(subcommand) = &args.command {
 		match subcommand {
 			HistorySubcommands::Restore(args) => {
-				restore::handle(session_id_v, db_pool.clone(), args).await
+				restore::handle(config.clone(), args).await
 			}
 		}
 	} else {
+		let mut connection = config.db_pool
+		                           .get()
+		                           .await
+		                           .map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
+
 		let history = commands::table.inner_join(users::table)
 		                             .select((
 			                             commands::id,
@@ -61,7 +62,7 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHis
 			                             users::username,
 			                             commands::created_at
 		                             ))
-		                             .filter(commands::session_id.eq(session_id_v))
+			.filter(commands::session_id.eq(&config.session.session_id))
 		                             .filter(
 			                             // Select only commands that are not deleted or have been restored after deletion
 			                             // deleted_at == null || (restored_at != null && restored_at > deleted_at)

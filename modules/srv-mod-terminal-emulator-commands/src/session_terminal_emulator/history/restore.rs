@@ -1,5 +1,6 @@
 use clap::Args;
 use serde::Serialize;
+use serde_json::json;
 use tracing::{debug, instrument};
 
 use srv_mod_database::{diesel, Pool};
@@ -7,7 +8,11 @@ use srv_mod_database::diesel::{ExpressionMethods, SelectableHelper};
 use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
 use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::models::command::Command;
+use srv_mod_database::models::log::CreateLog;
 use srv_mod_database::schema::commands;
+use srv_mod_database::schema_extension::LogLevel;
+
+use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
@@ -20,17 +25,17 @@ pub struct TerminalSessionHistoryRestoreArguments {
 
 /// Handle the clear command
 #[instrument]
-pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHistoryRestoreArguments) -> anyhow::Result<String> {
+pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHistoryRestoreArguments) -> anyhow::Result<String> {
 	debug!("Terminal command received");
 
-	let mut connection = db_pool
-		.get()
-		.await
-		.map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
+	let mut connection = config.db_pool
+	                           .get()
+	                           .await
+	                           .map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
 
 	// clear commands marking them as deleted (soft delete)
 	let result = diesel::update(commands::table)
-		.filter(commands::session_id.eq(session_id_v))
+		.filter(commands::session_id.eq(&config.session.session_id))
 		.filter(commands::id.eq_any(&args.command_ids))
 		.set((
 			commands::restored_at.eq(chrono::Utc::now()),
@@ -39,8 +44,25 @@ pub async fn handle(session_id_v: &str, db_pool: Pool, args: &TerminalSessionHis
 		.await
 		.map_err(|e| anyhow::anyhow!(e))?;
 
+	let message = format!("Restored {} command(s)", result);
+
+	// create a log entry and save it
+	let log = CreateLog::new(LogLevel::INFO)
+		.with_message(message.clone())
+		.with_extra_value(json!({
+			"session": config.session.hostname,
+			"ran_by": config.user.username,
+		}))
+		.save(&mut connection)
+		.await
+		.map_err(|e| anyhow::anyhow!(e))?;
+
+	// broadcast the log
+	config.broadcast_sender
+	      .send(serde_json::to_string(&log)?)?;
+
 	// Signal the frontend terminal emulator to clear the terminal screen
-	Ok(format!("Restored {} commands", result))
+	Ok(message)
 }
 
 #[cfg(test)]
