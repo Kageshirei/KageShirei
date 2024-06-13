@@ -1,10 +1,10 @@
+import {PostProcessHistory} from "@/components/post-process-command/history";
 import {NATIVE_COMMANDS, NativeHandler,} from "@/components/terminal/native-commands";
 import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
 import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
 import {AuthenticationCtx} from "@/context/authentication";
 import Ansi from "ansi-to-react";
 import {CSSProperties, FC, JSX, KeyboardEvent, useCallback, useEffect, useState,} from "react";
-import {PostProcessHistory} from "@/components/post-process-command/history";
 
 interface TerminalProps {
     hostname: string;
@@ -142,7 +142,7 @@ export const Terminal: FC<TerminalProps> = ({
                                      className="break-all whitespace-pre-wrap"
                                 >
                                     <Ansi>
-                                        {json.response}
+                                        {JSON.stringify(json)}
                                     </Ansi>
                                 </div>,
                             ]);
