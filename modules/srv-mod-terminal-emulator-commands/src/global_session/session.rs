@@ -29,6 +29,30 @@ pub struct SessionRecord {
 	pub operative_system: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Queryable)]
+pub struct SessionOpeningRecordUnparsed {
+	pub id: String,
+	pub hostname: String,
+	pub cwd: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable)]
+pub struct SessionOpeningRecord {
+	pub hostname: String,
+	pub cwd: String,
+	pub args: Vec<String>,
+}
+
+impl From<SessionOpeningRecordUnparsed> for SessionOpeningRecord {
+	fn from(record: SessionOpeningRecordUnparsed) -> Self {
+		Self {
+			hostname: record.hostname,
+			cwd: record.cwd,
+			args: vec![record.id],
+		}
+	}
+}
+
 /// Handle the sessions command
 #[instrument]
 pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTerminalSessionsArguments) -> anyhow::Result<String> {
@@ -41,7 +65,27 @@ pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTermina
 
 	// If the ids are provided, return the terminal emulator internal handle open sessions command
 	if args.ids.is_some() {
-		return Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__".to_string());
+		let results = agents::table
+			.select((
+				agents::id,
+				agents::hostname,
+				agents::cwd,
+			))
+			.filter(agents::hostname.eq_any(args.ids.as_ref().unwrap()))
+			.get_results::<SessionOpeningRecordUnparsed>(&mut connection)
+			.await
+			.map_err(|e| anyhow::anyhow!(e))?;
+
+		let results = results.into_iter().map(|record| {
+			SessionOpeningRecord::from(record)
+		}).collect::<Vec<_>>();
+
+		return Ok(
+			format!(
+				"__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__{}",
+				serde_json::to_string(&results).map_err(|e| anyhow::anyhow!(e))?
+			)
+		);
 	}
 
 	// list all the agents (sessions) in the database
