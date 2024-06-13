@@ -4384,7 +4384,7 @@ dependencies = [
  "rs2-communication-protocol",
  "rs2-crypt",
  "rs2-utils",
-    "serde",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",
@@ -4426,7 +4426,7 @@ dependencies = [
  "axum-server",
  "chrono",
  "futures",
-    "futures-util",
+ "futures-util",
  "humantime",
  "jsonwebtoken",
  "once_cell",
@@ -4438,7 +4438,7 @@ dependencies = [
  "srv-mod-database",
  "srv-mod-terminal-emulator-commands",
  "tokio",
-    "tokio-stream",
+ "tokio-stream",
  "tokio-util",
  "tower",
  "tower-http",
@@ -4451,13 +4451,13 @@ name = "srv-mod-terminal-emulator-commands"
 version = "0.1.0"
 dependencies = [
  "anyhow",
-    "chrono",
+ "chrono",
  "clap",
-    "futures",
-    "rs2-communication-protocol",
+ "futures",
+ "rs2-communication-protocol",
  "rs2-srv-test-helper",
  "serde",
-    "serde_json",
+ "serde_json",
  "serial_test",
  "shellwords",
  "srv-mod-database",
@@ -5075,10 +5075,10 @@ version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "267ac89e0bec6e691e5813911606935d77c476ff49024f98abcea3e7b15e37af"
 dependencies = [
-    "futures-core",
-    "pin-project-lite",
-    "tokio",
-    "tokio-util",
+ "futures-core",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
