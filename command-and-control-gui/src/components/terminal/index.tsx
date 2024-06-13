@@ -1,11 +1,28 @@
-import {PostProcessHistory} from "@/components/post-process-command/history";
-import {PostProcessSessions} from "@/components/post-process-command/sessions";
-import {NATIVE_COMMANDS, NativeHandler,} from "@/components/terminal/native-commands";
-import {TerminalInputLine} from "@/components/terminal/terminal-input-line";
-import {TerminalOpenerSection} from "@/components/terminal/terminal-opener-section";
-import {AuthenticationCtx} from "@/context/authentication";
+import { PostProcessHistory } from "@/components/post-process-command/history";
+import { PostProcessSessions } from "@/components/post-process-command/sessions";
+import {
+    INTERNAL_HANDLES_LOOKUP,
+    NATIVE_COMMANDS,
+    NativeHandler,
+    TERMINAL_EMULATOR_INTERNAL_HANDLES,
+} from "@/components/terminal/native-commands";
+import { TerminalInputLine } from "@/components/terminal/terminal-input-line";
+import { TerminalOpenerSection } from "@/components/terminal/terminal-opener-section";
+import { AuthenticationCtx } from "@/context/authentication";
 import Ansi from "ansi-to-react";
-import {CSSProperties, FC, JSX, KeyboardEvent, useCallback, useEffect, useState,} from "react";
+import {
+    all,
+    isObject,
+} from "radash";
+import {
+    CSSProperties,
+    FC,
+    JSX,
+    KeyboardEvent,
+    useCallback,
+    useEffect,
+    useState,
+} from "react";
 
 interface TerminalProps {
     hostname: string;
@@ -18,18 +35,18 @@ interface TerminalProps {
 }
 
 export const Terminal: FC<TerminalProps> = ({
-                                                cwd,
-                                                username,
-                                                hostname,
-                                                style,
-                                                dropTerminalHandle,
-                                                addTerminalHandle,
-                                                session_id,
-                                            }) => {
-    const [requires_input_line_append, set_requires_input_line_append] = useState(true);
-    const [terminal_fragments, set_terminal_fragments] = useState<JSX.Element[]>([]);
-    const [terminal_history, set_terminal_history] = useState<string[]>([]);
-    const [history_index, set_history_index] = useState<number | null>(null);
+    cwd,
+    username,
+    hostname,
+    style,
+    dropTerminalHandle,
+    addTerminalHandle,
+    session_id,
+}) => {
+    const [ requires_input_line_append, set_requires_input_line_append ] = useState(true);
+    const [ terminal_fragments, set_terminal_fragments ] = useState<JSX.Element[]>([]);
+    const [ terminal_history, set_terminal_history ] = useState<string[]>([]);
+    const [ history_index, set_history_index ] = useState<number | null>(null);
 
     const handle_terminal_keydown = useCallback(
         async (e: KeyboardEvent<HTMLSpanElement>) => {
@@ -51,13 +68,13 @@ export const Terminal: FC<TerminalProps> = ({
                     });
 
                     // send the command to the backend
-                    const response = await fetch(`http://${AuthenticationCtx.host}/terminal`, {
-                        method: "POST",
+                    const response = await fetch(`http://${ AuthenticationCtx.host }/terminal`, {
+                        method:  "POST",
                         headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${AuthenticationCtx.bearer}`,
+                            "Content-Type":  "application/json",
+                            "Authorization": `Bearer ${ AuthenticationCtx.bearer }`,
                         },
-                        body: JSON.stringify({
+                        body:    JSON.stringify({
                             command,
                             session_id,
                         }),
@@ -69,47 +86,85 @@ export const Terminal: FC<TerminalProps> = ({
 
                     // handle frontend commands
                     if (
-                        [
-                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
-                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
-                            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__",
-                        ].includes(json.response)
+                        TERMINAL_EMULATOR_INTERNAL_HANDLES.some(v => json.response.startsWith(v))
                     ) {
-                        let internal_call: NativeHandler | null = null;
+                        const command = TERMINAL_EMULATOR_INTERNAL_HANDLES.filter(v => json.response.startsWith(v))[0];
+                        let internal_call: NativeHandler = INTERNAL_HANDLES_LOOKUP[command];
 
-                        switch (json.response) {
-                            case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__":
-                                internal_call = "clear";
-                                break;
-                            case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__":
-                                internal_call = "exit";
-                                break;
-                            case "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__":
-                                internal_call = "open_session";
-                                break;
+                        // remove the internal command from the response, this allows the command to be parsed as a
+                        // JSON if it contains other data
+                        json.response = json.response.replace(command, "");
+
+                        if (json.response.length > 0) {
+                            try {
+                                json.response = JSON.parse(json.response);
+                            }
+                            catch (e) {
+                                // pass
+                            }
                         }
 
-                        if (internal_call) {
+                        console.log("json.response", json.response);
+
+                        // handle the response and call the handlers recursively
+                        if (Array.isArray(json.response)) {
+                            await all(
+                                json.response.map(async (elem: any) => {
+                                    await NATIVE_COMMANDS[internal_call].handler({
+                                        args:     elem.args ? elem.args : JSON.parse(elem.command),
+                                        cwd:      elem.cwd ? elem.cwd : cwd,
+                                        username: elem.username ? elem.username : username,
+                                        hostname: elem.hostname ? elem.hostname : hostname,
+                                        set_cwd:  () => {},
+                                        set_terminal_fragments,
+                                        terminal_fragments,
+                                        hooks:    {
+                                            dropTerminalHandle,
+                                            addTerminalHandle,
+                                        },
+                                    });
+                                }),
+                            );
+                        }
+                        // one object only, pass the required arguments one time only
+                        else if (isObject(json.response)) {
                             await NATIVE_COMMANDS[internal_call].handler({
-                                args: JSON.parse(json.command),
-                                cwd,
-                                username,
-                                hostname,
-                                set_cwd: () => {
-                                },
+                                args:     json.response.args ? json.response.args : JSON.parse(json.command),
+                                cwd:      json.response.cwd ? json.response.cwd : cwd,
+                                username: json.response.username ? json.response.username : username,
+                                hostname: json.response.hostname ? json.response.hostname : hostname,
+                                set_cwd:  () => {},
                                 set_terminal_fragments,
                                 terminal_fragments,
-                                hooks: {
+                                hooks:    {
                                     dropTerminalHandle,
                                     addTerminalHandle,
                                 },
                             });
                         }
-                    } else {
+                        // no data, just call the handler with the parent arguments
+                        else {
+                            await NATIVE_COMMANDS[internal_call].handler({
+                                args:    JSON.parse(json.command),
+                                cwd,
+                                username,
+                                hostname,
+                                set_cwd: () => {},
+                                set_terminal_fragments,
+                                terminal_fragments,
+                                hooks:   {
+                                    dropTerminalHandle,
+                                    addTerminalHandle,
+                                },
+                            });
+                        }
+                    }
+                    else {
                         try {
                             json = JSON.parse(json.response);
                             console.log("parsed json", json);
-                        } catch (e) {
+                        }
+                        catch (e) {
                             // pass
                         }
 
@@ -120,47 +175,48 @@ export const Terminal: FC<TerminalProps> = ({
                                 case "sessions":
                                     set_terminal_fragments(old => [
                                         ...old,
-                                        <div key={`${hostname}-out-${old.length + 1}`}
+                                        <div key={ `${ hostname }-out-${ old.length + 1 }` }
                                              className="break-all whitespace-pre-wrap"
                                         >
-                                            <PostProcessSessions sessions={json.data}/>
+                                            <PostProcessSessions sessions={ json.data } />
                                         </div>,
                                     ]);
                                     break;
                                 case "history":
                                     set_terminal_fragments(old => [
                                         ...old,
-                                        <div key={`${hostname}-out-${old.length + 1}`}
+                                        <div key={ `${ hostname }-out-${ old.length + 1 }` }
                                              className="break-all whitespace-pre-wrap"
                                         >
-                                            <PostProcessHistory history={json.data}/>
+                                            <PostProcessHistory history={ json.data } />
                                         </div>,
                                     ]);
                                     break;
                                 default:
                                     set_terminal_fragments(old => [
                                         ...old,
-                                        <div key={`${hostname}-out-${old.length + 1}`}
+                                        <div key={ `${ hostname }-out-${ old.length + 1 }` }
                                              className="break-all whitespace-pre-wrap"
                                         >
                                             Response requires post-parsing, but no handler was found.
-                                            <br/>
-                                            <br/>
+                                            <br />
+                                            <br />
                                             <Ansi>
-                                                {JSON.stringify(json)}
+                                                { JSON.stringify(json) }
                                             </Ansi>
                                         </div>,
                                     ]);
                                     break;
                             }
-                        } else {
+                        }
+                        else {
                             set_terminal_fragments(old => [
                                 ...old,
-                                <div key={`${hostname}-out-${old.length + 1}`}
+                                <div key={ `${ hostname }-out-${ old.length + 1 }` }
                                      className="break-all whitespace-pre-wrap"
                                 >
                                     <Ansi>
-                                        {json.response}
+                                        { json.response }
                                     </Ansi>
                                 </div>,
                             ]);
@@ -171,7 +227,7 @@ export const Terminal: FC<TerminalProps> = ({
 
                     // focus on the input line
                     setTimeout(() => {
-                        ([...document.querySelectorAll(`#${hostname}-terminal-input-line`)].at(-1) as HTMLSpanElement | undefined)?.focus();
+                        ([ ...document.querySelectorAll(`#${ hostname }-terminal-input-line`) ].at(-1) as HTMLSpanElement | undefined)?.focus();
                     }, 50);
                 }
             }
@@ -194,7 +250,8 @@ export const Terminal: FC<TerminalProps> = ({
                         return new_index;
                     });
                 }
-            } else if (e.key === "ArrowDown") {
+            }
+            else if (e.key === "ArrowDown") {
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -238,14 +295,14 @@ export const Terminal: FC<TerminalProps> = ({
 
                     return [
                         ...old,
-                        <TerminalOpenerSection key={`${hostname}-tos-${old.length + 1}`}
-                                               username={username}
-                                               hostname={hostname}
-                                               cwd={cwd}
+                        <TerminalOpenerSection key={ `${ hostname }-tos-${ old.length + 1 }` }
+                                               username={ username }
+                                               hostname={ hostname }
+                                               cwd={ cwd }
                         />,
-                        <TerminalInputLine key={`${hostname}-til-${old.length + 2}`}
-                                           handle_terminal_keydown={handle_terminal_keydown}
-                                           hostname={hostname}
+                        <TerminalInputLine key={ `${ hostname }-til-${ old.length + 2 }` }
+                                           handle_terminal_keydown={ handle_terminal_keydown }
+                                           hostname={ hostname }
                         />,
                     ];
                 });
@@ -263,7 +320,7 @@ export const Terminal: FC<TerminalProps> = ({
     return (
         <div className="w-full p-4 bg-zinc-900 mt-2 rounded font-mono items-center relative min-h-[inherit]
         max-h-[inherit] h-full overflow-x-hidden overflow-y-auto pr-2 text-sm"
-             style={style}
+             style={ style }
         >
             {
                 terminal_fragments.map(v => v)
