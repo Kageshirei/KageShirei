@@ -9,6 +9,7 @@ use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
 pub mod global_session;
 pub mod command_handler;
 pub mod session_terminal_emulator;
+mod post_process_result;
 
 #[derive(Debug, PartialEq)]
 pub enum Command {
