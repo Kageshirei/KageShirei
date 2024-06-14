@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use srv_mod_config::SharedConfig;
+use srv_mod_config::sse::common_server_state::SseEvent;
 use srv_mod_database::Pool;
 
 pub type ApiServerSharedState = Arc<ApiServerState>;
@@ -13,5 +14,5 @@ pub struct ApiServerState {
 	/// The database connection pool
 	pub db_pool: Pool,
 	/// The broadcast sender for the API server
-	pub broadcast_sender: tokio::sync::broadcast::Sender<String>,
+	pub broadcast_sender: tokio::sync::broadcast::Sender<SseEvent>,
 }

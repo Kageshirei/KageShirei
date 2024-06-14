@@ -1,7 +1,8 @@
-import { dayjs } from "@/helpers/dayjs";
-import { notifications } from "@mantine/notifications";
-import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { proxy } from "valtio";
+import {SSE} from "@/context/sse";
+import {dayjs} from "@/helpers/dayjs";
+import {notifications} from "@mantine/notifications";
+import {AppRouterInstance} from "next/dist/shared/lib/app-router-context.shared-runtime";
+import {proxy} from "valtio";
 
 export interface IAuthenticate {
     host: string;
@@ -20,6 +21,7 @@ class Authentication {
     private _elapses_at: dayjs.Dayjs | null = null;
     private _refresh_interval: NodeJS.Timeout | null = null;
     private _expires_in: number = 0;
+    private _sse: SSE | null = null;
 
     constructor() {
         if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
@@ -35,7 +37,8 @@ class Authentication {
             }
 
             this.authenticate(data);
-            this.refresh(true);
+            this.refresh(true).then(() => {
+            });
         }
     }
 
@@ -89,6 +92,11 @@ class Authentication {
         this._bearer = data.bearer;
         this._username = data.username;
         this._is_authenticated = true;
+
+        // Create a new SSE instance
+        this._sse = new SSE(data.host, data.bearer);
+        this._sse.connect().then(() => {
+        });
 
         // Set the elapses_at to the current time plus the expires_in minus 1 minute to ensure enough time to refresh
         // the token before it expires
@@ -147,6 +155,14 @@ class Authentication {
                     color: "red",
                 });
 
+                if (this._sse) {
+                    try {
+                        this._sse.abort();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+
                 // remove the auth data and reload the page
                 if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
                     localStorage.removeItem("auth");
@@ -161,6 +177,12 @@ class Authentication {
             const data = await response.json();
             this._bearer = data.token;
             this._expires_in = data.expires_in;
+
+            if (this._sse) {
+                this._sse.abort();
+                this._sse.bearer = this._bearer;
+                await this._sse.connect();
+            }
 
             // update the local storage
             if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
