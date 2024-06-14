@@ -14,6 +14,7 @@ serde_json = { version = "1.0.117" }
 chrono = { version = "0.4.38", features = ["serde"] }
 futures = "0.3.30"
 tokio = { version = "1.37.0", features = ["full"] }
+srv-mod-config = { path = "../srv-mod-config" }
 
 [dev-dependencies]
 tokio = "1.37.0"

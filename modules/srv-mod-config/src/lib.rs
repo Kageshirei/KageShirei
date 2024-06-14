@@ -21,6 +21,7 @@ pub mod jwt;
 pub mod logging;
 mod validators;
 pub mod handlers;
+pub mod sse;
 
 pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;

@@ -3,6 +3,7 @@ use clap::Args;
 use serde::Serialize;
 use tracing::{debug, instrument};
 
+use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_database::{diesel, Pool};
 use srv_mod_database::diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
 use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
@@ -85,8 +86,12 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
 	}
 
 	// broadcast the log
-	config.broadcast_sender
-	      .send(serde_json::to_string(&log)?)?;
+	let log_id = log.id.clone();
+	config.broadcast_sender.send(SseEvent {
+		data: serde_json::to_string(&log)?,
+		event: EventType::Log,
+		id: Some(log_id),
+	})?;
 
 	// Signal the frontend terminal emulator to clear the terminal screen
 	Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
