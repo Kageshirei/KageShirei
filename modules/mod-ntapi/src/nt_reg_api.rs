@@ -5,14 +5,14 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::ptr::null_mut;
 use core::slice;
-use rs2_winapi::ntregapi::KeyValuePartialInformation;
+use rs2_winapi::ntregapi::{KeyBasicInformation, KeyValuePartialInformation};
 use rs2_winapi::{
     ntdef::{ObjectAttributes, UnicodeString, HANDLE, OBJ_CASE_INSENSITIVE},
     ntregapi::{KEY_ENUMERATE_SUB_KEYS, KEY_READ},
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_OBJECT_NAME_NOT_FOUND},
 };
 
-use crate::{nt_open_key, nt_query_value_key};
+use crate::{nt_close, nt_enumerate_key, nt_open_key, nt_query_value_key};
 
 /// Opens a registry key and returns the handle.
 ///
@@ -125,6 +125,64 @@ pub unsafe fn query_value(key_handle: HANDLE, value_name: &str) -> Result<String
     Ok(value)
 }
 
+/// Enumerates sub-keys of a given registry key.
+///
+/// This function enumerates the sub-keys of the specified registry key
+/// and returns them as a vector of strings.
+///
+/// # Arguments
+///
+/// * `key` - A string slice that holds the path to the registry key.
+///
+/// # Returns
+///
+/// * `Result<Vec<String>, i32>` - A result containing a vector of sub-key names if successful, otherwise an error code.
+///
+/// # Safety
+///
+/// This function is unsafe because it interacts with raw pointers and low-level system calls.
+pub unsafe fn enumerate_sub_keys(key: &str) -> Result<Vec<String>, i32> {
+    let key_handle = open_key(key)?;
+    let mut sub_keys = Vec::new();
+
+    let mut index = 0;
+    let mut result_buffer: [u16; 256] = [0; 256];
+    loop {
+        let mut result_length: u32 = 0;
+
+        let status = nt_enumerate_key(
+            key_handle,
+            index,
+            0,
+            result_buffer.as_mut_ptr() as *mut _,
+            result_buffer.len() as u32 * 2,
+            &mut result_length,
+        );
+
+        if status != 0 {
+            if index == 0 {
+                nt_close(key_handle);
+                return Err(status);
+            } else {
+                break;
+            }
+        }
+
+        let key_info_ptr = result_buffer.as_ptr() as *const KeyBasicInformation;
+        let key_info_ref = &*key_info_ptr;
+
+        let name_length = key_info_ref.name_length as usize;
+        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length / 2);
+        let sub_key_name: String = String::from_utf16_lossy(name_slice);
+
+        sub_keys.push(sub_key_name);
+        index += 1;
+    }
+
+    nt_close(key_handle);
+    Ok(sub_keys)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::nt_close;
@@ -197,6 +255,24 @@ mod tests {
             }
 
             nt_close(key_handle); // Don't forget to close the handle after the test
+        }
+    }
+
+    #[test]
+    fn test_enumerate_sub_keys() {
+        unsafe {
+            let registry_key =
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
+            match enumerate_sub_keys(registry_key) {
+                Ok(sub_keys) => {
+                    for sub_key in sub_keys {
+                        libc_println!("Sub-key: {}\\{}", registry_key, sub_key);
+                    }
+                }
+                Err(status) => {
+                    libc_println!("Failed to enumerate sub-keys. NT STATUS: {:#X}", status);
+                }
+            }
         }
     }
 }
