@@ -9,8 +9,8 @@ export const LogLine: FC<{
     log: ILog
 }> = ({ log }) => {
     const timestamp = useMemo(() => {
-        return dayjs.unix(log.timestamp).format("MMM DD YYYY HH:mm:ss Z");
-    }, [ log.timestamp ]);
+        return dayjs(log.created_at).format("MMM DD YYYY HH:mm:ss Z");
+    }, [ log.created_at ]);
 
     const level_color = useMemo(() => {
         switch (log.level) {
@@ -32,7 +32,7 @@ export const LogLine: FC<{
             <div className="text-gray-500">
                 [{ timestamp }]{ " " }
             </div>
-            <div>
+            <div className="flex flex-nowrap">
                 {
                     Object.entries(log.extra).map(([ key, value ], index) => (
                         <div key={ key }
