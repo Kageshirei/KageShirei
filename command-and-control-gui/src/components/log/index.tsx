@@ -1,9 +1,6 @@
 import { LogLine } from "@/components/log/log-line";
 import { AuthenticationCtx } from "@/context/authentication";
-import {
-    GlobalLogs,
-    GlobalLogsParams,
-} from "@/context/globals";
+import { GlobalLogs } from "@/context/globals/logs";
 import { ILog } from "@/interfaces/log";
 import {
     Button,
@@ -21,7 +18,7 @@ interface LogProps {
 
 async function loadOlderLogs() {
     try {
-        const response = await fetch(`http://${ AuthenticationCtx.host }/logs?page=${ GlobalLogsParams.page + 1 }`, {
+        const response = await fetch(`http://${ AuthenticationCtx.host }/logs?page=${ GlobalLogs.page + 1 }`, {
             method:  "GET",
             headers: {
                 Authorization: `Bearer ${ AuthenticationCtx.bearer }`,
@@ -38,13 +35,13 @@ async function loadOlderLogs() {
             return false;
         }
 
-        GlobalLogs.unshift(...data);
+        GlobalLogs.data.unshift(...data);
     }
     catch (error) {
         console.error("Failed to fetch logs", error);
     }
 
-    GlobalLogsParams.page++;
+    GlobalLogs.page++;
     return true;
 }
 

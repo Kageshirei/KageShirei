@@ -1,4 +1,6 @@
-import {Agent} from "@/interfaces/agent";
+import { GlobalSessions } from "@/context/globals/sessions";
+import { getTextualIntegrityLevel } from "@/helpers/textual-integrity-level";
+import { Agent } from "@/interfaces/agent";
 import {
     ActionIcon,
     Menu,
@@ -12,24 +14,30 @@ import {
 } from "@mantine/core";
 import {
     IconBrandApple,
-    IconBrandDebian,
     IconBrandWindows,
     IconBug,
-    IconCheck,
     IconChevronUp,
     IconDotsVertical,
     IconSelector,
     IconSkull,
     IconTableColumn,
     IconTerminal,
-    IconX,
 } from "@tabler/icons-react";
-import {DataTable, DataTableSortStatus, useDataTableColumns,} from "mantine-datatable";
-import {alphabetical} from "radash";
-import {CSSProperties, FC, useEffect, useState,} from "react";
+import {
+    DataTable,
+    DataTableSortStatus,
+    useDataTableColumns,
+} from "mantine-datatable";
+import { alphabetical } from "radash";
+import {
+    CSSProperties,
+    FC,
+    useEffect,
+    useState,
+} from "react";
+import { useSnapshot } from "valtio";
 
 interface AgentsDatatableProps {
-    agents: Agent[];
     addTerminalHandle: (hostname: string, cwd: string, id: string) => void;
     style?: CSSProperties;
 }
@@ -37,10 +45,11 @@ interface AgentsDatatableProps {
 const column_toggle_key = "agents-toggleable";
 
 export const AgentsDatatable: FC<AgentsDatatableProps> = ({
-    agents,
     style,
     addTerminalHandle,
 }) => {
+    const sessions = useSnapshot(GlobalSessions);
+
     const [ sortStatus, setSortStatus ] = useState<DataTableSortStatus<Agent>>({
         columnAccessor: "id",
         direction:      "asc",
@@ -49,7 +58,7 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
     const [ selectedRecords, setSelectedRecords ] = useState<Agent[]>([]);
 
     const [ records, setRecords ] = useState(alphabetical(
-        agents,
+        sessions.data,
         v => v[sortStatus.columnAccessor as keyof Agent].toString(),
         sortStatus.direction === "asc" ? "asc" : "desc",
     ));
@@ -57,14 +66,14 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
     useEffect(
         () => {
             const data = alphabetical(
-                agents,
+                sessions.data,
                 v => v[sortStatus.columnAccessor as keyof Agent].toString(),
                 sortStatus.direction === "asc" ? "asc" : "desc",
             );
             setRecords(data);
         },
         [
-            agents,
+            sessions,
             sortStatus,
         ],
     );
@@ -95,7 +104,7 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
                         return <IconBrandWindows size={ 24 } />;
                     }
                     else if (operative_system.toLowerCase() === "linux") {
-                        return <IconBrandDebian size={ 24 } />;
+                        return "*nix";
                     }
                     else if (operative_system.toLowerCase() === "macos") {
                         return <IconBrandApple size={ 24 } />;
@@ -149,12 +158,11 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
                 defaultToggle: false,
             },
             {
-                accessor:   "elevated",
-                textAlign:  "center",
+                accessor: "integrity_level",
                 sortable:   true,
                 toggleable: true,
-                render:     ({ elevated }) => {
-                    return elevated ? <IconCheck size={ 20 } /> : <IconX size={ 20 } />;
+                render:   ({ integrity_level }) => {
+                    return getTextualIntegrityLevel(integrity_level);
                 },
             },
             {
@@ -228,7 +236,7 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
                             <MenuLabel>
                                 Actions
                             </MenuLabel>
-                            <MenuItem onClick={() => addTerminalHandle(hostname, cwd, id)}
+                            <MenuItem onClick={ () => addTerminalHandle(hostname, cwd, id) }
                                       leftSection={ <IconTerminal size={ 14 } /> }
                             >
                                 Terminal
@@ -273,6 +281,7 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
             onSelectedRecordsChange={ setSelectedRecords }
             selectionTrigger={ "cell" }
             records={ records }
+            fetching={ sessions.is_fetching }
             // @ts-ignore
             columns={ effectiveColumns }
             storeColumnsKey={ column_toggle_key }
