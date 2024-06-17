@@ -1,44 +1,29 @@
 "use client";
-import {AgentsDatatable} from "@/components/agents-datatable";
-import {Terminal} from "@/components/terminal";
-import {AuthenticationCtx} from "@/context/authentication";
-import {getFromLocalStorage, persistInLocalStorage,} from "@/helpers/local-storage";
-import {useEnsureUserIsAuthenticated} from "@/hooks/use-ensure-user-is-authenticated";
-import {Agent} from "@/interfaces/agent";
-import {Tabs, TabsList, TabsPanel, TabsTab, Text, ThemeIcon,} from "@mantine/core";
-import {IconTerminal} from "@tabler/icons-react";
-import {JSX, useCallback, useEffect, useState,} from "react";
+import { AgentsDatatable } from "@/components/agents-datatable";
+import { Terminal } from "@/components/terminal";
+import { AuthenticationCtx } from "@/context/authentication";
+import {
+    getFromLocalStorage,
+    persistInLocalStorage,
+} from "@/helpers/local-storage";
+import { useEnsureUserIsAuthenticated } from "@/hooks/use-ensure-user-is-authenticated";
+import {
+    Tabs,
+    TabsList,
+    TabsPanel,
+    TabsTab,
+    Text,
+    ThemeIcon,
+} from "@mantine/core";
+import { IconTerminal } from "@tabler/icons-react";
+import {
+    JSX,
+    useCallback,
+    useEffect,
+    useState,
+} from "react";
 import "./page.css";
-import Resizable, {ResizeCallbackArgs} from "react-resizable-layout";
-
-const sample_data: Agent[] = [
-    {
-        id: "aa112233",
-        operative_system: "Windows",
-        hostname: "host1",
-        domain: "example.com",
-        username: "user1",
-        ip: "1.1.1.1",
-        process_id: 1234,
-        parent_process_id: 5678,
-        process_name: "cmd.exe",
-        elevated: false,
-        cwd: "C:\\Users\\user1",
-    },
-    {
-        id: "bb445566",
-        operative_system: "Linux",
-        hostname: "host2",
-        domain: "example.com",
-        username: "user2",
-        ip: "2.2.2.2",
-        process_id: 2345,
-        parent_process_id: 6789,
-        process_name: "bash",
-        elevated: true,
-        cwd: "/home/user2",
-    },
-];
+import Resizable, { ResizeCallbackArgs } from "react-resizable-layout";
 
 const split_storage_key = "agents-terminal-split";
 
@@ -147,8 +132,7 @@ export default function Page() {
                     separatorProps,
                 }) => (
                     <>
-                        <AgentsDatatable agents={ sample_data }
-                                         style={ {
+                        <AgentsDatatable style={ {
                                              height: position,
                                          } }
                                          addTerminalHandle={ addTerminalHandle }

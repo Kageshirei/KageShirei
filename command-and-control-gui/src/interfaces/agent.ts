@@ -36,9 +36,9 @@ export interface Agent {
      */
     process_name: string;
     /**
-     * Whether the agent is running as elevated
+     * Current process integrity level
      */
-    elevated: boolean;
+    integrity_level: number;
     /**
      * The current working directory of the agent
      */

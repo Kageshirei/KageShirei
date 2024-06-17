@@ -1,5 +1,5 @@
 import { Log } from "@/components/log";
-import { GlobalLogs } from "@/context/globals";
+import { GlobalLogs } from "@/context/globals/logs";
 import {
     ActionIcon,
     Button,
@@ -247,7 +247,7 @@ export const LayoutAside: FC<LayoutAsideProps> = (
                            className={ "max-h-full overflow-hidden" }
                            component={ ScrollAreaAutosize }
                 >
-                    <Log logs={ logs } />
+                    <Log logs={ logs.data } />
                 </TabsPanel>
             </Tabs>
         </>

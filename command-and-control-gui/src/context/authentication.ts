@@ -38,8 +38,7 @@ class Authentication {
             }
 
             this.authenticate(data);
-            this.refresh(true).then(() => {
-            });
+            this.refresh(true).then(() => {});
         }
     }
 
@@ -98,7 +97,12 @@ class Authentication {
 
         // Create a new SSE instance
         if (this._sse) {
-            this._sse.abort();
+            try {
+                this._sse.abort();
+            }
+            catch (e) {
+                console.error(e);
+            }
         }
         this._sse = new SSE(data.host, data.bearer);
         this._sse.connect().then(() => {
@@ -169,7 +173,8 @@ class Authentication {
                 if (this._sse) {
                     try {
                         this._sse.abort();
-                    } catch (e) {
+                    }
+                    catch (e) {
                         console.error(e);
                     }
                 }
@@ -190,10 +195,19 @@ class Authentication {
             this._expires_in = data.expires_in;
 
             if (this._sse) {
-                this._sse.abort();
-                this._sse.bearer = this._bearer;
-                await this._sse.connect();
+                try {
+                    this._sse.abort();
+                }
+                catch (e) {
+                    console.error(e);
+                }
             }
+            else {
+                this._sse = new SSE(this._host, this._bearer);
+            }
+
+            this._sse.bearer = this._bearer;
+            await this._sse.connect();
 
             // update the local storage
             if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {

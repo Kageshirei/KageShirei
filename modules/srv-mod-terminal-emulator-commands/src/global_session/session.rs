@@ -6,6 +6,7 @@ use srv_mod_database::{diesel, Pool};
 use srv_mod_database::diesel::{ExpressionMethods, Queryable, QueryDsl, SelectableHelper};
 use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
 use srv_mod_database::diesel_async::RunQueryDsl;
+use srv_mod_database::models::agent::SessionRecord;
 use srv_mod_database::schema::agents;
 
 use crate::command_handler::CommandHandlerArguments;
@@ -16,17 +17,6 @@ use crate::post_process_result::PostProcessResult;
 pub struct GlobalSessionTerminalSessionsArguments {
 	/// List of session hostnames to open terminal sessions for
 	pub ids: Option<Vec<String>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Queryable)]
-pub struct SessionRecord {
-	pub id: String,
-	pub hostname: String,
-	pub domain: String,
-	pub username: String,
-	pub ip: String,
-	pub integrity_level: i16,
-	pub operative_system: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable)]

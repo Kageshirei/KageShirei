@@ -1,4 +1,5 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
 
 use rs2_communication_protocol::communication_structs::checkin::Checkin;
 
@@ -114,4 +115,45 @@ impl From<Checkin> for CreateAgent {
 			signature: "".to_string(),
 		}
 	}
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Queryable, Selectable)]
+#[diesel(table_name = crate::schema::agents)]
+pub struct FullSessionRecord {
+	/// The unique identifier for the agent (cuid2)
+	pub id: String,
+	/// The OS name
+	pub operative_system: String,
+	/// The victim hostname
+	pub hostname: String,
+	/// The domain of the victim
+	pub domain: String,
+	/// The username of whose runs the agent
+	pub username: String,
+	/// The internal IP of the victim
+	pub ip: String,
+	/// The process ID of the agent
+	pub process_id: i64,
+	/// The parent process ID of the agent
+	pub parent_process_id: i64,
+	/// The process name of the agent
+	pub process_name: String,
+	/// The integrity level of the agent
+	pub integrity_level: i16,
+	/// The current working directory of the agent
+	pub cwd: String,
+	/// The agent's creation date
+	pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable)]
+pub struct SessionRecord {
+	pub id: String,
+	pub hostname: String,
+	pub domain: String,
+	pub username: String,
+	pub ip: String,
+	pub integrity_level: i16,
+	pub operative_system: String,
 }

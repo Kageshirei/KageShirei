@@ -1,4 +1,4 @@
-import { GlobalLogs } from "@/context/globals";
+import { GlobalLogs } from "@/context/globals/logs";
 import {
     EventSourceMessage,
     fetchEventSource,
@@ -77,7 +77,7 @@ export class SSE {
             throw new Error("SSE is not connected, cannot abort");
         }
 
-        this._abort_controller.abort();
+        this._abort_controller.abort("SSE aborted");
         this._abort_controller = new AbortController();
         this._abort_controller.abort = this._abort_controller.abort.bind(this._abort_controller);
         this._status = SseStatus.closed;
@@ -86,7 +86,7 @@ export class SSE {
     private onMessage(event: EventSourceMessage) {
         switch (event.event) {
             case "log":
-                GlobalLogs.push(JSON.parse(event.data));
+                GlobalLogs.data.push(JSON.parse(event.data));
                 break;
             default:
                 console.error(`Unknown event(${ event.event }):`, event);
