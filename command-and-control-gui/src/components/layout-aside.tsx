@@ -1,6 +1,5 @@
 import { Log } from "@/components/log";
-import { dayjs } from "@/helpers/dayjs";
-import { ILog } from "@/interfaces/log";
+import { GlobalLogs } from "@/context/globals";
 import {
     ActionIcon,
     Button,
@@ -41,6 +40,7 @@ import {
     useRef,
     useState,
 } from "react";
+import { useSnapshot } from "valtio";
 
 interface PersistedAsidePanel {
     active_tab: string;
@@ -56,16 +56,6 @@ interface LayoutAsideProps {
     set_aside_size: Dispatch<SetStateAction<number>>;
     aside_size: number;
 }
-
-const sample_logs = Array.from({ length: 100 }, (_, i) => ({
-    timestamp: dayjs().unix(),
-    extra:     {
-        uid: "test",
-    },
-    level:     "INFO",
-    title:     "Log title",
-    message:   "log message".repeat(12),
-} as ILog));
 
 export const LayoutAside: FC<LayoutAsideProps> = (
     {
@@ -90,6 +80,8 @@ export const LayoutAside: FC<LayoutAsideProps> = (
             </Stack>
         </Center>,
     );
+
+    const logs = useSnapshot(GlobalLogs);
 
     // subscribe to notifications store to show a message when there are no notifications
     useEffect(() => {
@@ -255,7 +247,7 @@ export const LayoutAside: FC<LayoutAsideProps> = (
                            className={ "max-h-full overflow-hidden" }
                            component={ ScrollAreaAutosize }
                 >
-                    <Log logs={ sample_logs } />
+                    <Log logs={ logs } />
                 </TabsPanel>
             </Tabs>
         </>

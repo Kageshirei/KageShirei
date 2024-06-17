@@ -1,8 +1,9 @@
-import {SSE} from "@/context/sse";
-import {dayjs} from "@/helpers/dayjs";
-import {notifications} from "@mantine/notifications";
-import {AppRouterInstance} from "next/dist/shared/lib/app-router-context.shared-runtime";
-import {proxy} from "valtio";
+import { globals_init } from "@/context/globals";
+import { SSE } from "@/context/sse";
+import { dayjs } from "@/helpers/dayjs";
+import { notifications } from "@mantine/notifications";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { proxy } from "valtio";
 
 export interface IAuthenticate {
     host: string;
@@ -93,9 +94,15 @@ class Authentication {
         this._username = data.username;
         this._is_authenticated = true;
 
+        globals_init(data.host, data.bearer).then(() => console.log("Globals initialized")).catch(console.error);
+
         // Create a new SSE instance
+        if (this._sse) {
+            this._sse.abort();
+        }
         this._sse = new SSE(data.host, data.bearer);
         this._sse.connect().then(() => {
+            console.log("SSE connected");
         });
 
         // Set the elapses_at to the current time plus the expires_in minus 1 minute to ensure enough time to refresh
@@ -122,6 +129,10 @@ class Authentication {
         this._username = "";
         this._is_authenticated = false;
         this._elapses_at = null;
+
+        if (this._sse) {
+            this._sse.abort();
+        }
 
         // Redirect the user to the login page
         router.push("/");

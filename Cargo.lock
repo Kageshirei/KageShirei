@@ -4460,7 +4460,7 @@ dependencies = [
  "serde_json",
  "serial_test",
  "shellwords",
-    "srv-mod-config",
+ "srv-mod-config",
  "srv-mod-database",
  "tokio",
  "tracing",
