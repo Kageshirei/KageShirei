@@ -43,4 +43,14 @@ impl CreateNotification {
 			title: "".to_string(),
 		}
 	}
+
+	pub fn with_message(mut self, message: &str) -> Self {
+		self.message = message.to_string();
+		self
+	}
+
+	pub fn with_title(mut self, title: &str) -> Self {
+		self.title = title.to_string();
+		self
+	}
 }
