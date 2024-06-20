@@ -189,3 +189,48 @@ impl FromSql<LogLevel, Pg> for LogLevel {
 		}
 	}
 }
+
+/// Represent the list of valid agent command statuses
+#[derive(
+	Debug,
+	Clone,
+	PartialEq,
+	FromSqlRow,
+	QueryId,
+	SqlType,
+	AsExpression,
+	Serialize,
+	Deserialize,
+	Eq
+)]
+#[diesel(postgres_type(name = "agent_command_status"), sql_type = AgentCommandStatus)]
+pub enum AgentCommandStatus {
+	Pending,
+	Running,
+	Completed,
+	Failed,
+}
+
+impl ToSql<AgentCommandStatus, Pg> for AgentCommandStatus {
+	fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+		match *self {
+			Self::Pending => out.write_all(b"pending")?,
+			Self::Running => out.write_all(b"running")?,
+			Self::Completed => out.write_all(b"completed")?,
+			Self::Failed => out.write_all(b"failed")?,
+		}
+		Ok(IsNull::No)
+	}
+}
+
+impl FromSql<AgentCommandStatus, Pg> for AgentCommandStatus {
+	fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
+		match bytes.as_bytes() {
+			b"pending" => Ok(Self::Pending),
+			b"running" => Ok(Self::Running),
+			b"completed" => Ok(Self::Completed),
+			b"failed" => Ok(Self::Failed),
+			_ => Err("Unrecognized enum variant".into()),
+		}
+	}
+}

@@ -8,6 +8,7 @@ use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 pub(crate) mod clear;
 pub(crate) mod exit;
 pub(crate) mod history;
+mod terminate;
 
 #[derive(Parser, Debug, PartialEq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
@@ -41,6 +42,12 @@ pub enum Commands {
 	/// Get the history of the terminal session and operate on it
 	#[serde(rename = "history")]
 	History(TerminalSessionHistoryArguments),
+	/// Terminate the agent linked to the terminal session.
+	///
+	/// This action cannot be undone and will cause the immediate
+	/// drop of any active connection
+	#[serde(rename = "terminate")]
+	Terminate,
 }
 
 impl CommandHandler for SessionTerminalEmulatorCommands {
@@ -49,6 +56,7 @@ impl CommandHandler for SessionTerminalEmulatorCommands {
 			Commands::Clear(args) => clear::handle(config, args).await,
 			Commands::Exit => exit::handle(config).await,
 			Commands::History(args) => history::handle(config, args).await,
+			Commands::Terminate => terminate::handle(config).await,
 		}
 	}
 }

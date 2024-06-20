@@ -5,3 +5,4 @@ pub mod filter;
 pub mod log;
 pub mod notification;
 pub mod command;
+pub mod agent_command_request;
