@@ -22,7 +22,6 @@ class Authentication {
     private _elapses_at: dayjs.Dayjs | null = null;
     private _refresh_interval: NodeJS.Timeout | null = null;
     private _expires_in: number = 0;
-    private _sse: SSE | null = null;
 
     constructor() {
         if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
@@ -96,16 +95,14 @@ class Authentication {
         globals_init(data.host, data.bearer).then(() => console.log("Globals initialized")).catch(console.error);
 
         // Create a new SSE instance
-        if (this._sse) {
-            try {
-                this._sse.abort();
-            }
-            catch (e) {
-                console.error(e);
-            }
+        const sse = SSE.instance(this._host, this._bearer);
+        try {
+            sse.abort();
         }
-        this._sse = new SSE(data.host, data.bearer);
-        this._sse.connect().then(() => {
+        catch (e) {
+            console.error(e);
+        }
+        sse.connect().then(() => {
             console.log("SSE connected");
         });
 
@@ -134,8 +131,12 @@ class Authentication {
         this._is_authenticated = false;
         this._elapses_at = null;
 
-        if (this._sse) {
-            this._sse.abort();
+        const sse = SSE.instance(this._host, this._bearer);
+        try {
+            sse.abort();
+        }
+        catch (e) {
+            console.error(e);
         }
 
         // Redirect the user to the login page
@@ -170,13 +171,12 @@ class Authentication {
                     color: "red",
                 });
 
-                if (this._sse) {
-                    try {
-                        this._sse.abort();
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
+                const sse = SSE.instance(this._host, this._bearer);
+                try {
+                    sse.abort();
+                }
+                catch (e) {
+                    console.error(e);
                 }
 
                 // remove the auth data and reload the page
@@ -194,20 +194,15 @@ class Authentication {
             this._bearer = data.token;
             this._expires_in = data.expires_in;
 
-            if (this._sse) {
-                try {
-                    this._sse.abort();
-                }
-                catch (e) {
-                    console.error(e);
-                }
+            const sse = SSE.instance(this._host, this._bearer);
+            try {
+                sse.abort();
             }
-            else {
-                this._sse = new SSE(this._host, this._bearer);
+            catch (e) {
+                console.error(e);
             }
-
-            this._sse.bearer = this._bearer;
-            await this._sse.connect();
+            await sse.connect();
+            console.log("Token refreshed", data);
 
             // update the local storage
             if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
