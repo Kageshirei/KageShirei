@@ -1,5 +1,6 @@
 use std::io::Write;
 
+use clap::ValueEnum;
 use diesel::{AsExpression, deserialize, FromSqlRow, QueryId, serialize, SqlType};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
@@ -146,7 +147,8 @@ impl FromSql<FilterOperator, Pg> for FilterOperator {
 	AsExpression,
 	Eq,
 	Serialize,
-	Deserialize
+	Deserialize,
+	ValueEnum,
 )]
 #[diesel(postgres_type(name = "log_level"), sql_type = LogLevel)]
 pub enum LogLevel {

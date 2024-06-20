@@ -3,12 +3,14 @@ use clap::{Parser, Subcommand};
 use serde::Serialize;
 
 use crate::command_handler::{CommandHandler, CommandHandlerArguments};
+use crate::global_session::make::TerminalSessionMakeArguments;
 use crate::global_session::session::GlobalSessionTerminalSessionsArguments;
 use crate::session_terminal_emulator::{clear, exit, history};
 use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
 mod session;
+mod make;
 
 #[derive(Parser, Debug, PartialEq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
@@ -45,6 +47,9 @@ pub enum Commands {
 	/// List terminal sessions or open the terminal session for the provided hostnames
 	#[serde(rename = "sessions")]
 	Sessions(GlobalSessionTerminalSessionsArguments),
+	/// Generate something
+	#[serde(rename = "make")]
+	Make(TerminalSessionMakeArguments),
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
@@ -54,6 +59,7 @@ impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
 			Commands::Exit => exit::handle(config).await,
 			Commands::History(args) => history::handle(config, args).await,
 			Commands::Sessions(args) => session::handle(config, args).await,
+			Commands::Make(args) => make::handle(config, args).await,
 		}
 	}
 }
