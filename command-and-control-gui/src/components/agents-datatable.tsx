@@ -200,12 +200,12 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
                                       <MenuLabel>
                                           Bulk actions
                                       </MenuLabel>
-                                      <MenuItem onClick={ () => console.log("Bulk terminal") }
+                                      {/*<MenuItem onClick={ () => console.log("Bulk terminal") }
                                                 leftSection={ <IconTerminal size={ 14 } /> }
                                                 disabled={ selectedRecords.length === 0 }
                                       >
                                           Terminal
-                                      </MenuItem>
+                                       </MenuItem>*/ }
                                       <MenuItem onClick={ () => console.log("Bulk terminate") }
                                                 leftSection={ <IconSkull size={ 14 } /> }
                                                 color={ "red" }
