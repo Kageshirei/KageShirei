@@ -3,23 +3,10 @@ name = "mod-ntallocator"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[profile.release]
-opt-level = "z"
-codegen-units = 1
-lto = true
-strip = true
-debug = false
-debug-assertions = false
-panic = "abort"
-incremental = false
-
 [dependencies]
-rs2-indirect-syscall = { path = "../../libs/rs2-indirect-syscall" }
-rs2-winapi = { path = "../../libs/rs2-winapi" }
-lazy_static = "1.4.0"
-
-[dev-dependencies]
-libc-print = "0.1.23"
+rs2-indirect-syscall = {path = "../../libs/rs2-indirect-syscall" }
+rs2-win32 = {path = "../../libs/rs2-win32" }
+mod-win32 = {path = "../mod-win32" }
+mod-hhtgates = {path = "../mod-hhtgates" }
+mod-agentcore = {path = "../mod-agentcore" }
+spin = "0.9"

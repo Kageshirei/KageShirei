@@ -1,22 +1,10 @@
-use alloc::{
-    ffi::CString,
-    string::{String, ToString},
-    vec,
-};
-use core::{
-    ffi::c_void,
-    mem::{self, size_of},
-    ptr::null_mut,
-};
-use libc_print::libc_println;
+use core::{ffi::c_void, mem::size_of, ptr::null_mut};
+
 use mod_agentcore::instance;
 use rs2_win32::{
     ntdef::{
-        AccessMask, ClientId, IoStatusBlock, ObjectAttributes, ProcessBasicInformation,
-        ProcessInformation, StartupInfoA, TokenMandatoryLabel, HANDLE, OBJ_CASE_INSENSITIVE,
-        PROCESS_ALL_ACCESS, PROCESS_CREATE_FLAGS_INHERIT_HANDLES,
-        PROCESS_CREATE_FLAGS_NO_DEBUG_INHERIT, THREAD_CREATE_FLAGS_CREATE_SUSPENDED,
-        TOKEN_INTEGRITY_LEVEL, TOKEN_QUERY, ULONG,
+        AccessMask, ClientId, ObjectAttributes, ProcessBasicInformation, TokenMandatoryLabel,
+        HANDLE, OBJ_CASE_INSENSITIVE, TOKEN_INTEGRITY_LEVEL, TOKEN_QUERY, ULONG,
     },
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL},
 };
@@ -50,14 +38,14 @@ pub unsafe fn get_pid_and_ppid() -> (u32, u32) {
     (0, 0)
 }
 
-/// Retrieves the PID (Process ID) and PPID (Parent Process ID) of the current process using NT API.
+/// Retrieves the PID (Process ID) of the current process using NT API.
 ///
 /// # Safety
 /// This function performs unsafe operations, such as making system calls to retrieve process information.
 ///
 /// # Returns
-/// A tuple `(u32, u32)` containing the PID and PPID of the current process. If the operation fails,
-/// both values in the tuple will be `0`.
+/// A u32 containing the PID of the current process. If the operation fails,
+/// return `0`.
 pub unsafe fn get_pid() -> u32 {
     let mut pbi: ProcessBasicInformation = core::mem::zeroed();
     let mut return_length: u32 = 0;
@@ -210,148 +198,6 @@ pub unsafe fn nt_get_integrity_level(process_handle: HANDLE) -> i32 {
     }
 }
 
-pub fn test_cmd() {
-    unsafe {
-        // if !instance().session.connected {
-        //     return;
-        // }
-        let cmd = "cmd.exe /C echo Hello, world!";
-
-        let mut startup_info = StartupInfoA::new();
-        let mut process_info: ProcessInformation = ProcessInformation::new();
-
-        let command_cstr = CString::new(cmd).map_err(|e| e.to_string()).unwrap();
-
-        let flags = PROCESS_CREATE_FLAGS_NO_DEBUG_INHERIT | PROCESS_CREATE_FLAGS_INHERIT_HANDLES;
-
-        let mut process_handle: HANDLE = null_mut();
-        let create_process_result = instance().ntdll.nt_create_process_ex.run(
-            &mut process_info.h_process,
-            PROCESS_ALL_ACCESS,
-            null_mut(),
-            -1isize as HANDLE,
-            flags,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            0,
-        );
-
-        // println!(
-        //     "NtCreateProcessEx number: {:#X}",
-        //     instance().ntdll.nt_create_process_ex.syscall.number
-        // );
-        // println!(
-        //     "NtCreateProcessEx address: {:?}",
-        //     instance().ntdll.nt_create_process_ex.syscall.address
-        // );
-
-        // if create_process_result != 0 {
-        //     println!("NtCreateProcessEx failed: {:#X}", create_process_result);
-        // }
-
-        // println!("NtCreateProcessEx success: {:?}", process_handle);
-
-        let mut base_address: *mut c_void = null_mut();
-        let allocation_size = command_cstr.to_bytes_with_nul().len();
-        let allocate_result = instance().ntdll.nt_allocate_virtual_memory.run(
-            process_info.h_process,
-            &mut base_address,
-            0,
-            allocation_size,
-            0x3000, // MEM_COMMIT | MEM_RESERVE
-            0x40,   // PAGE_EXECUTE_READWRITE
-        );
-
-        if allocate_result != 0 {
-            libc_println!("NtAllocateVirtualMemory failed: {:#X}", allocate_result);
-            instance().ntdll.nt_close.run(process_handle);
-            return;
-        }
-
-        let mut bytes_written: usize = 0;
-        let write_result = instance().ntdll.nt_write_virtual_memory.run(
-            process_info.h_process,
-            base_address,
-            command_cstr.as_ptr() as *const c_void,
-            allocation_size,
-            &mut bytes_written,
-        );
-
-        if write_result != 0 {
-            libc_println!("NtWriteVirtualMemory failed: {:#X}", write_result);
-            instance().ntdll.nt_close.run(process_handle);
-            return;
-        }
-
-        // let mut thread_handle: HANDLE = null_mut();
-        let create_thread_result = instance().ntdll.nt_create_thread_ex.run(
-            &mut process_info.h_thread,
-            PROCESS_ALL_ACCESS,
-            null_mut(),
-            process_info.h_process,
-            base_address,
-            null_mut(),
-            THREAD_CREATE_FLAGS_CREATE_SUSPENDED,
-            0,
-            0,
-            0,
-            null_mut(),
-        );
-
-        libc_println!(
-            "NtCreateThreadEx number: {:#X}",
-            instance().ntdll.nt_create_thread_ex.syscall.number
-        );
-
-        libc_println!(
-            "NtCreateThreadEx address: {:?}",
-            instance().ntdll.nt_create_thread_ex.syscall.address
-        );
-
-        if create_thread_result != 0 {
-            libc_println!("NtCreateThreadEx failed: {:#X}", create_thread_result);
-            instance().ntdll.nt_close.run(process_handle);
-            return;
-        }
-
-        let wait_result = instance().ntdll.nt_wait_for_single_object.run(
-            process_info.h_thread,
-            false,
-            null_mut(),
-        );
-
-        if wait_result != 0 {
-            libc_println!("NtWaitForSingleObject failed: {:#X}", wait_result);
-            instance().ntdll.nt_close.run(process_handle);
-            return;
-        }
-
-        let mut buffer = vec![0u8; 1024];
-        let mut io_status_block: IoStatusBlock = mem::zeroed();
-        let read_result = instance().ntdll.nt_read_file.run(
-            process_info.h_process,
-            null_mut(),
-            null_mut(),
-            null_mut(),
-            &mut io_status_block,
-            buffer.as_mut_ptr() as *mut c_void,
-            buffer.len() as u32,
-            null_mut(),
-            null_mut(),
-        );
-
-        if read_result == 0 {
-            let output = String::from_utf8_lossy(&buffer);
-            libc_println!("Command output: {:?}", String::from_utf8_lossy(&buffer));
-        } else {
-            libc_println!("NtReadFile failed: {:#X}", read_result);
-        }
-
-        instance().ntdll.nt_close.run(process_handle);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -359,7 +205,6 @@ mod tests {
 
     #[test]
     fn test_get_pid_and_ppid() {
-        test_cmd();
         let (pid, ppid) = unsafe { get_pid_and_ppid() };
         libc_println!("PID: {:?}", pid);
         libc_println!("PPID: {:?}", ppid);
