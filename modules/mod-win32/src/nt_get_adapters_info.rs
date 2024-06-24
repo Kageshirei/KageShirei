@@ -133,24 +133,6 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
     Ok(ip_addresses)
 }
 
-/// Function to get the first IP address from the list of tuples returned by get_adapters_info.
-///
-/// # Returns
-///
-/// * `Result<String, i32>` - A result containing the first IP address if successful, otherwise an error code.
-///
-/// # Safety
-///
-/// This function is unsafe because it interacts with raw pointers and low-level system calls.
-pub unsafe fn get_first_ip() -> Result<String, i32> {
-    let ip_addresses = get_adapters_info()?;
-    if let Some((_, first_ip, _)) = ip_addresses.get(0) {
-        Ok(first_ip.clone())
-    } else {
-        Err(-1) // or another appropriate error code
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

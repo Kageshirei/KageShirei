@@ -1,6 +1,7 @@
 use core::slice;
 
 use alloc::string::{String, ToString};
+use libc_print::libc_println;
 use rs2_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 
 use mod_agentcore::instance;
@@ -137,6 +138,35 @@ unsafe fn get_environment_variable(variable_name: &str) -> String {
     String::new()
 }
 
+pub unsafe fn print_all_environment_variables() {
+    // Get the pointer to the PEB
+    let peb = instance().teb.as_ref().unwrap().process_environment_block;
+    if !peb.is_null() {
+        // Get the process parameters from the PEB
+        let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
+        if !process_parameters.is_null() {
+            // Get the environment block from the process parameters
+            let environment = (*process_parameters).environment;
+            if !environment.is_null() {
+                // Convert the environment block to a Rust slice of UTF-16 strings
+                let mut env_ptr = environment as *const u16;
+                while *env_ptr != 0 {
+                    let mut len = 0;
+                    while *env_ptr.add(len) != 0 {
+                        len += 1;
+                    }
+                    let env_slice = slice::from_raw_parts(env_ptr, len as usize);
+                    let env_string = String::from_utf16_lossy(env_slice);
+                    // Check if the environment string starts with the specified variable name
+                    // if let Some(value) = env_string.strip_prefix(variable_name) {
+                    libc_println!("{}", env_string);
+                    env_ptr = env_ptr.add(len + 1);
+                }
+            }
+        }
+    }
+}
+
 /// Retrieves the username of the current process by accessing the PEB (Process Environment Block).
 ///
 /// # Safety
@@ -202,14 +232,57 @@ pub unsafe fn get_user_domain() -> String {
 ///
 /// # Returns
 /// A `String` containing the combined OS name and version information.
-pub unsafe fn get_os_version_info() -> OSVersionInfo {
+pub unsafe fn get_os_version_info() -> Result<OSVersionInfo, i32> {
     // Initialize version information
     let mut version_info = OSVersionInfo::new();
 
     // Get the version information
     let status = nt_rtl_get_version(&mut version_info);
 
-    version_info
+    if status < 0 {
+        return Err(status);
+    }
+    Ok(version_info)
+}
+
+/// Get the full path of the current executable.
+///
+/// This function accesses the Thread Environment Block (TEB) to retrieve the Process Environment Block (PEB),
+/// and from there it obtains the process parameters which include the image path name. It converts the
+/// image path name from a UTF-16 encoded string to a Rust `String`.
+///
+/// # Safety
+///
+/// This function performs raw pointer dereferencing and should be used with caution.
+///
+/// # Returns
+///
+/// Returns an `Option<String>` containing the full path of the current executable if successful,
+/// or `None` if any step of the process fails.
+pub unsafe fn get_image_path_name() -> Option<String> {
+    // Get the pointer to the TEB
+    let peb = instance().teb.as_ref().unwrap().process_environment_block;
+
+    if peb.is_null() {
+        return None;
+    }
+    // Get the process parameters from the PEB
+    let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
+    if process_parameters.is_null() {
+        return None;
+    }
+
+    // Get the ImagePathName from the process parameters
+    let image_path_name = &(*process_parameters).image_path_name;
+    if image_path_name.buffer.is_null() {
+        return None;
+    }
+
+    // Convert the ImagePathName to a Rust String
+    let length = (image_path_name.length / 2) as usize;
+    let buffer = core::slice::from_raw_parts(image_path_name.buffer, length);
+    let os_string = alloc::string::String::from_utf16_lossy(buffer);
+    Some(os_string)
 }
 
 #[cfg(test)]
