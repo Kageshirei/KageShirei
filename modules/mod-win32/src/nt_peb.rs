@@ -259,30 +259,26 @@ pub unsafe fn get_os_version_info() -> Result<OSVersionInfo, i32> {
 ///
 /// Returns an `Option<String>` containing the full path of the current executable if successful,
 /// or `None` if any step of the process fails.
-pub unsafe fn get_image_path_name() -> Option<String> {
+pub unsafe fn get_image_path_name() -> String {
     // Get the pointer to the TEB
     let peb = instance().teb.as_ref().unwrap().process_environment_block;
 
-    if peb.is_null() {
-        return None;
-    }
-    // Get the process parameters from the PEB
-    let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
-    if process_parameters.is_null() {
-        return None;
+    if !peb.is_null() {
+        // Get the process parameters from the PEB
+        let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
+        if !process_parameters.is_null() {
+            // Get the ImagePathName from the process parameters
+            let image_path_name = &(*process_parameters).image_path_name;
+            if !image_path_name.buffer.is_null() {
+                // Convert the ImagePathName to a Rust String
+                let length = (image_path_name.length / 2) as usize;
+                let buffer = core::slice::from_raw_parts(image_path_name.buffer, length);
+                return alloc::string::String::from_utf16_lossy(buffer);
+            }
+        }
     }
 
-    // Get the ImagePathName from the process parameters
-    let image_path_name = &(*process_parameters).image_path_name;
-    if image_path_name.buffer.is_null() {
-        return None;
-    }
-
-    // Convert the ImagePathName to a Rust String
-    let length = (image_path_name.length / 2) as usize;
-    let buffer = core::slice::from_raw_parts(image_path_name.buffer, length);
-    let os_string = alloc::string::String::from_utf16_lossy(buffer);
-    Some(os_string)
+    String::new()
 }
 
 #[cfg(test)]

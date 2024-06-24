@@ -23,6 +23,8 @@ pub struct PartialCheckin {
     pub process_name: String,
     /// Whether the agent is running as elevated
     pub integrity_level: i32,
+    /// Current working directory
+    pub cwd: String,
 }
 
 /// The checkin struct used to check in the agent
@@ -46,6 +48,8 @@ pub struct Checkin {
     pub process_name: String,
     /// The integrity level of the process
     pub integrity_level: i32,
+    /// Current working directory
+    pub cwd: String,
     /// The metadata of the struct
     metadata: Option<Arc<Metadata>>,
 }
@@ -62,6 +66,7 @@ impl Checkin {
             parent_process_id: partial.parent_process_id,
             process_name: partial.process_name,
             integrity_level: partial.integrity_level,
+            cwd: partial.cwd,
             metadata: None,
         }
     }
@@ -109,6 +114,7 @@ mod tests {
             parent_process_id: 5678,
             process_name: "agent.exe".to_string(),
             integrity_level: 0,
+            cwd: "C:\\Users\\Public\\rs2-agent.exe".to_string(),
         });
 
         let metadata = Metadata {
