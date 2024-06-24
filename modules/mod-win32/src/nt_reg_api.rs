@@ -1,18 +1,18 @@
 extern crate alloc;
-extern crate libc_print;
 
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::ptr::null_mut;
 use core::slice;
-use rs2_winapi::ntregapi::{KeyBasicInformation, KeyValuePartialInformation};
-use rs2_winapi::{
-    ntdef::{ObjectAttributes, UnicodeString, HANDLE, OBJ_CASE_INSENSITIVE},
-    ntregapi::{KEY_ENUMERATE_SUB_KEYS, KEY_READ},
-    ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_OBJECT_NAME_NOT_FOUND},
+use rs2_win32::ntdef::{
+    KeyBasicInformation, KeyValuePartialInformation, ObjectAttributes, UnicodeString, HANDLE,
+    KEY_ENUMERATE_SUB_KEYS, KEY_READ, OBJ_CASE_INSENSITIVE,
+};
+use rs2_win32::ntstatus::{
+    STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_OBJECT_NAME_NOT_FOUND,
 };
 
-use crate::{nt_close, nt_enumerate_key, nt_open_key, nt_query_value_key};
+use mod_agentcore::instance;
 
 /// Opens a registry key and returns the handle.
 ///
@@ -49,7 +49,7 @@ pub unsafe fn open_key(key: &str) -> Result<HANDLE, i32> {
     );
 
     // Open the registry key with NtOpenKey
-    let ntstatus = nt_open_key(
+    let ntstatus = instance().ntdll.nt_open_key.run(
         &mut key_handle,
         KEY_READ | KEY_ENUMERATE_SUB_KEYS,
         &mut object_attributes,
@@ -91,7 +91,7 @@ pub unsafe fn query_value(key_handle: HANDLE, value_name: &str) -> Result<String
     let mut ntstatus;
 
     loop {
-        ntstatus = nt_query_value_key(
+        ntstatus = instance().ntdll.nt_query_value_key.run(
             key_handle,
             &value_unicode,
             2,
@@ -150,7 +150,7 @@ pub unsafe fn enumerate_sub_keys(key: &str) -> Result<Vec<String>, i32> {
     loop {
         let mut result_length: u32 = 0;
 
-        let status = nt_enumerate_key(
+        let status = instance().ntdll.nt_enumerate_key.run(
             key_handle,
             index,
             0,
@@ -161,7 +161,7 @@ pub unsafe fn enumerate_sub_keys(key: &str) -> Result<Vec<String>, i32> {
 
         if status != 0 {
             if index == 0 {
-                nt_close(key_handle);
+                instance().ntdll.nt_close.run(key_handle);
                 return Err(status);
             } else {
                 break;
@@ -179,17 +179,15 @@ pub unsafe fn enumerate_sub_keys(key: &str) -> Result<Vec<String>, i32> {
         index += 1;
     }
 
-    nt_close(key_handle);
+    instance().ntdll.nt_close.run(key_handle);
     Ok(sub_keys)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::nt_close;
-
     use super::*;
     use libc_print::libc_println;
-    use rs2_winapi::ntstatus::NT_SUCCESS;
+    use rs2_win32::ntstatus::NT_SUCCESS;
 
     #[test]
     fn test_open_key() {
@@ -199,7 +197,7 @@ mod tests {
             match open_key(registry_key) {
                 Ok(handle) => {
                     libc_println!("Successfully opened registry key: {}\n", registry_key);
-                    nt_close(handle); // Don't forget to close the handle after the test
+                    instance().ntdll.nt_close.run(handle);
                 }
                 Err(status) => {
                     libc_println!(
@@ -254,7 +252,7 @@ mod tests {
                 }
             }
 
-            nt_close(key_handle); // Don't forget to close the handle after the test
+            instance().ntdll.nt_close.run(key_handle);
         }
     }
 

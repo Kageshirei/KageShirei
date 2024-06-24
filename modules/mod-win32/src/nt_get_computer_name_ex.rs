@@ -5,14 +5,13 @@ extern crate alloc;
 
 use alloc::vec;
 use alloc::vec::Vec;
-
-use rs2_winapi::ntdef::{UnicodeString, ULONG};
-
-use rs2_winapi::ntregapi::{KeyValuePartialInformation, REG_SZ};
-use rs2_winapi::ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL};
+use rs2_win32::{
+    ntdef::{KeyValuePartialInformation, UnicodeString, REG_SZ, ULONG},
+    ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL},
+};
 
 use crate::nt_reg_api::open_key;
-use crate::{nt_close, nt_query_value_key};
+use mod_agentcore::instance;
 
 /// Retrieves the computer name from the registry.
 ///
@@ -53,7 +52,7 @@ pub unsafe fn get_computer_name_from_registry(
 
     // Query the registry value to get the required buffer size
     let mut result_length: ULONG = 0;
-    let ntstatus = nt_query_value_key(
+    let ntstatus = instance().ntdll.nt_query_value_key.run(
         key_handle,
         &value_name,
         2,
@@ -64,12 +63,12 @@ pub unsafe fn get_computer_name_from_registry(
 
     // Check if the query resulted in a buffer overflow or buffer too small error, which is expected
     if ntstatus != STATUS_BUFFER_OVERFLOW && ntstatus != STATUS_BUFFER_TOO_SMALL {
-        nt_close(key_handle);
+        instance().ntdll.nt_close.run(key_handle);
         return false;
     }
 
     if result_length == 0 {
-        nt_close(key_handle);
+        instance().ntdll.nt_close.run(key_handle);
         return false;
     }
 
@@ -78,7 +77,7 @@ pub unsafe fn get_computer_name_from_registry(
     let mut key_info = vec![0u8; key_info_size as usize];
 
     // Query the registry value to get the actual data
-    let ntstatus = nt_query_value_key(
+    let ntstatus = instance().ntdll.nt_query_value_key.run(
         key_handle,
         &value_name,
         2,
@@ -89,7 +88,7 @@ pub unsafe fn get_computer_name_from_registry(
 
     // Check if the query was successful
     if ntstatus < 0 {
-        nt_close(key_handle);
+        instance().ntdll.nt_close.run(key_handle);
         return false;
     }
 
@@ -99,7 +98,7 @@ pub unsafe fn get_computer_name_from_registry(
 
     // Ensure the data type is REG_SZ (string)
     if key_info_ref.data_type != REG_SZ {
-        nt_close(key_handle);
+        instance().ntdll.nt_close.run(key_handle);
         return false;
     }
 
@@ -112,7 +111,7 @@ pub unsafe fn get_computer_name_from_registry(
     ));
 
     // Close the registry key
-    return nt_close(key_handle) == 0;
+    return instance().ntdll.nt_close.run(key_handle) == 0;
 }
 
 /// Enum representing the different formats of computer names that can be retrieved.

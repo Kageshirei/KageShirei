@@ -1,0 +1,8 @@
+[package]
+name = "rs2-win32"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rs2-indirect-syscall = { path = "../rs2-indirect-syscall"}
+spin = "0.9"

