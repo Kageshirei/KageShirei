@@ -1150,12 +1150,94 @@ impl NtResumeThread {
         }
     }
 
+    /// Wrapper for the NtResumeThread syscall.
+    ///
+    /// This function resumes a suspended thread. It wraps the NtResumeThread syscall.
+    ///
+    /// # Arguments
+    ///
+    /// * `thread_handle` - A handle to the thread to be resumed.
+    /// * `suspend_count` - A pointer to a variable that receives the previous suspend count.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, thread_handle: HANDLE, suspend_count: &mut u32) -> i32 {
         run_syscall!(
             self.syscall.number,
             self.syscall.address as usize,
             thread_handle,
             suspend_count
+        )
+    }
+}
+
+pub struct NtTerminateProcess {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtTerminateProcess {}
+
+impl NtTerminateProcess {
+    pub const fn new() -> Self {
+        NtTerminateProcess {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtTerminateProcess syscall.
+    ///
+    /// This function terminates a process. It wraps the NtTerminateProcess syscall.
+    ///
+    /// # Arguments
+    ///
+    /// * `process_handle` - A handle to the process to be terminated.
+    /// * `exit_status` - The exit status to be returned by the process.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
+    pub fn run(&self, process_handle: HANDLE, exit_status: i32) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            process_handle,
+            exit_status
+        )
+    }
+}
+
+pub struct NtTerminateThread {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtTerminateThread {}
+
+impl NtTerminateThread {
+    pub const fn new() -> Self {
+        NtTerminateThread {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtTerminateThread syscall.
+    ///
+    /// This function terminates a thread. It wraps the NtTerminateThread syscall.
+    ///
+    /// # Arguments
+    ///
+    /// * `thread_handle` - A handle to the thread to be terminated.
+    /// * `exit_status` - The exit status to be returned by the thread.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
+    pub fn run(&self, thread_handle: HANDLE, exit_status: i32) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            thread_handle,
+            exit_status
         )
     }
 }
@@ -1185,6 +1267,8 @@ pub struct NtDll {
     pub nt_create_user_process: NtCreateUserProcess,
     pub nt_write_virtual_memory: NtWriteVirtualMemory,
     pub nt_resume_thread: NtResumeThread,
+    pub nt_terminate_thread: NtTerminateThread,
+    pub nt_terminate_process: NtTerminateProcess,
 }
 
 impl NtDll {
@@ -1214,6 +1298,8 @@ impl NtDll {
             nt_create_user_process: NtCreateUserProcess::new(),         //unused, untested
             nt_write_virtual_memory: NtWriteVirtualMemory::new(),       //unused
             nt_resume_thread: NtResumeThread::new(),                    //unused
+            nt_terminate_thread: NtTerminateThread::new(),
+            nt_terminate_process: NtTerminateProcess::new(),
         }
     }
 }
