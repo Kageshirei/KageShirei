@@ -1,7 +1,9 @@
 use core::slice;
 
 use alloc::string::{String, ToString};
-use rs2_winapi::winternl::{find_peb, OSVersionInfo, RtlUserProcessParameters};
+use rs2_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
+
+use mod_agentcore::instance;
 
 /// Retrieves the name of the current process by accessing the PEB (Process Environment Block).
 ///
@@ -15,7 +17,7 @@ use rs2_winapi::winternl::{find_peb, OSVersionInfo, RtlUserProcessParameters};
 /// determined, an empty string is returned.
 pub unsafe fn get_process_name() -> String {
     // Get the pointer to the PEB
-    let peb = find_peb();
+    let peb = instance().teb.as_ref().unwrap().process_environment_block;
     if !peb.is_null() {
         // Get the process parameters from the PEB
         let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
@@ -55,7 +57,8 @@ pub unsafe fn get_process_name() -> String {
 /// `STATUS_INVALID_PARAMETER` is returned. Otherwise, the function returns `STATUS_SUCCESS`.
 pub unsafe fn nt_rtl_get_version(lp_version_information: &mut OSVersionInfo) -> i32 {
     // Get the pointer to the PEB
-    let peb = find_peb();
+    let peb = instance().teb.as_ref().unwrap().process_environment_block;
+
     if lp_version_information.dw_os_version_info_size
         != core::mem::size_of::<OSVersionInfo>() as u32
     {
@@ -104,7 +107,7 @@ pub unsafe fn nt_rtl_get_version(lp_version_information: &mut OSVersionInfo) -> 
 /// determined, an empty string is returned.
 unsafe fn get_environment_variable(variable_name: &str) -> String {
     // Get the pointer to the PEB
-    let peb = find_peb();
+    let peb = instance().teb.as_ref().unwrap().process_environment_block;
     if !peb.is_null() {
         // Get the process parameters from the PEB
         let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
@@ -144,7 +147,7 @@ unsafe fn get_environment_variable(variable_name: &str) -> String {
 /// # Returns
 /// A `String` containing the username of the current process. If the username cannot be
 /// determined, an empty string is returned.
-pub unsafe fn get_user_name() -> String {
+pub unsafe fn get_username() -> String {
     get_environment_variable("USERNAME=")
 }
 
@@ -190,6 +193,25 @@ pub unsafe fn get_user_domain() -> String {
     get_environment_variable("USERDOMAIN=")
 }
 
+/// Combines OS name and version information into a single string.
+///
+/// # Safety
+/// This function performs unsafe operations, such as dereferencing raw pointers obtained
+/// from the PEB. It is intended to be used in contexts where the caller ensures the safety
+/// of accessing these pointers.
+///
+/// # Returns
+/// A `String` containing the combined OS name and version information.
+pub unsafe fn get_os_version_info() -> OSVersionInfo {
+    // Initialize version information
+    let mut version_info = OSVersionInfo::new();
+
+    // Get the version information
+    let status = nt_rtl_get_version(&mut version_info);
+
+    version_info
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -217,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_get_user_name() {
-        let user_name = unsafe { get_user_name() };
+        let user_name = unsafe { get_username() };
         libc_println!("User Name: {:?}", user_name);
         assert!(!user_name.is_empty(), "User name should not be empty");
     }

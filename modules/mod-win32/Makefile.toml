@@ -52,8 +52,8 @@ env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=/SUBSYSTEM:console -C link-arg
 clear = true
 script_runner = "@shell"
 script = '''
-strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/i686-pc-windows-gnu/release/mod_ntapi.dll
-strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/mod_ntapi.dll
+strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/i686-pc-windows-gnu/release/mod_win32.dll
+strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/mod_win32.dll
 '''
 dependencies = ["build"]
 
