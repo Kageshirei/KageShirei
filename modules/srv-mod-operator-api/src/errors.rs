@@ -1,7 +1,7 @@
 use axum::{
-    http::StatusCode,
-    Json,
-    response::{IntoResponse, Response},
+	http::StatusCode,
+	Json,
+	response::{IntoResponse, Response},
 };
 use serde_json::json;
 
@@ -35,4 +35,17 @@ define_error_enum! {
     TokenCreation = (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong while creating the token"),
     InvalidToken = (StatusCode::BAD_REQUEST, "Invalid token"),
     InternalServerError = (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong"),
+    // TerminalEmulatorError = (StatusCode::INTERNAL_SERVER_ERROR, ""), // Created via make_terminal_emulator_error
+}
+
+impl ApiServerError {
+	/// Create a new `ApiServerError::TerminalEmulatorError` with the given error message
+	pub fn make_terminal_emulator_error(session_id: Option<String>, command: String, error: &str) -> Response {
+		let body = Json(json!({
+			"session_id": session_id,
+			"command": command,
+            "response": error,
+        }));
+		(StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+	}
 }
