@@ -1,7 +1,7 @@
-import {dayjs} from "@/helpers/dayjs";
-import {notifications} from "@mantine/notifications";
-import {AppRouterInstance} from "next/dist/shared/lib/app-router-context.shared-runtime";
-import {proxy} from "valtio";
+import { dayjs } from "@/helpers/dayjs";
+import { notifications } from "@mantine/notifications";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { proxy } from "valtio";
 
 export interface IAuthenticate {
     host: string;
@@ -13,29 +13,53 @@ export interface IAuthenticate {
 /**
  * The authentication context used to store the authentication data
  *
- * Note: This does not persist the data, it is only stored in memory, so if the page is refreshed the data will be lost
+ * NOTE: This file must be dynamically imported in order to prevent server side rendering errors (aka
+ *  window/localStorage is not defined)
  */
 class Authentication {
     private _elapses_at: dayjs.Dayjs | null = null;
     private _refresh_interval: NodeJS.Timeout | null = null;
-    private _host: string = "";
     private _expires_in: number = 0;
 
-    private _bearer: string = "";
+    constructor() {
+        if (typeof window === "undefined" || typeof window.localStorage === "undefined") {
+            return;
+        }
 
-    get bearer() {
-        return this._bearer;
+        if (localStorage.getItem("auth")) {
+            const data = JSON.parse(localStorage.getItem("auth")!);
+
+            // If the data is not valid then return
+            if (!data.bearer || !data.host || !data.expires_in || !data.username || data.bearer.length === 0) {
+                return;
+            }
+
+            this.authenticate(data);
+            this.refresh(true);
+        }
+    }
+
+    private _host: string = "";
+
+    public get host() {
+        return this._host;
     }
 
     private _username: string = "";
 
-    get username() {
+    public get username() {
         return this._username;
+    }
+
+    private _bearer: string = "";
+
+    public get bearer() {
+        return this._bearer;
     }
 
     private _is_authenticated: boolean = false;
 
-    get is_authenticated() {
+    public get is_authenticated() {
         return this._is_authenticated;
     }
 
@@ -44,6 +68,17 @@ class Authentication {
      * @param data The authentication data
      */
     public authenticate(data: IAuthenticate) {
+        console.log("Authenticating", data);
+
+        // If the data is not valid then return
+        if (data.bearer.length === 0) {
+            return;
+        }
+
+        if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+            window.localStorage.setItem("auth", JSON.stringify(data));
+        }
+
         // Clear the interval if it exists
         if (this._refresh_interval) {
             clearInterval(this._refresh_interval);
@@ -66,6 +101,8 @@ class Authentication {
      * @param {AppRouterInstance} router
      */
     public logout(router: AppRouterInstance) {
+        localStorage.removeItem("auth");
+
         // Clear the interval if it exists
         if (this._refresh_interval) {
             clearInterval(this._refresh_interval);
@@ -87,18 +124,18 @@ class Authentication {
      * @returns {Promise<void>}
      * @private
      */
-    private async refresh() {
+    private async refresh(bypass_time_check = false): Promise<void> {
         // if the elapsed time is before the current time then the token is about to expire and we need to refresh
         // it
-        if (this._elapses_at!.isBefore(dayjs.utc())) {
+        if (this._elapses_at!.isBefore(dayjs.utc()) || bypass_time_check) {
             console.log("Token about to expire, refreshing");
 
             // send a request to refresh the token
-            const response = await fetch(`http://${this._host}/refresh-token`, {
-                method: "POST",
+            const response = await fetch(`http://${ this._host }/refresh-token`, {
+                method:  "POST",
                 headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${this._bearer}`,
+                    "Content-Type":  "application/json",
+                    "Authorization": `Bearer ${ this._bearer }`,
                 },
             });
 
@@ -109,13 +146,31 @@ class Authentication {
                     message: (await response.json()).error,
                     color: "red",
                 });
+
+                // remove the auth data and reload the page
+                if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+                    localStorage.removeItem("auth");
+                }
+                this._is_authenticated = false;
+                location.reload();
+
                 return;
             }
 
             // get the new data
             const data = await response.json();
-            this._bearer = data.bearer;
+            this._bearer = data.token;
             this._expires_in = data.expires_in;
+
+            // update the local storage
+            if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
+                localStorage.setItem("auth", JSON.stringify({
+                    host:       this._host,
+                    bearer:     this._bearer,
+                    expires_in: this._expires_in,
+                    username:   this._username,
+                }));
+            }
 
             // and update the elapses_at
             this._elapses_at = dayjs.utc().add(this._expires_in, "second").subtract(1, "minute");
