@@ -2622,6 +2622,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "mod-agentcore"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+ "rs2-win32",
+ "spin",
+]
+
+[[package]]
 name = "mod-coffee-core"
 version = "0.1.0"
 dependencies = [
@@ -2635,12 +2644,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mod-hhtgates"
+version = "0.1.0"
+
+[[package]]
 name = "mod-ntallocator"
 version = "0.1.0"
 dependencies = [
- "lazy_static",
- "libc-print",
+ "mod-agentcore",
+ "mod-hhtgates",
+ "mod-win32",
  "rs2-indirect-syscall",
+ "rs2-win32",
+ "spin",
 ]
 
 [[package]]
@@ -2657,6 +2673,15 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "mod-win32"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+ "mod-agentcore",
+ "rs2-win32",
 ]
 
 [[package]]
@@ -3669,9 +3694,19 @@ dependencies = [
 name = "rs2-agent"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "libc-print",
- "mod-coffee-core",
+ "mod-agentcore",
+ "mod-hhtgates",
  "mod-ntallocator",
+ "mod-protocol-json",
+ "mod-win32",
+ "rs2-communication-protocol",
+ "rs2-crypt",
+ "serde",
+ "serde_json",
+ "spin",
+ "tokio",
 ]
 
 [[package]]
@@ -3756,6 +3791,14 @@ dependencies = [
  "log",
  "serde_json",
  "validator",
+]
+
+[[package]]
+name = "rs2-win32"
+version = "0.1.0"
+dependencies = [
+ "rs2-indirect-syscall",
+ "spin",
 ]
 
 [[package]]
@@ -4334,6 +4377,9 @@ name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "spki"
