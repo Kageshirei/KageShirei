@@ -2,7 +2,6 @@ use core::ffi::c_void;
 use libc_print::libc_println;
 use mod_agentcore::instance;
 use mod_protocol_json::protocol::JsonProtocol;
-use mod_win32::ldr::ldr_function_addr;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
 // Define the RtlExitUserThread function type

@@ -2626,6 +2626,7 @@ name = "mod-agentcore"
 version = "0.1.0"
 dependencies = [
  "libc-print",
+ "mod-hhtgates",
  "rs2-win32",
  "spin",
 ]
