@@ -36,6 +36,7 @@ rs2-crypt = { path = "../../libs/rs2-crypt", features = [
     "asymmetric-encryption",
 ] }
 bytes = "1.6.0"
+srv-mod-handler-base = { path = "../srv-mod-handler-base" }
 
 [dev-dependencies]
 serde_json = "1.0.117"

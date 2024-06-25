@@ -13,8 +13,8 @@ members = [
     "modules/srv-mod-operator-api",
     "modules/srv-mod-config",
     "modules/srv-mod-database",
-    "modules/srv-mod-http-handler",
-    "modules/srv-mod-terminal-emulator-commands", "libs/rs2-srv-test-helper",
+    "modules/srv-mod-handler-http",
+    "modules/srv-mod-terminal-emulator-commands", "libs/rs2-srv-test-helper", "modules/srv-mod-handler-base",
 ]
 resolver = "2"
 package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }

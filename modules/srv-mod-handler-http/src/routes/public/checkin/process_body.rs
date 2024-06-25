@@ -14,10 +14,10 @@ use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
 use srv_mod_database::humantime;
 use srv_mod_database::models::agent::Agent;
+use srv_mod_handler_base::state::HttpHandlerSharedState;
 
 use crate::routes::public::checkin::agent;
 use crate::routes::public::checkin::agent_profiles::apply_filters;
-use crate::state::HttpHandlerSharedState;
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
@@ -138,8 +138,7 @@ mod test {
 	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
 	use srv_mod_database::diesel_migrations::MigrationHarness;
 	use srv_mod_database::migration::MIGRATIONS;
-
-	use crate::state::HttpHandlerState;
+	use srv_mod_handler_base::state::HttpHandlerState;
 
 	fn make_config() -> HandlerConfig {
 		let config = HandlerConfig {

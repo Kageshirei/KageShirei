@@ -7,8 +7,7 @@ use srv_mod_database::models::agent_profile::AgentProfile;
 use srv_mod_database::models::filter::Filter;
 use srv_mod_database::schema::agent_profiles::dsl::agent_profiles;
 use srv_mod_database::schema_extension::{FilterOperator, LogicalOperator};
-
-use crate::state::HttpHandlerSharedState;
+use srv_mod_handler_base::state::HttpHandlerSharedState;
 
 struct GroupEvaluationResult {
 	result: bool,
@@ -205,8 +204,7 @@ mod tests {
 	use srv_mod_database::models::filter::CreateFilter;
 	use srv_mod_database::schema::filters::dsl::filters;
 	use srv_mod_database::schema_extension::AgentFields;
-
-	use crate::state::HttpHandlerState;
+	use srv_mod_handler_base::state::HttpHandlerState;
 
 	use super::*;
 
