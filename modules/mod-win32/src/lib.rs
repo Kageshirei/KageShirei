@@ -1,6 +1,5 @@
 #![no_std]
 
-pub mod ldr;
 pub mod nt_get_adapters_info;
 pub mod nt_get_computer_name_ex;
 pub mod nt_peb;
