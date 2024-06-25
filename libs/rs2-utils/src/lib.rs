@@ -6,3 +6,6 @@ pub mod unrecoverable_error;
 pub mod unwrap_infallible;
 #[cfg(feature = "print-validation-error")]
 pub mod print_validation_error;
+
+#[cfg(feature = "bytes")]
+pub mod bytes_to_string;

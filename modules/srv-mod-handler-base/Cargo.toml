@@ -1,0 +1,25 @@
+[package]
+name = "srv-mod-handler-base"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tracing = "0.1"
+anyhow = "1.0.86"
+serde = { version = "1.0.203", features = ["derive"] }
+rs2-crypt = { path = "../../libs/rs2-crypt", features = [
+    "sha3",
+    "hex-encoding",
+    "base32-encoding",
+    "base64-encoding",
+    "asymmetric-encryption",
+] }
+bytes = "1.6.0"
+srv-mod-config = { path = "../srv-mod-config" }
+rs2-utils = { path = "../../libs/rs2-utils", features = ["bytes"] }
+axum = "0.7.5"
+srv-mod-database = { path = "../srv-mod-database" }
+
+[dev-dependencies]
+serde_json = "1.0.117"
+serial_test = "3.1.1"

@@ -3760,6 +3760,7 @@ name = "rs2-utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+    "bytes",
  "log",
  "serde_json",
  "validator",
@@ -4392,6 +4393,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "srv-mod-handler-base"
+version = "0.1.0"
+dependencies = [
+    "anyhow",
+    "axum",
+    "bytes",
+    "rs2-crypt",
+    "rs2-utils",
+    "serde",
+    "serde_json",
+    "serial_test",
+    "srv-mod-config",
+    "srv-mod-database",
+    "tracing",
+]
+
+[[package]]
 name = "srv-mod-http-handler"
 version = "0.1.0"
 dependencies = [
@@ -4409,6 +4427,7 @@ dependencies = [
  "serial_test",
  "srv-mod-config",
  "srv-mod-database",
+    "srv-mod-handler-base",
  "srv-mod-operator-api",
  "tokio",
  "tokio-util",

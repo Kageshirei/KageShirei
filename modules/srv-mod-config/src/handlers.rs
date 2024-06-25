@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
@@ -87,4 +89,14 @@ pub enum Encoder {
 	/// The encoder is base64
 	#[serde(rename = "base64")]
 	Base64,
+}
+
+impl Display for Encoder {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Encoder::Hex => write!(f, "hex"),
+			Encoder::Base32 => write!(f, "base32"),
+			Encoder::Base64 => write!(f, "base64"),
+		}
+	}
 }

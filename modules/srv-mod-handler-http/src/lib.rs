@@ -21,10 +21,10 @@ use rs2_utils::duration_extension::DurationExt;
 use rs2_utils::unrecoverable_error::unrecoverable_error;
 use srv_mod_config::handlers::HandlerConfig;
 use srv_mod_database::{humantime, Pool};
-use state::HttpHandlerSharedState;
+use srv_mod_handler_base::state;
+use srv_mod_handler_base::state::HttpHandlerSharedState;
 
 mod routes;
-mod state;
 
 #[instrument(name = "HTTP handler", skip_all)]
 pub async fn start(

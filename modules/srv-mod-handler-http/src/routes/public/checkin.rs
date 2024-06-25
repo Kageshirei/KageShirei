@@ -12,8 +12,7 @@ use rs2_crypt::encoder::base64::Base64Encoder;
 use rs2_crypt::encoder::Encoder as CryptEncoder;
 use rs2_crypt::encoder::hex::HexEncoder;
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
-
-use crate::state::HttpHandlerSharedState;
+use srv_mod_handler_base::state::HttpHandlerSharedState;
 
 mod agent;
 mod process_body;
@@ -227,8 +226,7 @@ mod tests {
 	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
 	use srv_mod_database::diesel_migrations::MigrationHarness;
 	use srv_mod_database::migration::MIGRATIONS;
-
-	use crate::state::HttpHandlerState;
+	use srv_mod_handler_base::state::HttpHandlerState;
 
 	use super::*;
 
