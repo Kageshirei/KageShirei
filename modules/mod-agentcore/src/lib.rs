@@ -165,6 +165,8 @@ unsafe fn init_global_instance() {
     if !INIT_INSTANCE.load(Ordering::Acquire) {
         // Hashes and function addresses for various NTDLL functions
         const NTDLL_HASH: u32 = 0x1edab0ed;
+
+        pub const LDR_LOAD_DLL_DBJ2: usize = 0x9e456a43;
         const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
         const NT_FREE_VIRTUAL_MEMORY: usize = 0x2802c609;
 
@@ -186,6 +188,10 @@ unsafe fn init_global_instance() {
 
         // Resolve NTDLL functions
         instance.ntdll.module_base = ldr_module_peb(NTDLL_HASH);
+
+        // Resolve LdrLoadDll
+        let ldr_load_dll_addr = ldr_function_addr(instance.ntdll.module_base, LDR_LOAD_DLL_DBJ2);
+        instance.ntdll.ldr_load_dll = core::mem::transmute(ldr_load_dll_addr);
 
         // NtAllocateVirtualMemory
         instance.ntdll.nt_allocate_virtual_memory.syscall.address =
