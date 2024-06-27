@@ -29,6 +29,18 @@ pub struct SockAddr {
     pub sa_data: [i8; 14],
 }
 
+#[repr(C)]
+pub struct AddrInfo {
+    pub ai_flags: i32,
+    pub ai_family: i32,
+    pub ai_socktype: i32,
+    pub ai_protocol: i32,
+    pub ai_addrlen: u32,
+    pub ai_canonname: *mut i8,
+    pub ai_addr: *mut SockAddr,
+    pub ai_next: *mut AddrInfo,
+}
+
 // Define function types for Winsock functions
 type WSAStartupFunc =
     unsafe extern "system" fn(wVersionRequested: u16, lpWsaData: *mut WsaData) -> i32;
@@ -40,6 +52,13 @@ type RecvFunc = unsafe extern "system" fn(s: u32, buf: *mut i8, len: i32, flags:
 type ClosesocketFunc = unsafe extern "system" fn(s: u32) -> i32;
 type InetAddrFunc = unsafe extern "system" fn(cp: *const i8) -> u32;
 type HtonsFunc = unsafe extern "system" fn(hostshort: u16) -> u16;
+type GetAddrInfoFunc = unsafe extern "system" fn(
+    node: *const i8,
+    service: *const i8,
+    hints: *const AddrInfo,
+    res: *mut *mut AddrInfo,
+) -> i32;
+type FreeAddrInfoFunc = unsafe extern "system" fn(res: *mut AddrInfo);
 
 // Structure to hold function pointers
 pub struct Winsock {
@@ -52,6 +71,8 @@ pub struct Winsock {
     pub closesocket: ClosesocketFunc,
     pub inet_addr: InetAddrFunc,
     pub htons: HtonsFunc,
+    pub getaddrinfo: GetAddrInfoFunc,
+    pub freeaddrinfo: FreeAddrInfoFunc,
 }
 
 impl Winsock {
@@ -67,6 +88,8 @@ impl Winsock {
             closesocket: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             inet_addr: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             htons: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            getaddrinfo: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            freeaddrinfo: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
         }
     }
 }
