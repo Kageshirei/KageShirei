@@ -12,7 +12,7 @@ use rs2_communication_protocol::metadata::Metadata;
 use rs2_win32::{
     ntdef::GetLastError,
     winhttp::{
-        HTTP_QUERY_STATUS_CODE, WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE,
+        WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE,
         WINHTTP_QUERY_FLAG_NUMBER,
     },
 };
@@ -117,7 +117,7 @@ impl WinHttpClient {
             let error = GetLastError();
             return Err(anyhow::anyhow!(
                 "WinHttpQueryHeaders failed with error code: {}",
-                error
+                WinHttpError::from_code(error as i32)
             ));
         }
 
@@ -185,7 +185,7 @@ impl WinHttpClient {
                 let error = GetLastError();
                 return Err(anyhow::anyhow!(
                     "WinHttpOpenRequest failed with error code: {}",
-                    error
+                    WinHttpError::from_code(error as i32)
                 ));
             }
 
@@ -224,7 +224,7 @@ impl WinHttpClient {
                 (get_winhttp().win_http_close_handle)(h_request);
                 return Err(anyhow::anyhow!(
                     "WinHttpSendRequest failed with error code: {}",
-                    error
+                    WinHttpError::from_code(error as i32)
                 ));
             }
 
@@ -236,7 +236,7 @@ impl WinHttpClient {
                 (get_winhttp().win_http_close_handle)(h_request);
                 return Err(anyhow::anyhow!(
                     "WinHttpReceiveResponse failed with error code: {}",
-                    error
+                    WinHttpError::from_code(error as i32)
                 ));
             }
 
