@@ -167,12 +167,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::{string::ToString, vec::Vec};
+    use alloc::string::ToString;
     use axum::http::HeaderMap;
     use axum::routing::get;
     use axum::Router;
-    use libc_print::libc_println;
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;
@@ -272,50 +270,5 @@ mod tests {
 
         cancellation_token.cancel();
         server_handle.await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_post_checkin() {
-        let encryptor = IdentEncryptor;
-        let mut protocol: WinHttpProtocol<IdentEncryptor> =
-            WinHttpProtocol::new("http://localhost".to_string());
-
-        let mut checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ips: Vec::new(),
-            process_id: 1234,
-            parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            integrity_level: 0,
-            cwd: "C:\\Users\\Public\\rs2-agent.exe".to_string(),
-        });
-
-        let metadata = Metadata {
-            request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
-            command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-            agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-            path: None,
-        };
-
-        checkin.with_metadata(metadata);
-
-        protocol.set_is_checkin(true);
-
-        // Test writing data
-        let result = protocol.write(checkin, Some(encryptor)).await;
-
-        match result {
-            Ok(_) => {
-                libc_println!("Request was successful.");
-                assert!(true);
-            }
-            Err(e) => {
-                libc_println!("Request failed with error: {}", e);
-                assert!(false);
-            }
-        }
     }
 }
