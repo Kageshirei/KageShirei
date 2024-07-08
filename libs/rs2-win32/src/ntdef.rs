@@ -218,43 +218,6 @@ impl UnicodeString {
     }
 }
 
-// Definition of SECURITY_STRING
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct SecurityString {
-    pub length: u16,
-    pub maximum_length: u16,
-    pub buffer: *mut u16,
-}
-
-impl SecurityString {
-    pub fn new() -> Self {
-        SecurityString {
-            length: 0,
-            maximum_length: 0,
-            buffer: null_mut(),
-        }
-    }
-
-    pub fn from_str(source_string: *const u16) -> Self {
-        let mut security_string = SecurityString::new();
-        security_string.init(source_string);
-        security_string
-    }
-
-    pub fn init(&mut self, source_string: *const u16) {
-        if !source_string.is_null() {
-            let dest_size = string_length_w(source_string) * 2; // 2 bytes per u16
-            self.length = dest_size as u16;
-            self.maximum_length = (dest_size + 2) as u16; // 2 bytes for the null terminator
-            self.buffer = source_string as *mut u16;
-        } else {
-            self.length = 0;
-            self.maximum_length = 0;
-            self.buffer = null_mut();
-        }
-    }
-}
 #[repr(C)]
 pub struct ClientId {
     pub unique_process: HANDLE,
