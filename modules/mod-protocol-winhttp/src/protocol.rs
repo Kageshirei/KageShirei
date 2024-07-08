@@ -126,8 +126,6 @@ where
         }
 
         serde_json::from_slice(data.get(magic_numbers::JSON.len()..).unwrap()).map_err(|e| e.into())
-
-        // serde_json::from_slice(data.get(0..).unwrap()).map_err(|e| e.into())
     }
 
     async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>

@@ -1,9 +1,14 @@
 use core::ffi::c_void;
 use libc_print::libc_println;
 use mod_agentcore::instance;
-use mod_protocol_json::protocol::JsonProtocol;
 use mod_win32::nt_time::check_kill_date;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+
+#[cfg(feature = "protocol-json")]
+use mod_protocol_json::protocol::JsonProtocol;
+
+#[cfg(feature = "protocol-winhttp")]
+use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
 pub fn command_handler() {
     unsafe {
@@ -48,7 +53,6 @@ pub fn exit_command(exit_type: i32) {
     }
 }
 
-#[cfg(feature = "protocol-json")]
 /// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.
 pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor {
     &mut *(ptr as *mut IdentEncryptor)
@@ -58,4 +62,10 @@ pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncrypto
 /// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
 pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut JsonProtocol<IdentEncryptor> {
     &mut *(ptr as *mut JsonProtocol<IdentEncryptor>)
+}
+
+#[cfg(feature = "protocol-winhttp")]
+/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
+pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut WinHttpProtocol<IdentEncryptor> {
+    &mut *(ptr as *mut WinHttpProtocol<IdentEncryptor>)
 }

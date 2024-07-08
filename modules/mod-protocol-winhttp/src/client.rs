@@ -116,7 +116,7 @@ impl WinHttpClient {
         if b_status_code == 0 {
             let error = GetLastError();
             return Err(anyhow::anyhow!(
-                "WinHttpQueryHeaders failed with error code: {}",
+                "WinHttpQueryHeaders failed with error: {}",
                 WinHttpError::from_code(error as i32)
             ));
         }
@@ -184,7 +184,7 @@ impl WinHttpClient {
             if h_request.is_null() {
                 let error = GetLastError();
                 return Err(anyhow::anyhow!(
-                    "WinHttpOpenRequest failed with error code: {}",
+                    "WinHttpOpenRequest failed with error: {}",
                     WinHttpError::from_code(error as i32)
                 ));
             }
@@ -223,7 +223,7 @@ impl WinHttpClient {
                 let error = GetLastError();
                 (get_winhttp().win_http_close_handle)(h_request);
                 return Err(anyhow::anyhow!(
-                    "WinHttpSendRequest failed with error code: {}",
+                    "WinHttpSendRequest failed with error: {}",
                     WinHttpError::from_code(error as i32)
                 ));
             }
@@ -235,7 +235,7 @@ impl WinHttpClient {
                 let error = GetLastError();
                 (get_winhttp().win_http_close_handle)(h_request);
                 return Err(anyhow::anyhow!(
-                    "WinHttpReceiveResponse failed with error code: {}",
+                    "WinHttpReceiveResponse failed with error: {}",
                     WinHttpError::from_code(error as i32)
                 ));
             }
