@@ -1242,8 +1242,17 @@ impl NtTerminateThread {
     }
 }
 
+// Type definition for loading DLL function
+type LdrLoadDll = unsafe extern "system" fn(
+    DllPath: *mut u16,
+    DllCharacteristics: *mut u32,
+    DllName: UnicodeString,
+    DllHandle: *mut c_void,
+) -> i32;
+
 pub struct NtDll {
     pub module_base: *mut u8,
+    pub ldr_load_dll: LdrLoadDll,
     pub nt_close: NtClose,
     pub nt_allocate_virtual_memory: NtAllocateVirtualMemory,
     pub nt_free_virtual_memory: NtFreeVirtualMemory,
@@ -1275,6 +1284,7 @@ impl NtDll {
     pub fn new() -> Self {
         NtDll {
             module_base: null_mut(),
+            ldr_load_dll: unsafe { core::mem::transmute(null_mut::<c_void>()) },
             nt_close: NtClose::new(),
             nt_allocate_virtual_memory: NtAllocateVirtualMemory::new(),
             nt_free_virtual_memory: NtFreeVirtualMemory::new(),

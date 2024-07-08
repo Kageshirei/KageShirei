@@ -21,6 +21,7 @@ mod-win32 = {path = "../modules/mod-win32" }
 mod-ntallocator = {path = "../modules/mod-ntallocator", optional = true }
 rs2-crypt = {path = "../libs/rs2-crypt"}
 mod-protocol-json = {path = "../modules/mod-protocol-json", optional = true}
+mod-protocol-winhttp = {path = "../modules/mod-protocol-winhttp", optional = true}
 libc-print = "0.1.23"
 spin = "0.9"
 serde = { version = "1.0.202", features = ["derive"] }
@@ -29,6 +30,7 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1.0.86"
 
 [features]
-default = ["protocol-json", "ntallocator"]
+default = ["protocol-winhttp", "ntallocator"]
 protocol-json = ["dep:mod-protocol-json"]
+protocol-winhttp = ["dep:mod-protocol-winhttp"]
 ntallocator = ["dep:mod-ntallocator"]

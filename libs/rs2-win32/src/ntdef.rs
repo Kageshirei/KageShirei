@@ -3,6 +3,10 @@ use core::{
     ptr::{self, null_mut},
 };
 
+extern "system" {
+    pub fn GetLastError() -> u32;
+}
+
 use crate::utils::string_length_w;
 
 // Definition of Windows types
@@ -901,6 +905,132 @@ pub const FILE_RESERVE_OPFILTER: u32 = 0x00100000;
 pub const FILE_OPEN_REQUIRING_OPLOCK: u32 = 0x00010000;
 // Completes the operation immediately with a successful alternative status if the target file is oplocked.
 pub const FILE_COMPLETE_IF_OPLOCKED: u32 = 0x00020000;
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct KSystemTime {
+    pub low_part: u32,
+    pub high1_time: i32,
+    pub high2_time: i32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct LargeInteger {
+    pub low_part: u32,
+    pub high_part: i32,
+}
+
+impl LargeInteger {
+    pub fn new() -> Self {
+        LargeInteger {
+            high_part: 0,
+            low_part: 0,
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub union TickCountUnion {
+    pub tick_count_quad: u64,
+    pub tick_count_struct: TickCountStruct,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct TickCountStruct {
+    pub reserved_tick_count_overlay: [u32; 3],
+    pub tick_count_pad: [u32; 1],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct KUserSharedData {
+    pub tick_count_low_deprecated: u32,
+    pub tick_count_multiplier: u32,
+    pub interrupt_time: KSystemTime,
+    pub system_time: KSystemTime,
+    pub time_zone_bias: KSystemTime,
+    pub image_number_low: u16,
+    pub image_number_high: u16,
+    pub nt_system_root: [u16; 260],
+    pub max_stack_trace_depth: u32,
+    pub crypto_exponent: u32,
+    pub time_zone_id: u32,
+    pub large_page_minimum: u32,
+    pub ait_sampling_value: u32,
+    pub app_compat_flag: u32,
+    pub rng_seed_version: u64,
+    pub global_validation_runlevel: u32,
+    pub time_zone_bias_stamp: i32,
+    pub nt_build_number: u32,
+    pub nt_product_type: u32,
+    pub product_type_is_valid: u8,
+    pub reserved0: [u8; 1],
+    pub native_processor_architecture: u16,
+    pub nt_major_version: u32,
+    pub nt_minor_version: u32,
+    pub processor_features: [u8; 64],
+    pub reserved1: u32,
+    pub reserved3: u32,
+    pub time_slip: u32,
+    pub alternative_architecture: u32,
+    pub boot_id: u32,
+    pub system_expiration_date: LargeInteger,
+    pub suite_mask: u32,
+    pub kd_debugger_enabled: u8,
+    pub mitigation_policies: u8,
+    pub cycles_per_yield: u16,
+    pub active_console_id: u32,
+    pub dismount_count: u32,
+    pub com_plus_package: u32,
+    pub last_system_rit_event_tick_count: u32,
+    pub number_of_physical_pages: u32,
+    pub safe_boot_mode: u8,
+    pub virtualization_flags: u8,
+    pub reserved12: [u8; 2],
+    pub shared_data_flags: u32,
+    pub data_flags_pad: [u32; 1],
+    pub test_ret_instruction: u64,
+    pub qpc_frequency: i64,
+    pub system_call: u32,
+    pub reserved2: u32,
+    pub full_number_of_physical_pages: u64,
+    pub system_call_pad: [u64; 1],
+    pub tick_count: TickCountUnion,
+    pub cookie: u32,
+    pub cookie_pad: [u32; 1],
+    pub console_session_foreground_process_id: i64,
+    pub time_update_lock: u64,
+    pub baseline_system_time_qpc: u64,
+    pub baseline_interrupt_time_qpc: u64,
+    pub qpc_system_time_increment: u64,
+    pub qpc_interrupt_time_increment: u64,
+    pub qpc_system_time_increment_shift: u8,
+    pub qpc_interrupt_time_increment_shift: u8,
+    pub unparked_processor_count: u16,
+    pub enclave_feature_mask: [u32; 4],
+    pub telemetry_coverage_round: u32,
+    pub user_mode_global_logger: [u16; 16],
+    pub image_file_execution_options: u32,
+    pub lang_generation_count: u32,
+    pub reserved4: u64,
+    pub interrupt_time_bias: u64,
+    pub qpc_bias: u64,
+    pub active_processor_count: u32,
+    pub active_group_count: u8,
+    pub reserved9: u8,
+    pub qpc_data: u16,
+    pub time_zone_bias_effective_start: LargeInteger,
+    pub time_zone_bias_effective_end: LargeInteger,
+    pub xstate: [u8; 384], // Placeholder for XSTATE_CONFIGURATION
+    pub feature_configuration_change_stamp: KSystemTime,
+    pub spare: u32,
+    pub user_pointer_auth_mask: u64,
+    pub xstate_arm64: [u8; 384], // Placeholder for XSTATE_CONFIGURATION
+    pub reserved10: [u32; 210],
+}
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,6 @@
 use core::slice;
 
 use alloc::string::{String, ToString};
-use libc_print::libc_println;
 use rs2_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 
 use mod_agentcore::instance;
@@ -155,11 +154,9 @@ pub unsafe fn print_all_environment_variables() {
                     while *env_ptr.add(len) != 0 {
                         len += 1;
                     }
-                    let env_slice = slice::from_raw_parts(env_ptr, len as usize);
-                    let env_string = String::from_utf16_lossy(env_slice);
-                    // Check if the environment string starts with the specified variable name
-                    // if let Some(value) = env_string.strip_prefix(variable_name) {
-                    libc_println!("{}", env_string);
+                    // let env_slice = slice::from_raw_parts(env_ptr, len as usize);
+                    // let env_string = String::from_utf16_lossy(env_slice);
+                    // libc_println!("{}", env_string);
                     env_ptr = env_ptr.add(len + 1);
                 }
             }

