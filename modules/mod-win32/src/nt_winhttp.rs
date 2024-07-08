@@ -159,7 +159,7 @@ unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
     if b_status_code == 0 {
         let error = GetLastError();
         return Err(format!(
-            "WinHttpQueryHeaders failed with error code: {}",
+            "WinHttpQueryHeaders failed with error: {}",
             WinHttpError::from_code(error as i32)
         ));
     }
@@ -210,7 +210,10 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
         );
         if h_session.is_null() {
             let error = GetLastError();
-            return Err(format!("WinHttpOpen failed with error code: {}", error));
+            return Err(format!(
+                "WinHttpOpen failed with error: {}",
+                WinHttpError::from_code(error as i32)
+            ));
         }
 
         let parsed_url = parse_url(url);
@@ -231,7 +234,10 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
         if h_connect.is_null() {
             let error = GetLastError();
             (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!("WinHttpConnect failed with error code: {}", error));
+            return Err(format!(
+                "WinHttpConnect failed with error: {}",
+                WinHttpError::from_code(error as i32)
+            ));
         }
 
         let h_request = (get_winhttp().win_http_open_request)(
@@ -248,8 +254,8 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
-                "WinHttpOpenRequest failed with error code: {}",
-                error
+                "WinHttpOpenRequest failed with error: {}",
+                WinHttpError::from_code(error as i32)
             ));
         }
 
@@ -261,8 +267,8 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
-                "WinHttpSendRequest failed with error code: {}",
-                error
+                "WinHttpSendRequest failed with error: {}",
+                WinHttpError::from_code(error as i32)
             ));
         }
 
@@ -273,8 +279,8 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
-                "WinHttpReceiveResponse failed with error code: {}",
-                error
+                "WinHttpReceiveResponse failed with error: {}",
+                WinHttpError::from_code(error as i32)
             ));
         }
 
@@ -314,7 +320,10 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
         );
         if h_session.is_null() {
             let error = GetLastError();
-            return Err(format!("WinHttpOpen failed with error code: {}", error));
+            return Err(format!(
+                "WinHttpOpen failed with error: {}",
+                WinHttpError::from_code(error as i32)
+            ));
         }
 
         let parsed_url = parse_url(url);
@@ -335,7 +344,10 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
         if h_connect.is_null() {
             let error = GetLastError();
             (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!("WinHttpConnect failed with error code: {}", error));
+            return Err(format!(
+                "WinHttpConnect failed with error: {}",
+                WinHttpError::from_code(error as i32)
+            ));
         }
 
         let h_request = (get_winhttp().win_http_open_request)(
@@ -352,8 +364,8 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
-                "WinHttpOpenRequest failed with error code: {}",
-                error
+                "WinHttpOpenRequest failed with error: {}",
+                WinHttpError::from_code(error as i32)
             ));
         }
 
@@ -372,8 +384,8 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
-                "WinHttpSendRequest failed with error code: {}",
-                error
+                "WinHttpSendRequest failed with error: {}",
+                WinHttpError::from_code(error as i32)
             ));
         }
 
@@ -384,8 +396,8 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
-                "WinHttpReceiveResponse failed with error code: {}",
-                error
+                "WinHttpReceiveResponse failed with error: {}",
+                WinHttpError::from_code(error as i32)
             ));
         }
 
