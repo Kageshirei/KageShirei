@@ -3,6 +3,7 @@ use std::{thread, time::Duration};
 use tokio::runtime::Runtime;
 
 pub mod commands;
+pub mod common;
 pub mod init;
 
 use commands::command_handler;

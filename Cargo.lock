@@ -2677,6 +2677,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "mod-protocol-winhttp"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "bytes",
+ "libc-print",
+ "mod-win32",
+ "rs2-communication-protocol",
+ "rs2-crypt",
+ "rs2-win32",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "mod-win32"
 version = "0.1.0"
 dependencies = [
@@ -3697,12 +3715,15 @@ name = "rs2-agent"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "libc-print",
  "mod-agentcore",
  "mod-hhtgates",
  "mod-ntallocator",
  "mod-protocol-json",
+ "mod-protocol-winhttp",
  "mod-win32",
+ "rand 0.8.5",
  "rs2-communication-protocol",
  "rs2-crypt",
  "serde",

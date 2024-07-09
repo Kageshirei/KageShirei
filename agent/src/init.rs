@@ -175,7 +175,7 @@ pub async fn init_protocol() {
     {
         let boxed_encryptor = Box::new(IdentEncryptor);
         let boxed_protocol: Box<WinHttpProtocol<IdentEncryptor>> =
-            Box::new(WinHttpProtocol::new("http://localhost:8080".to_string()));
+            Box::new(WinHttpProtocol::new("http://localhost:80".to_string()));
 
         unsafe {
             instance_mut().session.encryptor_ptr = Box::into_raw(boxed_encryptor) as *mut c_void;
@@ -201,7 +201,7 @@ pub async fn init_protocol() {
 
                 if result.is_ok() {
                     // If successful, mark the session as connected
-                    // instance_mut().session.connected = true;
+                    instance_mut().session.connected = true;
 
                     // let checkin_response: Result<CheckinResponse, anyhow::Error> =
                     //     protocol.read(result.unwrap(), Some(encryptor.clone()));
