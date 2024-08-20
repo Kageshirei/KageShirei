@@ -22,18 +22,23 @@ mod-win32 = {path = "../modules/mod-win32" }
 mod-ntallocator = {path = "../modules/mod-ntallocator", optional = true }
 mod-protocol-json = {path = "../modules/mod-protocol-json", optional = true}
 mod-protocol-winhttp = {path = "../modules/mod-protocol-winhttp", optional = true}
+mod-tokio-runtime = {path = "../modules/mod-tokio-runtime", optional = true}
+mod-std-runtime = {path = "../modules/mod-std-runtime", optional = true}
+rs2-runtime = {path = "../libs/rs2-runtime"}
 libc-print = "0.1.23"
 spin = "0.9"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = { version = "1.0.117" }
-tokio = { version = "1", features = ["full"] }  
+tokio = { version = "1", features = ["full"], optional = true }  
 anyhow = "1.0.86"
 rand = "0.8.5"
 chrono = "0.4"
 futures = "0.3.30"
 
 [features]
-default = ["protocol-winhttp", "ntallocator"]
+default = ["protocol-winhttp", "ntallocator", "tokio-runtime"]
 protocol-json = ["dep:mod-protocol-json"]
 protocol-winhttp = ["dep:mod-protocol-winhttp"]
 ntallocator = ["dep:mod-ntallocator"]
+tokio-runtime = ["dep:mod-tokio-runtime", "dep:tokio"]
+std-runtime = ["dep:mod-std-runtime"]

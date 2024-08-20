@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use mod_tokio_runtime::TokioRuntimeWrapper;
+use rs2_runtime::Runtime;
 use tokio::runtime::Handle;
 use tokio::sync::{mpsc, oneshot};
 
@@ -63,6 +67,57 @@ impl TaskSpawner {
     }
 }
 
+#[derive(Clone)]
+pub struct TaskSpawnerTokioRuntime {
+    spawn: mpsc::Sender<Task>, // Tokio mpsc channel to send tasks to be processed.
+}
+
+impl TaskSpawnerTokioRuntime {
+    /// Creates a new TaskSpawnerTokioRuntime with a given `TokioRuntimeWrapper`.
+    ///
+    /// # Arguments
+    ///
+    /// * `runtime` - An `Arc<TokioRuntimeWrapper>` used to spawn tasks.
+    ///
+    /// # Returns
+    ///
+    /// * A new instance of TaskSpawnerTokioRuntime.
+    pub fn new(runtime: Arc<TokioRuntimeWrapper>) -> TaskSpawnerTokioRuntime {
+        let (send, mut recv) = mpsc::channel(16); // Tokio mpsc channel to queue tasks for processing.
+        let handle = runtime.handle().clone(); // Extract the Tokio runtime handle from the wrapper.
+
+        // Spawn a background task to receive and handle tasks.
+        handle.spawn(async move {
+            while let Some(task) = recv.recv().await {
+                tokio::spawn(handle_task(task)); // Spawn a new async task for each received task.
+            }
+        });
+
+        TaskSpawnerTokioRuntime { spawn: send }
+    }
+
+    /// Method to spawn a new task, returning a receiver to get the task's result.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The SimpleAgentCommand containing the operation and metadata for the task.
+    ///
+    /// # Returns
+    ///
+    /// * A `oneshot::Receiver<TaskOutput>` that can be awaited to get the result of the task.
+    pub async fn spawn_task(&self, command: SimpleAgentCommand) -> oneshot::Receiver<TaskOutput> {
+        let (response_tx, response_rx) = oneshot::channel(); // Channel to receive the task result.
+        let task = Task {
+            command,
+            response: response_tx,
+        };
+        if let Err(_) = self.spawn.send(task).await {
+            panic!("The shared runtime has shut down."); // Handle case where the runtime shuts down unexpectedly.
+        }
+        response_rx // Return the receiver to get the task result.
+    }
+}
+
 // Function to handle a task based on its `AgentCommands` variant.
 async fn handle_task(task: Task) {
     let result = match task.command.op {
@@ -90,6 +145,7 @@ async fn handle_task(task: Task) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mod_tokio_runtime::TokioRuntimeWrapper;
     use rs2_communication_protocol::metadata::Metadata;
     use std::sync::Arc;
     use tokio::runtime::Builder;
@@ -146,6 +202,65 @@ mod tests {
 
             // Spawn a task to send the task's result to the result handler.
             rt.spawn(async move {
+                if let Ok(result) = receiver.await {
+                    let _ = result_tx.send(result).await; // Send the result to the result handler.
+                }
+            });
+        }
+
+        rt.block_on(async {
+            drop(result_tx); // Close the result channel, indicating no more tasks will send results.
+            result_handler.await.unwrap(); // Wait for the result handler to finish processing all results.
+        });
+    }
+
+    #[test]
+    fn sync_async_test_tokio() {
+        // Creare una nuova runtime Tokio utilizzando il wrapper
+        let rt = Arc::new(TokioRuntimeWrapper::new(4));
+
+        // Creare un TaskSpawnerTokioRuntime utilizzando la runtime di Tokio
+        let spawner = TaskSpawnerTokioRuntime::new(rt.clone());
+
+        // Creare un canale per ricevere i risultati delle task
+        let (result_tx, mut result_rx) = mpsc::channel::<TaskOutput>(16);
+
+        // Spawnare un task per gestire i risultati man mano che vengono ricevuti
+        let result_handler = rt.handle().spawn(async move {
+            let mut i = 0;
+            while let Some(result) = result_rx.recv().await {
+                println!("Result {}: {:?}", i, result);
+                i += 1;
+            }
+        });
+
+        // Spawnare 100 task con logica di assegnazione dei nomi basata sull'indice (pari/dispari)
+        for i in 0..100 {
+            let metadata = Metadata {
+                request_id: format!("req-{}", i),
+                command_id: format!("cmd-{}", i),
+                agent_id: "agent-1234".to_string(),
+                path: None,
+            };
+
+            let command = if i % 2 == 0 {
+                SimpleAgentCommand {
+                    op: AgentCommands::Test,
+                    metadata,
+                }
+            } else {
+                SimpleAgentCommand {
+                    op: AgentCommands::Checkin,
+                    metadata,
+                }
+            };
+
+            let result_tx = result_tx.clone(); // Clone the result transmitter for each task.
+            let spawner_clone = spawner.clone();
+            let receiver = rt.block_on(async move { spawner_clone.spawn_task(command).await }); // Spawn the task and get the result receiver.
+
+            // Spawn a task to send the task's result to the result handler.
+            rt.handle().spawn(async move {
                 if let Ok(result) = receiver.await {
                     let _ = result_tx.send(result).await; // Send the result to the result handler.
                 }

@@ -2705,6 +2705,7 @@ dependencies = [
 name = "mod-tokio-runtime"
 version = "0.1.0"
 dependencies = [
+ "rs2-communication-protocol",
  "rs2-runtime",
  "tokio",
 ]
@@ -3738,10 +3739,13 @@ dependencies = [
  "mod-ntallocator",
  "mod-protocol-json",
  "mod-protocol-winhttp",
+ "mod-std-runtime",
+ "mod-tokio-runtime",
  "mod-win32",
  "rand 0.8.5",
  "rs2-communication-protocol",
  "rs2-crypt",
+ "rs2-runtime",
  "serde",
  "serde_json",
  "spin",

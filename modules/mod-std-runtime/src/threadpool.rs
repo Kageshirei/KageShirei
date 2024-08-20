@@ -1,14 +1,15 @@
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
+use std::time::Duration;
 
 /// The `ThreadPool` struct manages a pool of worker threads that execute jobs.
+#[derive(Debug)]
 pub struct ThreadPool {
-    workers: Vec<Worker>,              // Vector of workers (threads) in the pool.
-    sender: Option<mpsc::Sender<Job>>, // Sender channel to dispatch jobs to the workers.
+    workers: Vec<Worker>, // Vector of workers (threads) in the pool.
+    sender: Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
 }
 
-/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing,
-/// and must be `Send` and `'static`.
+/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and must be `Send` and `'static`.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -27,6 +28,7 @@ impl ThreadPool {
         // Create a channel for sending jobs to workers. `sender` is used to send jobs,
         // and `receiver` is used by workers to receive jobs.
         let (sender, receiver) = mpsc::channel();
+        let sender = Arc::new(Mutex::new(sender)); // Wrap the sender in Arc<Mutex<>>.
         let receiver = Arc::new(Mutex::new(receiver)); // Arc and Mutex protect the receiver so it can be safely shared among multiple threads.
 
         let mut workers = Vec::with_capacity(size); // Create a vector with the capacity to hold all workers.
@@ -54,7 +56,7 @@ impl ThreadPool {
     {
         if let Some(sender) = &self.sender {
             let job = Box::new(f); // Box the job (closure) to make it a heap-allocated trait object.
-            sender.send(job).unwrap(); // Send the job to the workers via the channel.
+            sender.lock().unwrap().send(job).unwrap(); // Send the job to the workers via the channel.
         }
     }
 
@@ -68,6 +70,7 @@ impl ThreadPool {
 }
 
 /// The `Worker` struct represents a single thread in the thread pool.
+#[derive(Debug)]
 struct Worker {
     handle: Option<thread::JoinHandle<()>>, // Handle to the thread, allowing it to be joined later.
 }
@@ -108,4 +111,16 @@ impl Worker {
             handle.join().unwrap(); // Join the thread and ensure it has completed its work.
         }
     }
+}
+
+// Simulated task that takes 1 second to complete.
+pub fn task_type_a() -> String {
+    thread::sleep(Duration::from_secs(1)); // Simulate work with a sleep of 1 second.
+    "Result from task type A".to_string() // Return a result string.
+}
+
+// Simulated task that takes 3 seconds to complete.
+pub fn task_type_b() -> String {
+    thread::sleep(Duration::from_secs(3)); // Simulate work with a sleep of 3 seconds.
+    "Result from task type B".to_string() // Return a result string.
 }

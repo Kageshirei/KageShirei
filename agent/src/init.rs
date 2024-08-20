@@ -1,7 +1,12 @@
 use core::ffi::c_void;
 use libc_print::libc_eprintln;
+
 use std::{sync::Arc, thread};
-use tokio::{runtime::Runtime, sync::oneshot};
+
+#[cfg(feature = "tokio-runtime")]
+use mod_tokio_runtime::TokioRuntimeWrapper;
+#[cfg(feature = "tokio-runtime")]
+use tokio::sync::oneshot;
 
 use mod_agentcore::{instance, instance_mut};
 
@@ -109,7 +114,7 @@ pub fn init_checkin_data() {
 }
 
 /// Initializes the communication protocol and attempts to connect to the server.
-pub fn init_protocol(rt: Arc<Runtime>) {
+pub fn init_protocol(rt: Arc<TokioRuntimeWrapper>) {
     let (tx, rx) = oneshot::channel();
 
     #[cfg(feature = "protocol-json")]
@@ -206,7 +211,7 @@ pub fn init_protocol(rt: Arc<Runtime>) {
 
                 // Attempt to write the Checkin data using the protocol
                 thread::spawn(move || {
-                    rt.block_on(async move {
+                    rt.handle().block_on(async move {
                         let result = protocol
                             .write(checkin_data.clone(), Some(encryptor.clone()))
                             .await;

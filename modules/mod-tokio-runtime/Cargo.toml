@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 rs2-runtime = { path = "../../libs/rs2-runtime" }
+rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
 tokio = { version = "1", features = ["full"] }

