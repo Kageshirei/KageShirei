@@ -1,5 +1,6 @@
 use core::ffi::c_void;
 use libc_print::libc_eprintln;
+use rs2_runtime::Runtime;
 
 use std::{sync::Arc, thread};
 
@@ -114,8 +115,11 @@ pub fn init_checkin_data() {
 }
 
 /// Initializes the communication protocol and attempts to connect to the server.
-pub fn init_protocol(rt: Arc<TokioRuntimeWrapper>) {
-    let (tx, rx) = oneshot::channel();
+pub fn init_protocol<R>(rt: Arc<R>)
+where
+    R: Runtime,
+{
+    let (tx, rx) = std::sync::mpsc::channel(); // Changed to std::sync::mpsc::channel for generic runtime compatibility
 
     #[cfg(feature = "protocol-json")]
     {
@@ -211,7 +215,7 @@ pub fn init_protocol(rt: Arc<TokioRuntimeWrapper>) {
 
                 // Attempt to write the Checkin data using the protocol
                 thread::spawn(move || {
-                    rt.handle().block_on(async move {
+                    rt.block_on(async move {
                         let result = protocol
                             .write(checkin_data.clone(), Some(encryptor.clone()))
                             .await;
@@ -219,7 +223,7 @@ pub fn init_protocol(rt: Arc<TokioRuntimeWrapper>) {
                     });
                 });
 
-                let result = rx.blocking_recv().unwrap();
+                let result = rx.recv().unwrap();
 
                 if result.is_ok() {
                     // If successful, mark the session as connected
