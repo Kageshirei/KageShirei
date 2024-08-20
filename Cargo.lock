@@ -2695,6 +2695,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "mod-std-runtime"
+version = "0.1.0"
+dependencies = [
+ "rs2-runtime",
+]
+
+[[package]]
+name = "mod-tokio-runtime"
+version = "0.1.0"
+dependencies = [
+ "rs2-runtime",
+ "tokio",
+]
+
+[[package]]
 name = "mod-win32"
 version = "0.1.0"
 dependencies = [
@@ -3716,6 +3731,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "futures",
  "libc-print",
  "mod-agentcore",
  "mod-hhtgates",
@@ -3776,6 +3792,10 @@ version = "0.1.0"
 dependencies = [
  "libc-print",
 ]
+
+[[package]]
+name = "rs2-runtime"
+version = "0.1.0"
 
 [[package]]
 name = "rs2-server"

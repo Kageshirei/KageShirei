@@ -8,6 +8,6 @@ members = [
     "libs/coffee",
     "libs/rs2-win32", "modules/mod-ntallocator", "modules/mod-win32", "modules/mod-hhtgates", "modules/mod-agentcore",
     "modules/mod-protocol-winhttp",
-    "modules/mod-loader-coffee-core", "modules/mod-protocol-json", "libs/rs2-indirect-syscall", "libs/rs2-communication-protocol", "modules/srv-mod-operator-api", "modules/srv-mod-config", "modules/srv-mod-database", "modules/srv-mod-http-handler", "modules/srv-mod-terminal-emulator-commands",]
+    "modules/mod-loader-coffee-core", "modules/mod-protocol-json", "libs/rs2-indirect-syscall", "libs/rs2-communication-protocol", "modules/srv-mod-operator-api", "modules/srv-mod-config", "modules/srv-mod-database", "modules/srv-mod-http-handler", "modules/srv-mod-terminal-emulator-commands", "libs/rs2-runtime", "modules/mod-tokio-runtime", "modules/mod-std-runtime",]
 resolver = "2"
 package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }

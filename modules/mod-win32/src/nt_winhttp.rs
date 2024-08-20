@@ -430,7 +430,7 @@ mod tests {
         }
 
         // Test HTTPS GET request
-        match http_get("https://localhost", "/") {
+        match http_get("https://example.com", "/") {
             Ok(response) => {
                 libc_println!("HTTPS GET request successful!");
                 libc_println!("Status Code: {}", response.status_code);
