@@ -145,7 +145,7 @@ pub struct Response {
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
 /// * `Err(String)` if there was an error during the read operation, with the error message.
-unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
+pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
     let mut status_code: u32 = 0;
     let mut status_code_len: u32 = core::mem::size_of::<u32>() as u32;
     let b_status_code = (get_winhttp().win_http_query_headers)(
@@ -199,7 +199,7 @@ unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
 /// * `Err(String)` if there was an error during the request, with the error message.
-fn http_get(url: &str, path: &str) -> Result<Response, String> {
+pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
     unsafe {
         let h_session = (get_winhttp().win_http_open)(
             to_pcwstr("RustWinHttp").as_ptr(),
@@ -309,7 +309,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
 /// * `Err(String)` if there was an error during the request, with the error message.
-fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
+pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
     unsafe {
         let h_session = (get_winhttp().win_http_open)(
             to_pcwstr("RustWinHttp").as_ptr(),

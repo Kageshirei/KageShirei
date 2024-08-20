@@ -6,7 +6,6 @@ extern crate alloc;
 
 use alloc::{string::String, vec::Vec};
 use core::ffi::c_void;
-use core::ptr::null;
 use core::sync::atomic::{AtomicBool, Ordering};
 use core::{cell::UnsafeCell, ptr::null_mut};
 use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};

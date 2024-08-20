@@ -1,3 +1,6 @@
+use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
+use rs2_communication_protocol::metadata::Metadata;
+
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -116,14 +119,20 @@ impl Worker {
     }
 }
 
-// Simulated task that takes 1 second to complete.
-pub fn task_type_a() -> String {
-    thread::sleep(Duration::from_secs(1)); // Simulate work with a sleep of 1 second.
-    "Result from task type A".to_string() // Return a result string.
+// Simulated asynchronous task that takes 2 seconds to complete.
+pub fn task_type_a(metadata: Metadata) -> TaskOutput {
+    thread::sleep(Duration::from_secs(1)); // Simulate some work
+    let mut output = TaskOutput::new();
+    output.with_metadata(metadata);
+    output.output = Some("Result from task type A".to_string());
+    output
 }
 
-// Simulated task that takes 3 seconds to complete.
-pub fn task_type_b() -> String {
-    thread::sleep(Duration::from_secs(3)); // Simulate work with a sleep of 3 seconds.
-    "Result from task type B".to_string() // Return a result string.
+// Simulated asynchronous task that takes 3 seconds to complete.
+pub fn task_type_b(metadata: Metadata) -> TaskOutput {
+    thread::sleep(Duration::from_secs(3)); // Simulate some work
+    let mut output = TaskOutput::new();
+    output.with_metadata(metadata);
+    output.output = Some("Result from task type B".to_string());
+    output
 }

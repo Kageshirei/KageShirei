@@ -5,7 +5,6 @@ use std::{
     pin::Pin,
     sync::{mpsc, Arc, Mutex},
     task::{Context, Poll, Waker},
-    thread,
 };
 
 /// The `CustomRuntime` struct wraps a custom thread pool to implement the `Runtime` trait.

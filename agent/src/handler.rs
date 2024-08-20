@@ -21,11 +21,8 @@ use mod_protocol_json::protocol::JsonProtocol;
 #[cfg(feature = "protocol-winhttp")]
 use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
-use crate::command::exit_command;
+use crate::command::{exit_command, task_type_a, task_type_b};
 use crate::common::generate_path;
-
-#[cfg(feature = "std-runtime")]
-use crate::spawner::TaskSpawnerCustomRuntime;
 
 #[cfg(feature = "std-runtime")]
 use std::thread::{self, JoinHandle};
@@ -49,8 +46,6 @@ where
 
         // !Working Hours -> continue
 
-        #[cfg(feature = "std-runtime")]
-        let spawner = TaskSpawnerCustomRuntime::new(rt.clone());
         #[cfg(feature = "std-runtime")]
         let (result_tx, result_rx) = mpsc::channel::<TaskOutput>(); // Tokio mpsc channel for results.
         #[cfg(feature = "std-runtime")]
@@ -82,8 +77,9 @@ where
                 //     protocol.read(result.unwrap(), Some(encryptor.clone()));
                 // for each SimpleAgentCommand in tasks_response {}
 
-                // Simulating the receipt of an array of 10 tasks
+                // Spawn 100 tasks with the logic for naming based on whether the index is even or odd.
                 for i in 0..10 {
+                    // Generate metadata for each task
                     let metadata = Metadata {
                         request_id: format!("req-{}", i),
                         command_id: format!("cmd-{}", i),
@@ -91,7 +87,6 @@ where
                         path: None,
                     };
 
-                    // Assign "Long Task" name if the index is even, otherwise assign a numbered "Test Task".
                     let command = if i % 2 == 0 {
                         SimpleAgentCommand {
                             op: AgentCommands::Test,
@@ -104,14 +99,17 @@ where
                         }
                     };
 
-                    #[cfg(feature = "std-runtime")]
-                    let receiver = spawner.spawn_task(command); // Spawn the task and get the result receiver.
+                    let result_tx = result_tx.clone();
 
-                    #[cfg(feature = "std-runtime")]
-                    // Send the task's result to the result handler.
-                    if let Ok(result) = receiver.recv() {
-                        let _ = result_tx.send(result);
-                    }
+                    let runtime_clone = Arc::clone(&rt);
+                    runtime_clone.spawn(move || {
+                        let result = match command.op {
+                            AgentCommands::Terminate => task_type_a(command.metadata),
+                            AgentCommands::Checkin => task_type_a(command.metadata),
+                            AgentCommands::Test => task_type_b(command.metadata),
+                        };
+                        result_tx.send(result).unwrap();
+                    });
                 }
             }
         }
@@ -130,7 +128,7 @@ where
 {
     #[cfg(feature = "std-runtime")]
     // Spawn a separate thread to handle and process the results.
-    let result_handler = thread::spawn(move || {
+    thread::spawn(move || {
         while let Ok(result) = result_rx.recv() {
             // Create a new reference to protocol inside the loop
             let protocol = unsafe { protocol_from_raw(instance().session.protocol_ptr) };
@@ -146,10 +144,7 @@ where
 
             // println!("Result {}: {:?}", i, result);
         }
-    });
-
-    #[cfg(feature = "std-runtime")]
-    return result_handler;
+    })
 }
 
 /// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.

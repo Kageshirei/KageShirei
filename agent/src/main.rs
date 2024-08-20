@@ -6,7 +6,6 @@ pub mod command;
 pub mod common;
 pub mod handler;
 pub mod init;
-pub mod spawner;
 
 use handler::command_handler;
 

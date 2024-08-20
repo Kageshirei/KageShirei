@@ -8,13 +8,17 @@ pub use std_runtime::CustomRuntime;
 #[cfg(test)]
 mod tests {
     use crate::std_runtime::CustomRuntime;
+    use crate::threadpool::{task_type_a, task_type_b};
+    use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
+    use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
+    use rs2_communication_protocol::metadata::Metadata;
     use rs2_runtime::Runtime; // Import the Runtime trait
     use std::sync::{mpsc, Arc};
     use std::thread;
 
     #[test]
     fn custom_runtime_test() {
-        // Create a new CustomRuntime with a thread pool of 4 workers.
+        // Create a new CustomRuntime with a thread pool of 16 workers.
         let runtime = Arc::new(CustomRuntime::new(16));
 
         // Create a channel to receive results from tasks.
@@ -24,27 +28,41 @@ mod tests {
         let result_handler = thread::spawn(move || {
             let mut i = 0;
             for result in result_rx {
-                println!("Result {}: {}", i, result);
+                println!("Result {}: {:?}", i, result);
                 i += 1;
             }
         });
 
-        // Spawn 10 tasks using the CustomRuntime.
+        // Spawn 100 tasks using the CustomRuntime.
         for i in 0..100 {
-            let task_name = if i % 2 == 0 {
-                "Long Task".to_string()
+            // Generate metadata for each task
+            let metadata = Metadata {
+                request_id: format!("req-{}", i),
+                command_id: format!("cmd-{}", i),
+                agent_id: "agent-1234".to_string(),
+                path: None,
+            };
+
+            let command = if i % 2 == 0 {
+                SimpleAgentCommand {
+                    op: AgentCommands::Test,
+                    metadata,
+                }
             } else {
-                format!("Test Task {}", i)
+                SimpleAgentCommand {
+                    op: AgentCommands::Checkin,
+                    metadata,
+                }
             };
 
             let result_tx = result_tx.clone();
 
             let runtime_clone = Arc::clone(&runtime);
             runtime_clone.spawn(move || {
-                let result = if task_name == "Long Task" {
-                    super::threadpool::task_type_b()
-                } else {
-                    super::threadpool::task_type_a()
+                let result = match command.op {
+                    AgentCommands::Terminate => task_type_a(command.metadata),
+                    AgentCommands::Checkin => task_type_a(command.metadata),
+                    AgentCommands::Test => task_type_b(command.metadata),
                 };
                 result_tx.send(result).unwrap();
             });
