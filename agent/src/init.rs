@@ -4,11 +4,6 @@ use rs2_runtime::Runtime;
 
 use std::{sync::Arc, thread};
 
-#[cfg(feature = "tokio-runtime")]
-use mod_tokio_runtime::TokioRuntimeWrapper;
-#[cfg(feature = "tokio-runtime")]
-use tokio::sync::oneshot;
-
 use mod_agentcore::{instance, instance_mut};
 
 use mod_win32::{

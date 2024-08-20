@@ -61,10 +61,13 @@ impl ThreadPool {
     }
 
     /// Gracefully shuts down the thread pool by dropping the sender and joining all worker threads.
-    pub fn shutdown(self) {
-        drop(self.sender); // Dropping the sender closes the channel, signaling no more jobs will be sent.
-        for worker in self.workers {
-            worker.join(); // Wait for each worker thread to finish executing its current job.
+    pub fn shutdown(&mut self) {
+        // Drop the sender to close the channel and signal no more jobs will be sent.
+        drop(self.sender.take());
+
+        // Wait for each worker thread to finish executing its current job.
+        for worker in &mut self.workers {
+            worker.join(); // Use a mutable reference to call join.
         }
     }
 }
@@ -106,8 +109,8 @@ impl Worker {
     }
 
     /// Joins the worker thread, blocking until the thread completes its execution.
-    fn join(self) {
-        if let Some(handle) = self.handle {
+    fn join(&mut self) {
+        if let Some(handle) = self.handle.take() {
             handle.join().unwrap(); // Join the thread and ensure it has completed its work.
         }
     }

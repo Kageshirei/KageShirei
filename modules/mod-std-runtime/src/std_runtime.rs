@@ -9,9 +9,9 @@ use std::{
 };
 
 /// The `CustomRuntime` struct wraps a custom thread pool to implement the `Runtime` trait.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CustomRuntime {
-    pool: ThreadPool,
+    pool: Arc<Mutex<ThreadPool>>, // Wrap the ThreadPool in a Mutex inside an Arc.
 }
 
 impl CustomRuntime {
@@ -26,13 +26,14 @@ impl CustomRuntime {
     /// * A `CustomRuntime` instance wrapping the custom thread pool.
     pub fn new(size: usize) -> Self {
         CustomRuntime {
-            pool: ThreadPool::new(size),
+            pool: Arc::new(Mutex::new(ThreadPool::new(size))),
         }
     }
 
     /// Shuts down the thread pool, ensuring all workers have completed their jobs.
-    pub fn shutdown(self) {
-        self.pool.shutdown();
+    pub fn shutdown(&self) {
+        let mut pool = self.pool.lock().unwrap(); // Lock the Mutex to get mutable access.
+        pool.shutdown();
     }
 }
 
@@ -44,7 +45,8 @@ impl Runtime for CustomRuntime {
     where
         F: FnOnce() + Send + 'static,
     {
-        self.pool.execute(job);
+        let pool = self.pool.lock().unwrap();
+        pool.execute(job);
     }
 
     /// Blocks on a future until it completes, polling it in the current thread.
