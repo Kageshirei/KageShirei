@@ -1,7 +1,7 @@
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 
-use std::collections::HashSet;
+use alloc::collections::BTreeSet;
 
 /// Generates a random request ID consisting of 32 alphanumeric characters.
 ///
@@ -43,7 +43,8 @@ pub fn generate_unique_positions(
     start_index: usize,
     end_index: usize,
 ) -> Vec<usize> {
-    let mut positions = HashSet::new();
+    let mut positions: BTreeSet<usize> = BTreeSet::new();
+    // let mut positions = HashSet::new();
     while positions.len() < num_positions {
         positions.insert(thread_rng().gen_range(start_index..end_index));
     }

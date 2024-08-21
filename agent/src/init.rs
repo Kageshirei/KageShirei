@@ -2,7 +2,7 @@ use core::ffi::c_void;
 use libc_print::libc_eprintln;
 use rs2_runtime::Runtime;
 
-use std::{sync::Arc, thread};
+use alloc::sync::Arc;
 
 use mod_agentcore::{instance, instance_mut};
 
@@ -140,13 +140,11 @@ where
                 protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
-                thread::spawn(move || {
-                    rt.block_on(async move {
-                        let result = protocol
-                            .write(checkin_data.clone(), Some(encryptor.clone()))
-                            .await;
-                        let _ = tx.send(result);
-                    });
+                rt.block_on(async move {
+                    let result = protocol
+                        .write(checkin_data.clone(), Some(encryptor.clone()))
+                        .await;
+                    let _ = tx.send(result);
                 });
 
                 let result = rx.blocking_recv().unwrap();
@@ -209,13 +207,11 @@ where
                 // protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
-                thread::spawn(move || {
-                    rt.block_on(async move {
-                        let result = protocol
-                            .write(checkin_data.clone(), Some(encryptor.clone()))
-                            .await;
-                        let _ = tx.send(result);
-                    });
+                rt.block_on(async move {
+                    let result = protocol
+                        .write(checkin_data.clone(), Some(encryptor.clone()))
+                        .await;
+                    let _ = tx.send(result);
                 });
 
                 let result = rx.recv().unwrap();

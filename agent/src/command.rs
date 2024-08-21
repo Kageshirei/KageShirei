@@ -1,9 +1,9 @@
 use libc_print::libc_println;
 use mod_agentcore::instance;
+use mod_win32::nt_time::delay;
 use rs2_communication_protocol::{
     communication_structs::task_output::TaskOutput, metadata::Metadata,
 };
-use std::{thread, time::Duration};
 
 /// Asynchronously terminates the current process based on the provided exit type.
 ///
@@ -38,9 +38,9 @@ pub fn exit_command(exit_type: i32) {
 }
 
 #[cfg(feature = "std-runtime")]
-// Simulated asynchronous task that takes 2 seconds to complete.
+// Simulated task that takes 2 seconds to complete.
 pub fn task_type_a(metadata: Metadata) -> TaskOutput {
-    thread::sleep(Duration::from_secs(1)); // Simulate some work
+    delay(1);
     let mut output = TaskOutput::new();
     output.with_metadata(metadata);
     output.output = Some("Result from task type A".to_string());
@@ -48,9 +48,9 @@ pub fn task_type_a(metadata: Metadata) -> TaskOutput {
 }
 
 #[cfg(feature = "std-runtime")]
-// Simulated asynchronous task that takes 3 seconds to complete.
+// Simulated task that takes 3 seconds to complete.
 pub fn task_type_b(metadata: Metadata) -> TaskOutput {
-    thread::sleep(Duration::from_secs(12)); // Simulate some work
+    delay(12);
     let mut output = TaskOutput::new();
     output.with_metadata(metadata);
     output.output = Some("Result from task type B".to_string());

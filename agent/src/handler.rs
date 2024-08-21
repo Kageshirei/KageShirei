@@ -1,6 +1,6 @@
 use core::ffi::c_void;
 
-use std::sync::Arc;
+use alloc::sync::Arc;
 
 use rs2_runtime::Runtime;
 
