@@ -1242,6 +1242,41 @@ impl NtTerminateThread {
     }
 }
 
+pub struct NtDelayExecution {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtDelayExecution {}
+
+impl NtDelayExecution {
+    pub const fn new() -> Self {
+        NtDelayExecution {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtDelayExecution syscall.
+    ///
+    /// This function delays the execution of the current thread for the specified interval.
+    ///
+    /// # Arguments
+    ///
+    /// * `alertable` - A boolean indicating whether the delay can be interrupted by an alertable wait state.
+    /// * `delay_interval` - A pointer to the time interval for which execution is to be delayed.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
+    pub fn run(&self, alertable: bool, delay_interval: *const i64) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            alertable as u32,
+            delay_interval
+        )
+    }
+}
+
 // Type definition for loading DLL function
 type LdrLoadDll = unsafe extern "system" fn(
     DllPath: *mut u16,
@@ -1278,6 +1313,7 @@ pub struct NtDll {
     pub nt_resume_thread: NtResumeThread,
     pub nt_terminate_thread: NtTerminateThread,
     pub nt_terminate_process: NtTerminateProcess,
+    pub nt_delay_execution: NtDelayExecution,
 }
 
 impl NtDll {
@@ -1310,6 +1346,7 @@ impl NtDll {
             nt_resume_thread: NtResumeThread::new(),                    //unused
             nt_terminate_thread: NtTerminateThread::new(),
             nt_terminate_process: NtTerminateProcess::new(),
+            nt_delay_execution: NtDelayExecution::new(),
         }
     }
 }

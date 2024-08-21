@@ -639,6 +639,13 @@ pub struct KeyValueFullInformation {
 pub const PROCESS_ALL_ACCESS: u32 = 0x1F0FFF;
 pub const PROCESS_QUERY_INFORMATION: AccessMask = 0x0400;
 pub const PROCESS_VM_READ: AccessMask = 0x0010;
+pub const PROCESS_CREATE_THREAD: AccessMask = 0x0002;
+pub const PROCESS_VM_OPERATION: AccessMask = 0x0008;
+pub const PROCESS_VM_WRITE: AccessMask = 0x0020;
+pub const PROCESS_TERMINATE: AccessMask = 0x0001;
+pub const PROCESS_SUSPEND_RESUME: AccessMask = 0x0800;
+pub const PROCESS_SET_INFORMATION: AccessMask = 0x0200;
+pub const PROCESS_SET_QUOTA: AccessMask = 0x0100;
 
 #[repr(C)]
 pub struct ProcessBasicInformation {

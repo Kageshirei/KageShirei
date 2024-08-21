@@ -60,6 +60,26 @@ pub fn check_kill_date(opt_timestamp: Option<i64>) -> bool {
     false
 }
 
+/// Delays the execution of the current thread for the specified duration in seconds.
+///
+/// This function wraps the `NtDelayExecution` syscall to pause the thread for the provided
+/// duration. The delay is not alertable, meaning it cannot be interrupted by asynchronous events.
+///
+/// Args:
+///     seconds (i64): The duration to delay in seconds.
+pub fn delay(seconds: i64) {
+    // Convert seconds to 100-nanosecond intervals
+    let delay_interval = -seconds * 10_000_000;
+
+    // Call NtDelayExecution
+    unsafe {
+        instance()
+            .ntdll
+            .nt_delay_execution
+            .run(false, &delay_interval);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,5 +124,20 @@ mod tests {
             libc_println!("Exit...");
         }
         assert!(should_exit);
+    }
+
+    #[test]
+    fn test_delay_execution() {
+        libc_println!("Starting delay...");
+
+        // Esegui un ritardo di 2 secondi
+        delay(2);
+
+        libc_println!("Delay of 2 seconds completed");
+
+        // Esegui un ritardo di 5 secondi
+        delay(15);
+
+        libc_println!("Delay of 5 seconds completed");
     }
 }

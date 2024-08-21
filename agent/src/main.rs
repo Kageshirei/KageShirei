@@ -1,6 +1,9 @@
 use libc_print::libc_println;
+use mod_win32::nt_time::delay;
 
-use std::{sync::Arc, thread, time::Duration};
+extern crate alloc;
+
+use alloc::sync::Arc;
 
 pub mod command;
 pub mod common;
@@ -47,9 +50,7 @@ pub fn routine() {
                 // Sleep for 15 seconds before checking again, ensuring all tasks are done.
                 libc_println!("Sleep: {}", instance().config.polling_interval);
                 rt.block_on(async {
-                    thread::sleep(Duration::from_secs(
-                        instance().config.polling_interval as u64,
-                    ))
+                    delay(instance().config.polling_interval);
                 });
             }
         }
