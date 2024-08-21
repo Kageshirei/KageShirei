@@ -47,7 +47,7 @@ where
         // !Working Hours -> continue
 
         #[cfg(feature = "std-runtime")]
-        let (result_tx, result_rx) = mpsc::channel::<TaskOutput>(); // Tokio mpsc channel for results.
+        let (result_tx, result_rx) = mpsc::channel::<TaskOutput>();
         #[cfg(feature = "std-runtime")]
         let result_handler_handle = result_handler(rt.clone(), result_rx);
 
@@ -62,7 +62,7 @@ where
             let metadata = Metadata {
                 request_id: request_id,
                 command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-                agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
+                agent_id: instance().config.id,
                 path: Some(path),
             };
 
@@ -75,7 +75,9 @@ where
 
                 // let tasks_response: Result<, anyhow::Error> =
                 //     protocol.read(result.unwrap(), Some(encryptor.clone()));
-                // for each SimpleAgentCommand in tasks_response {}
+                // for each task in tasks {
+                //      
+                }
 
                 // Spawn 100 tasks with the logic for naming based on whether the index is even or odd.
                 for i in 0..10 {

@@ -24,6 +24,8 @@ mod-protocol-json = {path = "../modules/mod-protocol-json", optional = true}
 mod-protocol-winhttp = {path = "../modules/mod-protocol-winhttp", optional = true}
 mod-tokio-runtime = {path = "../modules/mod-tokio-runtime", optional = true}
 mod-std-runtime = {path = "../modules/mod-std-runtime", optional = true}
+mod-nostd-runtime = {path = "../modules/mod-nostd-runtime"}
+mod-nt-runtime = {path = "../modules/mod-nt-runtime"}
 rs2-runtime = {path = "../libs/rs2-runtime"}
 libc-print = "0.1.23"
 spin = "0.9"

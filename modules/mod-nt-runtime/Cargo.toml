@@ -1,0 +1,12 @@
+[package]
+name = "mod-nt-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+rs2-runtime = { path = "../../libs/rs2-runtime" }
+rs2-win32 = { path = "../../libs/rs2-win32" }
+mod-agentcore = { path = "../../modules/mod-agentcore" }
+mod-win32 = { path = "../../modules/mod-win32" }
+spin = "0.9"
