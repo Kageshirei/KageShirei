@@ -62,7 +62,7 @@ where
             let metadata = Metadata {
                 request_id: request_id,
                 command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-                agent_id: instance().config.id,
+                agent_id: instance().config.id.clone(),
                 path: Some(path),
             };
 
@@ -76,8 +76,8 @@ where
                 // let tasks_response: Result<, anyhow::Error> =
                 //     protocol.read(result.unwrap(), Some(encryptor.clone()));
                 // for each task in tasks {
-                //      
-                }
+                //
+                // }
 
                 // Spawn 100 tasks with the logic for naming based on whether the index is even or odd.
                 for i in 0..10 {

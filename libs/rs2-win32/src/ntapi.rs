@@ -4,8 +4,8 @@ use core::{
 };
 
 use crate::ntdef::{
-    AccessMask, IoStatusBlock, ObjectAttributes, PEventType, TokenPrivileges, UnicodeString,
-    HANDLE, ULONG,
+    AccessMask, IoStatusBlock, ObjectAttributes, PEventType, PsAttributeList, PsCreateInfo,
+    RtlUserProcessParameters, TokenPrivileges, UnicodeString, HANDLE, PHANDLE, ULONG,
 };
 use rs2_indirect_syscall::run_syscall;
 
@@ -1107,8 +1107,8 @@ impl NtCreateUserProcess {
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(
         &self,
-        process_handle: &mut HANDLE,
-        thread_handle: &mut HANDLE,
+        process_handle: PHANDLE,
+        thread_handle: PHANDLE,
         process_desired_access: AccessMask,
         thread_desired_access: AccessMask,
         process_object_attributes: *mut ObjectAttributes,
@@ -1116,8 +1116,8 @@ impl NtCreateUserProcess {
         process_flags: ULONG,
         thread_flags: ULONG,
         process_parameters: *mut c_void,
-        create_info: *mut c_void,
-        attribute_list: *mut c_void,
+        create_info: *mut PsCreateInfo,
+        attribute_list: *mut PsAttributeList,
     ) -> i32 {
         run_syscall!(
             self.syscall.number,
@@ -1285,9 +1285,44 @@ type LdrLoadDll = unsafe extern "system" fn(
     DllHandle: *mut c_void,
 ) -> i32;
 
+/// Type definition for the RtlCreateProcessParametersEx function.
+///
+/// Creates process parameters for a new process.
+///
+/// # Parameters
+/// - `pProcessParameters`: A pointer to a location that receives a pointer to the created
+///                         `RTL_USER_PROCESS_PARAMETERS` structure.
+/// - `ImagePathName`: A pointer to a `UNICODE_STRING` that specifies the image path name for the process.
+/// - `DllPath`: A pointer to a `UNICODE_STRING` that specifies the DLL path (optional, can be `NULL`).
+/// - `CurrentDirectory`: A pointer to a `UNICODE_STRING` that specifies the current directory (optional).
+/// - `CommandLine`: A pointer to a `UNICODE_STRING` that specifies the command line for the process (optional).
+/// - `Environment`: A pointer to an environment block (optional, can be `NULL`).
+/// - `WindowTitle`: A pointer to a `UNICODE_STRING` that specifies the window title (optional, can be `NULL`).
+/// - `DesktopInfo`: A pointer to a `UNICODE_STRING` that specifies the desktop information (optional, can be `NULL`).
+/// - `ShellInfo`: A pointer to a `UNICODE_STRING` that specifies the shell information (optional, can be `NULL`).
+/// - `RuntimeData`: A pointer to a `UNICODE_STRING` that specifies runtime data (optional, can be `NULL`).
+/// - `Flags`: An unsigned integer that specifies various flags that control the creation of process parameters.
+///
+/// # Returns
+/// - `STATUS_SUCCESS` if successful, or an NTSTATUS error code if the function fails.
+type RtlCreateProcessParametersEx = unsafe extern "system" fn(
+    pProcessParameters: *mut *mut RtlUserProcessParameters,
+    ImagePathName: *const UnicodeString,
+    DllPath: *const UnicodeString,
+    CurrentDirectory: *const UnicodeString,
+    CommandLine: *const UnicodeString,
+    Environment: *const c_void,
+    WindowTitle: *const UnicodeString,
+    DesktopInfo: *const UnicodeString,
+    ShellInfo: *const UnicodeString,
+    RuntimeData: *const UnicodeString,
+    Flags: u32,
+) -> i32;
+
 pub struct NtDll {
     pub module_base: *mut u8,
     pub ldr_load_dll: LdrLoadDll,
+    pub rtl_create_process_parameters_ex: RtlCreateProcessParametersEx,
     pub nt_close: NtClose,
     pub nt_allocate_virtual_memory: NtAllocateVirtualMemory,
     pub nt_free_virtual_memory: NtFreeVirtualMemory,
@@ -1321,6 +1356,7 @@ impl NtDll {
         NtDll {
             module_base: null_mut(),
             ldr_load_dll: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_create_process_parameters_ex: unsafe { core::mem::transmute(null_mut::<c_void>()) },
             nt_close: NtClose::new(),
             nt_allocate_virtual_memory: NtAllocateVirtualMemory::new(),
             nt_free_virtual_memory: NtFreeVirtualMemory::new(),
@@ -1340,7 +1376,7 @@ impl NtDll {
             nt_create_file: NtCreateFile::new(),                        //unused,
             nt_read_file: NtReadFile::new(),                            //unused, untested
             nt_create_process_ex: NtCreateProcessEx::new(),             //unused
-            nt_create_thread_ex: NtCreateThreadEx::new(),               //unused, untested
+            nt_create_thread_ex: NtCreateThreadEx::new(),               //untested
             nt_create_user_process: NtCreateUserProcess::new(),         //unused, untested
             nt_write_virtual_memory: NtWriteVirtualMemory::new(),       //unused
             nt_resume_thread: NtResumeThread::new(),                    //unused

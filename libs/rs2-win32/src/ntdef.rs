@@ -1,5 +1,5 @@
 use core::{
-    ffi::{c_ulong, c_void},
+    ffi::{c_ulong, c_ushort, c_void},
     ptr::{self, null_mut},
 };
 
@@ -11,9 +11,14 @@ use crate::utils::string_length_w;
 
 // Definition of Windows types
 pub type HANDLE = *mut c_void;
-pub type ULONG = u32;
+pub type PHANDLE = *mut HANDLE;
+pub type ULONG = c_ulong;
 pub type PVOID = *mut c_void;
 pub type AccessMask = ULONG;
+pub type USHORT = c_ushort;
+#[allow(non_camel_case_types)]
+pub type SIZE_T = usize;
+pub type ULONGLONG = u64;
 
 pub type HRESULT = i32;
 pub type HSTRING = *mut ::core::ffi::c_void;
@@ -24,6 +29,9 @@ pub type PWSTR = *mut u16;
 pub type PCSTR = *const u8;
 pub type PCWSTR = *const u16;
 pub type BSTR = *const u16;
+
+#[allow(non_camel_case_types)]
+pub type ULONG_PTR = usize;
 
 // Windows NT Headers
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
@@ -342,6 +350,20 @@ pub struct PEB {
     pub session_id: c_ulong,
 }
 
+pub struct CURDIR {
+    pub dos_path: UnicodeString,
+    pub handle: HANDLE,
+}
+
+impl CURDIR {
+    pub fn new() -> Self {
+        CURDIR {
+            dos_path: UnicodeString::new(),
+            handle: null_mut(),
+        }
+    }
+}
+
 #[repr(C)]
 pub struct RtlUserProcessParameters {
     pub maximum_length: u32,
@@ -353,6 +375,7 @@ pub struct RtlUserProcessParameters {
     pub standard_input: HANDLE,
     pub standard_output: HANDLE,
     pub standard_error: HANDLE,
+    // pub current_directory: CURDIR,
     pub current_directory_path: UnicodeString,
     pub current_directory_handle: HANDLE,
     pub dll_path: UnicodeString,
@@ -392,6 +415,7 @@ impl RtlUserProcessParameters {
             standard_input: null_mut(),
             standard_output: null_mut(),
             standard_error: null_mut(),
+            // current_directory: CURDIR::new(),
             current_directory_path: UnicodeString::new(),
             current_directory_handle: null_mut(),
             dll_path: UnicodeString::new(),
@@ -814,34 +838,56 @@ pub enum EventType {
 
 pub type PEventType = *mut EventType;
 
-// Constant definitions
+/// Standard rights required to read a file.
 pub const STANDARD_RIGHTS_READ: AccessMask = 0x00020000;
+/// Standard rights required for most file operations.
 pub const STANDARD_RIGHTS_REQUIRED: AccessMask = 0x000F0000;
+/// Standard rights required to execute a file.
 pub const STANDARD_RIGHTS_EXECUTE: AccessMask = 0x00020000;
+/// Standard rights required to write to a file.
 pub const STANDARD_RIGHTS_WRITE: AccessMask = 0x00020000;
 
+/// Allows shared read access to a file.
 pub const FILE_SHARE_READ: AccessMask = 0x00000001;
+/// Allows shared write access to a file.
 pub const FILE_SHARE_WRITE: AccessMask = 0x00000002;
+/// Represents no specific access requirements.
 pub const FILE_ANY_ACCESS: u32 = 0;
+/// Represents a network file device.
 pub const FILE_DEVICE_NETWORK: u32 = 0x12;
 
+/// Allows synchronization access to a file.
 pub const SYNCHRONIZE: AccessMask = 0x00100000;
+/// Allows delete access to a file.
 pub const DELETE: AccessMask = 0x00010000;
+/// Allows read access to a file's data.
 pub const FILE_READ_DATA: AccessMask = 0x00000001;
+/// Allows read access to a file's attributes.
 pub const FILE_READ_ATTRIBUTES: AccessMask = 0x00000080;
+/// Allows read access to a file's extended attributes.
 pub const FILE_READ_EA: AccessMask = 0x00000008;
+/// Allows read access to the file's security descriptor.
 pub const READ_CONTROL: AccessMask = 0x00020000;
+/// Allows write access to a file's data.
 pub const FILE_WRITE_DATA: AccessMask = 0x00000002;
+/// Allows write access to a file's attributes.
 pub const FILE_WRITE_ATTRIBUTES: AccessMask = 0x00000100;
+/// Allows write access to a file's extended attributes.
 pub const FILE_WRITE_EA: AccessMask = 0x00000010;
+/// Allows append access to a file's data.
 pub const FILE_APPEND_DATA: AccessMask = 0x00000004;
+/// Allows write access to a file's discretionary access control list (DACL).
 pub const WRITE_DAC: AccessMask = 0x00040000;
+/// Allows write access to change the owner of a file.
 pub const WRITE_OWNER: AccessMask = 0x00080000;
+/// Allows execute access to a file.
 pub const FILE_EXECUTE: AccessMask = 0x00000020;
 
+/// Generic read access mask for a file.
 pub const FILE_GENERIC_READ: u32 =
     STANDARD_RIGHTS_READ | FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE;
 
+/// Generic write access mask for a file.
 pub const FILE_GENERIC_WRITE: u32 = STANDARD_RIGHTS_WRITE
     | FILE_WRITE_DATA
     | FILE_WRITE_ATTRIBUTES
@@ -849,68 +895,72 @@ pub const FILE_GENERIC_WRITE: u32 = STANDARD_RIGHTS_WRITE
     | FILE_APPEND_DATA
     | SYNCHRONIZE;
 
+/// Generic execute access mask for a file.
 pub const FILE_GENERIC_EXECUTE: u32 =
     STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE;
 
-// IoStatusBlock Information return value
+/// IoStatusBlock return value indicating a file was created.
 pub const FILE_CREATED: u32 = 0x00000001;
+/// IoStatusBlock return value indicating a file was opened.
 pub const FILE_OPENED: u32 = 0x00000002;
+/// IoStatusBlock return value indicating a file was overwritten.
 pub const FILE_OVERWRITTEN: u32 = 0x00000003;
+/// IoStatusBlock return value indicating a file was superseded.
 pub const FILE_SUPERSEDED: u32 = 0x00000004;
+/// IoStatusBlock return value indicating a file already exists.
 pub const FILE_EXISTS: u32 = 0x00000005;
+/// IoStatusBlock return value indicating a file does not exist.
 pub const FILE_DOES_NOT_EXIST: u32 = 0x00000006;
 
-// File attribute constant
+/// Normal file attribute constant.
 pub const FILE_ATTRIBUTE_NORMAL: u32 = 0x00000080;
 
-// Content disposition Constatnt
-// Specifies to supersede the file if it exists, or create the file if it does not.
+/// Disposition value specifying to supersede an existing file or create a new one.
 pub const FILE_SUPERSEDE: u32 = 0x00000000;
-// Specifies to open the file if it exists. If the file does not exist, the operation fails.
+/// Disposition value specifying to open an existing file or fail if it does not exist.
 pub const FILE_OPEN: u32 = 0x00000001;
-// Specifies to create the file. If the file already exists, the operation fails.
+/// Disposition value specifying to create a new file or fail if it already exists.
 pub const FILE_CREATE: u32 = 0x00000002;
-// Specifies to open the file if it exists. If the file does not exist, it is created.
+/// Disposition value specifying to open an existing file or create a new one if it does not exist.
 pub const FILE_OPEN_IF: u32 = 0x00000003;
-// Specifies to open the file and overwrite it if it exists. If the file does not exist, the operation fails.
+/// Disposition value specifying to overwrite an existing file or fail if it does not exist.
 pub const FILE_OVERWRITE: u32 = 0x00000004;
-// Specifies to open the file and overwrite it if it exists. If the file does not exist, it is created.
+/// Disposition value specifying to overwrite an existing file or create a new one if it does not exist.
 pub const FILE_OVERWRITE_IF: u32 = 0x00000005;
 
-/// Create options constant
-// The file to be created or opened is a directory file.
+/// Option to indicate that the file to be created or opened is a directory.
 pub const FILE_DIRECTORY_FILE: u32 = 0x00000001;
-// The file to be opened must not be a directory file, or the operation fails.
+/// Option to ensure the file being opened is not a directory.
 pub const FILE_NON_DIRECTORY_FILE: u32 = 0x00000040;
-// Writes to the file must be transferred to the file before the write operation completes.
+/// Option to ensure that all writes to the file are transferred to the file before the write operation completes.
 pub const FILE_WRITE_THROUGH: u32 = 0x00000002;
-// All accesses to the file are sequential.
+/// Option indicating that all file accesses must be sequential.
 pub const FILE_SEQUENTIAL_ONLY: u32 = 0x00000004;
-// Access to the file can be random.
+/// Option allowing random access to the file.
 pub const FILE_RANDOM_ACCESS: u32 = 0x00000008;
-// The file cannot be cached or buffered.
+/// Option indicating that the file cannot be cached or buffered.
 pub const FILE_NO_INTERMEDIATE_BUFFERING: u32 = 0x00000010;
-// All operations on the file are performed synchronously and are subject to alert termination.
+/// Option indicating that all file operations are performed synchronously and are subject to alert termination.
 pub const FILE_SYNCHRONOUS_IO_ALERT: u32 = 0x00000010;
-// All operations on the file are performed synchronously without alert termination.
+/// Option indicating that all file operations are performed synchronously without alert termination.
 pub const FILE_SYNCHRONOUS_IO_NONALERT: u32 = 0x00000020;
-// A tree connection for this file is created to open it through the network.
+/// Option to create a tree connection for the file through the network.
 pub const FILE_CREATE_TREE_CONNECTION: u32 = 0x00000080;
-// If the existing file has extended attributes, the caller does not understand, the request fails.
+/// Option to fail the operation if the file has extended attributes that the caller does not understand.
 pub const FILE_NO_EA_KNOWLEDGE: u32 = 0x00000200;
-// Opens a file with a reparse point and bypasses the normal reparse point processing.
+/// Option to open a file with a reparse point and bypass the normal reparse point processing.
 pub const FILE_OPEN_REPARSE_POINT: u32 = 0x00200000;
-// Deletes the file when the last handle to it is closed.
+/// Option to delete the file when the last handle to it is closed.
 pub const FILE_DELETE_ON_CLOSE: u32 = 0x00001000;
-// The file name includes the 8-byte file reference number for the file.
+/// Option indicating that the file name includes the 8-byte file reference number.
 pub const FILE_OPEN_BY_FILE_ID: u32 = 0x00002000;
-// Opens the file for backup intent.
+/// Option indicating that the file is opened for backup intent.
 pub const FILE_OPEN_FOR_BACKUP_INTENT: u32 = 0x00004000;
-// Allows the application to request a filter opportunistic lock (oplock) to prevent share violations.
+/// Option to allow the application to request a filter opportunistic lock (oplock) to prevent share violations.
 pub const FILE_RESERVE_OPFILTER: u32 = 0x00100000;
-// Opens the file and requests an opportunistic lock (oplock) as a single atomic operation.
+/// Option to open the file and request an opportunistic lock (oplock) as a single atomic operation.
 pub const FILE_OPEN_REQUIRING_OPLOCK: u32 = 0x00010000;
-// Completes the operation immediately with a successful alternative status if the target file is oplocked.
+/// Option to complete the operation immediately with a successful alternative status if the target file is oplocked.
 pub const FILE_COMPLETE_IF_OPLOCKED: u32 = 0x00020000;
 
 #[repr(C)]
@@ -1039,23 +1089,284 @@ pub struct KUserSharedData {
     pub reserved10: [u32; 210],
 }
 
+//START NtCreateUserProcess STRUCT
+#[repr(C)]
+pub struct PsCreateInfo {
+    pub size: SIZE_T,
+    pub state: PsCreateState,
+    pub union_state: PsCreateInfoUnion,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub enum PsCreateState {
+    PsCreateInitialState = 0,
+    PsCreateFailOnFileOpen = 1,
+    PsCreateFailOnSectionCreate = 2,
+    PsCreateFailExeFormat = 3,
+    PsCreateFailMachineMismatch = 4,
+    PsCreateFailExeName = 5,
+    PsCreateSuccess = 6,
+    PsCreateMaximumStates = 7,
+}
+
+#[repr(C)]
+pub union PsCreateInfoUnion {
+    pub init_state: PsCreateInitialState,
+    pub file_handle: HANDLE,
+    pub dll_characteristics: USHORT,
+    pub ifeo_key: HANDLE,
+    pub success_state: PsCreateSuccess,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct PsCreateInitialState {
+    pub init_flags: PsCreateInitialFlags,
+    pub additional_file_access: AccessMask,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub union PsCreateInitialFlags {
+    pub flags: ULONG, // 4 byte
+    pub flag_bits: PsCreateInitialFlagBits,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct PsCreateInitialFlagBits {
+    pub bits: ULONG, // Rappresenta tutti i bit in un singolo campo da 32 bit
+}
+
+impl PsCreateInitialFlagBits {
+    pub fn new() -> Self {
+        let mut bits: ULONG = 0;
+        bits |= 1 << 0; // WriteOutputOnExit : 1;
+        bits |= 1 << 1; // DetectManifest : 1;
+        bits |= 1 << 2; // IFEOSkipDebugger : 1;
+        bits |= 1 << 3; // IFEODoNotPropagateKeyState : 1;
+        bits |= 4 << 4; // SpareBits1 : 4;
+        bits |= 8 << 8; // SpareBits2 : 8;
+        bits |= 16 << 16; // ProhibitedImageCharacteristics : 16;
+
+        PsCreateInitialFlagBits { bits }
+    }
+}
+
+impl Default for PsCreateInitialFlags {
+    fn default() -> Self {
+        PsCreateInitialFlags {
+            flag_bits: PsCreateInitialFlagBits::new(),
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub union PsCreateSuccessFlags {
+    pub flags: ULONG, // 4 byte
+    pub flag_bits: PsCreateSuccessFlagBits,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct PsCreateSuccessFlagBits {
+    pub bits: ULONG, // Rappresenta tutti i bit in un singolo campo da 32 bit
+}
+
+impl PsCreateSuccessFlagBits {
+    pub fn new() -> Self {
+        let mut bits: ULONG = 0;
+        bits |= 1 << 0; // ProtectedProcess : 1;
+        bits |= 1 << 1; // AddressSpaceOverride : 1;
+        bits |= 1 << 2; // DevOverrideEnabled : 1;
+        bits |= 1 << 3; // ManifestDetected : 1;
+        bits |= 1 << 4; // ProtectedProcessLight : 1;
+        bits |= 3 << 5; // SpareBits1 : 3;
+        bits |= 8 << 8; // SpareBits2 : 8;
+        bits |= 16 << 16; // SpareBits3 : 16;
+
+        PsCreateSuccessFlagBits { bits }
+    }
+}
+
+impl Default for PsCreateSuccessFlags {
+    fn default() -> Self {
+        PsCreateSuccessFlags {
+            flag_bits: PsCreateSuccessFlagBits::new(),
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct PsCreateSuccess {
+    pub output_flags: PsCreateSuccessFlags, // 4 byte
+    pub file_handle: *mut c_void,           // HANDLE
+    pub section_handle: *mut c_void,        // HANDLE
+    pub user_process_parameters_native: u64,
+    pub user_process_parameters_wow64: ULONG,
+    pub current_parameter_flags: ULONG,
+    pub peb_address_native: u64,
+    pub peb_address_wow64: ULONG,
+    pub manifest_address: u64,
+    pub manifest_size: ULONG,
+}
+
+#[repr(C)]
+pub struct PsAttribute {
+    pub attribute: usize,
+    pub size: usize,
+    pub value: PsAttributeValueUnion,
+    pub return_length: *mut usize,
+}
+
+#[repr(C)]
+pub union PsAttributeValueUnion {
+    pub value: usize,
+    pub value_ptr: PVOID,
+}
+
+#[repr(C)]
+pub struct PsAttributeList {
+    pub total_length: usize,
+    pub attributes: [PsAttribute; 1],
+}
+
+impl PsAttribute {
+    pub const fn new(
+        attribute: usize,
+        size: usize,
+        value: usize,
+        return_length: *mut usize,
+    ) -> Self {
+        PsAttribute {
+            attribute,
+            size,
+            value: PsAttributeValueUnion { value },
+            return_length,
+        }
+    }
+
+    pub const fn new_ptr(
+        attribute: usize,
+        size: usize,
+        value_ptr: PVOID,
+        return_length: *mut usize,
+    ) -> Self {
+        PsAttribute {
+            attribute,
+            size,
+            value: PsAttributeValueUnion { value_ptr },
+            return_length,
+        }
+    }
+}
+
+/// Specifies the parent process attribute.
+pub const PS_ATTRIBUTE_PARENT_PROCESS: ULONG_PTR = 0x00060000;
+/// Specifies the debug port attribute.
+pub const PS_ATTRIBUTE_DEBUG_PORT: ULONG_PTR = 0x00060001;
+/// Specifies the token to assign to the process.
+pub const PS_ATTRIBUTE_TOKEN: ULONG_PTR = 0x00060002;
+/// Specifies the client ID attribute.
+pub const PS_ATTRIBUTE_CLIENT_ID: ULONG_PTR = 0x00010003;
+/// Specifies the TEB (Thread Environment Block) address attribute.
+pub const PS_ATTRIBUTE_TEB_ADDRESS: ULONG_PTR = 0x00010004;
+/// Specifies the image name attribute.
+pub const PS_ATTRIBUTE_IMAGE_NAME: ULONG_PTR = 0x00020005;
+/// Specifies the image information attribute.
+pub const PS_ATTRIBUTE_IMAGE_INFO: ULONG_PTR = 0x00000006;
+/// Specifies the memory reserve attribute.
+pub const PS_ATTRIBUTE_MEMORY_RESERVE: ULONG_PTR = 0x00020007;
+/// Specifies the priority class attribute.
+pub const PS_ATTRIBUTE_PRIORITY_CLASS: ULONG_PTR = 0x00020008;
+/// Specifies the error mode attribute.
+pub const PS_ATTRIBUTE_ERROR_MODE: ULONG_PTR = 0x00020009;
+/// Specifies the standard handle information attribute.
+pub const PS_ATTRIBUTE_STD_HANDLE_INFO: ULONG_PTR = 0x0002000a;
+/// Specifies the handle list attribute.
+pub const PS_ATTRIBUTE_HANDLE_LIST: ULONG_PTR = 0x0002000b;
+/// Specifies the group affinity attribute.
+pub const PS_ATTRIBUTE_GROUP_AFFINITY: ULONG_PTR = 0x0003000c;
+/// Specifies the preferred NUMA (Non-Uniform Memory Access) node attribute.
+pub const PS_ATTRIBUTE_PREFERRED_NODE: ULONG_PTR = 0x0002000d;
+/// Specifies the ideal processor attribute.
+pub const PS_ATTRIBUTE_IDEAL_PROCESSOR: ULONG_PTR = 0x0003000e;
+/// Specifies the UMS (User-Mode Scheduling) thread attribute.
+pub const PS_ATTRIBUTE_UMS_THREAD: ULONG_PTR = 0x0003000f;
+/// Specifies the mitigation options attribute.
+pub const PS_ATTRIBUTE_MITIGATION_OPTIONS: ULONG_PTR = 0x00060010;
+/// Specifies the protection level attribute.
+pub const PS_ATTRIBUTE_PROTECTION_LEVEL: ULONG_PTR = 0x00060011;
+/// Specifies whether the process is secure.
+pub const PS_ATTRIBUTE_SECURE_PROCESS: ULONG_PTR = 0x00020012;
+/// Specifies the job list attribute.
+pub const PS_ATTRIBUTE_JOB_LIST: ULONG_PTR = 0x00020013;
+/// Specifies the child process policy attribute.
+pub const PS_ATTRIBUTE_CHILD_PROCESS_POLICY: ULONG_PTR = 0x00020014;
+/// Specifies the all application packages policy attribute.
+pub const PS_ATTRIBUTE_ALL_APPLICATION_PACKAGES_POLICY: ULONG_PTR = 0x00020015;
+/// Specifies the Win32k filter attribute.
+pub const PS_ATTRIBUTE_WIN32K_FILTER: ULONG_PTR = 0x00020016;
+/// Specifies the safe open prompt origin claim attribute.
+pub const PS_ATTRIBUTE_SAFE_OPEN_PROMPT_ORIGIN_CLAIM: ULONG_PTR = 0x00020017;
+/// Specifies the BNO (Broad Network Objects) isolation attribute.
+pub const PS_ATTRIBUTE_BNO_ISOLATION: ULONG_PTR = 0x00020018;
+/// Specifies the desktop app policy attribute.
+pub const PS_ATTRIBUTE_DESKTOP_APP_POLICY: ULONG_PTR = 0x00020019;
+
+/// Indicates that the parameters passed to the process are already in a normalized form.
+pub const RTL_USER_PROC_PARAMS_NORMALIZED: u32 = 0x00000001;
+/// Enables user-mode profiling for the process.
+pub const RTL_USER_PROC_PROFILE_USER: u32 = 0x00000002;
+/// Enables kernel-mode profiling for the process.
+pub const RTL_USER_PROC_PROFILE_KERNEL: u32 = 0x00000004;
+/// Enables server-mode profiling for the process.
+pub const RTL_USER_PROC_PROFILE_SERVER: u32 = 0x00000008;
+/// Reserves 1 megabyte (MB) of virtual address space for the process.
+pub const RTL_USER_PROC_RESERVE_1MB: u32 = 0x00000020;
+/// Reserves 16 megabytes (MB) of virtual address space for the process.
+pub const RTL_USER_PROC_RESERVE_16MB: u32 = 0x00000040;
+/// Sets the process to be case-sensitive.
+pub const RTL_USER_PROC_CASE_SENSITIVE: u32 = 0x00000080;
+/// Disables heap decommitting for the process.
+pub const RTL_USER_PROC_DISABLE_HEAP_DECOMMIT: u32 = 0x00000100;
+/// Enables local DLL redirection for the process.
+pub const RTL_USER_PROC_DLL_REDIRECTION_LOCAL: u32 = 0x00001000;
+/// Indicates that an application manifest is present for the process.
+pub const RTL_USER_PROC_APP_MANIFEST_PRESENT: u32 = 0x00002000;
+/// Indicates that the image key is missing for the process.
+pub const RTL_USER_PROC_IMAGE_KEY_MISSING: u32 = 0x00004000;
+/// Indicates that the process has opted in to some specific behavior or feature.
+pub const RTL_USER_PROC_OPTIN_PROCESS: u32 = 0x00020000;
+
+/// Provides all possible access rights to a thread.
+pub const THREAD_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFFF;
+
+/// Mask to extract the attribute number from a PS_ATTRIBUTE value.
+pub const PS_ATTRIBUTE_NUMBER_MASK: usize = 0x0000FFFF;
+/// Indicates that the attribute is specific to a thread rather than a process.
+pub const PS_ATTRIBUTE_THREAD: usize = 0x10000000;
+/// Indicates that the attribute is an input to the process or thread creation function.
+pub const PS_ATTRIBUTE_INPUT: usize = 0x20000000;
+/// Indicates that the attribute is additive, meaning it adds to or modifies an existing attribute.
+pub const PS_ATTRIBUTE_ADDITIVE: usize = 0x40000000;
+
+/// This constant enables a mitigation policy that blocks non-Microsoft binaries
+/// from loading into the process. The policy is always enforced.
+///
+/// This constant is equivalent to `PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON`
+/// in the Windows API, defined as `0x00000001ui64 << 44`.
+pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON: u64 =
+    0x00000001u64 << 44;
+
+//END NtCreateUserProcess STRUCT
+
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // #[test]
-    // fn test_string_length_w() {
-    //     let string: [u16; 6] = [
-    //         b'h' as u16,
-    //         b'e' as u16,
-    //         b'l' as u16,
-    //         b'l' as u16,
-    //         b'o' as u16,
-    //         0,
-    //     ];
-    //     let length = string_length_w(string.as_ptr());
-    //     assert_eq!(length, 5);
-    // }
 
     #[test]
     fn test_rtl_init_unicode_string() {
