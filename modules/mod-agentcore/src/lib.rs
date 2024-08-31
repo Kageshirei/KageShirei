@@ -1,5 +1,6 @@
 #![no_std]
 
+pub mod common;
 pub mod ldr;
 
 extern crate alloc;
@@ -198,6 +199,8 @@ unsafe fn init_global_instance() {
         // const NT_WRITE_VIRTUAL_MEMORY_H: usize = 0xc3170192;
         const NT_READ_VIRTUAL_MEMORY_H: usize = 0xa3288103;
         const NT_CREATE_PROCESS_H: usize = 0xf043985a;
+        const NT_READ_FILE_H: usize = 0xb2d93203;
+        const NT_QUERY_SYSTEM_INFORMATION_H: usize = 0x7bc23928;
 
         let mut instance = Instance::new();
 
@@ -352,6 +355,12 @@ unsafe fn init_global_instance() {
         instance.ntdll.nt_open_file.syscall.number =
             get_syscall_number(instance.ntdll.nt_open_file.syscall.address);
 
+        // NtReadFile
+        instance.ntdll.nt_read_file.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_READ_FILE_H);
+        instance.ntdll.nt_read_file.syscall.number =
+            get_syscall_number(instance.ntdll.nt_read_file.syscall.address);
+
         // NtReadVirtualMemory
         instance.ntdll.nt_read_virtual_memory.syscall.address =
             ldr_function_addr(instance.ntdll.module_base, NT_READ_VIRTUAL_MEMORY_H);
@@ -363,6 +372,12 @@ unsafe fn init_global_instance() {
             ldr_function_addr(instance.ntdll.module_base, NT_CREATE_PROCESS_H);
         instance.ntdll.nt_create_process.syscall.number =
             get_syscall_number(instance.ntdll.nt_create_process.syscall.address);
+
+        // NtQuerySystemInformation
+        instance.ntdll.nt_query_system_information.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_SYSTEM_INFORMATION_H);
+        instance.ntdll.nt_query_system_information.syscall.number =
+            get_syscall_number(instance.ntdll.nt_query_system_information.syscall.address);
 
         // Init Session Data
         instance.session.connected = false;

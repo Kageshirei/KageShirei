@@ -10,7 +10,7 @@ use rs2_win32::{
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL},
 };
 
-use crate::nt_reg_api::open_key;
+use crate::nt_reg_api::nt_open_key;
 use mod_agentcore::instance;
 
 /// Retrieves the computer name from the registry.
@@ -40,7 +40,7 @@ pub unsafe fn get_computer_name_from_registry(
     }
 
     // Open the registry key and obtain a handle
-    let key_handle = match open_key(registry_key) {
+    let key_handle = match nt_open_key(registry_key) {
         Ok(handle) => handle,
         Err(_) => return false,
     };

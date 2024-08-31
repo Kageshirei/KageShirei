@@ -1,6 +1,5 @@
 use core::{
     ffi::{c_uchar, c_void},
-    fmt,
     ptr::null_mut,
 };
 

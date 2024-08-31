@@ -1,10 +1,13 @@
+use crate::common::dbj2_hash;
 use core::arch::asm;
 use core::ptr::null_mut;
-use rs2_win32::ntdef::{
-    ImageDosHeader, ImageExportDirectory, ImageNtHeaders, LoaderDataTableEntry, PebLoaderData,
-    IMAGE_DOS_SIGNATURE, IMAGE_NT_SIGNATURE, PEB, TEB,
+use rs2_win32::{
+    ntdef::{
+        ImageDosHeader, ImageExportDirectory, ImageNtHeaders, LoaderDataTableEntry, PebLoaderData,
+        HANDLE, IMAGE_DOS_SIGNATURE, IMAGE_NT_SIGNATURE, PEB, TEB,
+    },
+    utils::string_length_a,
 };
-use rs2_win32::utils::{dbj2_hash, get_cstr_len};
 
 /// Find the Thread Environment Block (TEB) of the current process on x86_64
 #[cfg(target_arch = "x86_64")]
@@ -36,6 +39,36 @@ pub fn nt_current_peb() -> *mut PEB {
     unsafe {
         return nt_current_teb().as_ref().unwrap().process_environment_block;
     }
+}
+
+/// Gets the last error value for the current thread.
+///
+/// This function retrieves the last error code set in the Thread Environment Block (TEB).
+/// It mimics the behavior of the `NtGetLastError` macro in C.
+pub unsafe fn nt_get_last_error() -> u32 {
+    nt_current_teb().as_ref().unwrap().last_error_value
+}
+
+/// Sets the last error value for the current thread.
+///
+/// This function sets the last error code in the Thread Environment Block (TEB).
+/// It mimics the behavior of the `NtSetLastError` macro in C.
+pub unsafe fn nt_set_last_error(error: u32) {
+    nt_current_teb().as_mut().unwrap().last_error_value = error;
+}
+
+/// Retrieves a handle to the process heap.
+///
+/// This function returns a handle to the heap used by the process, which is stored in the Process Environment Block (PEB).
+/// It mimics the behavior of the `NtProcessHeap` macro in C.
+pub unsafe fn nt_process_heap() -> HANDLE {
+    nt_current_teb()
+        .as_ref()
+        .unwrap()
+        .process_environment_block
+        .as_ref()
+        .unwrap()
+        .process_heap
 }
 
 /// Retrieves the base address of a module by its hash.
@@ -215,7 +248,7 @@ pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *
         // Get the address of the current export name
         let name_addr = module_base.offset(names[i as usize] as isize) as *const i8;
         // Get the length of the C string
-        let name_len = get_cstr_len(name_addr as _);
+        let name_len = string_length_a(name_addr as _);
         // Create a slice for the name
         let name_slice: &[u8] = core::slice::from_raw_parts(name_addr as _, name_len);
 

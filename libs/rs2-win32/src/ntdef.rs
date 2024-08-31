@@ -1,14 +1,13 @@
 use core::{
-    ffi::{c_ulong, c_ushort, c_void},
-    fmt,
+    ffi::{c_long, c_ulong, c_ushort, c_void},
     ptr::{self, null_mut},
 };
+
+use crate::utils::string_length_w;
 
 extern "system" {
     pub fn GetLastError() -> u32;
 }
-
-use crate::utils::string_length_w;
 
 pub type NTSTATUS = i32;
 
@@ -45,6 +44,22 @@ pub type ULONG_PTR = usize;
 // Windows NT Headers
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
 pub const IMAGE_NT_SIGNATURE: u32 = 0x00004550; // "PE\0\0"
+
+/// Returns a handle to the current process.
+///
+/// In Windows, `-1` is used as a special value to represent the current process handle.
+/// This function mimics the behavior of the `NtCurrentProcess` macro in C.
+pub fn nt_current_process() -> HANDLE {
+    (-1isize) as HANDLE
+}
+
+/// Returns a handle to the current thread.
+///
+/// Similar to the process handle, `-2` is used as a special value to represent the current thread handle.
+/// This function mimics the behavior of the `NtCurrentThread` macro in C.
+pub fn nt_current_thread() -> HANDLE {
+    (-2isize) as HANDLE
+}
 
 #[repr(C)]
 pub struct ImageDosHeader {
@@ -1333,7 +1348,7 @@ pub union PsAttributeValueUnion {
 #[repr(C)]
 pub struct PsAttributeList {
     pub total_length: usize,
-    pub attributes: [PsAttribute; 2],
+    pub attributes: [PsAttribute; 3],
 }
 
 impl PsAttribute {
@@ -1547,164 +1562,204 @@ mod tests {
     }
 }
 
-/// Represents the NTSTATUS error codes.
-///
-/// This enum encapsulates common NTSTATUS error codes, with the ability to convert
-/// from raw codes to meaningful enum variants, and provides useful descriptions and
-/// functionality.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum NtStatusError {
-    Success = 0,
-    Abandoned = 0x00000080,
-    UserApc = 0x000000C0,
-    AlreadyComplete = 0x000000FF,
-    Timeout = 0x00000102,
-    Pending = 0x00000103,
-    Reparse = 0x00000104,
-
-    // Common NTSTATUS errors
-    AccessViolation = -1073741819,       // 0xC0000005
-    InvalidHandle = -1073741820,         // 0xC0000008
-    InvalidParameters = -1073741812,     // 0xC000000D
-    NoMemory = -1073741801,              // 0xC0000017
-    ObjectNameNotFound = -1073741772,    // 0xC0000034
-    ObjectNameCollision = -1073741771,   // 0xC0000035
-    PrivilegedInstruction = -1073741686, // 0xC0000096
-    BufferTooSmall = -1073741789,        // 0xC0000023
-    NotImplemented = -1073741822,        // 0xC0000002
-    AccessDenied = -1073741790,          // 0xC0000022
-
-    // Security-related errors
-    SecurityCheckFailure = -1073740748,      // 0xC0000420
-    LogonFailure = -1073741715,              // 0xC000006D
-    InvalidSecurityDescriptor = -1073741691, // 0xC0000079
-    InvalidOwner = -1073741734,              // 0xC000005A
-
-    // Filesystem-related errors
-    FileNotFound = -1073741769,      // 0xC000000F
-    FileIsADirectory = -1073741662,  // 0xC00000BA
-    DirectoryNotEmpty = -1073741447, // 0xC0000101
-    SharingViolation = -1073741757,  // 0xC0000043
-
-    // Networking-related errors
-    NetworkNameDeleted = -1073741503,  // 0xC00000C9
-    NetworkAccessDenied = -1073741502, // 0xC00000CA
-
-    // Miscellaneous errors
-    InvalidInfoClass = -1073741821,   // 0xC0000003
-    IllegalInstruction = -1073741795, // 0xC000001D
-    StackOverflow = -1073741571,      // 0xC00000FD
-    InPageError = -1073741818,        // 0xC0000006
-
-    // For any unknown status code
-    UnknownError = -1,
+pub enum SystemInformationClass {
+    SystemBasicInformation,
+    SystemProcessorInformation,
+    SystemPerformanceInformation,
+    SystemTimeOfDayInformation,
+    SystemPathInformation,
+    SystemProcessInformation,
+    SystemCallCountInformation,
+    SystemDeviceInformation,
+    SystemProcessorPerformanceInformation,
+    SystemFlagsInformation,
+    SystemCallTimeInformation,
+    SystemModuleInformation,
+    SystemLocksInformation,
+    SystemStackTraceInformation,
+    SystemPagedPoolInformation,
+    SystemNonPagedPoolInformation,
+    SystemHandleInformation,
+    SystemObjectInformation,
+    SystemPageFileInformation,
+    SystemVdmInstemulInformation,
+    SystemVdmBopInformation,
+    SystemFileCacheInformation,
+    SystemPoolTagInformation,
+    SystemInterruptInformation,
+    SystemDpcBehaviorInformation,
+    SystemFullMemoryInformation,
+    SystemLoadGdiDriverInformation,
+    SystemUnloadGdiDriverInformation,
+    SystemTimeAdjustmentInformation,
+    SystemSummaryMemoryInformation,
+    SystemMirrorMemoryInformation,
+    SystemPerformanceTraceInformation,
+    SystemObsolete0,
+    SystemExceptionInformation,
+    SystemCrashDumpStateInformation,
+    SystemKernelDebuggerInformation,
+    SystemContextSwitchInformation,
+    SystemRegistryQuotaInformation,
+    SystemExtendServiceTableInformation,
+    SystemPrioritySeperation,
+    SystemVerifierAddDriverInformation,
+    SystemVerifierRemoveDriverInformation,
+    SystemProcessorIdleInformation,
+    SystemLegacyDriverInformation,
+    SystemCurrentTimeZoneInformation,
+    SystemLookasideInformation,
+    SystemTimeSlipNotification,
+    SystemSessionCreate,
+    SystemSessionDetach,
+    SystemSessionInformation,
+    SystemRangeStartInformation,
+    SystemVerifierInformation,
+    SystemVerifierThunkExtend,
+    SystemSessionProcessInformation,
+    SystemLoadGdiDriverInSystemSpace,
+    SystemNumaProcessorMap,
+    SystemPrefetcherInformation,
+    SystemExtendedProcessInformation,
+    SystemRecommendedSharedDataAlignment,
+    SystemComPlusPackage,
+    SystemNumaAvailableMemory,
+    SystemProcessorPowerInformation,
+    SystemEmulationBasicInformation,     // WOW64
+    SystemEmulationProcessorInformation, // WOW64
+    SystemExtendedHandleInformation,
+    SystemLostDelayedWriteInformation,
+    SystemBigPoolInformation,
+    SystemSessionPoolTagInformation,
+    SystemSessionMappedViewInformation,
+    SystemHotpatchInformation,
+    SystemObjectSecurityMode,
+    SystemWatchdogTimerHandler,
+    SystemWatchdogTimerInformation,
+    SystemLogicalProcessorInformation,
+    SystemWow64SharedInformation,
+    SystemRegisterFirmwareTableInformationHandler,
+    SystemFirmwareTableInformation,
+    SystemModuleInformationEx,
+    SystemVerifierTriageInformation,
+    SystemSuperfetchInformation,
+    SystemMemoryListInformation,
+    SystemFileCacheInformationEx,
+    SystemThreadPriorityClientIdInformation,
+    SystemProcessorIdleCycleTimeInformation,
+    SystemVerifierCancellationInformation,
+    SystemProcessorPowerInformationEx,
+    SystemRefTraceInformation,
+    SystemSpecialPoolInformation,
+    SystemProcessIdInformation,
+    SystemErrorPortInformation,
+    SystemBootEnvironmentInformation,
+    SystemHypervisorInformation,
+    SystemVerifierInformationEx,
+    SystemTimeZoneInformation,
+    SystemImageFileExecutionOptionsInformation,
+    SystemCoverageInformation,
+    SystemPrefetchPatchInformation,
+    SystemVerifierFaultsInformation,
+    SystemSystemPartitionInformation,
+    SystemSystemDiskInformation,
+    SystemProcessorPerformanceDistribution,
+    SystemNumaProximityNodeInformation,
+    SystemDynamicTimeZoneInformation,
+    SystemCodeIntegrityInformation,
+    SystemProcessorMicrocodeUpdateInformation,
+    SystemProcessorBrandString,
+    SystemVirtualAddressInformation,
+    MaxSystemInfoClass,
 }
 
-impl NtStatusError {
-    /// Converts an NTSTATUS code to a `NtStatusError` enum variant.
-    ///
-    /// # Arguments
-    /// * `code` - The NTSTATUS code.
-    ///
-    /// # Returns
-    /// * A `NtStatusError` enum variant corresponding to the code.
-    pub fn from_code(code: NTSTATUS) -> Self {
-        match code {
-            0 => NtStatusError::Success,
-            0x00000080 => NtStatusError::Abandoned,
-            0x000000C0 => NtStatusError::UserApc,
-            0x000000FF => NtStatusError::AlreadyComplete,
-            0x00000102 => NtStatusError::Timeout,
-            0x00000103 => NtStatusError::Pending,
-            0x00000104 => NtStatusError::Reparse,
-
-            // Common NTSTATUS errors
-            -1073741819 => NtStatusError::AccessViolation,
-            -1073741820 => NtStatusError::InvalidHandle,
-            -1073741812 => NtStatusError::InvalidParameters,
-            -1073741801 => NtStatusError::NoMemory,
-            -1073741772 => NtStatusError::ObjectNameNotFound,
-            -1073741771 => NtStatusError::ObjectNameCollision,
-            -1073741686 => NtStatusError::PrivilegedInstruction,
-            -1073741789 => NtStatusError::BufferTooSmall,
-            -1073741822 => NtStatusError::NotImplemented,
-            -1073741790 => NtStatusError::AccessDenied,
-
-            // Security-related errors
-            -1073740748 => NtStatusError::SecurityCheckFailure,
-            -1073741715 => NtStatusError::LogonFailure,
-            -1073741691 => NtStatusError::InvalidSecurityDescriptor,
-            -1073741734 => NtStatusError::InvalidOwner,
-
-            // Filesystem-related errors
-            -1073741769 => NtStatusError::FileNotFound,
-            -1073741662 => NtStatusError::FileIsADirectory,
-            -1073741447 => NtStatusError::DirectoryNotEmpty,
-            -1073741757 => NtStatusError::SharingViolation,
-
-            // Networking-related errors
-            -1073741503 => NtStatusError::NetworkNameDeleted,
-            -1073741502 => NtStatusError::NetworkAccessDenied,
-
-            // Miscellaneous errors
-            -1073741821 => NtStatusError::InvalidInfoClass,
-            -1073741795 => NtStatusError::IllegalInstruction,
-            -1073741571 => NtStatusError::StackOverflow,
-            -1073741818 => NtStatusError::InPageError,
-
-            // For all unknown NTSTATUS codes
-            _ => NtStatusError::UnknownError,
-        }
-    }
-
-    /// Retrieves the integer value of the `NtStatusError`.
-    ///
-    /// # Returns
-    /// * The integer value of the error code.
-    pub fn code(&self) -> NTSTATUS {
-        *self as NTSTATUS
-    }
+#[repr(C)]
+pub struct SystemProcessInformation {
+    pub next_entry_offset: ULONG,
+    pub number_of_threads: ULONG,
+    pub working_set_private_size: LargeInteger,
+    pub hard_fault_count: ULONG,
+    pub number_of_threads_high_watermark: ULONG,
+    pub cycle_time: ULONGLONG,
+    pub create_time: LargeInteger,
+    pub user_time: LargeInteger,
+    pub kernel_time: LargeInteger,
+    pub image_name: UnicodeString,
+    pub base_priority: i32,
+    pub unique_process_id: HANDLE,
+    pub inherited_from_unique_process_id: HANDLE,
+    pub handle_count: ULONG,
+    pub session_id: ULONG,
+    pub unique_process_key: ULONG_PTR,
+    pub peak_virtual_size: SIZE_T,
+    pub virtual_size: SIZE_T,
+    pub page_fault_count: ULONG,
+    pub peak_working_set_size: SIZE_T,
+    pub working_set_size: SIZE_T,
+    pub quota_peak_paged_pool_usage: SIZE_T,
+    pub quota_paged_pool_usage: SIZE_T,
+    pub quota_peak_non_paged_pool_usage: SIZE_T,
+    pub quota_non_paged_pool_usage: SIZE_T,
+    pub pagefile_usage: SIZE_T,
+    pub peak_pagefile_usage: SIZE_T,
+    pub private_page_count: SIZE_T,
+    pub read_operation_count: LargeInteger,
+    pub write_operation_count: LargeInteger,
+    pub other_operation_count: LargeInteger,
+    pub read_transfer_count: LargeInteger,
+    pub write_transfer_count: LargeInteger,
+    pub other_transfer_count: LargeInteger,
+    pub threads: [SystemThreadInformation; 1],
 }
 
-impl fmt::Display for NtStatusError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            NtStatusError::Success => write!(f, "Success"),
-            NtStatusError::Abandoned => write!(f, "Abandoned"),
-            NtStatusError::UserApc => write!(f, "User APC"),
-            NtStatusError::AlreadyComplete => write!(f, "Already Complete"),
-            NtStatusError::Timeout => write!(f, "Timeout"),
-            NtStatusError::Pending => write!(f, "Pending"),
-            NtStatusError::Reparse => write!(f, "Reparse"),
-            NtStatusError::AccessViolation => write!(f, "Access Violation"),
-            NtStatusError::InvalidHandle => write!(f, "Invalid Handle"),
-            NtStatusError::InvalidParameters => write!(f, "Invalid Parameters"),
-            NtStatusError::NoMemory => write!(f, "Insufficient Memory"),
-            NtStatusError::ObjectNameNotFound => write!(f, "Object Name Not Found"),
-            NtStatusError::ObjectNameCollision => write!(f, "Object Name Collision"),
-            NtStatusError::PrivilegedInstruction => write!(f, "Privileged Instruction"),
-            NtStatusError::BufferTooSmall => write!(f, "Buffer Too Small"),
-            NtStatusError::NotImplemented => write!(f, "Not Implemented"),
-            NtStatusError::AccessDenied => write!(f, "Access Denied"),
-            NtStatusError::SecurityCheckFailure => write!(f, "Security Check Failure"),
-            NtStatusError::LogonFailure => write!(f, "Logon Failure"),
-            NtStatusError::InvalidSecurityDescriptor => write!(f, "Invalid Security Descriptor"),
-            NtStatusError::InvalidOwner => write!(f, "Invalid Owner"),
-            NtStatusError::FileNotFound => write!(f, "File Not Found"),
-            NtStatusError::FileIsADirectory => write!(f, "File Is A Directory"),
-            NtStatusError::DirectoryNotEmpty => write!(f, "Directory Not Empty"),
-            NtStatusError::SharingViolation => write!(f, "Sharing Violation"),
-            NtStatusError::NetworkNameDeleted => write!(f, "Network Name Deleted"),
-            NtStatusError::NetworkAccessDenied => write!(f, "Network Access Denied"),
-            NtStatusError::InvalidInfoClass => write!(f, "Invalid Information Class"),
-            NtStatusError::IllegalInstruction => write!(f, "Illegal Instruction"),
-            NtStatusError::StackOverflow => write!(f, "Stack Overflow"),
-            NtStatusError::InPageError => write!(f, "In-Page Error"),
-            NtStatusError::UnknownError => {
-                write!(f, "Unknown NTSTATUS error (code: {:#X})", self.code())
-            }
-        }
-    }
+#[repr(C)]
+pub struct SystemThreadInformation {
+    pub kernel_time: LargeInteger,
+    pub user_time: LargeInteger,
+    pub create_time: LargeInteger,
+    pub wait_time: ULONG,
+    pub start_address: PVOID,
+    pub client_id: ClientId,
+    pub priority: c_long,
+    pub base_priority: c_long,
+    pub context_switches: ULONG,
+    pub thread_state: u32,
+    pub wait_reason: u32,
 }
 
-impl core::error::Error for NtStatusError {}
+#[repr(C)]
+pub struct SystemProcessInformation2 {
+    pub next_entry_offset: u32,
+    pub number_of_threads: u32,
+    pub spare_li1: LargeInteger,
+    pub spare_li2: LargeInteger,
+    pub spare_li3: LargeInteger,
+    pub create_time: LargeInteger,
+    pub user_time: LargeInteger,
+    pub kernel_time: LargeInteger,
+    pub image_name: UnicodeString,
+    pub base_priority: i32,
+    pub unique_process_id: HANDLE,
+    pub inherited_from_unique_process_id: HANDLE,
+    pub handle_count: u32,
+    pub session_id: u32,
+    pub page_directory_base: usize,
+    pub peak_virtual_size: usize,
+    pub virtual_size: usize,
+    pub page_fault_count: u32,
+    pub peak_working_set_size: usize,
+    pub working_set_size: usize,
+    pub quota_peak_paged_pool_usage: usize,
+    pub quota_paged_pool_usage: usize,
+    pub quota_peak_non_paged_pool_usage: usize,
+    pub quota_non_paged_pool_usage: usize,
+    pub pagefile_usage: usize,
+    pub peak_pagefile_usage: usize,
+    pub private_page_count: usize,
+    pub read_operation_count: LargeInteger,
+    pub write_operation_count: LargeInteger,
+    pub other_operation_count: LargeInteger,
+    pub read_transfer_count: LargeInteger,
+    pub write_transfer_count: LargeInteger,
+    pub other_transfer_count: LargeInteger,
+}

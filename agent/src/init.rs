@@ -13,7 +13,7 @@ use mod_win32::{
         get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain,
         get_username,
     },
-    nt_ps_api::{get_pid_and_ppid, nt_get_integrity_level},
+    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
 };
 
 use rs2_communication_protocol::protocol::Protocol;
@@ -78,7 +78,7 @@ pub fn init_checkin_data() {
 
         // Get the integrity level of the process
         let process_handle = -1isize as _;
-        let rid = nt_get_integrity_level(process_handle);
+        let rid = get_process_integrity(process_handle);
 
         // Create a Checkin object with the gathered metadata
         let mut checkin = Box::new(Checkin::new(PartialCheckin {

