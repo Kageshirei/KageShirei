@@ -60,15 +60,18 @@ impl NtClose {
             syscall: NtSyscall::new(),
         }
     }
+
     /// Wrapper function for NtClose to avoid repetitive run_syscall calls.
     ///
     /// # Arguments
     ///
-    /// * `handle` - The handle to be closed.
+    /// * `[in]` - `handle` A handle to an object. This is a required parameter that must be valid.
+    ///   It represents the handle that will be closed by the function.
     ///
     /// # Returns
     ///
     /// * `true` if the operation was successful, `false` otherwise.
+    ///   The function returns an NTSTATUS code; however, in this wrapper, the result is simplified to a boolean.
     pub fn run(&self, handle: *mut c_void) -> i32 {
         run_syscall!(self.syscall.number, self.syscall.address as usize, handle)
     }
@@ -87,6 +90,22 @@ impl NtAllocateVirtualMemory {
         }
     }
 
+    /// Wrapper function for NtAllocateVirtualMemory to allocate memory in the virtual address space of a specified process.
+    ///
+    /// # Arguments
+    ///
+    /// * `[in]` - `handle` A handle to the process in which the memory will be allocated.
+    /// * `[in, out]` - `base_address` A pointer to a variable that will receive the base address of the allocated region of pages.
+    ///   If the value of `*base_address` is non-null, the region is allocated starting at the specified address. If `*base_address` is null, the system determines where to allocate the region.
+    /// * `[in]` - `zero_bits` The number of high-order address bits that must be zero in the base address of the section view. This parameter is optional and can often be set to 0.
+    /// * `[in, out]` - `region_size` A pointer to a variable that specifies the size of the region of memory to allocate, in bytes. This parameter is updated with the actual size of the allocated region.
+    /// * `[in]` - `allocation_type` The type of memory allocation. This parameter is required and can be a combination of various flags like `MEM_COMMIT`, `MEM_RESERVE`, etc.
+    /// * `[in]` - `protect` The memory protection for the region of pages to be allocated. This is a required parameter and can include values like `PAGE_READWRITE`, `PAGE_EXECUTE`, etc.
+    ///
+    /// # Returns
+    ///
+    /// * `true` if the operation was successful, `false` otherwise.
+    ///   The function simplifies the NTSTATUS result into a boolean indicating success or failure.
     pub fn run(
         &self,
         handle: *mut c_void,
@@ -128,15 +147,15 @@ impl NtWriteVirtualMemory {
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A handle to the process whose memory is to be written to.
-    /// * `base_address` - A pointer to the base address in the process's virtual memory.
-    /// * `buffer` - A pointer to the buffer that contains the data to be written.
-    /// * `buffer_size` - The size, in bytes, of the buffer pointed to by the `buffer` parameter.
-    /// * `number_of_bytes_written` - A pointer to a variable that receives the number of bytes written.
+    /// * `[in]` - `process_handle` A handle to the process whose memory is to be written to.
+    /// * `[in]` - `base_address` A pointer to the base address in the process's virtual memory where the data should be written.
+    /// * `[in]` - `buffer` A pointer to the buffer that contains the data to be written.
+    /// * `[in]` - `buffer_size` The size, in bytes, of the buffer pointed to by the `buffer` parameter.
+    /// * `[out]` - `number_of_bytes_written` A pointer to a variable that receives the number of bytes that were actually written to the process's memory.
     ///
     /// # Returns
     ///
-    /// * `i32` - The NTSTATUS code of the operation.
+    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
     pub fn run(
         &self,
         process_handle: HANDLE,
@@ -170,6 +189,22 @@ impl NtFreeVirtualMemory {
         }
     }
 
+    /// Wrapper for the NtFreeVirtualMemory syscall.
+    ///
+    /// This function frees a region of pages within the virtual address space of a specified process. It wraps the NtFreeVirtualMemory syscall.
+    ///
+    /// # Arguments
+    ///
+    /// * `[in]` - `process_handle` A handle to the process whose memory is to be freed.
+    /// * `[in, out]` - `base_address` A pointer to a variable that specifies the base address of the region of memory to be freed.
+    ///   If `MEM_RELEASE` is specified, the pointer must be to the base address returned by `NtAllocateVirtualMemory`. The value of this parameter is updated by the function.
+    /// * `[in, out]` - `region_size` A pointer to a variable that specifies the size of the region of memory to be freed, in bytes.
+    ///   If `MEM_RELEASE` is specified, `region_size` must be 0. The value of this parameter is updated by the function.
+    /// * `[in]` - `free_type` The type of free operation. This is a required parameter and can be `MEM_RELEASE` (0x8000) or `MEM_DECOMMIT` (0x4000).
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
     pub fn run(
         &self,
         process_handle: *mut c_void,
@@ -183,7 +218,7 @@ impl NtFreeVirtualMemory {
             process_handle,
             &mut (base_address as *mut c_void),
             &mut region_size,
-            free_type // 0x8000 // MEM_RELEASE
+            free_type
         )
     }
 }
@@ -200,17 +235,20 @@ impl NtOpenKey {
             syscall: NtSyscall::new(),
         }
     }
+
     /// Wrapper for the NtOpenKey syscall.
+    ///
+    /// This function opens the specified registry key. It wraps the NtOpenKey syscall.
     ///
     /// # Arguments
     ///
-    /// * `p_key_handle` - A mutable pointer to a handle that will receive the key handle.
-    /// * `desired_access` - The desired access for the key.
-    /// * `object_attributes` - A pointer to the object attributes structure.
+    /// * `[out]` - `p_key_handle` A mutable pointer to a handle that will receive the key handle.
+    /// * `[in]` - `desired_access` Specifies the desired access rights to the key. This is a required parameter and determines the allowed operations on the key.
+    /// * `[in]` - `object_attributes` A pointer to an `ObjectAttributes` structure that specifies the attributes of the key object.
     ///
     /// # Returns
     ///
-    /// * `i32` - The NTSTATUS code of the operation.
+    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
     pub fn run(
         &self,
         p_key_handle: &mut *mut c_void,
@@ -244,12 +282,12 @@ impl NtQueryValueKey {
     ///
     /// # Arguments
     ///
-    /// * `key_handle` - A handle to the key.
-    /// * `value_name` - A pointer to the UnicodeString structure containing the name of the value to be queried.
-    /// * `key_value_information_class` - Specifies the type of information to be returned.
-    /// * `key_value_information` - A pointer to a buffer that receives the requested information.
-    /// * `length` - The size, in bytes, of the buffer pointed to by the `key_value_information` parameter.
-    /// * `result_length` - A pointer to a variable that receives the size, in bytes, of the data returned.
+    /// * `[in]` - `key_handle` A handle to the key.
+    /// * `[in]` - `value_name` A pointer to the UnicodeString structure containing the name of the value to be queried.
+    /// * `[in]` - `key_value_information_class` Specifies the type of information to be returned.
+    /// * `[out]` - `key_value_information` A pointer to a buffer that receives the requested information.
+    /// * `[in]` - `length` The size, in bytes, of the buffer pointed to by the `key_value_information` parameter.
+    /// * `[out]` - `result_length` A pointer to a variable that receives the size, in bytes, of the data returned.
     ///
     /// # Returns
     ///
@@ -293,12 +331,12 @@ impl NtEnumerateKey {
     ///
     /// # Arguments
     ///
-    /// * `key_handle` - A handle to the key.
-    /// * `index` - The index of the subkey to be enumerated.
-    /// * `key_information_class` - Specifies the type of information to be returned.
-    /// * `key_information` - A pointer to a buffer that receives the requested information.
-    /// * `length` - The size, in bytes, of the buffer pointed to by the `key_information` parameter.
-    /// * `result_length` - A pointer to a variable that receives the size, in bytes, of the data returned.
+    /// * `[in]` - `key_handle` A handle to the key.
+    /// * `[in]` - `index` The index of the subkey to be enumerated.
+    /// * `[in]` - `key_information_class` Specifies the type of information to be returned.
+    /// * `[out]` - `key_information` A pointer to a buffer that receives the requested information.
+    /// * `[in]` - `length` The size, in bytes, of the buffer pointed to by the `key_information` parameter.
+    /// * `[out]` - `result_length` A pointer to a variable that receives the size, in bytes, of the data returned.
     ///
     /// # Returns
     ///
@@ -342,14 +380,14 @@ impl NtQuerySystemInformation {
     ///
     /// # Arguments
     ///
-    /// * `system_information_class` - The system information class to be queried.
-    /// * `system_information` - A pointer to a buffer that receives the requested information.
-    /// * `system_information_length` - The size, in bytes, of the buffer pointed to by the `system_information` parameter.
-    /// * `return_length` - A pointer to a variable that receives the size, in bytes, of the data returned.
+    /// * `[in]` - `system_information_class` The system information class to be queried.
+    /// * `[out]` - `system_information` A pointer to a buffer that receives the requested information.
+    /// * `[in]` - `system_information_length` The size, in bytes, of the buffer pointed to by the `system_information` parameter.
+    /// * `[out, opt]` - `return_length` A pointer to a variable that receives the size, in bytes, of the data returned.
     ///
     /// # Returns
     ///
-    /// * `NTSTATUS` - The NTSTATUS code of the operation.
+    /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(
         &self,
         system_information_class: u32,
@@ -385,15 +423,15 @@ impl NtQueryInformationProcess {
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A handle to the process.
-    /// * `process_information_class` - The class of information to be queried.
-    /// * `process_information` - A pointer to a buffer that receives the requested information.
-    /// * `process_information_length` - The size, in bytes, of the buffer pointed to by the `process_information` parameter.
-    /// * `return_length` - A pointer to a variable that receives the size, in bytes, of the data returned.
+    /// * `[in]` - `process_handle` A handle to the process.
+    /// * `[in]` - `process_information_class` The class of information to be queried.
+    /// * `[out]` - `process_information` A pointer to a buffer that receives the requested information.
+    /// * `[in]` - `process_information_length` The size, in bytes, of the buffer pointed to by the `process_information` parameter.
+    /// * `[out, opt]` - `return_length` A pointer to a variable that receives the size, in bytes, of the data returned.
     ///
     /// # Returns
     ///
-    /// * `NTSTATUS` - The NTSTATUS code of the operation.
+    /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(
         &self,
         process_handle: HANDLE,
@@ -431,10 +469,10 @@ impl NtOpenProcess {
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A mutable pointer to a handle that will receive the process handle.
-    /// * `desired_access` - The desired access for the process.
-    /// * `object_attributes` - A pointer to the object attributes structure.
-    /// * `client_id` - A pointer to the client ID structure.
+    /// * `[out]` - `process_handle` A mutable pointer to a handle that will receive the process handle.
+    /// * `[in]` - `desired_access` The desired access for the process.
+    /// * `[in]` - `object_attributes` A pointer to the object attributes structure.
+    /// * `[in, opt]` - `client_id` A pointer to the client ID structure.
     ///
     /// # Returns
     ///
@@ -469,13 +507,14 @@ impl NtOpenProcessToken {
             syscall: NtSyscall::new(),
         }
     }
+
     /// Wrapper for the NtOpenProcessToken syscall.
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - The handle of the process whose token is to be opened.
-    /// * `desired_access` - The desired access for the token.
-    /// * `token_handle` - A mutable pointer to a handle that will receive the token handle.
+    /// * `[in]` - `process_handle` The handle of the process whose token is to be opened.
+    /// * `[in]` - `desired_access` The desired access for the token.
+    /// * `[out]` - `token_handle` A mutable pointer to a handle that will receive the token handle.
     ///
     /// # Returns
     ///
@@ -508,14 +547,15 @@ impl NtOpenProcessTokenEx {
             syscall: NtSyscall::new(),
         }
     }
+
     /// Wrapper for the NtOpenProcessTokenEx syscall.
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - The handle of the process whose token is to be opened.
-    /// * `desired_access` - The desired access for the token.
-    /// * `handle_attributes` - Attributes for the handle.
-    /// * `token_handle` - A mutable pointer to a handle that will receive the token handle.
+    /// * `[in]` - `process_handle` The handle of the process whose token is to be opened.
+    /// * `[in]` - `desired_access` The desired access for the token.
+    /// * `[in, opt]` - `handle_attributes` Attributes for the handle.
+    /// * `[out]` - `token_handle` A mutable pointer to a handle that will receive the token handle.
     ///
     /// # Returns
     ///
@@ -555,11 +595,11 @@ impl NtQueryInformationToken {
     ///
     /// # Arguments
     ///
-    /// * `token_handle` - The handle of the token to be queried.
-    /// * `token_information_class` - The class of information to be queried.
-    /// * `token_information` - A pointer to a buffer that receives the requested information.
-    /// * `token_information_length` - The size, in bytes, of the buffer pointed to by the `token_information` parameter.
-    /// * `return_length` - A pointer to a variable that receives the size, in bytes, of the data returned.
+    /// * `[in]` - `token_handle` The handle of the token to be queried.
+    /// * `[in]` - `token_information_class` The class of information to be queried.
+    /// * `[out]` - `token_information` A pointer to a buffer that receives the requested information.
+    /// * `[in]` - `token_information_length` The size, in bytes, of the buffer pointed to by the `token_information` parameter.
+    /// * `[out, opt]` - `return_length` A pointer to a variable that receives the size, in bytes, of the data returned.
     ///
     /// # Returns
     ///
@@ -600,12 +640,12 @@ impl NtAdjustPrivilegesToken {
     ///
     /// # Arguments
     ///
-    /// * `token_handle` - The handle of the token to be adjusted.
-    /// * `disable_all_privileges` - Boolean to disable all privileges.
-    /// * `new_state` - A pointer to a TOKEN_PRIVILEGES structure.
-    /// * `buffer_length` - The length of the buffer for previous privileges.
-    /// * `previous_state` - A pointer to a buffer that receives the previous state.
-    /// * `return_length` - A pointer to a variable that receives the length of the previous state.
+    /// * `[in]` - `token_handle` The handle of the token to be adjusted.
+    /// * `[in]` - `disable_all_privileges` Boolean to disable all privileges.
+    /// * `[in, opt]` - `new_state` A pointer to a TOKEN_PRIVILEGES structure.
+    /// * `[in]` - `buffer_length` The length of the buffer for previous privileges.
+    /// * `[out, opt]` - `previous_state` A pointer to a buffer that receives the previous state.
+    /// * `[out, opt]` - `return_length` A pointer to a variable that receives the length of the previous state.
     ///
     /// # Returns
     ///
@@ -649,9 +689,9 @@ impl NtWaitForSingleObject {
     ///
     /// # Arguments
     ///
-    /// * `handle` - A handle to the object.
-    /// * `alertable` - A boolean value that specifies whether the wait is alertable.
-    /// * `timeout` - An optional pointer to a time-out value.
+    /// * `[in]` - `handle` A handle to the object.
+    /// * `[in]` - `alertable` A boolean value that specifies whether the wait is alertable.
+    /// * `[in, opt]` - `timeout` An optional pointer to a time-out value.
     ///
     /// # Returns
     ///
@@ -684,12 +724,12 @@ impl NtOpenFile {
     ///
     /// # Arguments
     ///
-    /// * `file_handle` - A pointer to a handle that receives the file handle.
-    /// * `desired_access` - The desired access for the file handle.
-    /// * `object_attributes` - A pointer to the OBJECT_ATTRIBUTES structure.
-    /// * `io_status_block` - A pointer to an IO_STATUS_BLOCK structure that receives the status block.
-    /// * `share_access` - The requested share access for the file.
-    /// * `open_options` - The options to be applied when opening the file.
+    /// * `[out]` - `file_handle` A pointer to a handle that receives the file handle.
+    /// * `[in]` - `desired_access` The desired access for the file handle.
+    /// * `[in]` - `object_attributes` A pointer to the OBJECT_ATTRIBUTES structure.
+    /// * `[out]` - `io_status_block` A pointer to an IO_STATUS_BLOCK structure that receives the status block.
+    /// * `[in]` - `share_access` The requested share access for the file.
+    /// * `[in]` - `open_options` The options to be applied when opening the file.
     ///
     /// # Returns
     ///
@@ -733,11 +773,11 @@ impl NtCreateEvent {
     ///
     /// # Arguments
     ///
-    /// * `event_handle` - A mutable pointer to a handle that will receive the event handle.
-    /// * `desired_access` - The desired access for the event.
-    /// * `object_attributes` - A pointer to the object attributes structure. This can be null.
-    /// * `event_type` - The type of event to be created.
-    /// * `initial_state` - The initial state of the event.
+    /// * `[out]` - `event_handle` A mutable pointer to a handle that will receive the event handle.
+    /// * `[in]` - `desired_access` The desired access for the event.
+    /// * `[in, opt]` - `object_attributes` A pointer to the object attributes structure. This can be null.
+    /// * `[in]` - `event_type` The type of event to be created.
+    /// * `[in]` - `initial_state` The initial state of the event.
     ///
     /// # Returns
     ///
@@ -785,15 +825,15 @@ impl NtWriteFile {
     ///
     /// # Arguments
     ///
-    /// * `file_handle` - A handle to the file or I/O device to be written to.
-    /// * `event` - An optional handle to an event object that will be signaled when the operation completes.
-    /// * `apc_routine` - An optional pointer to an APC routine to be called when the operation completes.
-    /// * `apc_context` - An optional pointer to a context for the APC routine.
-    /// * `io_status_block` - A pointer to an IO_STATUS_BLOCK structure that receives the final completion status and information about the operation.
-    /// * `buffer` - A pointer to a buffer that contains the data to be written to the file or device.
-    /// * `length` - The length, in bytes, of the buffer pointed to by the `buffer` parameter.
-    /// * `byte_offset` - A pointer to the byte offset in the file where the operation should begin. If this parameter is `None`, the system writes data to the current file position.
-    /// * `key` - A pointer to a caller-supplied variable to receive the I/O completion key. This parameter is ignored if `event` is not `None`.
+    /// * `[in]` - `file_handle` A handle to the file or I/O device to be written to.
+    /// * `[in, opt]` - `event` An optional handle to an event object that will be signaled when the operation completes.
+    /// * `[in, opt]` - `apc_routine` An optional pointer to an APC routine to be called when the operation completes.
+    /// * `[in, opt]` - `apc_context` An optional pointer to a context for the APC routine.
+    /// * `[out]` - `io_status_block` A pointer to an IO_STATUS_BLOCK structure that receives the final completion status and information about the operation.
+    /// * `[in]` - `buffer` A pointer to a buffer that contains the data to be written to the file or device.
+    /// * `[in]` - `length` The length, in bytes, of the buffer pointed to by the `buffer` parameter.
+    /// * `[in, opt]` - `byte_offset` A pointer to the byte offset in the file where the operation should begin. If this parameter is `None`, the system writes data to the current file position.
+    /// * `[in, opt]` - `key` A pointer to a caller-supplied variable to receive the I/O completion key. This parameter is ignored if `event` is not `None`.
     ///
     /// # Returns
     ///
@@ -845,17 +885,17 @@ impl NtCreateFile {
     ///
     /// # Arguments
     ///
-    /// * `file_handle` - A mutable pointer to a handle that will receive the file handle.
-    /// * `desired_access` - The access to the file or device, which can be read, write, or both.
-    /// * `obj_attributes` - A pointer to an OBJECT_ATTRIBUTES structure that specifies the object name and other attributes.
-    /// * `io_status_block` - A pointer to an IO_STATUS_BLOCK structure that receives the final completion status and information about the operation.
-    /// * `allocation_size` - A pointer to a LARGE_INTEGER that specifies the initial allocation size in bytes. If this parameter is `None`, the file is allocated with a default size.
-    /// * `file_attributes` - The file attributes for the file or device if it is created.
-    /// * `share_access` - The requested sharing mode of the file or device.
-    /// * `create_disposition` - The action to take depending on whether the file or device already exists.
-    /// * `create_options` - Options to be applied when creating or opening the file or device.
-    /// * `ea_buffer` - A pointer to a buffer that contains the extended attributes (EAs) for the file or device. This parameter is optional.
-    /// * `ea_length` - The length, in bytes, of the EaBuffer parameter.
+    /// * `[out]` - `file_handle` A mutable pointer to a handle that will receive the file handle.
+    /// * `[in]` - `desired_access` The access to the file or device, which can be read, write, or both.
+    /// * `[in]` - `obj_attributes` A pointer to an OBJECT_ATTRIBUTES structure that specifies the object name and other attributes.
+    /// * `[out]` - `io_status_block` A pointer to an IO_STATUS_BLOCK structure that receives the final completion status and information about the operation.
+    /// * `[in, opt]` - `allocation_size` A pointer to a LARGE_INTEGER that specifies the initial allocation size in bytes. If this parameter is `None`, the file is allocated with a default size.
+    /// * `[in]` - `file_attributes` The file attributes for the file or device if it is created.
+    /// * `[in]` - `share_access` The requested sharing mode of the file or device.
+    /// * `[in]` - `create_disposition` The action to take depending on whether the file or device already exists.
+    /// * `[in]` - `create_options` Options to be applied when creating or opening the file or device.
+    /// * `[in, opt]` - `ea_buffer` A pointer to a buffer that contains the extended attributes (EAs) for the file or device. This parameter is optional.
+    /// * `[in]` - `ea_length` The length, in bytes, of the EaBuffer parameter.
     ///
     /// # Returns
     ///
@@ -911,15 +951,15 @@ impl NtReadFile {
     ///
     /// # Arguments
     ///
-    /// * `file_handle` - A handle to the file or I/O device to be read from.
-    /// * `event` - An optional handle to an event object that will be signaled when the operation completes.
-    /// * `apc_routine` - An optional pointer to an APC routine to be called when the operation completes.
-    /// * `apc_context` - An optional pointer to a context for the APC routine.
-    /// * `io_status_block` - A pointer to an IO_STATUS_BLOCK structure that receives the final completion status and information about the operation.
-    /// * `buffer` - A pointer to a buffer that receives the data read from the file or device.
-    /// * `length` - The length, in bytes, of the buffer pointed to by the `buffer` parameter.
-    /// * `byte_offset` - A pointer to the byte offset in the file where the operation should begin. If this parameter is `None`, the system reads data from the current file position.
-    /// * `key` - A pointer to a caller-supplied variable to receive the I/O completion key. This parameter is ignored if `event` is not `None`.
+    /// * `[in]` - `file_handle` A handle to the file or I/O device to be read from.
+    /// * `[in, opt]` - `event` An optional handle to an event object that will be signaled when the operation completes.
+    /// * `[in, opt]` - `apc_routine` An optional pointer to an APC routine to be called when the operation completes.
+    /// * `[in, opt]` - `apc_context` An optional pointer to a context for the APC routine.
+    /// * `[out]` - `io_status_block` A pointer to an IO_STATUS_BLOCK structure that receives the final completion status and information about the operation.
+    /// * `[out]` - `buffer` A pointer to a buffer that receives the data read from the file or device.
+    /// * `[in]` - `length` The length, in bytes, of the buffer pointed to by the `buffer` parameter.
+    /// * `[in, opt]` - `byte_offset` A pointer to the byte offset in the file where the operation should begin. If this parameter is `None`, the system reads data from the current file position.
+    /// * `[in, opt]` - `key` A pointer to a caller-supplied variable to receive the I/O completion key. This parameter is ignored if `event` is not `None`.
     ///
     /// # Returns
     ///
@@ -969,15 +1009,15 @@ impl NtCreateProcessEx {
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A mutable pointer to a handle that will receive the process handle.
-    /// * `desired_access` - The desired access for the process.
-    /// * `object_attributes` - A pointer to the object attributes structure.
-    /// * `parent_process` - A handle to the parent process.
-    /// * `flags` - Flags for creating the process.
-    /// * `section_handle` - A handle to a section object.
-    /// * `debug_port` - A handle to the debug port.
-    /// * `token_handle` - A handle to the token.
-    /// * `reserved` - Reserved for future use.
+    /// * `[out]` - `process_handle` A mutable pointer to a handle that will receive the process handle.
+    /// * `[in]` - `desired_access` The desired access for the process.
+    /// * `[in]` - `object_attributes` A pointer to the object attributes structure.
+    /// * `[in]` - `parent_process` A handle to the parent process.
+    /// * `[in]` - `flags` Flags for creating the process.
+    /// * `[in, opt]` - `section_handle` A handle to a section object.
+    /// * `[in, opt]` - `debug_port` A handle to the debug port.
+    /// * `[in, opt]` - `exception_port` A handle to the exception port.
+    /// * `[in, opt]` - `in_job` A flag indicating if the process is in a job.
     ///
     /// # Returns
     ///
@@ -1027,17 +1067,17 @@ impl NtCreateThreadEx {
     ///
     /// # Arguments
     ///
-    /// * `thread_handle` - A mutable pointer to a handle that will receive the thread handle.
-    /// * `desired_access` - The desired access for the thread.
-    /// * `object_attributes` - A pointer to the object attributes structure.
-    /// * `process_handle` - A handle to the process.
-    /// * `start_routine` - A pointer to the start routine.
-    /// * `argument` - A pointer to the argument for the start routine.
-    /// * `create_flags` - Flags for creating the thread.
-    /// * `zero_bits` - The zero bits.
-    /// * `stack_size` - The stack size.
-    /// * `maximum_stack_size` - The maximum stack size.
-    /// * `attribute_list` - A pointer to an attribute list.
+    /// * `[out]` - `thread_handle` A mutable pointer to a handle that will receive the thread handle.
+    /// * `[in]` - `desired_access` The desired access for the thread.
+    /// * `[in]` - `object_attributes` A pointer to the object attributes structure.
+    /// * `[in]` - `process_handle` A handle to the process.
+    /// * `[in]` - `start_routine` A pointer to the start routine.
+    /// * `[in, opt]` - `argument` A pointer to the argument for the start routine.
+    /// * `[in]` - `create_flags` Flags for creating the thread.
+    /// * `[in, opt]` - `zero_bits` The zero bits.
+    /// * `[in, opt]` - `stack_size` The stack size.
+    /// * `[in, opt]` - `maximum_stack_size` The maximum stack size.
+    /// * `[in, opt]` - `attribute_list` A pointer to an attribute list.
     ///
     /// # Returns
     ///
@@ -1091,17 +1131,17 @@ impl NtCreateUserProcess {
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A mutable pointer to a handle that will receive the process handle.
-    /// * `thread_handle` - A mutable pointer to a handle that will receive the thread handle.
-    /// * `process_desired_access` - The desired access for the process.
-    /// * `thread_desired_access` - The desired access for the thread.
-    /// * `process_object_attributes` - A pointer to the process object attributes structure.
-    /// * `thread_object_attributes` - A pointer to the thread object attributes structure.
-    /// * `process_flags` - Flags for creating the process.
-    /// * `thread_flags` - Flags for creating the thread.
-    /// * `process_parameters` - A pointer to the process parameters structure.
-    /// * `create_info` - A pointer to the create information structure.
-    /// * `attribute_list` - A pointer to the attribute list structure.
+    /// * `[out]` - `process_handle` A mutable pointer to a handle that will receive the process handle.
+    /// * `[out]` - `thread_handle` A mutable pointer to a handle that will receive the thread handle.
+    /// * `[in]` - `process_desired_access` The desired access for the process.
+    /// * `[in]` - `thread_desired_access` The desired access for the thread.
+    /// * `[in]` - `process_object_attributes` A pointer to the process object attributes structure.
+    /// * `[in]` - `thread_object_attributes` A pointer to the thread object attributes structure.
+    /// * `[in]` - `process_flags` Flags for creating the process.
+    /// * `[in]` - `thread_flags` Flags for creating the thread.
+    /// * `[in]` - `process_parameters` A pointer to the process parameters structure.
+    /// * `[in]` - `create_info` A pointer to the create information structure.
+    /// * `[in, opt]` - `attribute_list` A pointer to the attribute list structure.
     ///
     /// # Returns
     ///
@@ -1157,8 +1197,8 @@ impl NtResumeThread {
     ///
     /// # Arguments
     ///
-    /// * `thread_handle` - A handle to the thread to be resumed.
-    /// * `suspend_count` - A pointer to a variable that receives the previous suspend count.
+    /// * `[in]` - `thread_handle` A handle to the thread to be resumed.
+    /// * `[out, opt]` - `suspend_count` A pointer to a variable that receives the previous suspend count.
     ///
     /// # Returns
     ///
@@ -1221,14 +1261,14 @@ impl NtTerminateThread {
         }
     }
 
-    /// Wrapper for the NtTerminateThread syscall.
+    /// Wrapper for the NtTerminateProcess syscall.
     ///
-    /// This function terminates a thread. It wraps the NtTerminateThread syscall.
+    /// This function terminates a process. It wraps the NtTerminateProcess syscall.
     ///
     /// # Arguments
     ///
-    /// * `thread_handle` - A handle to the thread to be terminated.
-    /// * `exit_status` - The exit status to be returned by the thread.
+    /// * `[in]` - `process_handle` A handle to the process to be terminated.
+    /// * `[in]` - `exit_status` The exit status to be returned by the process.
     ///
     /// # Returns
     ///
@@ -1262,8 +1302,8 @@ impl NtDelayExecution {
     ///
     /// # Arguments
     ///
-    /// * `alertable` - A boolean indicating whether the delay can be interrupted by an alertable wait state.
-    /// * `delay_interval` - A pointer to the time interval for which execution is to be delayed.
+    /// * `[in]` - `alertable` A boolean indicating whether the delay can be interrupted by an alertable wait state.
+    /// * `[in]` - `delay_interval` A pointer to the time interval for which execution is to be delayed.
     ///
     /// # Returns
     ///
@@ -1297,20 +1337,20 @@ impl NtCreateNamedPipeFile {
     ///
     /// # Arguments
     ///
-    /// * `file_handle` - A mutable pointer to a handle that will receive the file handle.
-    /// * `desired_access` - The desired access rights for the named pipe file.
-    /// * `object_attributes` - A pointer to an `OBJECT_ATTRIBUTES` structure that specifies the object attributes.
-    /// * `io_status_block` - A pointer to an `IO_STATUS_BLOCK` structure that receives the status of the I/O operation.
-    /// * `share_access` - The requested sharing mode of the file.
-    /// * `create_disposition` - Specifies the action to take on files that exist or do not exist.
-    /// * `create_options` - Specifies the options to apply when creating or opening the file.
-    /// * `named_pipe_type` - Specifies the type of named pipe (byte stream or message).
-    /// * `read_mode` - Specifies the read mode for the pipe.
-    /// * `completion_mode` - Specifies the completion mode for the pipe.
-    /// * `maximum_instances` - The maximum number of instances of the pipe.
-    /// * `inbound_quota` - The size of the input buffer, in bytes.
-    /// * `outbound_quota` - The size of the output buffer, in bytes.
-    /// * `default_timeout` - A pointer to a `LARGE_INTEGER` structure that specifies the default time-out value.
+    /// * `[out]` - `file_handle` A mutable pointer to a handle that will receive the file handle.
+    /// * `[in]` - `desired_access` The desired access rights for the named pipe file.
+    /// * `[in]` - `object_attributes` A pointer to an `OBJECT_ATTRIBUTES` structure that specifies the object attributes.
+    /// * `[out]` - `io_status_block` A pointer to an `IO_STATUS_BLOCK` structure that receives the status of the I/O operation.
+    /// * `[in]` - `share_access` The requested sharing mode of the file.
+    /// * `[in]` - `create_disposition` Specifies the action to take on files that exist or do not exist.
+    /// * `[in]` - `create_options` Specifies the options to apply when creating or opening the file.
+    /// * `[in]` - `named_pipe_type` Specifies the type of named pipe (byte stream or message).
+    /// * `[in]` - `read_mode` Specifies the read mode for the pipe.
+    /// * `[in]` - `completion_mode` Specifies the completion mode for the pipe.
+    /// * `[in]` - `maximum_instances` The maximum number of instances of the pipe.
+    /// * `[in]` - `inbound_quota` The size of the input buffer, in bytes.
+    /// * `[in]` - `outbound_quota` The size of the output buffer, in bytes.
+    /// * `[in, opt]` - `default_timeout` A pointer to a `LARGE_INTEGER` structure that specifies the default time-out value.
     ///
     /// # Returns
     ///
@@ -1372,11 +1412,11 @@ impl NtReadVirtualMemory {
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A handle to the process whose memory is to be read.
-    /// * `base_address` - A pointer to the base address in the specified process from which to read.
-    /// * `buffer` - A pointer to a buffer that receives the contents from the address space of the specified process.
-    /// * `buffer_size` - The number of bytes to be read into the buffer.
-    /// * `number_of_bytes_read` - A pointer to a variable that receives the number of bytes transferred into the buffer.
+    /// * `[in]` - `process_handle` A handle to the process whose memory is to be read.
+    /// * `[in]` - `base_address` A pointer to the base address in the specified process from which to read.
+    /// * `[out]` - `buffer` A pointer to a buffer that receives the contents from the address space of the specified process.
+    /// * `[in]` - `buffer_size` The number of bytes to be read into the buffer.
+    /// * `[out, opt]` - `number_of_bytes_read` A pointer to a variable that receives the number of bytes transferred into the buffer.
     ///
     /// # Returns
     ///
@@ -1414,30 +1454,26 @@ impl NtCreateProcess {
         }
     }
 
-    /// Wrapper for the `NtCreateProcess` syscall.
+    /// Wrapper for the NtCreateProcess syscall.
     ///
-    /// This function creates a new process object. It wraps the `NtCreateProcess` syscall, which is used
-    /// to create a new process in the Windows NT kernel. Unlike `NtCreateUserProcess`, this syscall
+    /// This function creates a new process object. It wraps the NtCreateProcess syscall, which is used
+    /// to create a new process in the Windows NT kernel. Unlike NtCreateUserProcess, this syscall
     /// does not create a new primary thread, and additional steps are needed to fully initialize the process.
-    ///
-    /// # Safety
-    /// This function involves unsafe operations and raw pointer dereferencing. The inputs must be valid, and the
-    /// function should be called in a safe context.
     ///
     /// # Arguments
     ///
-    /// * `process_handle` - A mutable pointer to a handle that will receive the newly created process's handle.
-    /// * `desired_access` - The access rights desired for the process handle.
-    /// * `object_attributes` - A pointer to an `OBJECT_ATTRIBUTES` structure that specifies the object attributes.
-    /// * `parent_process` - A handle to the parent process.
-    /// * `inherit_object_table` - A boolean indicating whether the new process should inherit the object table of the parent process.
-    /// * `section_handle` - A handle to a section object, which is mapped into the new process's virtual address space.
-    /// * `debug_port` - A handle to a debug port, which can be used for debugging the new process.
-    /// * `exception_port` - A handle to an exception port, which can be used to handle exceptions in the new process.
+    /// * `[out]` - `process_handle` A mutable pointer to a handle that will receive the newly created process's handle.
+    /// * `[in]` - `desired_access` The access rights desired for the process handle.
+    /// * `[in]` - `object_attributes` A pointer to an `OBJECT_ATTRIBUTES` structure that specifies the object attributes.
+    /// * `[in]` - `parent_process` A handle to the parent process.
+    /// * `[in]` - `inherit_object_table` A boolean indicating whether the new process should inherit the object table of the parent process.
+    /// * `[in, opt]` - `section_handle` A handle to a section object, which is mapped into the new process's virtual address space.
+    /// * `[in, opt]` - `debug_port` A handle to a debug port, which can be used for debugging the new process.
+    /// * `[in, opt]` - `exception_port` A handle to an exception port, which can be used to handle exceptions in the new process.
     ///
     /// # Returns
     ///
-    /// * `NTSTATUS` - The NTSTATUS code of the operation, indicating success or failure.
+    /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(
         &self,
         process_handle: *mut HANDLE,
@@ -1464,7 +1500,18 @@ impl NtCreateProcess {
     }
 }
 
-// Type definition for loading DLL function
+/// Type definition for the LdrLoadDll function.
+///
+/// Loads a DLL into the address space of the calling process.
+///
+/// # Parameters
+/// - `[in, opt]` - `DllPath`: A pointer to a `UNICODE_STRING` that specifies the fully qualified path of the DLL to load. This can be `NULL`, in which case the system searches for the DLL.
+/// - `[in, opt]` - `DllCharacteristics`: A pointer to a variable that specifies the DLL characteristics (optional, can be `NULL`).
+/// - `[in]` - `DllName`: A `UNICODE_STRING` that specifies the name of the DLL to load.
+/// - `[out]` - `DllHandle`: A pointer to a variable that receives the handle to the loaded DLL.
+///
+/// # Returns
+/// - `i32` - The NTSTATUS code of the operation.
 type LdrLoadDll = unsafe extern "system" fn(
     DllPath: *mut u16,
     DllCharacteristics: *mut u32,
@@ -1477,18 +1524,18 @@ type LdrLoadDll = unsafe extern "system" fn(
 /// Creates process parameters for a new process.
 ///
 /// # Parameters
-/// - `pProcessParameters`: A pointer to a location that receives a pointer to the created
+/// - `[out]` - `pProcessParameters`: A pointer to a location that receives a pointer to the created
 ///                         `RTL_USER_PROCESS_PARAMETERS` structure.
-/// - `ImagePathName`: A pointer to a `UNICODE_STRING` that specifies the image path name for the process.
-/// - `DllPath`: A pointer to a `UNICODE_STRING` that specifies the DLL path (optional, can be `NULL`).
-/// - `CurrentDirectory`: A pointer to a `UNICODE_STRING` that specifies the current directory (optional).
-/// - `CommandLine`: A pointer to a `UNICODE_STRING` that specifies the command line for the process (optional).
-/// - `Environment`: A pointer to an environment block (optional, can be `NULL`).
-/// - `WindowTitle`: A pointer to a `UNICODE_STRING` that specifies the window title (optional, can be `NULL`).
-/// - `DesktopInfo`: A pointer to a `UNICODE_STRING` that specifies the desktop information (optional, can be `NULL`).
-/// - `ShellInfo`: A pointer to a `UNICODE_STRING` that specifies the shell information (optional, can be `NULL`).
-/// - `RuntimeData`: A pointer to a `UNICODE_STRING` that specifies runtime data (optional, can be `NULL`).
-/// - `Flags`: An unsigned integer that specifies various flags that control the creation of process parameters.
+/// - `[in]` - `ImagePathName`: A pointer to a `UNICODE_STRING` that specifies the image path name for the process.
+/// - `[in, opt]` - `DllPath`: A pointer to a `UNICODE_STRING` that specifies the DLL path (optional, can be `NULL`).
+/// - `[in, opt]` - `CurrentDirectory`: A pointer to a `UNICODE_STRING` that specifies the current directory (optional).
+/// - `[in, opt]` - `CommandLine`: A pointer to a `UNICODE_STRING` that specifies the command line for the process (optional).
+/// - `[in, opt]` - `Environment`: A pointer to an environment block (optional, can be `NULL`).
+/// - `[in, opt]` - `WindowTitle`: A pointer to a `UNICODE_STRING` that specifies the window title (optional, can be `NULL`).
+/// - `[in, opt]` - `DesktopInfo`: A pointer to a `UNICODE_STRING` that specifies the desktop information (optional, can be `NULL`).
+/// - `[in, opt]` - `ShellInfo`: A pointer to a `UNICODE_STRING` that specifies the shell information (optional, can be `NULL`).
+/// - `[in, opt]` - `RuntimeData`: A pointer to a `UNICODE_STRING` that specifies runtime data (optional, can be `NULL`).
+/// - `[in]` - `Flags`: An unsigned integer that specifies various flags that control the creation of process parameters.
 ///
 /// # Returns
 /// - `STATUS_SUCCESS` if successful, or an NTSTATUS error code if the function fails.

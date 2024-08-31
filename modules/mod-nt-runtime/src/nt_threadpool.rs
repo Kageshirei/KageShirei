@@ -7,6 +7,7 @@ use core::sync::atomic::AtomicBool;
 use mod_agentcore::instance;
 use mod_win32::nt_ps_api::{get_current_process_id, get_process_handle};
 use mod_win32::nt_time::delay;
+use mod_win32::utils::NT_STATUS;
 use rs2_communication_protocol::{
     communication_structs::task_output::TaskOutput, metadata::Metadata,
 };
@@ -14,8 +15,9 @@ use rs2_win32::ntapi::nt_current_process;
 use rs2_win32::ntdef::{
     ClientId, ObjectAttributes, HANDLE, OBJ_CASE_INSENSITIVE, PROCESS_ALL_ACCESS,
     PROCESS_CREATE_THREAD, PROCESS_QUERY_INFORMATION, PROCESS_VM_OPERATION, PROCESS_VM_READ,
-    PROCESS_VM_WRITE,
+    PROCESS_VM_WRITE, THREAD_ALL_ACCESS,
 };
+use rs2_win32::ntstatus::NT_SUCCESS;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
@@ -101,9 +103,9 @@ impl Worker {
         let status = unsafe {
             instance().ntdll.nt_create_thread_ex.run(
                 &mut thread_handle,
-                0x1FFFFF,      // Full access to the thread
-                &mut obj_attr, // ObjectAttributes can be null
-                proc_handle,   // Handle to the current process
+                THREAD_ALL_ACCESS, // Full access to the thread
+                &mut obj_attr,     // ObjectAttributes can be null
+                proc_handle,       // Handle to the current process
                 worker_main as *mut _,
                 receiver_ptr,
                 0,          // Non create the thread in suspended state
@@ -114,10 +116,10 @@ impl Worker {
             )
         };
 
-        if status != 0 {
+        if !NT_SUCCESS(status) {
             // Recupera il puntatore in caso di errore per evitare memory leak
             let _ = unsafe { Arc::from_raw(receiver_ptr as *const Receiver<Job>) };
-            panic!("Failed to create thread: {:?}", status);
+            panic!("Failed to create thread: {}", NT_STATUS(status));
         }
 
         thread_handle
