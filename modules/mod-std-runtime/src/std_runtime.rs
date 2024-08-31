@@ -31,7 +31,7 @@ impl CustomRuntime {
 
     /// Shuts down the thread pool, ensuring all workers have completed their jobs.
     pub fn shutdown(&self) {
-        let mut pool = self.pool.lock().unwrap(); // Lock the Mutex to get mutable access.
+        let mut pool: std::sync::MutexGuard<'_, ThreadPool> = self.pool.lock().unwrap(); // Lock the Mutex to get mutable access.
         pool.shutdown();
     }
 }

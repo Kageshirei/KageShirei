@@ -6,10 +6,11 @@ use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use rs2_runtime::Runtime;
+use spin::Mutex;
 
 /// La struttura `NoStdRuntime` avvolge un pool di worker che eseguono task asincroni.
 pub struct NoStdRuntime {
-    pool: Arc<ThreadPool>, // Il pool di worker che gestisce la coda dei task.
+    pool: Arc<Mutex<ThreadPool>>, // Il pool di worker che gestisce la coda dei task.
 }
 
 impl NoStdRuntime {
@@ -23,7 +24,7 @@ impl NoStdRuntime {
     ///
     /// * Un'istanza di `NoStdRuntime` che avvolge il pool di worker.
     pub fn new(size: usize) -> Self {
-        let pool = Arc::new(ThreadPool::new(size));
+        let pool = Arc::new(Mutex::new(ThreadPool::new(size)));
         for _ in 0..size {
             let pool_clone = Arc::clone(&pool);
             NoStdRuntime::start_worker(pool_clone);
@@ -32,16 +33,22 @@ impl NoStdRuntime {
     }
 
     /// Avvia un worker che esegue i task dalla coda.
-    fn start_worker(pool: Arc<ThreadPool>) {
+    fn start_worker(pool: Arc<Mutex<ThreadPool>>) {
         // Simula l'esecuzione in parallelo tramite un loop cooperativo.
-        pool.run_worker();
+        pool.lock().run_worker();
     }
 
-    pub fn execute_all(&self) {
-        // Simula worker cooperativi che eseguono i task uno ad uno
-        while let Some(task) = self.pool.run_worker() {
-            task(); // Esegui il task
-        }
+    // pub fn execute_all(&self) {
+    //     // Simula worker cooperativi che eseguono i task uno ad uno
+    //     while let Some(task) = self.pool.run_worker() {
+    //         task(); // Esegui il task
+    //     }
+    // }
+
+    /// Shuts down the thread pool, ensuring all workers have completed their jobs.
+    pub fn shutdown(&self) {
+        // Lock the Mutex to get mutable access.
+        self.pool.lock().shutdown();
     }
 }
 
@@ -50,7 +57,7 @@ impl Runtime for NoStdRuntime {
     where
         F: FnOnce() + Send + 'static,
     {
-        self.pool.execute(job);
+        self.pool.lock().execute(job);
     }
 
     fn block_on<F>(&self, mut future: F) -> F::Output
@@ -66,7 +73,7 @@ impl Runtime for NoStdRuntime {
             match future.as_mut().poll(&mut context) {
                 Poll::Ready(output) => return output,
                 Poll::Pending => {
-                    self.pool.run_worker(); // Esegui un task dalla coda, se presente
+                    self.pool.lock().run_worker(); // Esegui un task dalla coda, se presente
                 }
             }
         }

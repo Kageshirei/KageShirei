@@ -7,6 +7,7 @@ pub mod command;
 pub mod common;
 pub mod handler;
 pub mod init;
+pub mod nostd_runtime_test;
 pub mod nt_runtime_test;
 
 use handler::command_handler;

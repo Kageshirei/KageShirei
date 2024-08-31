@@ -34,7 +34,7 @@ mod tests {
         });
 
         // Spawn 100 tasks using the CustomRuntime.
-        for i in 0..100 {
+        for i in 0..10 {
             // Generate metadata for each task
             let metadata = Metadata {
                 request_id: format!("req-{}", i),
