@@ -4,9 +4,9 @@ use core::{
 };
 
 use crate::ntdef::{
-    AccessMask, IoStatusBlock, LargeInteger, ObjectAttributes, PEventType, PsAttributeList,
-    PsCreateInfo, RtlUserProcessParameters, TokenPrivileges, UnicodeString, HANDLE, NTSTATUS,
-    PHANDLE, ULONG,
+    AccessMask, ClientId, InitialTeb, IoStatusBlock, LargeInteger, ObjectAttributes, PEventType,
+    PsAttributeList, PsCreateInfo, RtlUserProcessParameters, TokenPrivileges, UnicodeString,
+    CONTEXT, HANDLE, NTSTATUS, PHANDLE, SIZE_T, ULONG,
 };
 use rs2_indirect_syscall::run_syscall;
 
@@ -44,7 +44,7 @@ impl NtSyscall {
 /// # Returns
 ///
 /// A handle to the current process.
-pub unsafe fn nt_current_process() -> HANDLE {
+pub fn nt_current_process() -> HANDLE {
     -1isize as HANDLE
 }
 
@@ -1050,6 +1050,61 @@ impl NtCreateProcessEx {
     }
 }
 
+pub struct NtCreateThread {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtCreateThread {}
+
+impl NtCreateThread {
+    pub const fn new() -> Self {
+        NtCreateThread {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtCreateThread syscall.
+    ///
+    /// # Arguments
+    ///
+    /// * `[out]` - `ThreadHandle`: Un puntatore a un `HANDLE` che riceverà l'handle del thread creato.
+    /// * `[in]` - `DesiredAccess`: Un `ACCESS_MASK` che specifica i diritti di accesso desiderati per il thread.
+    /// * `[in]` - `ObjectAttributes`: Un puntatore a una struttura `OBJECT_ATTRIBUTES` che definisce gli attributi del thread.
+    /// * `[in]` - `ProcessHandle`: Un `HANDLE` al processo nel quale il thread sarà creato.
+    /// * `[in]` - `ClientId`: Un puntatore a una struttura `CLIENT_ID` che identifica il thread e il processo.
+    /// * `[in]` - `ThreadContext`: Un puntatore a una struttura `CONTEXT` che contiene il contesto iniziale del thread.
+    /// * `[in]` - `InitialTeb`: Un puntatore a una struttura `INITIAL_TEB` che descrive l'initial TEB del thread.
+    /// * `[in]` - `CreateSuspended`: Un `BOOLEAN` che specifica se il thread deve essere creato in stato sospeso.
+    ///
+    /// # Returns
+    ///
+    /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
+    pub fn run(
+        &self,
+        thread_handle: PHANDLE,
+        desired_access: AccessMask,
+        object_attributes: *mut ObjectAttributes,
+        process_handle: HANDLE,
+        client_id: *mut ClientId,
+        thread_context: *mut CONTEXT,
+        initial_teb: *mut InitialTeb,
+        create_suspended: bool,
+    ) -> NTSTATUS {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            thread_handle,
+            desired_access,
+            object_attributes,
+            process_handle,
+            client_id,
+            thread_context,
+            initial_teb,
+            create_suspended as u32
+        )
+    }
+}
+
 pub struct NtCreateThreadEx {
     pub syscall: NtSyscall,
 }
@@ -1084,18 +1139,82 @@ impl NtCreateThreadEx {
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(
         &self,
-        thread_handle: &mut HANDLE,
+        thread_handle: *mut HANDLE,
         desired_access: AccessMask,
         object_attributes: *mut ObjectAttributes,
         process_handle: HANDLE,
         start_routine: *mut c_void,
         argument: *mut c_void,
         create_flags: ULONG,
-        zero_bits: ULONG,
-        stack_size: ULONG,
-        maximum_stack_size: ULONG,
+        zero_bits: SIZE_T,
+        stack_size: SIZE_T,
+        maximum_stack_size: SIZE_T,
         attribute_list: *mut c_void,
     ) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            thread_handle,
+            desired_access,
+            object_attributes,
+            process_handle,
+            start_routine,
+            argument,
+            create_flags,
+            zero_bits,
+            stack_size,
+            maximum_stack_size,
+            attribute_list
+        )
+    }
+}
+
+pub struct ZwCreateThreadEx {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for ZwCreateThreadEx {}
+
+impl ZwCreateThreadEx {
+    pub const fn new() -> Self {
+        ZwCreateThreadEx {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the ZwCreateThreadEx syscall.
+    ///
+    /// # Arguments
+    ///
+    /// * `[out]` - `ThreadHandle`: Un puntatore a un `HANDLE` che riceverà l'handle del thread creato.
+    /// * `[in]` - `DesiredAccess`: Un `ACCESS_MASK` che specifica i diritti di accesso desiderati per il thread.
+    /// * `[in]` - `ObjectAttributes`: Un puntatore a una struttura `OBJECT_ATTRIBUTES` che definisce gli attributi del thread.
+    /// * `[in]` - `ProcessHandle`: Un `HANDLE` al processo nel quale il thread sarà creato.
+    /// * `[in]` - `StartRoutine`: Un puntatore alla funzione che rappresenta la routine iniziale del thread.
+    /// * `[in, opt]` - `Argument`: Un puntatore agli argomenti da passare alla routine iniziale del thread.
+    /// * `[in]` - `CreateFlags`: Flag che specificano come il thread deve essere creato (es. in stato sospeso).
+    /// * `[in, opt]` - `ZeroBits`: Numero di bit zero per l'indirizzo dello stack.
+    /// * `[in, opt]` - `StackSize`: Dimensione dello stack da allocare per il thread.
+    /// * `[in, opt]` - `MaximumStackSize`: Dimensione massima dello stack del thread.
+    /// * `[in, opt]` - `AttributeList`: Un puntatore a una lista di attributi opzionali per il thread.
+    ///
+    /// # Returns
+    ///
+    /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
+    pub fn run(
+        &self,
+        thread_handle: *mut HANDLE,
+        desired_access: AccessMask,
+        object_attributes: *mut ObjectAttributes,
+        process_handle: HANDLE,
+        start_routine: *mut c_void,
+        argument: *mut c_void,
+        create_flags: ULONG,
+        zero_bits: SIZE_T,
+        stack_size: SIZE_T,
+        maximum_stack_size: SIZE_T,
+        attribute_list: *mut c_void,
+    ) -> NTSTATUS {
         run_syscall!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -1576,7 +1695,9 @@ pub struct NtDll {
     pub nt_create_file: NtCreateFile,
     pub nt_read_file: NtReadFile,
     pub nt_create_process_ex: NtCreateProcessEx,
+    pub nt_create_thread: NtCreateThread,
     pub nt_create_thread_ex: NtCreateThreadEx,
+    pub nt_zw_create_thread_ex: ZwCreateThreadEx,
     pub nt_create_user_process: NtCreateUserProcess,
     pub nt_write_virtual_memory: NtWriteVirtualMemory,
     pub nt_resume_thread: NtResumeThread,
@@ -1607,13 +1728,15 @@ impl NtDll {
             nt_open_process_token_ex: NtOpenProcessTokenEx::new(),
             nt_query_information_token: NtQueryInformationToken::new(),
             nt_adjust_privileges_token: NtAdjustPrivilegesToken::new(), //unused, untested
-            nt_wait_for_single_object: NtWaitForSingleObject::new(),    //unused, untested
-            nt_open_file: NtOpenFile::new(),                            //untested
-            nt_write_file: NtWriteFile::new(),                          //unused
-            nt_create_file: NtCreateFile::new(),                        //unused,
-            nt_read_file: NtReadFile::new(),                            //unused, untested
-            nt_create_process_ex: NtCreateProcessEx::new(),             //unused
-            nt_create_thread_ex: NtCreateThreadEx::new(),               //untested
+            nt_wait_for_single_object: NtWaitForSingleObject::new(),
+            nt_open_file: NtOpenFile::new(),
+            nt_write_file: NtWriteFile::new(),
+            nt_create_file: NtCreateFile::new(),
+            nt_read_file: NtReadFile::new(),
+            nt_create_process_ex: NtCreateProcessEx::new(), //unused
+            nt_create_thread: NtCreateThread::new(),
+            nt_create_thread_ex: NtCreateThreadEx::new(),
+            nt_zw_create_thread_ex: ZwCreateThreadEx::new(),
             nt_create_user_process: NtCreateUserProcess::new(),
             nt_create_process: NtCreateProcess::new(),
             nt_write_virtual_memory: NtWriteVirtualMemory::new(), //unused

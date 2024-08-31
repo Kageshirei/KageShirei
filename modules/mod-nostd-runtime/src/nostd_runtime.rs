@@ -25,18 +25,17 @@ impl NoStdRuntime {
     /// * Un'istanza di `NoStdRuntime` che avvolge il pool di worker.
     pub fn new(size: usize) -> Self {
         let pool = Arc::new(Mutex::new(ThreadPool::new(size)));
-        for _ in 0..size {
-            let pool_clone = Arc::clone(&pool);
-            NoStdRuntime::start_worker(pool_clone);
-        }
+        // for _ in 0..size {
+        //     let pool_clone = Arc::clone(&pool);
+        //     NoStdRuntime::start_worker(pool_clone);
+        // }
         NoStdRuntime { pool }
     }
 
     /// Avvia un worker che esegue i task dalla coda.
-    fn start_worker(pool: Arc<Mutex<ThreadPool>>) {
-        // Simula l'esecuzione in parallelo tramite un loop cooperativo.
-        pool.lock().run_worker();
-    }
+    // fn start_worker(pool: Arc<Mutex<ThreadPool>>) {
+    //     pool.lock().run_worker();
+    // }
 
     // pub fn execute_all(&self) {
     //     // Simula worker cooperativi che eseguono i task uno ad uno

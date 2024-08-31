@@ -1,10 +1,10 @@
 use core::{
-    ffi::c_void,
+    ffi::{c_ulong, c_void},
     mem::{self, size_of},
     ptr::{null, null_mut},
 };
 
-use alloc::vec::Vec;
+use alloc::{sync::Arc, vec::Vec};
 use libc_print::libc_println;
 
 use mod_agentcore::{
@@ -818,6 +818,91 @@ pub unsafe fn nt_process_snapshot(
     status
 }
 
+/// Creates a new thread in the current process using the NT API `NtCreateThreadEx`.
+///
+/// This function initializes the necessary structures and makes a system call to `NtCreateThreadEx`
+/// to create a new thread in the specified process with the given start routine and arguments.
+///
+/// # Parameters
+/// - `proc_handle`: The handle to the process in which to create the thread. This is usually obtained via `get_process_handle`.
+/// - `start_routine`: A pointer to the function that the new thread will execute.
+/// - `arg_ptr`: A pointer to the arguments that will be passed to the thread's start routine.
+///
+/// # Returns
+/// - `HANDLE`: A handle to the newly created thread if successful. The handle will be `null_mut()` if the thread creation fails.
+///
+/// # Safety
+/// This function is unsafe because it directly interacts with low-level Windows APIs and performs raw pointer dereferencing.
+pub unsafe fn nt_create_thread_ex(
+    proc_handle: HANDLE,
+    start_routine: extern "system" fn(*mut c_void) -> u32,
+    arg_ptr: *mut c_void,
+) -> HANDLE {
+    let mut thread_handle: HANDLE = null_mut();
+    let mut client_id = ClientId::new();
+    client_id.unique_process = get_current_process_id() as _;
+
+    // Initialize object attributes for the thread
+    let mut obj_attr: ObjectAttributes = ObjectAttributes::new();
+
+    ObjectAttributes::initialize(
+        &mut obj_attr,
+        null_mut(),
+        OBJ_CASE_INSENSITIVE, // 0x40
+        null_mut(),
+        null_mut(),
+    );
+
+    // Call NtCreateThreadEx to create the thread
+    let status = instance().ntdll.nt_create_thread_ex.run(
+        &mut thread_handle,
+        THREAD_ALL_ACCESS,            // Full access to the thread
+        &mut obj_attr,                // ObjectAttributes can be null
+        proc_handle,                  // Handle to the current process
+        start_routine as *mut c_void, // Start routine for the new thread
+        arg_ptr,                      // Argument to pass to the start routine
+        0,                            // Non create the thread in suspended state
+        0,                            // StackZeroBits
+        0,                            // SizeOfStackCommit
+        0,                            // SizeOfStackReserve
+        null_mut(),                   // BytesBuffer can be null
+    );
+
+    if !NT_SUCCESS(status) {
+        libc_println!("Failed to create thread: {}", NT_STATUS(status));
+        return null_mut();
+    }
+
+    let status = instance()
+        .ntdll
+        .nt_wait_for_single_object
+        .run(thread_handle, false, null_mut());
+
+    if status != 0 {
+        libc_println!(
+            "NTWaitForSingleObject failed with status: 0x{}",
+            NT_STATUS(status)
+        );
+        return null_mut();
+    }
+
+    libc_println!("Thread created and completed successfully.");
+
+    thread_handle
+}
+
+pub extern "system" fn my_thread_start_routine(param: *mut c_void) -> c_ulong {
+    let arg: *mut u32 = param as *mut u32;
+    if !arg.is_null() {
+        unsafe {
+            libc_println!("Thread running with param: {}", *arg);
+        }
+    } else {
+        libc_println!("Thread running with no param");
+    }
+    0
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -826,6 +911,25 @@ mod tests {
     use super::*;
     use alloc::string::String;
     use libc_print::libc_println;
+
+    #[test]
+    fn test_nt_create_thread_ex() {
+        let proc_handle = -1isize as HANDLE;
+        // unsafe { get_process_handle(get_current_process_id() as i32, PROCESS_ALL_ACCESS) };
+
+        let arg: i32 = 42; // Esempio di argomento da passare al thread
+        let arg_ptr = &arg as *const _ as *mut c_void;
+
+        let thread_handle =
+            unsafe { nt_create_thread_ex(proc_handle, my_thread_start_routine, arg_ptr) };
+
+        // Assicurati di chiudere il thread handle quando non è più necessario.
+        if !thread_handle.is_null() {
+            unsafe {
+                instance().ntdll.nt_close.run(thread_handle);
+            }
+        }
+    }
 
     #[test]
     fn test_get_pid_and_ppid() {

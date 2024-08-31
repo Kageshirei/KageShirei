@@ -1,3 +1,4 @@
+use crate::nostd_channel::{channel, Receiver, Sender};
 use alloc::boxed::Box;
 use alloc::string::ToString;
 use alloc::sync::Arc;
@@ -8,72 +9,149 @@ use rs2_communication_protocol::metadata::Metadata;
 use spin::Mutex;
 
 pub struct ThreadPool {
-    tasks: Arc<Mutex<Vec<Box<dyn FnOnce() + Send + 'static>>>>, // La coda di task
-    shutdown_flag: Arc<Mutex<bool>>,                            // Flag per segnalare il shutdown
+    workers: Vec<Worker>,        // Vector of workers handling tasks
+    sender: Option<Sender<Job>>, // Sender channel to dispatch jobs to the workers
 }
 
+type Job = Box<dyn FnOnce() + Send + 'static>;
+
 impl ThreadPool {
-    pub fn new(_size: usize) -> ThreadPool {
+    /// Creates a new `ThreadPool` with a specified number of worker threads.
+    ///
+    /// # Arguments
+    ///
+    /// * `size` - The number of worker threads in the pool.
+    ///
+    /// # Returns
+    ///
+    /// * A new `ThreadPool` instance with the specified number of workers.
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        // Create a custom channel for sending jobs to workers.
+        let (sender, receiver) = channel::<Job>();
+        let mut workers = Vec::with_capacity(size);
+
+        // Create and start worker threads.
+        for _ in 0..size {
+            workers.push(Worker::new(receiver.clone()));
+        }
+
         ThreadPool {
-            tasks: Arc::new(Mutex::new(Vec::new())),
-            shutdown_flag: Arc::new(Mutex::new(false)), // Flag di shutdown inizialmente falso
+            workers,
+            sender: Some(sender),
         }
     }
 
+    /// Method to execute a job on the thread pool. The job is sent to the worker threads via the sender channel.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A closure representing the job to be executed.
+    ///
+    /// The closure must be `Send`, `FnOnce`, and `'static` to be safely executed across threads.
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
     {
-        let mut tasks = self.tasks.lock();
-        tasks.push(Box::new(f));
+        if let Some(sender) = &self.sender {
+            let job = Box::new(f);
+            sender.send(job).unwrap(); // Send the job to the workers via the channel.
+        }
     }
 
-    /// Esegue i task rimanenti fino a quando non sono tutti completati o viene richiesto il shutdown.
-    // pub fn run_worker(&self) -> Option<Box<dyn FnOnce() + Send + 'static>> {
-    //     loop {
-    //         let task = self.tasks.lock().pop(); // Recupera un task dalla coda
-    //         if task.is_some() {
-    //             return task; // Ritorna il task da eseguire
-    //         } else {
-    //             let is_shutdown = *self.shutdown_flag.lock();
-    //             if is_shutdown {
-    //                 break; // Esce dal loop se è stato richiesto il shutdown e non ci sono task da eseguire
-    //             }
-    //         }
-    //     }
-    //     None
-    // }
-
-    pub fn run_worker(&self) -> Option<Box<dyn FnOnce() + Send + 'static>> {
-        self.tasks.lock().pop()
+    pub fn run_worker(&mut self) {
+        for worker in &mut self.workers {
+            worker.join(); // Use a mutable reference to call join.
+        }
     }
 
-    pub fn has_tasks(&self) -> bool {
-        !self.tasks.lock().is_empty()
-    }
+    /// Gracefully shuts down the thread pool by dropping the sender and joining all worker threads.
+    pub fn shutdown(&mut self) {
+        drop(self.sender.take()); // Drop the sender to signal no more jobs will be sent.
 
-    /// Avvia il processo di shutdown della thread pool.
-    /// Completa tutti i task rimanenti prima di terminare.
-    pub fn shutdown(&self) {
-        *self.shutdown_flag.lock() = true; // Imposta il flag di shutdown a `true`
-
-        // Esegue tutti i task rimanenti nella coda.
-        while let Some(task) = self.run_worker() {
-            task(); // Esegui il task
+        // Wait for each worker thread to finish executing its current job.
+        for worker in &mut self.workers {
+            worker.join(); // Use a mutable reference to call join.
         }
     }
 }
 
+struct Worker {
+    receiver: Receiver<Job>,
+}
+
+impl Worker {
+    fn new(receiver: Receiver<Job>) -> Worker {
+        Worker { receiver }
+    }
+
+    fn join(&mut self) {
+        while let Some(job) = self.receiver.recv() {
+            job();
+        }
+    }
+}
+
+// struct Worker {
+//     handle: Option<WorkerHandle>,
+// }
+
+// impl Worker {
+//     /// Creates a new worker thread that listens for jobs from the receiver channel.
+//     ///
+//     /// # Arguments
+//     ///
+//     /// * `receiver` - A `Receiver<Job>` from which the worker receives jobs.
+//     ///
+//     /// # Returns
+//     ///
+//     /// * A `Worker` instance wrapping the worker handle.
+//     fn new(receiver: Receiver<Job>) -> Worker {
+//         let handle = WorkerHandle::start(receiver);
+//         Worker {
+//             handle: Some(handle),
+//         }
+//     }
+
+//     /// Joins the worker thread, blocking until the thread completes its execution.
+//     fn join(&mut self) {
+//         if let Some(handle) = self.handle.take() {
+//             handle.join();
+//         }
+//     }
+// }
+
+// struct WorkerHandle {
+//     receiver: Receiver<Job>,
+// }
+
+// impl WorkerHandle {
+//     fn start(receiver: Receiver<Job>) -> Self {
+//         let receiver = receiver.clone();
+//         let handle = WorkerHandle { receiver };
+//         handle
+//     }
+
+//     fn join(self) {
+//         while let Some(job) = self.receiver.recv() {
+//             job();
+//         }
+//     }
+// }
+
+// Simulated asynchronous task that takes 2 seconds to complete.
 pub fn task_type_a(metadata: Metadata) -> TaskOutput {
-    delay(1);
+    delay(1); // Simulate some work
     let mut output = TaskOutput::new();
     output.with_metadata(metadata);
     output.output = Some("Result from task type A".to_string());
     output
 }
 
+// Simulated asynchronous task that takes 3 seconds to complete.
 pub fn task_type_b(metadata: Metadata) -> TaskOutput {
-    delay(3);
+    delay(3); // Simulate some work
     let mut output = TaskOutput::new();
     output.with_metadata(metadata);
     output.output = Some("Result from task type B".to_string());

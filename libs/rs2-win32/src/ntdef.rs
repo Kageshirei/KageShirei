@@ -21,6 +21,7 @@ pub type USHORT = c_ushort;
 #[allow(non_camel_case_types)]
 pub type SIZE_T = usize;
 pub type ULONGLONG = u64;
+pub type LONGLONG = i64;
 pub type DWORD = c_ulong;
 
 pub type HRESULT = i32;
@@ -40,6 +41,9 @@ pub type LPSECURITY_ATTRIBUTES = *mut SecurityAttributes;
 
 #[allow(non_camel_case_types)]
 pub type ULONG_PTR = usize;
+
+pub type DWORD64 = u64;
+pub type WORD = c_ushort;
 
 // Windows NT Headers
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
@@ -556,6 +560,19 @@ pub struct TEB {
 
 unsafe impl Sync for TEB {}
 unsafe impl Send for TEB {}
+
+#[repr(C)]
+pub struct InitialTebOldInitialTeb {
+    pub old_stack_base: PVOID,
+    pub old_stack_limit: PVOID,
+}
+
+pub struct InitialTeb {
+    pub old_initial_teb: InitialTebOldInitialTeb,
+    pub stack_base: PVOID,
+    pub stack_limit: PVOID,
+    pub stack_allocation_base: PVOID,
+}
 
 pub const OBJ_CASE_INSENSITIVE: ULONG = 0x40;
 pub const OBJ_INHERIT: ULONG = 0x00000002;
@@ -1762,4 +1779,62 @@ pub struct SystemProcessInformation2 {
     pub read_transfer_count: LargeInteger,
     pub write_transfer_count: LargeInteger,
     pub other_transfer_count: LargeInteger,
+}
+
+#[allow(non_snake_case)]
+pub struct M128A {
+    // FIXME align 16
+    pub Low: ULONGLONG,
+    pub High: LONGLONG,
+}
+
+#[allow(non_snake_case)]
+pub struct CONTEXT {
+    // FIXME align 16
+    pub P1Home: DWORD64,
+    pub P2Home: DWORD64,
+    pub P3Home: DWORD64,
+    pub P4Home: DWORD64,
+    pub P5Home: DWORD64,
+    pub P6Home: DWORD64,
+    pub ContextFlags: DWORD,
+    pub MxCsr: DWORD,
+    pub SegCs: WORD,
+    pub SegDs: WORD,
+    pub SegEs: WORD,
+    pub SegFs: WORD,
+    pub SegGs: WORD,
+    pub SegSs: WORD,
+    pub EFlags: DWORD,
+    pub Dr0: DWORD64,
+    pub Dr1: DWORD64,
+    pub Dr2: DWORD64,
+    pub Dr3: DWORD64,
+    pub Dr6: DWORD64,
+    pub Dr7: DWORD64,
+    pub Rax: DWORD64,
+    pub Rcx: DWORD64,
+    pub Rdx: DWORD64,
+    pub Rbx: DWORD64,
+    pub Rsp: DWORD64,
+    pub Rbp: DWORD64,
+    pub Rsi: DWORD64,
+    pub Rdi: DWORD64,
+    pub R8: DWORD64,
+    pub R9: DWORD64,
+    pub R10: DWORD64,
+    pub R11: DWORD64,
+    pub R12: DWORD64,
+    pub R13: DWORD64,
+    pub R14: DWORD64,
+    pub R15: DWORD64,
+    pub Rip: DWORD64,
+    pub u: [u64; 64],
+    pub VectorRegister: [M128A; 26],
+    pub VectorControl: DWORD64,
+    pub DebugControl: DWORD64,
+    pub LastBranchToRip: DWORD64,
+    pub LastBranchFromRip: DWORD64,
+    pub LastExceptionToRip: DWORD64,
+    pub LastExceptionFromRip: DWORD64,
 }

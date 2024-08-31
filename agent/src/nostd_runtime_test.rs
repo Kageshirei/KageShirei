@@ -2,12 +2,16 @@
 mod tests {
     extern crate alloc;
 
+    use std::ffi::c_void;
+    use std::os::windows::raw::HANDLE;
     use std::sync::mpsc;
 
     use alloc::sync::Arc;
+    use mod_agentcore::instance;
     use mod_nostd_runtime::nostd_channel::{channel, Receiver, Sender};
     use mod_nostd_runtime::nostd_runtime::NoStdRuntime;
     use mod_nostd_runtime::nostd_threadpool::{task_type_a, task_type_b};
+    use mod_win32::nt_ps_api::{my_thread_start_routine, nt_create_thread_ex};
     use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
     use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
     use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
@@ -75,7 +79,7 @@ mod tests {
     #[test]
     fn custom_runtime_test_channel() {
         // let results = Arc::new(Mutex::new(vec![None; 10]));
-        let runtime = Arc::new(NoStdRuntime::new(16));
+        let runtime = Arc::new(NoStdRuntime::new(4));
 
         let (result_tx, result_rx) = channel::<TaskOutput>();
         // let (result_tx, result_rx) = mpsc::channel();
@@ -135,10 +139,5 @@ mod tests {
 
         // Shutdown the runtime to ensure all threads are properly terminated.
         runtime.shutdown();
-    }
-
-    // Dummy function to simulate processing results in a no_std environment
-    fn dummy_result_processing(_index: usize, _result: TaskOutput) {
-        // Here you could add code to store the results in a buffer or handle them appropriately
     }
 }

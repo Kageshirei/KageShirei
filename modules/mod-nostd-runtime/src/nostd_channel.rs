@@ -36,6 +36,14 @@ impl<T> Clone for Sender<T> {
     }
 }
 
+impl<T> Clone for Receiver<T> {
+    fn clone(&self) -> Self {
+        Receiver {
+            channel: Arc::clone(&self.channel),
+        }
+    }
+}
+
 impl<T> Sender<T> {
     pub fn send(&self, value: T) -> Result<(), ()> {
         let mut buffer = self.channel.buffer.lock();
