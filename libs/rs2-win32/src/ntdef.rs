@@ -1,5 +1,6 @@
 use core::{
     ffi::{c_ulong, c_ushort, c_void},
+    fmt,
     ptr::{self, null_mut},
 };
 
@@ -8,6 +9,8 @@ extern "system" {
 }
 
 use crate::utils::string_length_w;
+
+pub type NTSTATUS = i32;
 
 // Definition of Windows types
 pub type HANDLE = *mut c_void;
@@ -19,6 +22,7 @@ pub type USHORT = c_ushort;
 #[allow(non_camel_case_types)]
 pub type SIZE_T = usize;
 pub type ULONGLONG = u64;
+pub type DWORD = c_ulong;
 
 pub type HRESULT = i32;
 pub type HSTRING = *mut ::core::ffi::c_void;
@@ -29,6 +33,11 @@ pub type PWSTR = *mut u16;
 pub type PCSTR = *const u8;
 pub type PCWSTR = *const u16;
 pub type BSTR = *const u16;
+
+pub type LPCWSTR = *const u16;
+pub type LPWSTR = *mut u16;
+#[allow(non_camel_case_types)]
+pub type LPSECURITY_ATTRIBUTES = *mut SecurityAttributes;
 
 #[allow(non_camel_case_types)]
 pub type ULONG_PTR = usize;
@@ -534,6 +543,7 @@ unsafe impl Sync for TEB {}
 unsafe impl Send for TEB {}
 
 pub const OBJ_CASE_INSENSITIVE: ULONG = 0x40;
+pub const OBJ_INHERIT: ULONG = 0x00000002;
 
 #[repr(C)]
 pub struct ObjectAttributes {
@@ -729,6 +739,53 @@ impl StartupInfoA {
 }
 
 #[repr(C)]
+pub struct StartupInfoW {
+    pub cb: u32,
+    pub lp_reserved: *mut u16,
+    pub lp_desktop: *mut u16,
+    pub lp_title: *mut u16,
+    pub dw_x: u32,
+    pub dw_y: u32,
+    pub dw_x_size: u32,
+    pub dw_y_size: u32,
+    pub dw_x_count_chars: u32,
+    pub dw_y_count_chars: u32,
+    pub dw_fill_attribute: u32,
+    pub dw_flags: u32,
+    pub w_show_window: u16,
+    pub cb_reserved2: u16,
+    pub lp_reserved2: *mut u8,
+    pub h_std_input: *mut c_void,
+    pub h_std_output: *mut c_void,
+    pub h_std_error: *mut c_void,
+}
+
+impl StartupInfoW {
+    pub fn new() -> Self {
+        StartupInfoW {
+            cb: core::mem::size_of::<StartupInfoW>() as u32,
+            lp_reserved: ptr::null_mut(),
+            lp_desktop: ptr::null_mut(),
+            lp_title: ptr::null_mut(),
+            dw_x: 0,
+            dw_y: 0,
+            dw_x_size: 0,
+            dw_y_size: 0,
+            dw_x_count_chars: 0,
+            dw_y_count_chars: 0,
+            dw_fill_attribute: 0,
+            dw_flags: 0,
+            w_show_window: 0,
+            cb_reserved2: 0,
+            lp_reserved2: ptr::null_mut(),
+            h_std_input: ptr::null_mut(),
+            h_std_output: ptr::null_mut(),
+            h_std_error: ptr::null_mut(),
+        }
+    }
+}
+
+#[repr(C)]
 pub struct ProcessInformation {
     pub h_process: *mut c_void,
     pub h_thread: *mut c_void,
@@ -748,19 +805,35 @@ impl ProcessInformation {
 }
 
 // Define the valid flags for process creation based on the provided mask
-pub const PROCESS_CREATE_FLAGS_BREAKAWAY: u32 = 0x00000001;
-pub const PROCESS_CREATE_FLAGS_NO_DEBUG_INHERIT: u32 = 0x00000002;
-pub const PROCESS_CREATE_FLAGS_INHERIT_HANDLES: u32 = 0x00000004;
-pub const PROCESS_CREATE_FLAGS_OVERRIDE_ADDRESS_SPACE: u32 = 0x00000008;
 pub const PROCESS_CREATE_FLAGS_ALL_LARGE_PAGE_FLAGS: u32 = 0x00000010;
 
-// Desired Access
-pub const THREAD_CREATE_FLAGS_SKIP_THREAD_ATTACH: u32 = 0x00000002;
-pub const THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER: u32 = 0x00000004;
-pub const THREAD_CREATE_FLAGS_LOADER_WORKER: u32 = 0x00000010;
-pub const THREAD_CREATE_FLAGS_SKIP_LOADER_INIT: u32 = 0x00000020;
-pub const THREAD_CREATE_FLAGS_BYPASS_PROCESS_FREEZE: u32 = 0x00000040;
-pub const THREAD_CREATE_FLAGS_CREATE_SUSPENDED: u32 = 0x00000001;
+//https://captmeelo.com/redteam/maldev/2022/05/10/ntcreateuserprocess.html
+pub const PROCESS_CREATE_FLAGS_BREAKAWAY: u32 = 0x00000001; // NtCreateProcessEx & NtCreateUserProcess
+pub const PROCESS_CREATE_FLAGS_NO_DEBUG_INHERIT: u32 = 0x00000002; // NtCreateProcessEx & NtCreateUserProcess
+pub const PROCESS_CREATE_FLAGS_INHERIT_HANDLES: u32 = 0x00000004; // NtCreateProcessEx & NtCreateUserProcess
+pub const PROCESS_CREATE_FLAGS_OVERRIDE_ADDRESS_SPACE: u32 = 0x00000008; // NtCreateProcessEx only
+pub const PROCESS_CREATE_FLAGS_LARGE_PAGES: u32 = 0x00000010; // NtCreateProcessEx only, requires SeLockMemory
+pub const PROCESS_CREATE_FLAGS_LARGE_PAGE_SYSTEM_DLL: u32 = 0x00000020; // NtCreateProcessEx only, requires SeLockMemory
+pub const PROCESS_CREATE_FLAGS_PROTECTED_PROCESS: u32 = 0x00000040; // NtCreateUserProcess only
+pub const PROCESS_CREATE_FLAGS_CREATE_SESSION: u32 = 0x00000080; // NtCreateProcessEx & NtCreateUserProcess, requires SeLoadDriver
+pub const PROCESS_CREATE_FLAGS_INHERIT_FROM_PARENT: u32 = 0x00000100; // NtCreateProcessEx & NtCreateUserProcess
+pub const PROCESS_CREATE_FLAGS_SUSPENDED: u32 = 0x00000200; // NtCreateProcessEx & NtCreateUserProcess
+pub const PROCESS_CREATE_FLAGS_FORCE_BREAKAWAY: u32 = 0x00000400; // NtCreateProcessEx & NtCreateUserProcess, requires SeTcb
+pub const PROCESS_CREATE_FLAGS_MINIMAL_PROCESS: u32 = 0x00000800; // NtCreateProcessEx only
+pub const PROCESS_CREATE_FLAGS_RELEASE_SECTION: u32 = 0x00001000; // NtCreateProcessEx & NtCreateUserProcess
+pub const PROCESS_CREATE_FLAGS_CLONE_MINIMAL: u32 = 0x00002000; // NtCreateProcessEx only
+pub const PROCESS_CREATE_FLAGS_CLONE_MINIMAL_REDUCED_COMMIT: u32 = 0x00004000; //
+pub const PROCESS_CREATE_FLAGS_AUXILIARY_PROCESS: u32 = 0x00008000; // NtCreateProcessEx & NtCreateUserProcess, requires SeTcb
+pub const PROCESS_CREATE_FLAGS_CREATE_STORE: u32 = 0x00020000; // NtCreateProcessEx only
+pub const PROCESS_CREATE_FLAGS_USE_PROTECTED_ENVIRONMENT: u32 = 0x00040000; // NtCreateProcessEx & NtCreateUserProcess
+
+pub const THREAD_CREATE_FLAGS_CREATE_SUSPENDED: u32 = 0x00000001; // NtCreateUserProcess & NtCreateThreadEx
+pub const THREAD_CREATE_FLAGS_SKIP_THREAD_ATTACH: u32 = 0x00000002; // NtCreateThreadEx only
+pub const THREAD_CREATE_FLAGS_HIDE_FROM_DEBUGGER: u32 = 0x00000004; // NtCreateThreadEx only
+pub const THREAD_CREATE_FLAGS_LOADER_WORKER: u32 = 0x00000010; // NtCreateThreadEx only
+pub const THREAD_CREATE_FLAGS_SKIP_LOADER_INIT: u32 = 0x00000020; // NtCreateThreadEx only
+pub const THREAD_CREATE_FLAGS_BYPASS_PROCESS_FREEZE: u32 = 0x00000040; // NtCreateThreadEx only
+pub const THREAD_CREATE_FLAGS_INITIAL_THREAD: u32 = 0x00000080; // ?
 
 pub struct TokenInformationClass(pub i32);
 pub struct TokenAccessMask(pub u32);
@@ -828,6 +901,20 @@ pub union IO_STATUS_BLOCK_u {
 pub struct IoStatusBlock {
     pub u: IO_STATUS_BLOCK_u,
     pub information: ULONG,
+}
+
+impl IoStatusBlock {
+    /// Creates a new `IoStatusBlock` with default values.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `IoStatusBlock` with default initialization.
+    pub fn new() -> Self {
+        IoStatusBlock {
+            u: IO_STATUS_BLOCK_u { status: 0 },
+            information: 0,
+        }
+    }
 }
 
 #[repr(C)]
@@ -962,6 +1049,21 @@ pub const FILE_RESERVE_OPFILTER: u32 = 0x00100000;
 pub const FILE_OPEN_REQUIRING_OPLOCK: u32 = 0x00010000;
 /// Option to complete the operation immediately with a successful alternative status if the target file is oplocked.
 pub const FILE_COMPLETE_IF_OPLOCKED: u32 = 0x00020000;
+
+/// FILE_PIPE_BYTE_STREAM_TYPE specifies that the named pipe will be of a byte stream type.
+/// This type of pipe transmits data as a stream of bytes.
+pub const FILE_PIPE_BYTE_STREAM_TYPE: u32 = 0x00000000;
+
+/// FILE_PIPE_BYTE_STREAM_MODE specifies that the pipe will operate in byte stream mode.
+/// Data is written and read in a continuous stream of bytes.
+pub const FILE_PIPE_BYTE_STREAM_MODE: u32 = 0x00000000;
+
+/// FILE_PIPE_QUEUE_OPERATION specifies that the pipe will operate in queue operation mode.
+/// Multiple instances of the pipe can be created, and the system manages a queue of connections.
+pub const FILE_PIPE_QUEUE_OPERATION: u32 = 0x00000000;
+
+/// GENERIC_READ grants read access to the object. Data can be read from the file or pipe.
+pub const GENERIC_READ: u32 = 0x80000000;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -1231,7 +1333,7 @@ pub union PsAttributeValueUnion {
 #[repr(C)]
 pub struct PsAttributeList {
     pub total_length: usize,
-    pub attributes: [PsAttribute; 1],
+    pub attributes: [PsAttribute; 2],
 }
 
 impl PsAttribute {
@@ -1362,6 +1464,13 @@ pub const PS_ATTRIBUTE_ADDITIVE: usize = 0x40000000;
 pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON: u64 =
     0x00000001u64 << 44;
 
+#[repr(C)]
+pub struct SecurityAttributes {
+    pub n_length: u32,
+    pub lp_security_descriptor: *mut c_void,
+    pub b_inherit_handle: bool,
+}
+
 //END NtCreateUserProcess STRUCT
 
 #[cfg(test)]
@@ -1437,3 +1546,165 @@ mod tests {
         assert_eq!(obj_attrs.security_quality_of_service, ptr::null_mut());
     }
 }
+
+/// Represents the NTSTATUS error codes.
+///
+/// This enum encapsulates common NTSTATUS error codes, with the ability to convert
+/// from raw codes to meaningful enum variants, and provides useful descriptions and
+/// functionality.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum NtStatusError {
+    Success = 0,
+    Abandoned = 0x00000080,
+    UserApc = 0x000000C0,
+    AlreadyComplete = 0x000000FF,
+    Timeout = 0x00000102,
+    Pending = 0x00000103,
+    Reparse = 0x00000104,
+
+    // Common NTSTATUS errors
+    AccessViolation = -1073741819,       // 0xC0000005
+    InvalidHandle = -1073741820,         // 0xC0000008
+    InvalidParameters = -1073741812,     // 0xC000000D
+    NoMemory = -1073741801,              // 0xC0000017
+    ObjectNameNotFound = -1073741772,    // 0xC0000034
+    ObjectNameCollision = -1073741771,   // 0xC0000035
+    PrivilegedInstruction = -1073741686, // 0xC0000096
+    BufferTooSmall = -1073741789,        // 0xC0000023
+    NotImplemented = -1073741822,        // 0xC0000002
+    AccessDenied = -1073741790,          // 0xC0000022
+
+    // Security-related errors
+    SecurityCheckFailure = -1073740748,      // 0xC0000420
+    LogonFailure = -1073741715,              // 0xC000006D
+    InvalidSecurityDescriptor = -1073741691, // 0xC0000079
+    InvalidOwner = -1073741734,              // 0xC000005A
+
+    // Filesystem-related errors
+    FileNotFound = -1073741769,      // 0xC000000F
+    FileIsADirectory = -1073741662,  // 0xC00000BA
+    DirectoryNotEmpty = -1073741447, // 0xC0000101
+    SharingViolation = -1073741757,  // 0xC0000043
+
+    // Networking-related errors
+    NetworkNameDeleted = -1073741503,  // 0xC00000C9
+    NetworkAccessDenied = -1073741502, // 0xC00000CA
+
+    // Miscellaneous errors
+    InvalidInfoClass = -1073741821,   // 0xC0000003
+    IllegalInstruction = -1073741795, // 0xC000001D
+    StackOverflow = -1073741571,      // 0xC00000FD
+    InPageError = -1073741818,        // 0xC0000006
+
+    // For any unknown status code
+    UnknownError = -1,
+}
+
+impl NtStatusError {
+    /// Converts an NTSTATUS code to a `NtStatusError` enum variant.
+    ///
+    /// # Arguments
+    /// * `code` - The NTSTATUS code.
+    ///
+    /// # Returns
+    /// * A `NtStatusError` enum variant corresponding to the code.
+    pub fn from_code(code: NTSTATUS) -> Self {
+        match code {
+            0 => NtStatusError::Success,
+            0x00000080 => NtStatusError::Abandoned,
+            0x000000C0 => NtStatusError::UserApc,
+            0x000000FF => NtStatusError::AlreadyComplete,
+            0x00000102 => NtStatusError::Timeout,
+            0x00000103 => NtStatusError::Pending,
+            0x00000104 => NtStatusError::Reparse,
+
+            // Common NTSTATUS errors
+            -1073741819 => NtStatusError::AccessViolation,
+            -1073741820 => NtStatusError::InvalidHandle,
+            -1073741812 => NtStatusError::InvalidParameters,
+            -1073741801 => NtStatusError::NoMemory,
+            -1073741772 => NtStatusError::ObjectNameNotFound,
+            -1073741771 => NtStatusError::ObjectNameCollision,
+            -1073741686 => NtStatusError::PrivilegedInstruction,
+            -1073741789 => NtStatusError::BufferTooSmall,
+            -1073741822 => NtStatusError::NotImplemented,
+            -1073741790 => NtStatusError::AccessDenied,
+
+            // Security-related errors
+            -1073740748 => NtStatusError::SecurityCheckFailure,
+            -1073741715 => NtStatusError::LogonFailure,
+            -1073741691 => NtStatusError::InvalidSecurityDescriptor,
+            -1073741734 => NtStatusError::InvalidOwner,
+
+            // Filesystem-related errors
+            -1073741769 => NtStatusError::FileNotFound,
+            -1073741662 => NtStatusError::FileIsADirectory,
+            -1073741447 => NtStatusError::DirectoryNotEmpty,
+            -1073741757 => NtStatusError::SharingViolation,
+
+            // Networking-related errors
+            -1073741503 => NtStatusError::NetworkNameDeleted,
+            -1073741502 => NtStatusError::NetworkAccessDenied,
+
+            // Miscellaneous errors
+            -1073741821 => NtStatusError::InvalidInfoClass,
+            -1073741795 => NtStatusError::IllegalInstruction,
+            -1073741571 => NtStatusError::StackOverflow,
+            -1073741818 => NtStatusError::InPageError,
+
+            // For all unknown NTSTATUS codes
+            _ => NtStatusError::UnknownError,
+        }
+    }
+
+    /// Retrieves the integer value of the `NtStatusError`.
+    ///
+    /// # Returns
+    /// * The integer value of the error code.
+    pub fn code(&self) -> NTSTATUS {
+        *self as NTSTATUS
+    }
+}
+
+impl fmt::Display for NtStatusError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NtStatusError::Success => write!(f, "Success"),
+            NtStatusError::Abandoned => write!(f, "Abandoned"),
+            NtStatusError::UserApc => write!(f, "User APC"),
+            NtStatusError::AlreadyComplete => write!(f, "Already Complete"),
+            NtStatusError::Timeout => write!(f, "Timeout"),
+            NtStatusError::Pending => write!(f, "Pending"),
+            NtStatusError::Reparse => write!(f, "Reparse"),
+            NtStatusError::AccessViolation => write!(f, "Access Violation"),
+            NtStatusError::InvalidHandle => write!(f, "Invalid Handle"),
+            NtStatusError::InvalidParameters => write!(f, "Invalid Parameters"),
+            NtStatusError::NoMemory => write!(f, "Insufficient Memory"),
+            NtStatusError::ObjectNameNotFound => write!(f, "Object Name Not Found"),
+            NtStatusError::ObjectNameCollision => write!(f, "Object Name Collision"),
+            NtStatusError::PrivilegedInstruction => write!(f, "Privileged Instruction"),
+            NtStatusError::BufferTooSmall => write!(f, "Buffer Too Small"),
+            NtStatusError::NotImplemented => write!(f, "Not Implemented"),
+            NtStatusError::AccessDenied => write!(f, "Access Denied"),
+            NtStatusError::SecurityCheckFailure => write!(f, "Security Check Failure"),
+            NtStatusError::LogonFailure => write!(f, "Logon Failure"),
+            NtStatusError::InvalidSecurityDescriptor => write!(f, "Invalid Security Descriptor"),
+            NtStatusError::InvalidOwner => write!(f, "Invalid Owner"),
+            NtStatusError::FileNotFound => write!(f, "File Not Found"),
+            NtStatusError::FileIsADirectory => write!(f, "File Is A Directory"),
+            NtStatusError::DirectoryNotEmpty => write!(f, "Directory Not Empty"),
+            NtStatusError::SharingViolation => write!(f, "Sharing Violation"),
+            NtStatusError::NetworkNameDeleted => write!(f, "Network Name Deleted"),
+            NtStatusError::NetworkAccessDenied => write!(f, "Network Access Denied"),
+            NtStatusError::InvalidInfoClass => write!(f, "Invalid Information Class"),
+            NtStatusError::IllegalInstruction => write!(f, "Illegal Instruction"),
+            NtStatusError::StackOverflow => write!(f, "Stack Overflow"),
+            NtStatusError::InPageError => write!(f, "In-Page Error"),
+            NtStatusError::UnknownError => {
+                write!(f, "Unknown NTSTATUS error (code: {:#X})", self.code())
+            }
+        }
+    }
+}
+
+impl core::error::Error for NtStatusError {}

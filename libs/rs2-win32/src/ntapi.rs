@@ -1,11 +1,13 @@
 use core::{
     ffi::{c_uchar, c_void},
+    fmt,
     ptr::null_mut,
 };
 
 use crate::ntdef::{
-    AccessMask, IoStatusBlock, ObjectAttributes, PEventType, PsAttributeList, PsCreateInfo,
-    RtlUserProcessParameters, TokenPrivileges, UnicodeString, HANDLE, PHANDLE, ULONG,
+    AccessMask, IoStatusBlock, LargeInteger, ObjectAttributes, PEventType, PsAttributeList,
+    PsCreateInfo, RtlUserProcessParameters, TokenPrivileges, UnicodeString, HANDLE, NTSTATUS,
+    PHANDLE, ULONG,
 };
 use rs2_indirect_syscall::run_syscall;
 
@@ -1277,6 +1279,192 @@ impl NtDelayExecution {
     }
 }
 
+pub struct NtCreateNamedPipeFile {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtCreateNamedPipeFile {}
+
+impl NtCreateNamedPipeFile {
+    pub const fn new() -> Self {
+        NtCreateNamedPipeFile {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtCreateNamedPipeFile syscall.
+    ///
+    /// This function creates a named pipe file and returns a handle to it.
+    ///
+    /// # Arguments
+    ///
+    /// * `file_handle` - A mutable pointer to a handle that will receive the file handle.
+    /// * `desired_access` - The desired access rights for the named pipe file.
+    /// * `object_attributes` - A pointer to an `OBJECT_ATTRIBUTES` structure that specifies the object attributes.
+    /// * `io_status_block` - A pointer to an `IO_STATUS_BLOCK` structure that receives the status of the I/O operation.
+    /// * `share_access` - The requested sharing mode of the file.
+    /// * `create_disposition` - Specifies the action to take on files that exist or do not exist.
+    /// * `create_options` - Specifies the options to apply when creating or opening the file.
+    /// * `named_pipe_type` - Specifies the type of named pipe (byte stream or message).
+    /// * `read_mode` - Specifies the read mode for the pipe.
+    /// * `completion_mode` - Specifies the completion mode for the pipe.
+    /// * `maximum_instances` - The maximum number of instances of the pipe.
+    /// * `inbound_quota` - The size of the input buffer, in bytes.
+    /// * `outbound_quota` - The size of the output buffer, in bytes.
+    /// * `default_timeout` - A pointer to a `LARGE_INTEGER` structure that specifies the default time-out value.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
+    pub fn run(
+        &self,
+        file_handle: *mut HANDLE,
+        desired_access: ULONG,
+        object_attributes: *mut ObjectAttributes,
+        io_status_block: *mut IoStatusBlock,
+        share_access: ULONG,
+        create_disposition: ULONG,
+        create_options: ULONG,
+        named_pipe_type: ULONG,
+        read_mode: ULONG,
+        completion_mode: ULONG,
+        maximum_instances: ULONG,
+        inbound_quota: ULONG,
+        outbound_quota: ULONG,
+        default_timeout: *const LargeInteger,
+    ) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            file_handle,
+            desired_access,
+            object_attributes,
+            io_status_block,
+            share_access,
+            create_disposition,
+            create_options,
+            named_pipe_type,
+            read_mode,
+            completion_mode,
+            maximum_instances,
+            inbound_quota,
+            outbound_quota,
+            default_timeout
+        )
+    }
+}
+
+pub struct NtReadVirtualMemory {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtReadVirtualMemory {}
+
+impl NtReadVirtualMemory {
+    pub const fn new() -> Self {
+        NtReadVirtualMemory {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtReadVirtualMemory syscall.
+    ///
+    /// This function reads memory in the virtual address space of a specified process.
+    ///
+    /// # Arguments
+    ///
+    /// * `process_handle` - A handle to the process whose memory is to be read.
+    /// * `base_address` - A pointer to the base address in the specified process from which to read.
+    /// * `buffer` - A pointer to a buffer that receives the contents from the address space of the specified process.
+    /// * `buffer_size` - The number of bytes to be read into the buffer.
+    /// * `number_of_bytes_read` - A pointer to a variable that receives the number of bytes transferred into the buffer.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
+    pub fn run(
+        &self,
+        process_handle: HANDLE,
+        base_address: *const c_void,
+        buffer: *mut c_void,
+        buffer_size: usize,
+        number_of_bytes_read: *mut usize,
+    ) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            process_handle,
+            base_address,
+            buffer,
+            buffer_size,
+            number_of_bytes_read
+        )
+    }
+}
+
+pub struct NtCreateProcess {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtCreateProcess {}
+
+impl NtCreateProcess {
+    pub const fn new() -> Self {
+        NtCreateProcess {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the `NtCreateProcess` syscall.
+    ///
+    /// This function creates a new process object. It wraps the `NtCreateProcess` syscall, which is used
+    /// to create a new process in the Windows NT kernel. Unlike `NtCreateUserProcess`, this syscall
+    /// does not create a new primary thread, and additional steps are needed to fully initialize the process.
+    ///
+    /// # Safety
+    /// This function involves unsafe operations and raw pointer dereferencing. The inputs must be valid, and the
+    /// function should be called in a safe context.
+    ///
+    /// # Arguments
+    ///
+    /// * `process_handle` - A mutable pointer to a handle that will receive the newly created process's handle.
+    /// * `desired_access` - The access rights desired for the process handle.
+    /// * `object_attributes` - A pointer to an `OBJECT_ATTRIBUTES` structure that specifies the object attributes.
+    /// * `parent_process` - A handle to the parent process.
+    /// * `inherit_object_table` - A boolean indicating whether the new process should inherit the object table of the parent process.
+    /// * `section_handle` - A handle to a section object, which is mapped into the new process's virtual address space.
+    /// * `debug_port` - A handle to a debug port, which can be used for debugging the new process.
+    /// * `exception_port` - A handle to an exception port, which can be used to handle exceptions in the new process.
+    ///
+    /// # Returns
+    ///
+    /// * `NTSTATUS` - The NTSTATUS code of the operation, indicating success or failure.
+    pub fn run(
+        &self,
+        process_handle: *mut HANDLE,
+        desired_access: AccessMask,
+        object_attributes: *mut ObjectAttributes,
+        parent_process: HANDLE,
+        inherit_object_table: bool,
+        section_handle: HANDLE,
+        debug_port: HANDLE,
+        exception_port: HANDLE,
+    ) -> NTSTATUS {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            process_handle,
+            desired_access,
+            object_attributes,
+            parent_process,
+            inherit_object_table as u32,
+            section_handle,
+            debug_port,
+            exception_port
+        )
+    }
+}
+
 // Type definition for loading DLL function
 type LdrLoadDll = unsafe extern "system" fn(
     DllPath: *mut u16,
@@ -1349,6 +1537,9 @@ pub struct NtDll {
     pub nt_terminate_thread: NtTerminateThread,
     pub nt_terminate_process: NtTerminateProcess,
     pub nt_delay_execution: NtDelayExecution,
+    pub nt_create_named_pipe_file: NtCreateNamedPipeFile,
+    pub nt_read_virtual_memory: NtReadVirtualMemory,
+    pub nt_create_process: NtCreateProcess,
 }
 
 impl NtDll {
@@ -1371,18 +1562,21 @@ impl NtDll {
             nt_query_information_token: NtQueryInformationToken::new(),
             nt_adjust_privileges_token: NtAdjustPrivilegesToken::new(), //unused, untested
             nt_wait_for_single_object: NtWaitForSingleObject::new(),    //unused, untested
-            nt_open_file: NtOpenFile::new(),                            //unused, untested
+            nt_open_file: NtOpenFile::new(),                            //untested
             nt_write_file: NtWriteFile::new(),                          //unused
             nt_create_file: NtCreateFile::new(),                        //unused,
             nt_read_file: NtReadFile::new(),                            //unused, untested
             nt_create_process_ex: NtCreateProcessEx::new(),             //unused
             nt_create_thread_ex: NtCreateThreadEx::new(),               //untested
-            nt_create_user_process: NtCreateUserProcess::new(),         //unused, untested
-            nt_write_virtual_memory: NtWriteVirtualMemory::new(),       //unused
-            nt_resume_thread: NtResumeThread::new(),                    //unused
+            nt_create_user_process: NtCreateUserProcess::new(),
+            nt_create_process: NtCreateProcess::new(),
+            nt_write_virtual_memory: NtWriteVirtualMemory::new(), //unused
+            nt_resume_thread: NtResumeThread::new(),              //unused
             nt_terminate_thread: NtTerminateThread::new(),
             nt_terminate_process: NtTerminateProcess::new(),
             nt_delay_execution: NtDelayExecution::new(),
+            nt_create_named_pipe_file: NtCreateNamedPipeFile::new(), //untested
+            nt_read_virtual_memory: NtReadVirtualMemory::new(),
         }
     }
 }
