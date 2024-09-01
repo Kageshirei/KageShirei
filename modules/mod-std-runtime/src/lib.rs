@@ -1,14 +1,14 @@
 /// The `mod-std-runtime` module implements the `Runtime` trait using a custom thread pool.
 /// This module provides a thread pool-based runtime adapter that conforms to the generic `Runtime` interface.
 pub mod std_runtime;
-pub mod threadpool;
+pub mod std_threadpool;
 
-pub use std_runtime::CustomRuntime;
+pub use std_runtime::StdRuntime;
 
 #[cfg(test)]
 mod tests {
-    use crate::std_runtime::CustomRuntime;
-    use crate::threadpool::{task_type_a, task_type_b};
+    use crate::std_runtime::StdRuntime;
+    use crate::std_threadpool::{task_type_a, task_type_b};
     use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
     use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
     use rs2_communication_protocol::metadata::Metadata;
@@ -19,7 +19,7 @@ mod tests {
     #[test]
     fn custom_runtime_test() {
         // Create a new CustomRuntime with a thread pool of 16 workers.
-        let runtime = Arc::new(CustomRuntime::new(16));
+        let runtime = Arc::new(StdRuntime::new(16));
 
         // Create a channel to receive results from tasks.
         let (result_tx, result_rx) = mpsc::channel();
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test_block_on() {
         // Create a new CustomRuntime with a thread pool of 4 workers.
-        let runtime = Arc::new(CustomRuntime::new(4));
+        let runtime = Arc::new(StdRuntime::new(4));
 
         // A simple asynchronous task that returns a value after some work.
         async fn async_task() -> u32 {

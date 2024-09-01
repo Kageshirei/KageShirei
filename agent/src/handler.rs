@@ -2,7 +2,6 @@ use core::ffi::c_void;
 
 use alloc::sync::Arc;
 
-use mod_nostd::{nostd_mpsc, nostd_thread};
 use rs2_runtime::Runtime;
 
 use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
@@ -30,6 +29,9 @@ use std::thread::{self, JoinHandle};
 
 #[cfg(feature = "std-runtime")]
 use std::sync::mpsc;
+
+#[cfg(feature = "nostd-nt-runtime")]
+use mod_nostd::{nostd_mpsc, nostd_thread};
 
 pub fn command_handler<R>(rt: Arc<R>)
 where
@@ -130,12 +132,13 @@ where
 
         #[cfg(feature = "nostd-nt-runtime")]
         drop(result_tx); // Close the result channel, indicating no more tasks will send results.
+        #[cfg(feature = "nostd-nt-runtime")]
         result_handler_handle.join().unwrap(); // Wait for the result handler to finish processing all results.
     }
 }
 
 #[cfg(feature = "std-runtime")]
-pub fn result_handler<R>(rt: Arc<R>, result_rx: nostd_mpsc::Receiver<TaskOutput>) -> JoinHandle<()>
+pub fn result_handler<R>(rt: Arc<R>, result_rx: mpsc::Receiver<TaskOutput>) -> JoinHandle<()>
 where
     R: Runtime,
 {

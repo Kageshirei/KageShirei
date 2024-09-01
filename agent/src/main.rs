@@ -9,11 +9,14 @@ pub mod handler;
 pub mod init;
 
 use handler::command_handler;
-
-#[cfg(feature = "nt-virtualalloc")]
-use mod_nt_virtualalloc::NtVirtualAlloc;
+use init::{init_checkin_data, init_protocol};
+use mod_agentcore::instance;
+use mod_win32::nt_time::delay;
+use rs2_runtime::Runtime;
 
 // Set a custom global allocator
+#[cfg(feature = "nt-virtualalloc")]
+use mod_nt_virtualalloc::NtVirtualAlloc;
 #[cfg(feature = "nt-virtualalloc")]
 #[global_allocator]
 static GLOBAL: NtVirtualAlloc = NtVirtualAlloc;
@@ -21,22 +24,17 @@ static GLOBAL: NtVirtualAlloc = NtVirtualAlloc;
 #[cfg(feature = "nt-heapalloc")]
 use mod_nt_heapalloc::NT_HEAPALLOCATOR;
 
-use init::{init_checkin_data, init_protocol};
-use mod_agentcore::instance;
-
+// Set a custom runtime
 #[cfg(feature = "std-runtime")]
-use mod_std_runtime::CustomRuntime;
+use mod_std_runtime::StdRuntime;
 
 #[cfg(feature = "nostd-nt-runtime")]
 use mod_nostd_nt_runtime::NoStdNtRuntime;
 
-use mod_win32::nt_time::delay;
-use rs2_runtime::Runtime;
-
 /// Main routine that initializes the runtime and repeatedly checks the connection status.
 pub fn routine() {
     #[cfg(feature = "std-runtime")]
-    let rt = Arc::new(CustomRuntime::new(4));
+    let rt = Arc::new(StdRuntime::new(4));
 
     #[cfg(feature = "nostd-nt-runtime")]
     let rt = Arc::new(NoStdNtRuntime::new(4));

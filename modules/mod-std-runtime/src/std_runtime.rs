@@ -1,4 +1,4 @@
-use crate::threadpool::ThreadPool;
+use crate::std_threadpool::ThreadPool;
 use rs2_runtime::Runtime;
 use std::{
     future::Future,
@@ -9,11 +9,11 @@ use std::{
 
 /// The `CustomRuntime` struct wraps a custom thread pool to implement the `Runtime` trait.
 #[derive(Debug, Clone)]
-pub struct CustomRuntime {
+pub struct StdRuntime {
     pool: Arc<Mutex<ThreadPool>>, // Wrap the ThreadPool in a Mutex inside an Arc.
 }
 
-impl CustomRuntime {
+impl StdRuntime {
     /// Creates a new `CustomRuntime` with the specified number of worker threads.
     ///
     /// # Arguments
@@ -24,7 +24,7 @@ impl CustomRuntime {
     ///
     /// * A `CustomRuntime` instance wrapping the custom thread pool.
     pub fn new(size: usize) -> Self {
-        CustomRuntime {
+        StdRuntime {
             pool: Arc::new(Mutex::new(ThreadPool::new(size))),
         }
     }
@@ -36,7 +36,7 @@ impl CustomRuntime {
     }
 }
 
-impl Runtime for CustomRuntime {
+impl Runtime for StdRuntime {
     /// Spawns a job on the custom thread pool.
     ///
     /// The job is executed by one of the worker threads in the pool.
