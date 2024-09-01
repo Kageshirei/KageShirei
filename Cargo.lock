@@ -2649,6 +2649,30 @@ name = "mod-hhtgates"
 version = "0.1.0"
 
 [[package]]
+name = "mod-nostd"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+ "mod-agentcore",
+ "mod-win32",
+ "rs2-win32",
+ "spin",
+]
+
+[[package]]
+name = "mod-nostd-nt-runtime"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "libc-print",
+ "mod-nostd",
+ "mod-win32",
+ "rs2-communication-protocol",
+ "rs2-runtime",
+ "spin",
+]
+
+[[package]]
 name = "mod-nostd-runtime"
 version = "0.1.0"
 dependencies = [
