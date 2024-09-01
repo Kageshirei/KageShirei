@@ -3,8 +3,8 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use mod_agentcore::instance;
-use mod_agentcore::ldr::ldr_function_addr;
-use rs2_win32::ntdef::{GetLastError, UnicodeString};
+use mod_agentcore::ldr::{ldr_function_addr, nt_get_last_error};
+use rs2_win32::ntdef::UnicodeString;
 
 use core::ffi::c_void;
 use core::mem::{transmute, zeroed};
@@ -151,7 +151,7 @@ pub fn create_socket() -> Result<u32, String> {
     unsafe {
         let sock = (get_winsock().socket)(2, 1, 6); // Create a socket with AF_INET, SOCK_STREAM, IPPROTO_TCP
         if sock == u32::MAX {
-            let error_code = GetLastError();
+            let error_code = nt_get_last_error();
             return Err(format!(
                 "Socket creation failed with error code: {}",
                 error_code
@@ -244,7 +244,7 @@ pub fn connect_socket(sock: u32, addr: &str, port: u16) -> Result<(), String> {
         let result =
             (get_winsock().connect)(sock, sockaddr, core::mem::size_of::<SockAddrIn>() as i32);
         if result != 0 {
-            let error_code = GetLastError();
+            let error_code = nt_get_last_error();
             return Err(format!(
                 "Socket connection failed with error code: {}",
                 error_code
@@ -271,7 +271,7 @@ pub fn send_request(sock: u32, request: &[u8]) -> Result<(), String> {
         let result =
             (get_winsock().send)(sock, request.as_ptr() as *const i8, request.len() as i32, 0);
         if result == -1 {
-            let error_code = GetLastError();
+            let error_code = nt_get_last_error();
             return Err(format!(
                 "Send request failed with error code: {}",
                 error_code
@@ -300,7 +300,7 @@ pub fn receive_response(sock: u32) -> Result<String, String> {
             let bytes_received =
                 (get_winsock().recv)(sock, buffer.as_mut_ptr() as *mut i8, buffer.len() as i32, 0);
             if bytes_received == -1 {
-                let error_code = GetLastError();
+                let error_code = nt_get_last_error();
                 return Err(format!(
                     "Receive response failed with error code: {}",
                     error_code

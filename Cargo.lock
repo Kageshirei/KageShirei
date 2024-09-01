@@ -2708,6 +2708,7 @@ dependencies = [
  "axum",
  "bytes",
  "libc-print",
+ "mod-agentcore",
  "mod-win32",
  "rs2-communication-protocol",
  "rs2-crypt",
@@ -3767,7 +3768,6 @@ dependencies = [
  "mod-protocol-json",
  "mod-protocol-winhttp",
  "mod-std-runtime",
- "mod-tokio-runtime",
  "mod-win32",
  "rand 0.8.5",
  "rs2-communication-protocol",
@@ -3776,7 +3776,6 @@ dependencies = [
  "serde",
  "serde_json",
  "spin",
- "tokio",
 ]
 
 [[package]]

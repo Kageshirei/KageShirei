@@ -5,10 +5,6 @@ use core::{
 
 use crate::utils::string_length_w;
 
-extern "system" {
-    pub fn GetLastError() -> u32;
-}
-
 pub type NTSTATUS = i32;
 
 // Definition of Windows types
@@ -25,9 +21,9 @@ pub type LONGLONG = i64;
 pub type DWORD = c_ulong;
 
 pub type HRESULT = i32;
-pub type HSTRING = *mut ::core::ffi::c_void;
-pub type IUnknown = *mut ::core::ffi::c_void;
-pub type IInspectable = *mut ::core::ffi::c_void;
+pub type HSTRING = *mut c_void;
+pub type IUnknown = *mut c_void;
+pub type IInspectable = *mut c_void;
 pub type PSTR = *mut u8;
 pub type PWSTR = *mut u16;
 pub type PCSTR = *const u8;
@@ -1783,14 +1779,12 @@ pub struct SystemProcessInformation2 {
 
 #[allow(non_snake_case)]
 pub struct M128A {
-    // FIXME align 16
     pub Low: ULONGLONG,
     pub High: LONGLONG,
 }
 
 #[allow(non_snake_case)]
 pub struct CONTEXT {
-    // FIXME align 16
     pub P1Home: DWORD64,
     pub P2Home: DWORD64,
     pub P3Home: DWORD64,

@@ -7,14 +7,12 @@ use core::{
 use alloc::{format, sync::Arc, vec::Vec};
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
+use mod_agentcore::ldr::nt_get_last_error;
 use mod_win32::nt_winhttp::get_winhttp;
 use rs2_communication_protocol::metadata::Metadata;
-use rs2_win32::{
-    ntdef::GetLastError,
-    winhttp::{
-        WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE,
-        WINHTTP_QUERY_FLAG_NUMBER,
-    },
+use rs2_win32::winhttp::{
+    WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE,
+    WINHTTP_QUERY_FLAG_NUMBER,
 };
 
 use crate::utils::{parse_url, to_pcwstr, ParseUrlResult};
@@ -114,7 +112,7 @@ impl WinHttpClient {
             null_mut(),
         );
         if b_status_code == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             return Err(anyhow::anyhow!(
                 "WinHttpQueryHeaders failed with error: {}",
                 WinHttpError::from_code(error as i32)
@@ -182,7 +180,7 @@ impl WinHttpClient {
                 WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
             );
             if h_request.is_null() {
-                let error = GetLastError();
+                let error = nt_get_last_error();
                 return Err(anyhow::anyhow!(
                     "WinHttpOpenRequest failed with error: {}",
                     WinHttpError::from_code(error as i32)
@@ -220,7 +218,7 @@ impl WinHttpClient {
                 0,
             );
             if b_request_sent == 0 {
-                let error = GetLastError();
+                let error = nt_get_last_error();
                 (get_winhttp().win_http_close_handle)(h_request);
                 return Err(anyhow::anyhow!(
                     "WinHttpSendRequest failed with error: {}",
@@ -232,7 +230,7 @@ impl WinHttpClient {
             let b_response_received =
                 (get_winhttp().win_http_receive_response)(h_request, null_mut());
             if b_response_received == 0 {
-                let error = GetLastError();
+                let error = nt_get_last_error();
                 (get_winhttp().win_http_close_handle)(h_request);
                 return Err(anyhow::anyhow!(
                     "WinHttpReceiveResponse failed with error: {}",
