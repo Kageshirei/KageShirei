@@ -37,7 +37,7 @@ pub fn exit_command(exit_type: i32) {
     }
 }
 
-#[cfg(feature = "std-runtime")]
+// #[cfg(feature = "std-runtime")]
 // Simulated task that takes 2 seconds to complete.
 pub fn task_type_a(metadata: Metadata) -> TaskOutput {
     delay(1);
@@ -47,7 +47,7 @@ pub fn task_type_a(metadata: Metadata) -> TaskOutput {
     output
 }
 
-#[cfg(feature = "std-runtime")]
+// #[cfg(feature = "std-runtime")]
 // Simulated task that takes 3 seconds to complete.
 pub fn task_type_b(metadata: Metadata) -> TaskOutput {
     delay(12);

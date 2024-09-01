@@ -5,12 +5,13 @@ extern crate alloc;
 
 use alloc::vec;
 use alloc::vec::Vec;
+use libc_print::libc_println;
 use rs2_win32::{
     ntdef::{KeyValuePartialInformation, UnicodeString, REG_SZ, ULONG},
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL},
 };
 
-use crate::nt_reg_api::nt_open_key;
+use crate::{nt_reg_api::nt_open_key, utils::NT_STATUS};
 use mod_agentcore::instance;
 
 /// Retrieves the computer name from the registry.
@@ -42,7 +43,10 @@ pub unsafe fn get_computer_name_from_registry(
     // Open the registry key and obtain a handle
     let key_handle = match nt_open_key(registry_key) {
         Ok(handle) => handle,
-        Err(_) => return false,
+        Err(_) => {
+            libc_println!("[!] NtOpenKey failed handle is null");
+            return false;
+        }
     };
 
     // Initialize the Unicode string for the registry value name
@@ -52,7 +56,7 @@ pub unsafe fn get_computer_name_from_registry(
 
     // Query the registry value to get the required buffer size
     let mut result_length: ULONG = 0;
-    let ntstatus = instance().ntdll.nt_query_value_key.run(
+    let status = instance().ntdll.nt_query_value_key.run(
         key_handle,
         &value_name,
         2,
@@ -62,12 +66,14 @@ pub unsafe fn get_computer_name_from_registry(
     );
 
     // Check if the query resulted in a buffer overflow or buffer too small error, which is expected
-    if ntstatus != STATUS_BUFFER_OVERFLOW && ntstatus != STATUS_BUFFER_TOO_SMALL {
+    if status != STATUS_BUFFER_OVERFLOW && status != STATUS_BUFFER_TOO_SMALL {
+        libc_println!("[!] NtQueryValueKey failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(key_handle);
         return false;
     }
 
     if result_length == 0 {
+        libc_println!("[!] NtQueryValue result lenght is 0");
         instance().ntdll.nt_close.run(key_handle);
         return false;
     }
@@ -77,7 +83,7 @@ pub unsafe fn get_computer_name_from_registry(
     let mut key_info = vec![0u8; key_info_size as usize];
 
     // Query the registry value to get the actual data
-    let ntstatus = instance().ntdll.nt_query_value_key.run(
+    let status = instance().ntdll.nt_query_value_key.run(
         key_handle,
         &value_name,
         2,
@@ -87,7 +93,8 @@ pub unsafe fn get_computer_name_from_registry(
     );
 
     // Check if the query was successful
-    if ntstatus < 0 {
+    if status < 0 {
+        libc_println!("[!] Second NtQueryValueKey failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(key_handle);
         return false;
     }
@@ -98,6 +105,10 @@ pub unsafe fn get_computer_name_from_registry(
 
     // Ensure the data type is REG_SZ (string)
     if key_info_ref.data_type != REG_SZ {
+        libc_println!(
+            "[!] Key Info data type is wrong: {}",
+            key_info_ref.data_type
+        );
         instance().ntdll.nt_close.run(key_handle);
         return false;
     }

@@ -2673,28 +2673,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mod-nostd-runtime"
-version = "0.1.0"
-dependencies = [
- "mod-win32",
- "rs2-communication-protocol",
- "rs2-runtime",
- "spin",
-]
-
-[[package]]
-name = "mod-nt-runtime"
-version = "0.1.0"
-dependencies = [
- "mod-agentcore",
- "mod-win32",
- "rs2-communication-protocol",
- "rs2-runtime",
- "rs2-win32",
- "spin",
-]
-
-[[package]]
 name = "mod-ntallocator"
 version = "0.1.0"
 dependencies = [
@@ -3783,8 +3761,8 @@ dependencies = [
  "libc-print",
  "mod-agentcore",
  "mod-hhtgates",
- "mod-nostd-runtime",
- "mod-nt-runtime",
+ "mod-nostd",
+ "mod-nostd-nt-runtime",
  "mod-ntallocator",
  "mod-protocol-json",
  "mod-protocol-winhttp",

