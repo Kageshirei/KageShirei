@@ -21,7 +21,8 @@ mod-agentcore = {path = "../modules/mod-agentcore" }
 mod-hhtgates = {path = "../modules/mod-hhtgates"}
 mod-win32 = {path = "../modules/mod-win32" }
 mod-nostd = {path = "../modules/mod-nostd"}
-mod-ntallocator = {path = "../modules/mod-ntallocator", optional = true }
+mod-nt-virtualalloc = {path = "../modules/mod-nt-virtualalloc", optional = true }
+mod-nt-heapalloc = {path = "../modules/mod-nt-heapalloc", optional = true }
 mod-protocol-json = {path = "../modules/mod-protocol-json", optional = true}
 mod-protocol-winhttp = {path = "../modules/mod-protocol-winhttp", optional = true}
 mod-std-runtime = {path = "../modules/mod-std-runtime", optional = true}
@@ -36,9 +37,10 @@ chrono = "0.4"
 futures = "0.3.30"
 
 [features]
-default = ["protocol-winhttp", "ntallocator", "nostd-nt-runtime"]
+default = ["protocol-winhttp", "nt-heapalloc", "nostd-nt-runtime"]
 protocol-json = ["dep:mod-protocol-json"]
 protocol-winhttp = ["dep:mod-protocol-winhttp"]
-ntallocator = ["dep:mod-ntallocator"]
+nt-virtualalloc = ["dep:mod-nt-virtualalloc"]
+nt-heapalloc = ["dep:mod-nt-heapalloc"]
 std-runtime = ["dep:mod-std-runtime"]
 nostd-nt-runtime = ["dep:mod-nostd-nt-runtime"]

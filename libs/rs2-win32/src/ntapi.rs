@@ -1672,80 +1672,204 @@ type RtlCreateProcessParametersEx = unsafe extern "system" fn(
     Flags: u32,
 ) -> i32;
 
+/// Type definition for the RtlCreateHeap function.
+///
+/// Creates a heap with the specified attributes. The heap can be used to allocate and manage memory dynamically.
+///
+/// # Parameters
+/// - `[in]` - `Flags`: Specifies the attributes of the heap. This can include options such as enabling heap serialization.
+/// - `[in, opt]` - `HeapBase`: A pointer to a memory block that will serve as the base of the heap. This parameter can be `NULL`, in which case the system determines the base address.
+/// - `[in]` - `ReserveSize`: The initial size, in bytes, to reserve for the heap. This is the amount of virtual memory reserved for the heap.
+/// - `[in]` - `CommitSize`: The initial size, in bytes, of committed memory in the heap. This is the amount of physical memory initially allocated for the heap.
+/// - `[in, opt]` - `Lock`: A pointer to a lock for heap synchronization. This can be `NULL` if no lock is required.
+/// - `[in, opt]` - `Parameters`: A pointer to an optional structure that specifies advanced parameters for heap creation. This can be `NULL`.
+///
+/// # Returns
+/// - `HANDLE`: A handle to the newly created heap. If the heap creation fails, the handle will be `NULL`.
+type RtlCreateHeap = unsafe extern "system" fn(
+    Flags: u32,
+    HeapBase: *mut u8,
+    ReserveSize: usize,
+    CommitSize: usize,
+    Lock: *mut u8,
+    Parameters: *mut u8,
+) -> HANDLE;
+
+/// Type definition for the RtlAllocateHeap function.
+///
+/// Allocates a block of memory from the specified heap. The allocated memory is uninitialized.
+///
+/// # Parameters
+/// - `[in]` - `hHeap`: A handle to the heap from which the memory will be allocated.
+/// - `[in]` - `dwFlags`: Flags that control aspects of the allocation, such as whether to generate exceptions on failure.
+/// - `[in]` - `dwBytes`: The number of bytes to allocate from the heap.
+///
+/// # Returns
+/// - `*mut u8`: A pointer to the allocated memory block. If the allocation fails, the pointer will be `NULL`.
+type RtlAllocateHeap =
+    unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, dwBytes: usize) -> *mut u8;
+
+/// Type definition for the RtlFreeHeap function.
+///
+/// Frees a memory block allocated from the specified heap. The freed memory is returned to the heap and can be reused.
+///
+/// # Parameters
+/// - `[in]` - `hHeap`: A handle to the heap from which the memory was allocated.
+/// - `[in]` - `dwFlags`: Flags that control aspects of the free operation, such as whether to perform validation checks.
+/// - `[in]` - `lpMem`: A pointer to the memory block to be freed.
+///
+/// # Returns
+/// - `BOOL`: A boolean value indicating whether the operation was successful (`TRUE`) or not (`FALSE`).
+type RtlFreeHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8) -> i32;
+
+/// Type definition for the RtlReAllocateHeap function.
+///
+/// Reallocates a memory block from the specified heap, changing its size. The contents of the memory block are preserved up to the smaller of the new or old sizes.
+///
+/// # Parameters
+/// - `[in]` - `hHeap`: A handle to the heap from which the memory will be reallocated.
+/// - `[in]` - `dwFlags`: Flags that control aspects of the reallocation, such as whether to generate exceptions on failure.
+/// - `[in]` - `lpMem`: A pointer to the memory block to be reallocated.
+/// - `[in]` - `dwBytes`: The new size, in bytes, for the memory block.
+///
+/// # Returns
+/// - `*mut u8`: A pointer to the reallocated memory block. If the reallocation fails, the pointer will be `NULL`.
+type RtlReAllocateHeap = unsafe extern "system" fn(
+    hHeap: HANDLE,
+    dwFlags: u32,
+    lpMem: *mut u8,
+    dwBytes: usize,
+) -> *mut u8;
+
+/// Type definition for the RtlDestroyHeap function.
+///
+/// Destroys the specified heap and releases all of its memory. Once a heap is destroyed, it cannot be used.
+///
+/// # Parameters
+/// - `[in]` - `hHeap`: A handle to the heap to be destroyed.
+///
+/// # Returns
+/// - `HANDLE`: The function returns `NULL` if the heap was successfully destroyed. If the function fails, it returns the handle to the heap.
+type RtlDestroyHeap = unsafe extern "system" fn(hHeap: HANDLE) -> HANDLE;
+
 pub struct NtDll {
     pub module_base: *mut u8,
+
+    // Direct Syscall
     pub ldr_load_dll: LdrLoadDll,
     pub rtl_create_process_parameters_ex: RtlCreateProcessParametersEx,
-    pub nt_close: NtClose,
-    pub nt_allocate_virtual_memory: NtAllocateVirtualMemory,
-    pub nt_free_virtual_memory: NtFreeVirtualMemory,
-    pub nt_open_key: NtOpenKey,
-    pub nt_query_value_key: NtQueryValueKey,
-    pub nt_enumerate_key: NtEnumerateKey,
-    pub nt_query_system_information: NtQuerySystemInformation,
-    pub nt_query_information_process: NtQueryInformationProcess,
+
+    // Heap management functions
+    pub rtl_create_heap: RtlCreateHeap,
+    pub rtl_allocate_heap: RtlAllocateHeap,
+    pub rtl_free_heap: RtlFreeHeap,
+    pub rtl_reallocate_heap: RtlReAllocateHeap,
+    pub rtl_destroy_heap: RtlDestroyHeap,
+
+    // Process Management functions
+    pub nt_create_process: NtCreateProcess,
+    pub nt_create_process_ex: NtCreateProcessEx,
+    pub nt_create_user_process: NtCreateUserProcess,
+    pub nt_terminate_process: NtTerminateProcess,
     pub nt_open_process: NtOpenProcess,
-    pub nt_open_process_token: NtOpenProcessToken,
-    pub nt_open_process_token_ex: NtOpenProcessTokenEx,
-    pub nt_query_information_token: NtQueryInformationToken,
-    pub nt_adjust_privileges_token: NtAdjustPrivilegesToken,
-    pub nt_wait_for_single_object: NtWaitForSingleObject,
+    pub nt_query_information_process: NtQueryInformationProcess,
+
+    // File Management functions
     pub nt_open_file: NtOpenFile,
     pub nt_write_file: NtWriteFile,
     pub nt_create_file: NtCreateFile,
     pub nt_read_file: NtReadFile,
-    pub nt_create_process_ex: NtCreateProcessEx,
+
+    // Registry Management functions
+    pub nt_open_key: NtOpenKey,
+    pub nt_query_value_key: NtQueryValueKey,
+    pub nt_enumerate_key: NtEnumerateKey,
+
+    // Memory Management functions
+    pub nt_allocate_virtual_memory: NtAllocateVirtualMemory,
+    pub nt_free_virtual_memory: NtFreeVirtualMemory,
+    pub nt_read_virtual_memory: NtReadVirtualMemory,
+    pub nt_write_virtual_memory: NtWriteVirtualMemory,
+
+    // Thread Management functions
     pub nt_create_thread: NtCreateThread,
     pub nt_create_thread_ex: NtCreateThreadEx,
     pub nt_zw_create_thread_ex: ZwCreateThreadEx,
-    pub nt_create_user_process: NtCreateUserProcess,
-    pub nt_write_virtual_memory: NtWriteVirtualMemory,
     pub nt_resume_thread: NtResumeThread,
+    pub nt_wait_for_single_object: NtWaitForSingleObject,
     pub nt_terminate_thread: NtTerminateThread,
-    pub nt_terminate_process: NtTerminateProcess,
+
+    // Token Management functions
+    pub nt_query_information_token: NtQueryInformationToken,
+    pub nt_adjust_privileges_token: NtAdjustPrivilegesToken,
+    pub nt_open_process_token: NtOpenProcessToken,
+    pub nt_open_process_token_ex: NtOpenProcessTokenEx,
+
+    pub nt_close: NtClose,
+    pub nt_query_system_information: NtQuerySystemInformation,
     pub nt_delay_execution: NtDelayExecution,
     pub nt_create_named_pipe_file: NtCreateNamedPipeFile,
-    pub nt_read_virtual_memory: NtReadVirtualMemory,
-    pub nt_create_process: NtCreateProcess,
 }
 
 impl NtDll {
     pub fn new() -> Self {
         NtDll {
             module_base: null_mut(),
+
+            // Direct Syscall
             ldr_load_dll: unsafe { core::mem::transmute(null_mut::<c_void>()) },
             rtl_create_process_parameters_ex: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            nt_close: NtClose::new(),
-            nt_allocate_virtual_memory: NtAllocateVirtualMemory::new(),
-            nt_free_virtual_memory: NtFreeVirtualMemory::new(),
-            nt_open_key: NtOpenKey::new(),
-            nt_query_value_key: NtQueryValueKey::new(),
-            nt_enumerate_key: NtEnumerateKey::new(),
-            nt_query_system_information: NtQuerySystemInformation::new(),
-            nt_query_information_process: NtQueryInformationProcess::new(),
+
+            // Heap management functions
+            rtl_create_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_allocate_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_free_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_reallocate_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_destroy_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+
+            // Process Management functions
+            nt_create_process: NtCreateProcess::new(),
+            nt_create_process_ex: NtCreateProcessEx::new(), //unused
+            nt_create_user_process: NtCreateUserProcess::new(),
+            nt_terminate_process: NtTerminateProcess::new(),
             nt_open_process: NtOpenProcess::new(),
-            nt_open_process_token: NtOpenProcessToken::new(),
-            nt_open_process_token_ex: NtOpenProcessTokenEx::new(),
-            nt_query_information_token: NtQueryInformationToken::new(),
-            nt_adjust_privileges_token: NtAdjustPrivilegesToken::new(), //unused, untested
-            nt_wait_for_single_object: NtWaitForSingleObject::new(),
+            nt_query_information_process: NtQueryInformationProcess::new(),
+
+            // File Management functions
             nt_open_file: NtOpenFile::new(),
             nt_write_file: NtWriteFile::new(),
             nt_create_file: NtCreateFile::new(),
             nt_read_file: NtReadFile::new(),
-            nt_create_process_ex: NtCreateProcessEx::new(), //unused
+
+            // Registry Management functions
+            nt_open_key: NtOpenKey::new(),
+            nt_query_value_key: NtQueryValueKey::new(),
+            nt_enumerate_key: NtEnumerateKey::new(),
+
+            // Memory Management functions
+            nt_allocate_virtual_memory: NtAllocateVirtualMemory::new(),
+            nt_free_virtual_memory: NtFreeVirtualMemory::new(),
+            nt_read_virtual_memory: NtReadVirtualMemory::new(),
+            nt_write_virtual_memory: NtWriteVirtualMemory::new(), //unused
+
+            // Thread Management functions
             nt_create_thread: NtCreateThread::new(),
             nt_create_thread_ex: NtCreateThreadEx::new(),
             nt_zw_create_thread_ex: ZwCreateThreadEx::new(),
-            nt_create_user_process: NtCreateUserProcess::new(),
-            nt_create_process: NtCreateProcess::new(),
-            nt_write_virtual_memory: NtWriteVirtualMemory::new(), //unused
-            nt_resume_thread: NtResumeThread::new(),              //unused
+            nt_resume_thread: NtResumeThread::new(), //unused
+            nt_wait_for_single_object: NtWaitForSingleObject::new(),
             nt_terminate_thread: NtTerminateThread::new(),
-            nt_terminate_process: NtTerminateProcess::new(),
+
+            // Token Management functions
+            nt_query_information_token: NtQueryInformationToken::new(),
+            nt_adjust_privileges_token: NtAdjustPrivilegesToken::new(), //unused, untested
+            nt_open_process_token: NtOpenProcessToken::new(),
+            nt_open_process_token_ex: NtOpenProcessTokenEx::new(),
+
+            nt_close: NtClose::new(),
+            nt_query_system_information: NtQuerySystemInformation::new(),
             nt_delay_execution: NtDelayExecution::new(),
             nt_create_named_pipe_file: NtCreateNamedPipeFile::new(), //untested
-            nt_read_virtual_memory: NtReadVirtualMemory::new(),
         }
     }
 }

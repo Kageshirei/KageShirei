@@ -247,6 +247,7 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
     let token_handle = nt_open_process_token(process_handle);
 
     if token_handle.is_null() {
+        libc_println!("[!] NtOpenProcessToken failed");
         return -1;
     }
 
@@ -255,7 +256,7 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
     let mut size = 0;
 
     // Query the token for integrity level information
-    let ntstatus = instance().ntdll.nt_query_information_token.run(
+    let status = instance().ntdll.nt_query_information_token.run(
         token_handle,
         TOKEN_INTEGRITY_LEVEL as ULONG,
         &mut label as *mut _ as *mut c_void,
@@ -264,12 +265,14 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
     );
 
     // Handle potential buffer size issues
-    if ntstatus != STATUS_BUFFER_OVERFLOW && ntstatus != STATUS_BUFFER_TOO_SMALL {
+    if status != STATUS_BUFFER_OVERFLOW && status != STATUS_BUFFER_TOO_SMALL {
+        libc_println!("[!] NtQueryInformationToken failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(token_handle);
         return -1;
     }
 
     if return_length == 0 {
+        libc_println!("[!] NtQueryInformationToken failed return length is 0");
         instance().ntdll.nt_close.run(token_handle);
         return -1;
     }
@@ -277,7 +280,7 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
     size = return_length;
 
     // Query the token again with the correct buffer size
-    let ntstatus = instance().ntdll.nt_query_information_token.run(
+    let status = instance().ntdll.nt_query_information_token.run(
         token_handle,
         TOKEN_INTEGRITY_LEVEL as ULONG,
         &mut label as *mut _ as *mut c_void,
@@ -285,7 +288,7 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
         &mut return_length as *mut ULONG,
     );
 
-    if NT_SUCCESS(ntstatus) {
+    if NT_SUCCESS(status) {
         // Extract the RID (Relative Identifier) from the SID to determine the integrity level
         let sid = &*label.label.sid;
         let sub_authority_count = sid.sub_authority_count as usize;
@@ -294,6 +297,7 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
         instance().ntdll.nt_close.run(token_handle);
         return rid as i32;
     } else {
+        libc_println!("[!] NtQueryInformationToken failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(token_handle);
         return -1;
     }

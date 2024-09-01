@@ -104,9 +104,9 @@ fn get_nt_free_virtual_memory_syscall() -> &'static NtSyscall {
 }
 
 /// Custom allocator using NT system calls.
-pub struct NtAllocator;
+pub struct NtVirtualAlloc;
 
-unsafe impl GlobalAlloc for NtAllocator {
+unsafe impl GlobalAlloc for NtVirtualAlloc {
     /// Allocates memory as described by the given `layout` using NT system calls.
     ///
     /// This function uses the `NtAllocateVirtualMemory` system call to allocate memory.

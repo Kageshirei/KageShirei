@@ -10,13 +10,16 @@ pub mod init;
 
 use handler::command_handler;
 
-#[cfg(feature = "ntallocator")]
-use mod_ntallocator::NtAllocator;
+#[cfg(feature = "nt-virtualalloc")]
+use mod_nt_virtualalloc::NtVirtualAlloc;
 
 // Set a custom global allocator
-#[cfg(feature = "ntallocator")]
+#[cfg(feature = "nt-virtualalloc")]
 #[global_allocator]
-static GLOBAL: NtAllocator = NtAllocator;
+static GLOBAL: NtVirtualAlloc = NtVirtualAlloc;
+
+#[cfg(feature = "nt-heapalloc")]
+use mod_nt_heapalloc::NT_HEAPALLOCATOR;
 
 use init::{init_checkin_data, init_protocol};
 use mod_agentcore::instance;
@@ -61,8 +64,10 @@ pub fn routine() {
 
 /// Main function that initializes the global instance, checkin data, and starts the routine.
 fn main() {
-    // init_global_instance(); // Initialize global instance
-    libc_println!("Init checkin");
+    // Initialize global heap allocator
+    #[cfg(feature = "nt-heapalloc")]
+    NT_HEAPALLOCATOR.initialize();
+
     init_checkin_data(); // Initialize checkin data
     routine(); // Start the main routine
 }

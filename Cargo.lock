@@ -2673,7 +2673,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "mod-ntallocator"
+name = "mod-nt-heapalloc"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+ "mod-agentcore",
+ "mod-hhtgates",
+ "mod-win32",
+ "rs2-indirect-syscall",
+ "rs2-win32",
+ "spin",
+]
+
+[[package]]
+name = "mod-nt-virtualalloc"
 version = "0.1.0"
 dependencies = [
  "mod-agentcore",
@@ -3764,7 +3777,8 @@ dependencies = [
  "mod-hhtgates",
  "mod-nostd",
  "mod-nostd-nt-runtime",
- "mod-ntallocator",
+ "mod-nt-heapalloc",
+ "mod-nt-virtualalloc",
  "mod-protocol-json",
  "mod-protocol-winhttp",
  "mod-std-runtime",
