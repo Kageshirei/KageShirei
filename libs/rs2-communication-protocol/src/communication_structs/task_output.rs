@@ -7,8 +7,8 @@ use crate::metadata::{Metadata, WithMetadata};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TaskOutput {
     pub output: Option<String>,
-    pub started_at: Option<String>,
-    pub ended_at: Option<String>,
+    pub started_at: Option<i64>, //timestamp
+    pub ended_at: Option<i64>,   //timestamp
     pub exit_code: Option<u8>,
     pub metadata: Option<Arc<Metadata>>,
 }

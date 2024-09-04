@@ -5,6 +5,8 @@ use rs2_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 
 use mod_agentcore::instance;
 
+use crate::utils::unicodestring_to_string;
+
 /// Retrieves the name of the current process by accessing the PEB (Process Environment Block).
 ///
 /// # Safety
@@ -275,6 +277,33 @@ pub unsafe fn get_image_path_name() -> String {
         }
     }
 
+    String::new()
+}
+
+/// Retrieves the current directory as a string.
+///
+/// This helper function accesses the Process Environment Block (PEB) to obtain the
+/// current directory path. It converts the DOS path stored in the PEB to a Rust string
+/// and returns it. If the current directory cannot be retrieved, it returns an empty string.
+///
+/// # Returns
+/// - `String`: The current directory path as a Rust string, or an empty string if the path cannot be retrieved.
+///
+/// # Details
+/// This function is useful for debugging and for any situation where the current directory
+/// needs to be displayed or logged. It interacts with the PEB to get the current directory path.
+pub fn get_current_directory() -> String {
+    unsafe {
+        // Retrieve the Process Environment Block (PEB)
+        let peb = instance().teb.as_ref().unwrap().process_environment_block;
+        if !peb.is_null() {
+            let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
+            let cur_dir = &mut process_parameters.as_mut().unwrap().current_directory;
+
+            // Convert the current directory's DOS path to a Rust string
+            return unicodestring_to_string(&(*cur_dir).dos_path).unwrap_or_default();
+        }
+    }
     String::new()
 }
 

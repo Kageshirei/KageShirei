@@ -1,3 +1,5 @@
+use core::str;
+
 use alloc::{
     format,
     string::{String, ToString},
@@ -170,6 +172,11 @@ pub fn NT_STATUS(status: i32) -> String {
         }
         STATUS_NOT_FOUND => format!("STATUS_NOT_FOUND [0x{:08X}]", status),
         STATUS_DATATYPE_MISALIGNMENT => format!("STATUS_DATATYPE_MISALIGNMENT [0x{:08X}]", status),
+        STATUS_OBJECT_NAME_INVALID => format!("STATUS_OBJECT_NAME_INVALID [0x{:08X}]", status),
+        STATUS_NAME_TOO_LONG => format!("STATUS_NAME_TOO_LONG [0x{:08X}]", status),
+        STATUS_OBJECT_PATH_SYNTAX_BAD => {
+            format!("STATUS_OBJECT_PATH_SYNTAX_BAD [0x{:08X}]", status)
+        }
         _ => format!("STATUS_UNKNOWN [0x{:08X}]", status),
     }
 }
@@ -201,4 +208,83 @@ pub fn format_named_pipe_string(process_id: usize, pipe_id: u32) -> Vec<u16> {
 
     // Return the UTF-16 encoded vector with a null terminator
     pipe_name_utf16
+}
+
+/// Converts a Rust string slice (`&str`) to a `UnicodeString`.
+///
+/// This function encodes a Rust `&str` as UTF-16 and then constructs a `UnicodeString`
+/// that can be used in Windows API calls or similar contexts where UTF-16 encoding is required.
+///
+/// # Parameters
+/// - `source`: A reference to a Rust string slice (`&str`) to be converted.
+///
+/// # Returns
+/// - A `UnicodeString` containing the UTF-16 encoded version of the input string.
+///
+/// # Safety
+/// This function allocates a buffer for the UTF-16 string and transfers ownership to the `UnicodeString`.
+/// The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must be taken to free the memory if necessary.
+pub fn str_to_unicode_string(source: &str) -> UnicodeString {
+    // Convert the Rust &str to a Vec<u16> (UTF-16 encoding)
+    let utf16: Vec<u16> = source.encode_utf16().collect();
+
+    // Create a new UnicodeString with an initially empty buffer
+    let mut unicode_string = UnicodeString::new();
+
+    // Set the length of the UnicodeString (in bytes)
+    unicode_string.length = (utf16.len() * 2) as u16;
+
+    // Set the maximum length, accounting for a null terminator
+    unicode_string.maximum_length = unicode_string.length + 2; // +2 for the null terminator
+
+    // Clone the UTF-16 vector and append a null terminator
+    let mut utf16_with_null = utf16.clone();
+    utf16_with_null.push(0); // Add null terminator
+
+    // Assign the buffer pointer to the UnicodeString
+    unicode_string.buffer = utf16_with_null.as_mut_ptr();
+
+    // Prevent Vec from deallocating the buffer when it goes out of scope
+    core::mem::forget(utf16_with_null);
+
+    unicode_string
+}
+
+/// Converts a pointer to a null-terminated UTF-16 string (`*mut u16`) to a Rust `String`.
+///
+/// This function reads a UTF-16 encoded string from a raw pointer, converts it to a Rust `String`,
+/// and returns the result. The function stops reading at the first null terminator it encounters.
+///
+/// # Parameters
+/// - `ptr`: A pointer to the beginning of a UTF-16 encoded string.
+///
+/// # Returns
+/// - A `String` containing the decoded characters. Returns an empty string if the pointer is null.
+///
+/// # Safety
+/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a valid, null-terminated UTF-16 string.
+pub fn ptr_to_str(ptr: *mut u16) -> String {
+    if ptr.is_null() {
+        return String::new();
+    }
+
+    // Calculate the length of the string by finding the null terminator
+    let len = (0..).take_while(|&i| unsafe { *ptr.add(i) } != 0).count();
+
+    // Create a slice from the pointer and the calculated length
+    let slice = unsafe { core::slice::from_raw_parts(ptr, len) };
+
+    // Convert the UTF-16 slice to a Rust String
+    String::from_utf16_lossy(slice)
+}
+
+/// Helper function to determine if a character is a path separator.
+///
+/// # Arguments
+/// * `ch` - A character (u16) to check.
+///
+/// # Returns
+/// `true` if the character is a path separator, `false` otherwise.
+pub fn is_path_separator(ch: u16) -> bool {
+    ch == '\\' as u16 || ch == '/' as u16
 }

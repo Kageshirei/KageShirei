@@ -179,6 +179,9 @@ unsafe fn init_global_instance() {
         // DIRECT NTDLL SYSCALL
         const LDR_LOAD_DLL_H: usize = 0x9e456a43;
         const RTL_CREATE_PROCESS_PARAMETERS_EX_H: usize = 0x533a05db;
+        const RTL_GET_FULL_PATH_NAME_U_H: usize = 0xc4415dac;
+        const RTL_GET_FULL_PATH_NAME_USTREX_H: usize = 0x1be830e2;
+        const RTL_DOS_PATH_NAME_TO_NT_PATH_NAME_U_H: usize = 0x2b0a6d72;
 
         const RTL_CREATE_HEAP_H: usize = 0xe1af6849;
         const RTL_ALLOCATE_HEAP_H: usize = 0x3be94c5a;
@@ -255,6 +258,26 @@ unsafe fn init_global_instance() {
         );
         instance.ntdll.rtl_create_process_parameters_ex =
             core::mem::transmute(rtl_create_process_parameters_ex_addr);
+
+        // Resolve RtlGetFullPathName_U
+        let rtl_get_full_path_name_u_addr =
+            ldr_function_addr(instance.ntdll.module_base, RTL_GET_FULL_PATH_NAME_U_H);
+        instance.ntdll.rtl_get_full_path_name_u =
+            core::mem::transmute(rtl_get_full_path_name_u_addr);
+
+        // Resolve RtlGetFullPathName_UstrEx
+        let rtl_get_full_path_name_ustrex_addr =
+            ldr_function_addr(instance.ntdll.module_base, RTL_GET_FULL_PATH_NAME_USTREX_H);
+        instance.ntdll.rtl_get_full_path_name_ustrex =
+            core::mem::transmute(rtl_get_full_path_name_ustrex_addr);
+
+        // Resolve RtlDosPathNameToNtPathName_U
+        let rtl_dos_path_name_to_nt_path_name_u_addr = ldr_function_addr(
+            instance.ntdll.module_base,
+            RTL_DOS_PATH_NAME_TO_NT_PATH_NAME_U_H,
+        );
+        instance.ntdll.rtl_dos_path_name_to_nt_path_name_u =
+            core::mem::transmute(rtl_dos_path_name_to_nt_path_name_u_addr);
 
         // Resolve RtlCreateHeap
         let rtl_create_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_CREATE_HEAP_H);

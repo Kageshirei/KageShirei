@@ -149,6 +149,9 @@ mod tests {
                 }
             };
 
+            let test_one = &ip_addresses[0].1;
+
+            libc_println!("test_one: {}", test_one);
             for (name, ip, dhcp) in ip_addresses {
                 libc_println!("Name: {}, IP Address: {}, Dhcp Server: {}", name, ip, dhcp);
             }

@@ -80,6 +80,87 @@ pub fn delay(seconds: i64) {
     }
 }
 
+/// Converts a Unix timestamp (seconds since January 1, 1970) to a human-readable date and time format.
+///
+/// The function returns a tuple representing the date and time in the format (year, month, day, hour, minute, second).
+///
+/// # Arguments
+///
+/// * `timestamp` - A Unix timestamp as an `i64`.
+///
+/// # Returns
+///
+/// * A tuple (year, month, day, hour, minute, second) representing the corresponding date and time.
+pub fn timestamp_to_datetime(timestamp: i64) -> (i64, u8, u8, u8, u8, u8) {
+    // Number of days since Unix epoch (January 1, 1970)
+    let days = timestamp / 86_400;
+    let mut seconds = timestamp % 86_400;
+
+    // Calculate hour, minute, and second
+    let hour = (seconds / 3_600) as u8;
+    seconds %= 3_600;
+    let minute = (seconds / 60) as u8;
+    let second = (seconds % 60) as u8;
+
+    // Calculate year, month, and day
+    let mut year = 1970;
+    let mut remaining_days = days;
+
+    while remaining_days >= days_in_year(year) {
+        remaining_days -= days_in_year(year);
+        year += 1;
+    }
+
+    let mut month = 0;
+    while remaining_days >= days_in_month(year, month) {
+        remaining_days -= days_in_month(year, month);
+        month += 1;
+    }
+
+    let day = remaining_days + 1; // day starts from 1
+
+    (year, (month + 1) as u8, day as u8, hour, minute, second)
+}
+
+/// Helper function to determine if a year is a leap year.
+fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+}
+
+/// Helper function to return the number of days in a year.
+fn days_in_year(year: i64) -> i64 {
+    if is_leap_year(year) {
+        366
+    } else {
+        365
+    }
+}
+
+/// Helper function to return the number of days in a specific month of a year.
+fn days_in_month(year: i64, month: usize) -> i64 {
+    match month {
+        0 => 31, // January
+        1 => {
+            if is_leap_year(year) {
+                29
+            } else {
+                28
+            }
+        } // February
+        2 => 31, // March
+        3 => 30, // April
+        4 => 31, // May
+        5 => 30, // June
+        6 => 31, // July
+        7 => 31, // August
+        8 => 30, // September
+        9 => 31, // October
+        10 => 30, // November
+        11 => 31, // December
+        _ => 0,  // Invalid month
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,6 +178,26 @@ mod tests {
         // Convert the timestamp to a readable format
         let datetime = DateTime::from_timestamp(timestamp, 0);
         libc_println!("Current datetime: {}", datetime.unwrap());
+    }
+
+    #[test]
+    fn test_timestamp_to_datetime() {
+        let timestamp = current_timestamp();
+        libc_println!("Current timestamp: {}", timestamp);
+
+        let datetime = timestamp_to_datetime(timestamp);
+        libc_println!(
+            "Current datetime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            datetime.0,
+            datetime.1,
+            datetime.2,
+            datetime.3,
+            datetime.4,
+            datetime.5
+        );
+
+        // Basic assertion to check if year is reasonable
+        assert!(datetime.0 >= 1970);
     }
 
     #[test]

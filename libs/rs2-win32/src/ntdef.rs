@@ -10,6 +10,7 @@ pub type NTSTATUS = i32;
 // Definition of Windows types
 pub type HANDLE = *mut c_void;
 pub type PHANDLE = *mut HANDLE;
+pub type LONG = c_long;
 pub type ULONG = c_ulong;
 pub type PVOID = *mut c_void;
 pub type AccessMask = ULONG;
@@ -44,22 +45,6 @@ pub type WORD = c_ushort;
 // Windows NT Headers
 pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
 pub const IMAGE_NT_SIGNATURE: u32 = 0x00004550; // "PE\0\0"
-
-/// Returns a handle to the current process.
-///
-/// In Windows, `-1` is used as a special value to represent the current process handle.
-/// This function mimics the behavior of the `NtCurrentProcess` macro in C.
-pub fn nt_current_process() -> HANDLE {
-    (-1isize) as HANDLE
-}
-
-/// Returns a handle to the current thread.
-///
-/// Similar to the process handle, `-2` is used as a special value to represent the current thread handle.
-/// This function mimics the behavior of the `NtCurrentThread` macro in C.
-pub fn nt_current_thread() -> HANDLE {
-    (-2isize) as HANDLE
-}
 
 #[repr(C)]
 pub struct ImageDosHeader {
@@ -399,9 +384,9 @@ pub struct RtlUserProcessParameters {
     pub standard_input: HANDLE,
     pub standard_output: HANDLE,
     pub standard_error: HANDLE,
-    // pub current_directory: CURDIR,
-    pub current_directory_path: UnicodeString,
-    pub current_directory_handle: HANDLE,
+    pub current_directory: CURDIR,
+    // pub current_directory_path: UnicodeString,
+    // pub current_directory_handle: HANDLE,
     pub dll_path: UnicodeString,
     pub image_path_name: UnicodeString,
     pub command_line: UnicodeString,
@@ -439,9 +424,9 @@ impl RtlUserProcessParameters {
             standard_input: null_mut(),
             standard_output: null_mut(),
             standard_error: null_mut(),
-            // current_directory: CURDIR::new(),
-            current_directory_path: UnicodeString::new(),
-            current_directory_handle: null_mut(),
+            current_directory: CURDIR::new(),
+            // current_directory_path: UnicodeString::new(),
+            // current_directory_handle: null_mut(),
             dll_path: UnicodeString::new(),
             image_path_name: UnicodeString::new(),
             command_line: UnicodeString::new(),
@@ -973,6 +958,7 @@ pub const FILE_DEVICE_NETWORK: u32 = 0x12;
 
 /// Allows synchronization access to a file.
 pub const SYNCHRONIZE: AccessMask = 0x00100000;
+
 /// Allows delete access to a file.
 pub const DELETE: AccessMask = 0x00010000;
 /// Allows read access to a file's data.
@@ -997,6 +983,8 @@ pub const WRITE_DAC: AccessMask = 0x00040000;
 pub const WRITE_OWNER: AccessMask = 0x00080000;
 /// Allows execute access to a file.
 pub const FILE_EXECUTE: AccessMask = 0x00000020;
+/// Allows traversal access to a directory.
+pub const FILE_TRAVERSE: AccessMask = 0x00000020;
 
 /// Generic read access mask for a file.
 pub const FILE_GENERIC_READ: u32 =
@@ -1361,7 +1349,7 @@ pub union PsAttributeValueUnion {
 #[repr(C)]
 pub struct PsAttributeList {
     pub total_length: usize,
-    pub attributes: [PsAttribute; 3],
+    pub attributes: [PsAttribute; 2],
 }
 
 impl PsAttribute {
@@ -1777,12 +1765,14 @@ pub struct SystemProcessInformation2 {
     pub other_transfer_count: LargeInteger,
 }
 
+#[repr(C)]
 #[allow(non_snake_case)]
 pub struct M128A {
     pub Low: ULONGLONG,
     pub High: LONGLONG,
 }
 
+#[repr(C)]
 #[allow(non_snake_case)]
 pub struct CONTEXT {
     pub P1Home: DWORD64,
@@ -1849,3 +1839,77 @@ pub const HEAP_PSEUDO_TAG_FLAG: DWORD = 0x8000;
 pub const HEAP_TAG_SHIFT: usize = 18;
 pub const HEAP_CREATE_SEGMENT_HEAP: DWORD = 0x00000100;
 pub const HEAP_CREATE_HARDENED: DWORD = 0x00000200;
+
+/// Represents different types of paths that can be recognized by the system.
+#[derive(Clone)]
+#[repr(C)]
+pub enum RtlPathType {
+    /// Unknown path type, typically when the input cannot be classified.
+    ///
+    /// Example: An empty string or an invalid path.
+    RtlPathTypeUnknown,
+
+    /// UNC (Universal Naming Convention) absolute path, used for network resources.
+    ///
+    /// Example: `\\Server\Share\Folder\File.txt`
+    RtlPathTypeUncAbsolute,
+
+    /// Drive absolute path, specifying a specific drive.
+    ///
+    /// Example: `C:\Folder\File.txt`
+    RtlPathTypeDriveAbsolute,
+
+    /// Drive relative path, where the path is relative to the current directory on a specific drive.
+    ///
+    /// Example: `C:Folder\File.txt`
+    RtlPathTypeDriveRelative,
+
+    /// Rooted path, which starts from the root directory but does not specify the drive.
+    ///
+    /// Example: `\Folder\File.txt`
+    RtlPathTypeRooted,
+
+    /// Relative path, which is relative to the current working directory.
+    ///
+    /// Example: `Folder\File.txt`
+    RtlPathTypeRelative,
+
+    /// Local device path, typically used to access device namespaces.
+    ///
+    /// Example: `\\.\PhysicalDrive0`
+    RtlPathTypeLocalDevice,
+
+    /// Root local device path, similar to local device paths but rooted.
+    ///
+    /// Example: `\\?\C:\Folder\File.txt`
+    RtlPathTypeRootLocalDevice,
+}
+
+#[repr(C)]
+pub struct RtlRelativeNameU {
+    pub relative_name: UnicodeString,
+    pub containing_directory: HANDLE,
+    pub cur_dir_ref: *mut RtlpCurdirRef,
+}
+
+impl RtlRelativeNameU {
+    /// Creates a new `RtlRelativeNameU` with default values.
+    ///
+    /// # Returns
+    /// A new instance of `RtlRelativeNameU` with an empty `UnicodeString`, a null `HANDLE`,
+    /// and a null pointer for `cur_dir_ref`.
+    pub fn new() -> Self {
+        RtlRelativeNameU {
+            relative_name: UnicodeString::new(), // Initialize with an empty UnicodeString
+            containing_directory: null_mut(),    // Set HANDLE to null
+            cur_dir_ref: null_mut(),             // Set pointer to null
+        }
+    }
+}
+
+pub struct RtlpCurdirRef {
+    pub reference_count: LONG,
+    pub directory_handle: HANDLE,
+}
+
+pub const UNICODE_STRING_MAX_BYTES: u32 = 65534;

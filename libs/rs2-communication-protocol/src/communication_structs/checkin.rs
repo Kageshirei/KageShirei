@@ -14,7 +14,8 @@ pub struct PartialCheckin {
     /// The username of whose runs the agent
     pub username: String,
     /// The internal network adapters info of the victim (Interface name, IP address, and DHCP server)
-    pub ips: Vec<(String, String, String)>,
+    // pub ips: Vec<(String, String, String)>,
+    pub ip: String,
     /// The process ID of the agent
     pub process_id: i64,
     /// The parent process ID of the agent
@@ -39,7 +40,8 @@ pub struct Checkin {
     /// The username of whose runs the agent
     pub username: String,
     /// The internal network adapters info of the victim (Interface name, IP address, and DHCP server)
-    pub ips: Vec<(String, String, String)>,
+    // pub ips: Vec<(String, String, String)>,
+    pub ip: String,
     /// The process ID of the agent
     pub process_id: i64,
     /// The parent process ID of the agent
@@ -61,7 +63,7 @@ impl Checkin {
             hostname: partial.hostname,
             domain: partial.domain,
             username: partial.username,
-            ips: partial.ips,
+            ip: partial.ip,
             process_id: partial.process_id,
             parent_process_id: partial.parent_process_id,
             process_name: partial.process_name,
@@ -109,7 +111,7 @@ mod tests {
             hostname: "DESKTOP-PC".to_string(),
             domain: "WORKGROUP".to_string(),
             username: "user".to_string(),
-            ips: Vec::new(),
+            ip: String::new(),
             process_id: 1234,
             parent_process_id: 5678,
             process_name: "agent.exe".to_string(),

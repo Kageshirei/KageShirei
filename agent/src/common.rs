@@ -158,6 +158,26 @@ pub fn generate_path(
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum AgentErrors {
+    ChangeDirectoryFailed,
+    PrintWorkingDirectoryFailed,
+    Other(&'static str),
+}
+
+impl AgentErrors {
+    /// Returns a message describing the error.
+    pub fn message(&self) -> &str {
+        match self {
+            AgentErrors::ChangeDirectoryFailed => "Failed to change directory",
+            AgentErrors::PrintWorkingDirectoryFailed => {
+                "Failed to retrieve current working directory"
+            }
+            AgentErrors::Other(msg) => msg,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

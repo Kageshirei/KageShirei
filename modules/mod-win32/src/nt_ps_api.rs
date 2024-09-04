@@ -14,20 +14,52 @@ use mod_agentcore::{
 use rs2_win32::{
     ntapi::nt_current_process,
     ntdef::{
-        AccessMask, ClientId, IoStatusBlock, LargeInteger, ObjectAttributes,
-        ProcessBasicInformation, ProcessInformation, PsAttributeList, PsCreateInfo,
-        PsCreateInfoUnion, PsCreateInitialFlags, PsCreateInitialState, PsCreateState,
-        RtlUserProcessParameters, SecurityAttributes, StartupInfoW, SystemInformationClass,
-        SystemProcessInformation, TokenMandatoryLabel, UnicodeString, FILE_CREATE,
-        FILE_GENERIC_WRITE, FILE_NON_DIRECTORY_FILE, FILE_PIPE_BYTE_STREAM_MODE,
-        FILE_PIPE_BYTE_STREAM_TYPE, FILE_PIPE_QUEUE_OPERATION, FILE_SHARE_READ, FILE_SHARE_WRITE,
-        FILE_SYNCHRONOUS_IO_NONALERT, FILE_WRITE_ATTRIBUTES, GENERIC_READ, HANDLE, NTSTATUS,
-        OBJ_CASE_INSENSITIVE, OBJ_INHERIT, PROCESS_ALL_ACCESS,
+        AccessMask,
+        ClientId,
+        IoStatusBlock,
+        LargeInteger,
+        ObjectAttributes,
+        ProcessBasicInformation,
+        ProcessInformation,
+        PsAttributeList,
+        PsCreateInfo,
+        PsCreateInfoUnion,
+        PsCreateInitialFlags,
+        PsCreateInitialState,
+        PsCreateState,
+        RtlUserProcessParameters,
+        SecurityAttributes,
+        StartupInfoW,
+        SystemInformationClass,
+        SystemProcessInformation,
+        TokenMandatoryLabel,
+        UnicodeString,
+        FILE_CREATE,
+        FILE_GENERIC_WRITE,
+        FILE_NON_DIRECTORY_FILE,
+        FILE_PIPE_BYTE_STREAM_MODE,
+        FILE_PIPE_BYTE_STREAM_TYPE,
+        FILE_PIPE_QUEUE_OPERATION,
+        FILE_SHARE_READ,
+        FILE_SHARE_WRITE,
+        FILE_SYNCHRONOUS_IO_NONALERT,
+        FILE_WRITE_ATTRIBUTES,
+        GENERIC_READ,
+        HANDLE,
+        NTSTATUS,
+        OBJ_CASE_INSENSITIVE,
+        OBJ_INHERIT,
+        PROCESS_ALL_ACCESS,
         PROCESS_CREATE_FLAGS_INHERIT_HANDLES,
-        PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON,
-        PS_ATTRIBUTE_IMAGE_NAME, PS_ATTRIBUTE_MITIGATION_OPTIONS, PS_ATTRIBUTE_PARENT_PROCESS,
-        RTL_USER_PROC_PARAMS_NORMALIZED, SYNCHRONIZE, THREAD_ALL_ACCESS, TOKEN_INTEGRITY_LEVEL,
-        TOKEN_QUERY, ULONG,
+        // PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON,
+        PS_ATTRIBUTE_IMAGE_NAME,
+        PS_ATTRIBUTE_PARENT_PROCESS,
+        RTL_USER_PROC_PARAMS_NORMALIZED,
+        SYNCHRONIZE,
+        THREAD_ALL_ACCESS,
+        TOKEN_INTEGRITY_LEVEL,
+        TOKEN_QUERY,
+        ULONG,
     },
     ntstatus::{
         NT_SUCCESS, STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_INFO_LENGTH_MISMATCH,
@@ -400,10 +432,10 @@ pub unsafe fn nt_create_user_process(
     }
 
     // Optional: Add additional attributes such as DLL mitigation policies, if necessary
-    attribute_list.attributes[2].attribute = PS_ATTRIBUTE_MITIGATION_OPTIONS;
-    attribute_list.attributes[2].size = mem::size_of::<u64>();
-    attribute_list.attributes[2].value.value =
-        PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON as usize;
+    // attribute_list.attributes[2].attribute = PS_ATTRIBUTE_MITIGATION_OPTIONS;
+    // attribute_list.attributes[2].size = mem::size_of::<u64>();
+    // attribute_list.attributes[2].value.value =
+    //     PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON as usize;
 
     // Initialize the PS_CREATE_INFO structure, which contains process creation information
     let mut ps_create_info = PsCreateInfo {

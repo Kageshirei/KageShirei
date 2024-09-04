@@ -5,8 +5,8 @@ use core::{
 
 use crate::ntdef::{
     AccessMask, ClientId, InitialTeb, IoStatusBlock, LargeInteger, ObjectAttributes, PEventType,
-    PsAttributeList, PsCreateInfo, RtlUserProcessParameters, TokenPrivileges, UnicodeString,
-    CONTEXT, HANDLE, NTSTATUS, PHANDLE, SIZE_T, ULONG,
+    PsAttributeList, PsCreateInfo, RtlPathType, RtlRelativeNameU, RtlUserProcessParameters,
+    TokenPrivileges, UnicodeString, CONTEXT, HANDLE, NTSTATUS, PHANDLE, PWSTR, SIZE_T, ULONG,
 };
 use rs2_indirect_syscall::run_syscall;
 
@@ -1751,6 +1751,84 @@ type RtlReAllocateHeap = unsafe extern "system" fn(
 /// # Returns
 /// - `HANDLE`: The function returns `NULL` if the heap was successfully destroyed. If the function fails, it returns the handle to the heap.
 type RtlDestroyHeap = unsafe extern "system" fn(hHeap: HANDLE) -> HANDLE;
+/// Type definition for the `RtlGetFullPathName_U` function.
+///
+/// Retrieves the full path and file name for the specified file, resolving any relative path
+/// components.
+///
+/// # Parameters
+/// - `[in]` - `FileName`: A pointer to a wide string (`PWSTR`) that specifies the relative or absolute file name.
+///             This string is expected to be null-terminated.
+/// - `[in]` - `BufferLength`: The size, in characters, of the buffer that will receive the full path and file name.
+///             This size includes space for the null terminator.
+/// - `[out]` - `Buffer`: A pointer to a buffer (`PWSTR`) that receives the full path and file name as a wide string.
+///             This string is null-terminated if the buffer is large enough.
+/// - `[out, optional]` - `FilePart`: A pointer to a `PWSTR` that receives the address of the final file name component
+///                         within the full path. This parameter can be `NULL` if the caller does not need this information.
+///
+/// # Returns
+/// - `ULONG`: The function returns the length, in characters, of the string copied to the buffer, excluding the null terminator.
+///            If the buffer is too small, the function returns the size, in characters, required to hold the full path and file name.
+///
+/// # Remarks
+/// - If the `Buffer` is too small to hold the full path, the function does not null-terminate the string.
+/// - This function operates on wide character strings (`wchar_t`), meaning it is designed for use with the Windows Unicode string types.
+type RtlGetFullPathNameU = unsafe extern "system" fn(
+    FileName: PWSTR,
+    BufferLength: ULONG,
+    Buffer: PWSTR,
+    FilePart: *mut PWSTR,
+) -> ULONG;
+
+/// Type definition for the RtlGetFullPathName_UstrEx function.
+///
+/// Retrieves the full path and file name for the specified relative path, with additional options
+/// for dynamic memory management and validation.
+///
+/// # Parameters
+/// - `[in]` - `FileName`: A pointer to a `UNICODE_STRING` that specifies the relative file name.
+/// - `[in, out]` - `StaticString`: A pointer to a `UNICODE_STRING` that receives the full path and file name if it fits within the static buffer.
+/// - `[in, out, opt]` - `DynamicString`: A pointer to a `UNICODE_STRING` that receives the full path and file name if the static buffer is insufficient. This is optional and can be `NULL`.
+/// - `[out]` - `StringUsed`: A pointer to a `UNICODE_STRING` that receives a pointer to the used string (either static or dynamic).
+/// - `[out]` - `FilePartPrefixCch`: A pointer to a `SIZE_T` that receives the number of characters in the file part prefix.
+/// - `[out]` - `NameInvalid`: A pointer to a `BOOLEAN` that indicates whether the file name is invalid.
+/// - `[out]` - `InputPathType`: A pointer to a `RTL_PATH_TYPE` that receives the type of the input path.
+/// - `[out]` - `BytesRequired`: A pointer to a `SIZE_T` that receives the number of bytes required if the provided buffers are insufficient.
+///
+/// # Returns
+/// - `NTSTATUS`: The function returns `STATUS_SUCCESS` if successful, or an NTSTATUS error code if the function fails.
+type RtlGetFullPathNameUstrEx = unsafe extern "system" fn(
+    FileName: *const UnicodeString,
+    StaticString: *mut UnicodeString,
+    DynamicString: *mut UnicodeString,
+    StringUsed: *mut *mut UnicodeString,
+    FilePartPrefixCch: *mut usize,
+    NameInvalid: *mut bool,
+    InputPathType: *mut RtlPathType,
+    BytesRequired: *mut usize,
+) -> NTSTATUS;
+
+/// Type definition for the `RtlDosPathNameToNtPathName_U` function.
+///
+/// Converts a DOS path (e.g., "C:\Windows\System32") to an NT path (e.g., "\??\C:\Windows\System32").
+///
+/// This function converts a DOS path name to an NT path name, which is the format used internally
+/// by the Windows NT kernel. It also optionally returns the file part and relative path information.
+///
+/// # Parameters
+/// - `[in]` - `DosFileName`: A pointer to a null-terminated Unicode string that specifies the DOS file path name to be converted.
+/// - `[out]` - `NtFileName`: A pointer to a `UNICODE_STRING` structure that receives the converted NT file path name.
+/// - `[out, opt]` - `FilePart`: A pointer to a `PWSTR` that receives the address of the file part of the path, which is the final component of the path (optional, can be `NULL`).
+/// - `[out, opt]` - `RelativeName`: A pointer to a `RTL_RELATIVE_NAME_U` structure that receives relative path information if the path is relative (optional, can be `NULL`).
+///
+/// # Returns
+/// - `BOOLEAN`: The function returns `TRUE` if the conversion was successful, or `FALSE` if the conversion failed.
+type RtlDosPathNameToNtPathNameU = unsafe extern "system" fn(
+    DosFileName: PWSTR,                  // Pointer to the DOS path to convert
+    NtFileName: *mut UnicodeString,      // Receives the converted NT path
+    FilePart: *mut PWSTR,                // Receives the file part of the path (optional)
+    RelativeName: *mut RtlRelativeNameU, // Receives relative path information (optional)
+) -> bool;
 
 pub struct NtDll {
     pub module_base: *mut u8,
@@ -1758,6 +1836,9 @@ pub struct NtDll {
     // Direct Syscall
     pub ldr_load_dll: LdrLoadDll,
     pub rtl_create_process_parameters_ex: RtlCreateProcessParametersEx,
+    pub rtl_get_full_path_name_u: RtlGetFullPathNameU,
+    pub rtl_get_full_path_name_ustrex: RtlGetFullPathNameUstrEx,
+    pub rtl_dos_path_name_to_nt_path_name_u: RtlDosPathNameToNtPathNameU,
 
     // Heap management functions
     pub rtl_create_heap: RtlCreateHeap,
@@ -1819,6 +1900,11 @@ impl NtDll {
             // Direct Syscall
             ldr_load_dll: unsafe { core::mem::transmute(null_mut::<c_void>()) },
             rtl_create_process_parameters_ex: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_get_full_path_name_u: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_get_full_path_name_ustrex: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_dos_path_name_to_nt_path_name_u: unsafe {
+                core::mem::transmute(null_mut::<c_void>())
+            },
 
             // Heap management functions
             rtl_create_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },

