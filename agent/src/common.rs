@@ -66,30 +66,47 @@ pub fn generate_random_lengths_for_request_id(len: usize) -> (usize, usize, usiz
 
 /// Generates a random path similar to Example 2 in the comments.
 ///
-/// This function randomly generates a path of two types:
-/// - Type 0: A single position for the request ID within a range of random strings.
+/// This function randomly generates a path of three types:
+/// - Type 0: A single position for the request ID within a range of random strings. The index of the request ID
+///   position is included as part of the path.
 /// - Type 1: Three positions for fragments of the request ID within a range of random strings,
-///   separated by randomly chosen separators.
+///   separated by randomly chosen separators. The positions of the fragments are included in the path.
+/// - Type 2: The request ID is inserted randomly into the path without any indices or positions being included in the path.
+///   The first string of length 32 is automatically recognized as the request ID.
 ///
 /// # Arguments
 ///
-/// * `id_len` - The length of the request ID.
+/// * `request_id_len` - The length of the request ID (typically 32).
 /// * `start_index` - The start of the range for the ID position(s) (inclusive).
 /// * `end_index` - The end of the range for the ID position(s) (exclusive).
 ///
 /// # Returns
 ///
 /// A tuple containing:
-/// * The path type (0 or 1).
+/// * The path type (0, 1, or 2).
 /// * A `String` containing the generated path.
 /// * A `String` containing the generated request ID.
+///
+/// # Path Type Explanation:
+///
+/// **Type 0:**
+/// Path: `/1/a/b/request_id/c/d`
+/// - "1" indicates the position where the request ID appears (position 1 in this case).
+///
+/// **Type 1:**
+/// Path: `/0;2-4/a/b/part1/c/part2/d/part3`
+/// - "0;2-4" indicates the positions where the request ID is split and inserted as fragments ("part1", "part2", "part3").
+///
+/// **Type 2:**
+/// Path: `/a/b/request_id/c/d`
+/// - The request ID appears as a string of length 32 somewhere in the path without any numerical indices.
 pub fn generate_path(
     request_id_len: usize,
     start_index: usize,
     end_index: usize,
 ) -> (usize, String, String) {
     // Randomly choose the path type (0 or 1)
-    let path_type = thread_rng().gen_range(0..2);
+    let path_type = thread_rng().gen_range(0..3);
     // Generate a random request ID of the specified length
     let request_id = generate_request_id(request_id_len);
 
@@ -111,7 +128,7 @@ pub fn generate_path(
             format!("/{}/{}", id_position_str, path_parts.join("/")),
             request_id,
         )
-    } else {
+    } else if path_type == 1 {
         // Type 1: Multiple positions for fragments of the request ID
         // Define possible separators
         let separators = [",", ";", ":", ".", "-", "_", " ", "|", "$"];
@@ -155,6 +172,15 @@ pub fn generate_path(
             ),
             request_id,
         )
+    } else {
+        // Type 2: Request ID without any index, just randomly placed in the path
+        let id_position: usize = thread_rng().gen_range(start_index..end_index);
+        let mut path_parts: Vec<String> = (0..(end_index - start_index))
+            .map(|_| generate_random_string())
+            .collect();
+        path_parts[id_position] = request_id.clone();
+        // Return the path type, the generated path without index, and the request ID
+        (path_type, format!("/{}", path_parts.join("/")), request_id)
     }
 }
 
@@ -227,7 +253,7 @@ mod tests {
                     request_id,
                     "Request ID does not match at the specified position"
                 );
-            } else {
+            } else if path_type == 1 {
                 // Check for type 1 path
                 assert_eq!(
                     parts.len(),
@@ -286,6 +312,36 @@ mod tests {
                 assert_eq!(
                     concatenated_id, request_id,
                     "Concatenated ID does not match the request ID"
+                );
+            } else {
+                // Check for type 2 path
+                // Ensure that the path contains the correct number of parts
+                assert_eq!(
+                    parts.len(),
+                    end_index + 1,
+                    "Path does not contain the expected number of parts"
+                );
+
+                // Ensure there is one part with length equal to the request ID (32 characters)
+                let mut found_request_id = None;
+                for part in &parts {
+                    if part.len() == 32 {
+                        found_request_id = Some(part.to_string());
+                        break;
+                    }
+                }
+
+                // Ensure we found the request ID in the path
+                assert!(
+                    found_request_id.is_some(),
+                    "Did not find the request ID in the path"
+                );
+
+                // Ensure the found request ID matches the generated request ID
+                assert_eq!(
+                    found_request_id.unwrap(),
+                    request_id,
+                    "Request ID found in the path does not match the generated request ID"
                 );
             }
             libc_println!();
