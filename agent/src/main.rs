@@ -7,7 +7,6 @@ pub mod command;
 pub mod common;
 pub mod handler;
 pub mod init;
-pub mod tests;
 
 use handler::command_handler;
 use init::{init_checkin_data, init_protocol};

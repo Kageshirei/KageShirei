@@ -14,60 +14,27 @@ use mod_agentcore::{
 use rs2_win32::{
     ntapi::nt_current_process,
     ntdef::{
-        AccessMask,
-        ClientId,
-        IoStatusBlock,
-        LargeInteger,
-        ObjectAttributes,
-        ProcessBasicInformation,
-        ProcessInformation,
-        PsAttributeList,
-        PsCreateInfo,
-        PsCreateInfoUnion,
-        PsCreateInitialFlags,
-        PsCreateInitialState,
-        PsCreateState,
-        RtlUserProcessParameters,
-        SecurityAttributes,
-        StartupInfoW,
-        SystemInformationClass,
-        SystemProcessInformation,
-        TokenMandatoryLabel,
-        UnicodeString,
-        FILE_CREATE,
-        FILE_GENERIC_WRITE,
-        FILE_NON_DIRECTORY_FILE,
-        FILE_PIPE_BYTE_STREAM_MODE,
-        FILE_PIPE_BYTE_STREAM_TYPE,
-        FILE_PIPE_QUEUE_OPERATION,
-        FILE_SHARE_READ,
-        FILE_SHARE_WRITE,
-        FILE_SYNCHRONOUS_IO_NONALERT,
-        FILE_WRITE_ATTRIBUTES,
-        GENERIC_READ,
-        HANDLE,
-        NTSTATUS,
-        OBJ_CASE_INSENSITIVE,
-        OBJ_INHERIT,
-        PROCESS_ALL_ACCESS,
-        PROCESS_CREATE_FLAGS_INHERIT_HANDLES,
-        // PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON,
-        PS_ATTRIBUTE_IMAGE_NAME,
-        PS_ATTRIBUTE_PARENT_PROCESS,
-        RTL_USER_PROC_PARAMS_NORMALIZED,
-        SYNCHRONIZE,
-        THREAD_ALL_ACCESS,
-        TOKEN_INTEGRITY_LEVEL,
-        TOKEN_QUERY,
-        ULONG,
+        AccessMask, ClientId, IoStatusBlock, LargeInteger, ObjectAttributes,
+        ProcessBasicInformation, ProcessInformation, PsAttributeList, PsCreateInfo,
+        PsCreateInfoUnion, PsCreateInitialFlags, PsCreateInitialState, PsCreateState,
+        RtlUserProcessParameters, SecurityAttributes, StartupInfoW, SystemInformationClass,
+        SystemProcessInformation, TokenMandatoryLabel, UnicodeString, FILE_CREATE,
+        FILE_GENERIC_WRITE, FILE_NON_DIRECTORY_FILE, FILE_PIPE_BYTE_STREAM_MODE,
+        FILE_PIPE_BYTE_STREAM_TYPE, FILE_PIPE_QUEUE_OPERATION, FILE_SHARE_READ, FILE_SHARE_WRITE,
+        FILE_SYNCHRONOUS_IO_NONALERT, FILE_WRITE_ATTRIBUTES, GENERIC_READ, HANDLE, NTSTATUS,
+        OBJ_CASE_INSENSITIVE, OBJ_INHERIT, PROCESS_ALL_ACCESS,
+        PROCESS_CREATE_FLAGS_INHERIT_HANDLES, PS_ATTRIBUTE_IMAGE_NAME, PS_ATTRIBUTE_PARENT_PROCESS,
+        RTL_USER_PROC_PARAMS_NORMALIZED, SYNCHRONIZE, THREAD_ALL_ACCESS, TOKEN_INTEGRITY_LEVEL,
+        TOKEN_QUERY, ULONG,
     },
     ntstatus::{
-        NT_SUCCESS, STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_INFO_LENGTH_MISMATCH,
+        NT_SUCCESS, STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_END_OF_FILE,
+        STATUS_INFO_LENGTH_MISMATCH, STATUS_PENDING,
     },
 };
 
 use crate::{
-    nt_time::delay,
+    nt_time::wait_until,
     utils::{format_named_pipe_string, unicodestring_to_string, NT_STATUS},
 };
 
@@ -632,6 +599,7 @@ pub unsafe fn nt_create_named_pipe_file(
 pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
     let mut io_status_block: IoStatusBlock = IoStatusBlock::new(); // IO status block for the read operation
     let mut local_buffer = [0u8; 1024]; // Local buffer to store each chunk of data read
+    let mut has_data = false; // Track if we have read any data
 
     loop {
         // Call the NtReadFile syscall to read from the pipe
@@ -647,18 +615,41 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
             null_mut(),           // Key, usually null
         );
 
-        // Accumulate the total bytes read
-        let total_read = io_status_block.information as u32;
+        // If the call was not successful, handle the error
+        if !NT_SUCCESS(status) {
+            if status == STATUS_END_OF_FILE || io_status_block.information == 0 {
+                // End of file or no more data is available, break the loop
+                break;
+            } else if status == STATUS_PENDING {
+                // If operation is pending, continue waiting for data
+                continue;
+            } else {
+                // Some other error occurred, so break the loop
+                return false;
+            }
+        }
+
+        // Number of bytes read in this iteration
+        let bytes_read = io_status_block.information as u32;
+
+        // If no bytes were read, it means there's no more data
+        if bytes_read == 0 {
+            break;
+        }
 
         // Append the data from the local buffer to the provided buffer
-        buffer.extend_from_slice(&local_buffer[..total_read as usize]);
+        buffer.extend_from_slice(&local_buffer[..bytes_read as usize]);
 
-        if !NT_SUCCESS(status) || total_read == 0 || total_read < local_buffer.len() as u32 {
+        // Mark that we have successfully read some data
+        has_data = true;
+
+        if bytes_read < local_buffer.len() as u32 {
             break;
         }
     }
 
-    true // Return true to indicate successful read operation
+    // Return true if we have read any data, false otherwise
+    has_data
 }
 
 /// Creates a process using the specified executable and command line, and captures its output
@@ -763,8 +754,8 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
             &mut process_info,             // Process information structure.
         );
 
-        // Delay slightly to allow the process to start.
-        delay(2);
+        // // Delay slightly to allow the process to start.
+        wait_until(3);
 
         // If process creation fails, log the error and return the collected output (likely empty).
         if !success {
@@ -1082,7 +1073,7 @@ mod tests {
     fn test_nt_shell_create_process_w() {
         unsafe {
             let target_process = "C:\\Windows\\System32\\cmd.exe";
-            let sz_target_process_parameters = "cmd.exe /c whoami";
+            let sz_target_process_parameters = "cmd.exe /c powershell -v 2 -c $PSVersionTable";
 
             let output = nt_create_process_w_piped(&target_process, sz_target_process_parameters);
 

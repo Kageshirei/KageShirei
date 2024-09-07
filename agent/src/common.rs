@@ -188,6 +188,7 @@ pub fn generate_path(
 pub enum AgentErrors {
     ChangeDirectoryFailed,
     PrintWorkingDirectoryFailed,
+    CmdOutputIsEmpty,
     Other(&'static str),
 }
 
@@ -199,6 +200,7 @@ impl AgentErrors {
             AgentErrors::PrintWorkingDirectoryFailed => {
                 "Failed to retrieve current working directory"
             }
+            AgentErrors::CmdOutputIsEmpty => "Failed to retrieve output from cmd",
             AgentErrors::Other(msg) => msg,
         }
     }

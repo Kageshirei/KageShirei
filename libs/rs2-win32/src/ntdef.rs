@@ -1078,6 +1078,8 @@ pub const FILE_PIPE_BYTE_STREAM_MODE: u32 = 0x00000000;
 /// Multiple instances of the pipe can be created, and the system manages a queue of connections.
 pub const FILE_PIPE_QUEUE_OPERATION: u32 = 0x00000000;
 
+pub const FILE_PIPE_COMPLETE_OPERATION: u32 = 0x00000001; // Completion mode: operations complete immediately
+
 /// GENERIC_READ grants read access to the object. Data can be read from the file or pipe.
 pub const GENERIC_READ: u32 = 0x80000000;
 

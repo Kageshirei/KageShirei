@@ -161,6 +161,30 @@ fn days_in_month(year: i64, month: usize) -> i64 {
     }
 }
 
+/// Sleeps until the current timestamp reaches the target time.
+///
+/// This function actively waits in a loop until the current time reaches the target timestamp.
+/// It keeps checking the current timestamp in a tight loop without introducing any explicit delays.
+///
+/// # Arguments
+///
+/// * `seconds_to_wait` - The number of seconds to wait.
+pub fn wait_until(seconds_to_wait: i64) {
+    let start_time = current_timestamp(); // Get the current time
+    let target_time = start_time + seconds_to_wait; // Calculate the target timestamp
+
+    // Loop until the current timestamp reaches or exceeds the target timestamp
+    loop {
+        let current_time = current_timestamp(); // Get the current time
+        if current_time >= target_time {
+            break; // Exit the loop once the target time is reached
+        }
+
+        // Continuously check the time without using an explicit delay
+        // This is an active wait
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -240,5 +264,30 @@ mod tests {
         delay(15);
 
         libc_println!("Delay of 5 seconds completed");
+    }
+
+    #[test]
+    fn test_wait_until() {
+        let seconds_to_wait = 10;
+
+        libc_println!("Starting wait_until for {} seconds...", seconds_to_wait);
+
+        let start_time = current_timestamp();
+
+        // Call wait_until and pass the number of seconds to wait
+        wait_until(seconds_to_wait);
+
+        let end_time = current_timestamp();
+        let elapsed_time = end_time - start_time;
+
+        libc_println!("Wait completed. Elapsed time: {} seconds", elapsed_time);
+
+        // Check that at least `seconds_to_wait` have passed
+        assert!(
+            elapsed_time >= seconds_to_wait,
+            "Expected at least {} seconds to have passed, but only {} seconds passed",
+            seconds_to_wait,
+            elapsed_time
+        );
     }
 }
