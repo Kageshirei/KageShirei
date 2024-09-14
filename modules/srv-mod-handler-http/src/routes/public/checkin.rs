@@ -1,18 +1,18 @@
-use axum::{debug_handler, Router};
 use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::response::Response;
 use axum::routing::post;
+use axum::{debug_handler, Router};
 use tracing::{instrument, warn};
 
 use rs2_crypt::encoder::base32::Base32Encoder;
 use rs2_crypt::encoder::base64::Base64Encoder;
-use rs2_crypt::encoder::Encoder as CryptEncoder;
 use rs2_crypt::encoder::hex::HexEncoder;
+use rs2_crypt::encoder::Encoder as CryptEncoder;
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
-use srv_mod_handler_base::state::HttpHandlerSharedState;
+use srv_mod_handler_base::state::HandlerSharedState;
 
 mod agent;
 mod process_body;
@@ -87,7 +87,7 @@ fn decode_or_fail_response(encoder: Encoder, body: Bytes) -> Result<Bytes, Respo
 #[debug_handler]
 #[instrument(name = "POST /checkin", skip_all)]
 async fn post_handler(
-	State(state): State<HttpHandlerSharedState>,
+	State(state): State<HandlerSharedState>,
 	headers: HeaderMap,
 	body: Bytes,
 ) -> Response<Body> {
@@ -200,7 +200,7 @@ async fn post_handler(
 }
 
 /// Creates the public authentication routes
-pub fn route(state: HttpHandlerSharedState) -> Router<HttpHandlerSharedState> {
+pub fn route(state: HandlerSharedState) -> Router<HandlerSharedState> {
 	Router::new()
 		.route("/checkin", post(post_handler))
 		.with_state(state)
@@ -220,12 +220,12 @@ mod tests {
 	use rs2_communication_protocol::magic_numbers;
 	use srv_mod_config::handlers;
 	use srv_mod_config::handlers::{HandlerConfig, HandlerSecurityConfig, HandlerType};
-	use srv_mod_database::{bb8, Pool};
 	use srv_mod_database::diesel::{Connection, PgConnection};
-	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_migrations::MigrationHarness;
 	use srv_mod_database::migration::MIGRATIONS;
+	use srv_mod_database::{bb8, Pool};
 	use srv_mod_handler_base::state::HttpHandlerState;
 
 	use super::*;
