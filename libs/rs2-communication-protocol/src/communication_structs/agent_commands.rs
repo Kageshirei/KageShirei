@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AgentCommands {
+	/// Invalid command
+	INVALID,
 	/// Terminate the agent
 	///
 	/// This command is used to terminate the agent
@@ -29,6 +31,17 @@ impl Display for AgentCommands {
 		match self {
 			Self::Terminate => write!(f, "terminate"),
 			Self::Checkin => write!(f, "checkin"),
+			Self::INVALID => write!(f, "invalid"),
+		}
+	}
+}
+
+impl From<String> for AgentCommands {
+	fn from(s: String) -> Self {
+		match s.as_str() {
+			"terminate" => Self::Terminate,
+			"checkin" => Self::Checkin,
+			_ => Self::INVALID,
 		}
 	}
 }

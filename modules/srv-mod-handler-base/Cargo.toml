@@ -19,6 +19,10 @@ srv-mod-config = { path = "../srv-mod-config" }
 rs2-utils = { path = "../../libs/rs2-utils", features = ["bytes"] }
 axum = "0.7.5"
 srv-mod-database = { path = "../srv-mod-database" }
+rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+mod-protocol-json = { path = "../mod-protocol-json" }
+chrono = "0.4.38"
+tokio = { version = "1.37.0", features = ["full"] }
 
 [dev-dependencies]
 serde_json = "1.0.117"

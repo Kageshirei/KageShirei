@@ -3,131 +3,27 @@ use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::response::Response;
-use axum::Router;
 use axum::routing::post;
-use tracing::instrument;
+use axum::Router;
+use tracing::{instrument, warn};
 
 use rs2_crypt::encoder::base32::Base32Encoder;
 use rs2_crypt::encoder::base64::Base64Encoder;
-use rs2_crypt::encoder::Encoder as CryptEncoder;
 use rs2_crypt::encoder::hex::HexEncoder;
+use rs2_crypt::encoder::Encoder as CryptEncoder;
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
-use srv_mod_handler_base::state::{HandlerSharedState, HttpHandlerSharedState};
+use srv_mod_handler_base::handle_command_result;
+use srv_mod_handler_base::state::HandlerSharedState;
 
 /// The handler for the agent checking operation
 #[instrument(skip(state, body, headers))]
 async fn handle_request(
-	State(state): HttpHandlerSharedState,
+	State(state): HandlerSharedState,
 	headers: HeaderMap,
 	body: Bytes,
 	id: String,
 ) -> Response<Body> {
-	match state.config.security.encryption_scheme {
-		// handle plaintext communication no decryption needed
-		EncryptionScheme::Plain => {
-			match state.config.security.encoder.as_ref() {
-				// no encoding needed, this is definitely plaintext
-				None => {
-					process_body::process_body(state, body).await
-				}
-				// handle all the encodings
-				Some(encoding) => {
-					let decoded = decode_or_fail_response(encoding.clone(), body);
-
-					if decoded.is_err() {
-						return decoded.unwrap_err();
-					}
-
-					let decoded = decoded.unwrap();
-					process_body::process_body(state, decoded).await
-				}
-			}
-		}
-		// handle symmetric encryption, decryption needed with the symmetric key of the agent if available or fallback
-		// to plaintext
-		EncryptionScheme::Symmetric => {
-			match state.config.security.encoder.as_ref() {
-				// no encoding needed, jump straight to decryption
-				None => {
-					todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-					todo!("Process request body");
-
-					(StatusCode::OK, "").into_response()
-				}
-				// handle all the encodings
-				Some(encoding) => {
-					match encoding {
-						// decode hex, then start processing
-						Encoder::Hex => {
-							todo!("Decode from hex");
-							todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base32, then start processing
-						Encoder::Base32 => {
-							todo!("Decode from base32");
-							todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base64, then start processing
-						Encoder::Base64 => {
-							todo!("Decode from base64");
-							todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-					}
-				}
-			}
-		}
-		// handle asymmetric encryption, decryption needed with the private key of the agent if available or fallback
-		// to plaintext
-		EncryptionScheme::Asymmetric => {
-			match state.config.security.encoder.as_ref() {
-				// no encoding needed, jump straight to decryption
-				None => {
-					todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-					todo!("Process request body");
-
-					(StatusCode::OK, "").into_response()
-				}
-				// handle all the encodings
-				Some(encoding) => {
-					match encoding {
-						// decode hex, then start processing
-						Encoder::Hex => {
-							todo!("Decode from hex");
-							todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base32, then start processing
-						Encoder::Base32 => {
-							todo!("Decode from base32");
-							todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base64, then start processing
-						Encoder::Base64 => {
-							todo!("Decode from base64");
-							todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-					}
-				}
-			}
-		}
-	}
+	handle_command_result(state, body, headers, id).await
 }
 
 /// This kind of route uses the first path parameter as the index of the id in the path
@@ -173,11 +69,23 @@ pub async fn heuristic_handler_variant_1(
 ) -> Response<Body> {
 	// Split the id_position string by allowed separators
 	let separators = [',', ';', ':', '.', '-', '_', ' ', '|', '$'];
-	let id_positions: Vec<usize> = id_position
+	let id_positions = id_position
 		.split(|c| separators.contains(&c))
 		.map(|s| s.parse::<usize>())
-		.collect::<Result<_, _>>()
-		.map_err(|_| StatusCode::BAD_REQUEST)?;
+		.collect::<Result<Vec<usize>, _>>()
+		.map_err(|_| StatusCode::BAD_REQUEST);
+
+	if id_positions.is_err() {
+		// if the id_position is not a number, return a bad request
+		warn!("Unknown format for heuristic handling of requests (v1), request refused");
+		warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
+
+		// always return OK to avoid leaking information
+		return (StatusCode::OK, "").into_response();
+	}
+
+	// Unwrap the id_positions
+	let id_positions = id_positions.unwrap();
 
 	// Split the path by '/'
 	let parts: Vec<&str> = path.split('/').collect();
@@ -212,8 +120,19 @@ pub async fn heuristic_handler_variant_2(
 	let id = path
 		.split('/')
 		.find(|&part| part.len() == 32)
-		.ok_or(StatusCode::BAD_REQUEST)?
-		.to_string();
+		.ok_or(StatusCode::BAD_REQUEST);
+
+	if id.is_err() {
+		// if the id is not found, return a bad request
+		warn!("Unknown format for heuristic handling of requests (v2), request refused");
+		warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
+
+		// always return OK to avoid leaking information
+		return (StatusCode::OK, "").into_response();
+	}
+
+	// Unwrap the id
+	let id = id.unwrap().to_string();
 
 	handle_request(state, headers, body, id).await
 }
@@ -240,12 +159,12 @@ mod tests {
 	use rs2_communication_protocol::magic_numbers;
 	use srv_mod_config::handlers;
 	use srv_mod_config::handlers::{HandlerConfig, HandlerSecurityConfig, HandlerType};
-	use srv_mod_database::{bb8, Pool};
 	use srv_mod_database::diesel::{Connection, PgConnection};
-	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_migrations::MigrationHarness;
 	use srv_mod_database::migration::MIGRATIONS;
+	use srv_mod_database::{bb8, Pool};
 	use srv_mod_handler_base::state::HttpHandlerState;
 
 	use super::*;

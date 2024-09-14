@@ -18,6 +18,7 @@ create table if not exists agents (
     server_secret_key varchar(255) not null,
     secret_key        varchar(255) not null,
     signature         varchar(255) not null unique,
+    terminated_at   timestamptz,
     created_at      timestamptz not null default current_timestamp,
     updated_at      timestamptz not null default current_timestamp
 );
