@@ -22,10 +22,6 @@ use rs2_communication_protocol::{
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
 ///
-/// # Errors
-/// - If the command returns no output, an error status is recorded, with `exit_code = 1`.
-///   The `output` field remains empty in this case.
-///
 /// # Safety
 /// - This function is marked `unsafe` because it interacts with the NT API through
 ///   `nt_create_process_w_piped`, which involves low-level process creation and direct

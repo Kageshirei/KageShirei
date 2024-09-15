@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use mod_agentcore::instance;
 use rs2_win32::ntdef::LargeInteger;
 
@@ -185,9 +186,43 @@ pub fn wait_until(seconds_to_wait: i64) {
     }
 }
 
+/// Checks if the current time is within the provided working hours.
+///
+/// This function compares the current timestamp with the start and end times
+/// from the working hours (in Unix timestamp format). If the current time is
+/// outside the working hours, the function returns `false`, which could be used
+/// to trigger a `continue` in the caller.
+///
+/// # Arguments
+/// * `working_hours` - A reference to a vector containing the start and end times as Unix timestamps.
+///   The vector should have two elements: `Some(start)` and `Some(end)`.
+///
+/// # Returns
+/// * `bool` - Returns `true` if the current time is within working hours, otherwise `false`.
+pub fn is_working_hours(working_hours: &Option<Vec<Option<i64>>>) -> bool {
+    // Retrieve the current timestamp
+    let current_time = current_timestamp();
+
+    // Check if working hours are defined
+    if let Some(hours) = working_hours {
+        // Ensure that both start and end are present
+        if let (Some(start), Some(end)) =
+            (hours.get(0).and_then(|&s| s), hours.get(1).and_then(|&e| e))
+        {
+            // Check if the current time is outside the working hours
+            if current_time < start || current_time > end {
+                return false; // We are outside working hours
+            }
+        }
+    }
+
+    true // Return true if hours are not defined or we are within working hours
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec;
     use chrono::DateTime;
     use libc_print::libc_println;
 
@@ -288,6 +323,45 @@ mod tests {
             "Expected at least {} seconds to have passed, but only {} seconds passed",
             seconds_to_wait,
             elapsed_time
+        );
+    }
+
+    #[test]
+    fn test_is_working_hours() {
+        let current_time = current_timestamp();
+
+        // Case: Current time is within working hours
+        let start_time = current_time - 1000; // Start is in the past
+        let end_time = current_time + 1000; // End is in the future
+        let working_hours = Some(vec![Some(start_time), Some(end_time)]);
+        assert!(
+            is_working_hours(&working_hours),
+            "Expected to be within working hours"
+        );
+
+        // Case: Current time is outside working hours (before)
+        let start_time = current_time + 1000; // Start is in the future
+        let end_time = current_time + 2000;
+        let working_hours = Some(vec![Some(start_time), Some(end_time)]);
+        assert!(
+            !is_working_hours(&working_hours),
+            "Expected to be outside working hours"
+        );
+
+        // Case: Current time is outside working hours (after)
+        let start_time = current_time - 2000;
+        let end_time = current_time - 1000; // End is in the past
+        let working_hours = Some(vec![Some(start_time), Some(end_time)]);
+        assert!(
+            !is_working_hours(&working_hours),
+            "Expected to be outside working hours"
+        );
+
+        // Case: No working hours defined
+        let working_hours: Option<Vec<Option<i64>>> = None;
+        assert!(
+            is_working_hours(&working_hours),
+            "Expected to be within working hours due to no definition"
         );
     }
 }
