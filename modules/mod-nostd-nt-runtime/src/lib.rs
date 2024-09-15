@@ -44,7 +44,7 @@ mod tests {
 
         // Spawn 10 tasks using the NoStdNtRuntime.
         // Each task will either execute `task_type_a` or `task_type_b` depending on the loop index.
-        for i in 0..10 {
+        for i in 0..100 {
             // Generate metadata for each task, which includes a unique request ID and command ID.
             let metadata = Metadata {
                 request_id: format!("req-{}", i),

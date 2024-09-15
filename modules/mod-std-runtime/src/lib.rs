@@ -8,18 +8,19 @@ pub use std_runtime::StdRuntime;
 #[cfg(test)]
 mod tests {
     use crate::std_runtime::StdRuntime;
-    use crate::std_threadpool::{task_type_a, task_type_b};
     use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
     use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
+    use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
     use rs2_communication_protocol::metadata::Metadata;
     use rs2_runtime::Runtime; // Import the Runtime trait
     use std::sync::{mpsc, Arc};
     use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn custom_runtime_test() {
         // Create a new CustomRuntime with a thread pool of 16 workers.
-        let runtime = Arc::new(StdRuntime::new(16));
+        let runtime = Arc::new(StdRuntime::new(4));
 
         // Create a channel to receive results from tasks.
         let (result_tx, result_rx) = mpsc::channel();
@@ -34,7 +35,7 @@ mod tests {
         });
 
         // Spawn 100 tasks using the CustomRuntime.
-        for i in 0..10 {
+        for i in 0..100 {
             // Generate metadata for each task
             let metadata = Metadata {
                 request_id: format!("req-{}", i),
@@ -96,5 +97,22 @@ mod tests {
 
         // Shutdown the runtime to ensure all threads are properly terminated.
         Arc::try_unwrap(runtime).unwrap().shutdown();
+    }
+
+    // Simulated asynchronous task that takes 2 seconds to complete.
+    pub fn task_type_a(metadata: Metadata) -> TaskOutput {
+        let mut output = TaskOutput::new();
+        output.with_metadata(metadata);
+        output.output = Some("Result from task type A".to_string());
+        output
+    }
+
+    // Simulated asynchronous task that takes 3 seconds to complete.
+    pub fn task_type_b(metadata: Metadata) -> TaskOutput {
+        thread::sleep(Duration::from_secs(3)); // Simulate some work
+        let mut output = TaskOutput::new();
+        output.with_metadata(metadata);
+        output.output = Some("Result from task type B".to_string());
+        output
     }
 }

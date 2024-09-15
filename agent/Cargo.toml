@@ -37,7 +37,7 @@ chrono = "0.4"
 futures = "0.3.30"
 
 [features]
-default = ["protocol-winhttp", "nt-heapalloc", "nostd-nt-runtime"]
+default = ["protocol-winhttp", "nt-virtualalloc", "nostd-nt-runtime"]
 protocol-json = ["dep:mod-protocol-json"]
 protocol-winhttp = ["dep:mod-protocol-winhttp"]
 nt-virtualalloc = ["dep:mod-nt-virtualalloc"]
