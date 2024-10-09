@@ -1,7 +1,7 @@
 use std::sync::Arc;
-
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-
+use crate::communication_structs::basic_agent_response::BasicAgentResponse;
 use crate::metadata::{Metadata, WithMetadata};
 
 pub struct PartialCheckin {
