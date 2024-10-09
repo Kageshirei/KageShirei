@@ -1,18 +1,13 @@
 use anyhow::{anyhow, Result};
 use axum::body::{Body, Bytes};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use serde::Deserialize;
 use tracing::{instrument, warn};
 
-use crate::callback_handlers;
-use crate::state::HandlerSharedState;
 use mod_protocol_json::protocol::JsonProtocol;
-use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
-use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands::Checkin;
 use rs2_communication_protocol::communication_structs::basic_agent_response::BasicAgentResponse;
-use rs2_communication_protocol::communication_structs::checkin::Checkin as CheckinStruct;
+use rs2_communication_protocol::communication_structs::checkin::Checkin;
 use rs2_communication_protocol::magic_numbers;
 use rs2_communication_protocol::protocol::Protocol;
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
@@ -20,6 +15,9 @@ use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
 use srv_mod_database::models::agent::Agent;
 use srv_mod_database::{humantime, Pool};
+
+use super::agent;
+use super::agent_profiles::apply_filters;
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
@@ -47,94 +45,43 @@ fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
     Err(anyhow!("Unknown protocol"))
 }
 
-/// Handle the command by executing it and returning the response if any
-#[instrument(skip(raw_body))]
-async fn handle_command(
-	db_pool: Pool,
-	basic_response: BasicAgentResponse,
-	protocol: Box<dyn Protocol<IdentEncryptor>>,
-	raw_body: Bytes,
-	headers: HeaderMap,
-	cmd_request_id: String,
-) -> Result<Bytes> {
-    // TODO: Implement the command handling
-    match AgentCommands::from(basic_response.metadata.command_id) {
-        AgentCommands::Terminate => {
-            callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await
-        }
-        AgentCommands::Checkin => {
-			let checkin = protocol.read::<CheckinStruct>(raw_body, None);
-            callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool).await
-        }
-        AgentCommands::INVALID => {
-            // if the command is not recognized, return an empty response
-            warn!("Unknown command, request refused");
-            warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
+/// Persist the checkin data into the database as an agent
+async fn persist(data: Result<Checkin>, db_pool: Pool) -> Agent {
+    let create_agent_instance = agent::prepare(data.unwrap());
 
-            Ok(Bytes::new())
-        }
-    }
+    let mut connection = db_pool.get().await.unwrap();
+    let agent = agent::create_or_update(create_agent_instance, &mut connection).await;
+
+    agent
 }
 
-/// Process the body by matching the protocol and handling the command
-#[instrument(skip_all)]
-pub async fn process_body(
-    db_pool: Pool,
-    body: Bytes,
-    headers: HeaderMap,
-    cmd_request_id: String,
-) -> Response<Body> {
-    // ensure that the body is not empty or return a response
-    let is_empty = ensure_is_not_empty(body.clone());
-    if is_empty.is_some() {
-        return is_empty.unwrap();
+#[instrument]
+pub async fn handle_checkin(data: Result<Checkin>, db_pool: Pool) -> Result<Bytes> {
+    let data = agent::ensure_checkin_is_valid(data);
+
+    // if the data is not a checkin struct, drop the request
+    if data.is_err() {
+        return Ok(Bytes::new());
     }
 
-    match match_magic_numbers(body.clone()) {
-        Ok(protocol) => match protocol {
-            handlers::Protocol::Json => {
-                let data = process_json(body.clone())?;
-                let response = handle_command(
-                    db_pool,
-                    data,
-                    Box::new(make_json_protocol_instance()),
-                    body.clone(),
-                    headers,
-                    cmd_request_id,
-                )
-                .await?;
+    let agent = persist(data, db_pool.clone()).await;
 
-                (StatusCode::OK, Json(response)).into_response()
-            }
-        },
-        Err(_) => {
-            // if no protocol matches, drop the request
-            warn!("Unknown protocol, request refused");
-            warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
+    // apply filters to the agent
+    let config = apply_filters(&agent, db_pool.clone()).await;
 
-            // always return OK to avoid leaking information
-            (StatusCode::OK, "").into_response()
-        }
-    }
-}
-
-fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> {
-    JsonProtocol::<IdentEncryptor>::new("".to_string())
+    Ok(Bytes::from(serde_json::to_vec(&config)?))
 }
 
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json<T>(body: Bytes) -> Result<T>
-where
-    T: Deserialize,
-{
+fn process_json(body: Bytes) -> Result<Checkin> {
     let now = std::time::Instant::now();
 
     // initialize the protocol implementation
-    let protocol = make_json_protocol_instance();
+    let protocol = JsonProtocol::<IdentEncryptor>::new("".to_string());
 
     // try to read the body as a checkin struct
-    let result = protocol.read::<T>(body, None);
+    let result = protocol.read::<Checkin>(body, None);
 
     // record the latency of the operation
     let latency = now.elapsed();
