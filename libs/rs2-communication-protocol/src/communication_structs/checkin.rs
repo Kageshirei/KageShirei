@@ -101,20 +101,20 @@ pub struct CheckinResponse {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn test_checkin() {
-		let mut checkin = Checkin::new(PartialCheckin {
-			operative_system: "Windows".to_string(),
-			hostname: "DESKTOP-PC".to_string(),
-			domain: "WORKGROUP".to_string(),
-			username: "user".to_string(),
-			ip: "10.2.123.45".to_string(),
-			process_id: 1234,
-			parent_process_id: 5678,
-			process_name: "agent.exe".to_string(),
-			integrity_level: 0,
-			cwd: "C:\\Users\\user".to_string(),
-		});
+    #[test]
+    fn test_checkin() {
+        let mut checkin = Checkin::new(PartialCheckin {
+            operative_system: "Windows".to_string(),
+            hostname: "DESKTOP-PC".to_string(),
+            domain: "WORKGROUP".to_string(),
+            username: "user".to_string(),
+            ips: Vec::new(),
+            process_id: 1234,
+            parent_process_id: 5678,
+            process_name: "agent.exe".to_string(),
+            integrity_level: 0,
+            cwd: "C:\\Users\\Public\\rs2-agent.exe".to_string(),
+        });
 
 		let metadata = Metadata {
 			request_id: "request_id".to_string(),

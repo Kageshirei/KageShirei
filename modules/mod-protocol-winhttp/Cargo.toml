@@ -1,0 +1,20 @@
+[package]
+name = "mod-protocol-winhttp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+rs2-crypt = { path = "../../libs/rs2-crypt" }
+rs2-win32 = {path = "../../libs/rs2-win32"}
+mod-win32 = {path = "../../modules/mod-win32"}
+serde = { version = "1.0.202", features = ["derive"] }
+serde_json = { version = "1.0.117" }
+bytes = "1.6.0"
+anyhow = "1.0.86"
+
+[dev-dependencies]
+tokio = { version = "1.37.0", features = ["full"] }
+axum = "0.7.5"
+tokio-util = "0.7.11"
+libc-print = "0.1.23"
