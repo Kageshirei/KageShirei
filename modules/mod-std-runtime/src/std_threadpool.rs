@@ -1,9 +1,5 @@
-use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
-use rs2_communication_protocol::metadata::Metadata;
-
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
-use std::time::Duration;
 
 /// The `ThreadPool` struct manages a pool of worker threads that execute jobs.
 #[derive(Debug)]
