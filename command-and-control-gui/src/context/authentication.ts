@@ -1,3 +1,5 @@
+import { globals_init } from "@/context/globals";
+import { SSE } from "@/context/sse";
 import { dayjs } from "@/helpers/dayjs";
 import { notifications } from "@mantine/notifications";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
@@ -35,7 +37,7 @@ class Authentication {
             }
 
             this.authenticate(data);
-            this.refresh(true);
+            this.refresh(true).then(() => {});
         }
     }
 
@@ -90,6 +92,20 @@ class Authentication {
         this._username = data.username;
         this._is_authenticated = true;
 
+        globals_init(data.host, data.bearer).then(() => console.log("Globals initialized")).catch(console.error);
+
+        // Create a new SSE instance
+        const sse = SSE.instance(this._host, this._bearer);
+        try {
+            sse.abort();
+        }
+        catch (e) {
+            console.error(e);
+        }
+        sse.connect().then(() => {
+            console.log("SSE connected");
+        });
+
         // Set the elapses_at to the current time plus the expires_in minus 1 minute to ensure enough time to refresh
         // the token before it expires
         this._elapses_at = dayjs.utc().add(this._expires_in, "second").subtract(1, "minute");
@@ -114,6 +130,14 @@ class Authentication {
         this._username = "";
         this._is_authenticated = false;
         this._elapses_at = null;
+
+        const sse = SSE.instance(this._host, this._bearer);
+        try {
+            sse.abort();
+        }
+        catch (e) {
+            console.error(e);
+        }
 
         // Redirect the user to the login page
         router.push("/");
@@ -147,6 +171,14 @@ class Authentication {
                     color: "red",
                 });
 
+                const sse = SSE.instance(this._host, this._bearer);
+                try {
+                    sse.abort();
+                }
+                catch (e) {
+                    console.error(e);
+                }
+
                 // remove the auth data and reload the page
                 if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {
                     localStorage.removeItem("auth");
@@ -161,6 +193,16 @@ class Authentication {
             const data = await response.json();
             this._bearer = data.token;
             this._expires_in = data.expires_in;
+
+            const sse = SSE.instance(this._host, this._bearer);
+            try {
+                sse.abort();
+            }
+            catch (e) {
+                console.error(e);
+            }
+            await sse.connect();
+            console.log("Token refreshed", data);
 
             // update the local storage
             if (typeof window !== "undefined" && typeof window.localStorage !== "undefined") {

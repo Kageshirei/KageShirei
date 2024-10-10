@@ -15,7 +15,8 @@ use axum_server::tls_rustls::RustlsConfig;
 use tokio::select;
 use tokio_util::sync::CancellationToken;
 use tower_http::catch_panic::CatchPanicLayer;
-use tower_http::compression::CompressionLayer;
+use tower_http::compression::{CompressionLayer, DefaultPredicate, Predicate};
+use tower_http::compression::predicate::NotForContentType;
 use tower_http::cors::{Any, Cors, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::normalize_path::NormalizePathLayer;
@@ -52,10 +53,15 @@ pub async fn start(
         "JWT keys initialized successfully!"
     );
 
+	// create a broadcast channel for the server this is where events will be broadcasted to and retrieved by the sse
+	// endpoint
+	let (broadcast_sender, _) = tokio::sync::broadcast::channel(128);
+
 	// create a shared state for the server
 	let shared_state: ApiServerSharedState = Arc::new(state::ApiServerState {
 		config: config.clone(),
 		db_pool: pool,
+		broadcast_sender,
 	});
 
 	// init the router
@@ -109,16 +115,16 @@ pub async fn start(
 				}),
 			// catch panics (if any) most likely from external crates, just to avoid crashing the server
 			CatchPanicLayer::new(),
-			// add compression support
-			CompressionLayer::new(),
+			// add compression support for all responses except for text/event-stream
+			CompressionLayer::new()
+				.compress_when(
+					DefaultPredicate::new().and(NotForContentType::new("text/event-stream")),
+				),
 			// normalize paths before routing trimming trailing slashes
 			NormalizePathLayer::trim_trailing_slash(),
 			// limit request body size to 50mb
 			DefaultBodyLimit::disable(),
 			RequestBodyLimitLayer::new(0x3200000 /* 50mb = (50 * 1024 * 1024) */),
-			// validate request headers for content type accepting only json and form data (subtypes are allowed)
-			ValidateRequestHeaderLayer::accept("application/json"),
-			ValidateRequestHeaderLayer::accept("multipart/form-data"),
 			// set sensitive headers to be removed from logs
 			SetSensitiveHeadersLayer::new(once(AUTHORIZATION)),
 			CorsLayer::very_permissive(),

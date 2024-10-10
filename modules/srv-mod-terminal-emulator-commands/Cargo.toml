@@ -9,3 +9,15 @@ shellwords = "1.1.0"
 anyhow = "1.0.86"
 tracing = "0.1.40"
 serde = { version = "1.0.203", features = ["derive"] }
+srv-mod-database = { path = "../srv-mod-database" }
+serde_json = { version = "1.0.117" }
+chrono = { version = "0.4.38", features = ["serde"] }
+futures = "0.3.30"
+tokio = { version = "1.37.0", features = ["full"] }
+srv-mod-config = { path = "../srv-mod-config" }
+rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+
+[dev-dependencies]
+tokio = "1.37.0"
+serial_test = "3.1.1"
+rs2-srv-test-helper = { path = "../../libs/rs2-srv-test-helper" }

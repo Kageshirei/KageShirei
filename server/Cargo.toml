@@ -33,6 +33,7 @@ rs2-crypt = { path = "../libs/rs2-crypt", features = ["argon2"] }
 srv-mod-config = { path = "../modules/srv-mod-config" }
 srv-mod-operator-api = { path = "../modules/srv-mod-operator-api" }
 srv-mod-database = { path = "../modules/srv-mod-database" }
-srv-mod-http-handler = { path = "../modules/srv-mod-http-handler" }
+srv-mod-http-handler = { path = "../modules/srv-mod-handler-http" }
+rs2-communication-protocol = { path = "../libs/rs2-communication-protocol" }
 
 [features]

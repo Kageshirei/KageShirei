@@ -15,6 +15,7 @@ interface CommandHandlerArguments {
     terminal_fragments: JSX.Element[];
     hooks: {
         dropTerminalHandle: (hostname: string) => void;
+        addTerminalHandle: (hostname: string, cwd: string, id: string) => void;
     };
 }
 
@@ -25,16 +26,28 @@ interface CommandDefinition {
     handler: CommandHandler;
 }
 
-export type NativeHandler = "clear" | "exit";
+export type NativeHandler = "clear" | "exit" | "open_session";
+
+export const TERMINAL_EMULATOR_INTERNAL_HANDLES = [
+    "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__",
+    "__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__",
+    "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__",
+] as const;
+
+export const INTERNAL_HANDLES_LOOKUP: { [x in typeof TERMINAL_EMULATOR_INTERNAL_HANDLES[number]]: NativeHandler } = {
+    __TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__:         "clear",
+    __TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__:          "exit",
+    __TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__: "open_session",
+};
 
 export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
-    clear: {
+    clear:        {
         description: "Clear the terminal",
         handler: ({ set_terminal_fragments }) => {
             set_terminal_fragments([]);
         },
     },
-    exit:  {
+    exit:         {
         description: "Exit the current terminal",
         handler:     ({
             hooks,
@@ -63,6 +76,32 @@ export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
             }
 
             hooks.dropTerminalHandle(hostname);
+        },
+    },
+    open_session: {
+        description: "Open a new terminal session",
+        handler: ({
+            hooks,
+            cwd,
+            hostname,
+            args,
+            set_terminal_fragments,
+        }) => {
+            console.log(args);
+
+            let ansi_string = `[\x1b[32;1m OK \x1b[0m] Opening new session for ${ hostname }`;
+            set_terminal_fragments(old => [
+                ...old,
+                <div key={ `${ hostname }-out-${ old.length + 1 }` }
+                     className="break-all whitespace-pre-wrap"
+                >
+                    <Ansi>
+                        { ansi_string }
+                    </Ansi>
+                </div>,
+            ]);
+
+            hooks.addTerminalHandle(hostname, cwd, args[0]);
         },
     },
 };
