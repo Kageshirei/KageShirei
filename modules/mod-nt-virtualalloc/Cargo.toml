@@ -1,5 +1,5 @@
 [package]
-name = "mod-ntallocator"
+name = "mod-nt-virtualalloc"
 version = "0.1.0"
 edition = "2021"
 

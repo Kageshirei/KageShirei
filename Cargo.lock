@@ -2649,7 +2649,44 @@ name = "mod-hhtgates"
 version = "0.1.0"
 
 [[package]]
-name = "mod-ntallocator"
+name = "mod-nostd"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+ "mod-agentcore",
+ "mod-win32",
+ "rs2-win32",
+ "spin",
+]
+
+[[package]]
+name = "mod-nostd-nt-runtime"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "libc-print",
+ "mod-nostd",
+ "mod-win32",
+ "rs2-communication-protocol",
+ "rs2-runtime",
+ "spin",
+]
+
+[[package]]
+name = "mod-nt-heapalloc"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+ "mod-agentcore",
+ "mod-hhtgates",
+ "mod-win32",
+ "rs2-indirect-syscall",
+ "rs2-win32",
+ "spin",
+]
+
+[[package]]
+name = "mod-nt-virtualalloc"
 version = "0.1.0"
 dependencies = [
  "mod-agentcore",
@@ -2684,6 +2721,7 @@ dependencies = [
  "axum",
  "bytes",
  "libc-print",
+ "mod-agentcore",
  "mod-win32",
  "rs2-communication-protocol",
  "rs2-crypt",
@@ -2692,6 +2730,24 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "mod-std-runtime"
+version = "0.1.0"
+dependencies = [
+ "rs2-communication-protocol",
+ "rs2-runtime",
+ "serde",
+]
+
+[[package]]
+name = "mod-tokio-runtime"
+version = "0.1.0"
+dependencies = [
+ "rs2-communication-protocol",
+ "rs2-runtime",
+ "tokio",
 ]
 
 [[package]]
@@ -3715,19 +3771,26 @@ name = "rs2-agent"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
+ "futures",
  "libc-print",
  "mod-agentcore",
  "mod-hhtgates",
- "mod-ntallocator",
+ "mod-nostd",
+ "mod-nostd-nt-runtime",
+ "mod-nt-heapalloc",
+ "mod-nt-virtualalloc",
  "mod-protocol-json",
  "mod-protocol-winhttp",
+ "mod-std-runtime",
  "mod-win32",
+ "rand 0.8.5",
  "rs2-communication-protocol",
  "rs2-crypt",
+ "rs2-runtime",
  "serde",
  "serde_json",
  "spin",
- "tokio",
 ]
 
 [[package]]
@@ -3774,6 +3837,10 @@ version = "0.1.0"
 dependencies = [
  "libc-print",
 ]
+
+[[package]]
+name = "rs2-runtime"
+version = "0.1.0"
 
 [[package]]
 name = "rs2-server"

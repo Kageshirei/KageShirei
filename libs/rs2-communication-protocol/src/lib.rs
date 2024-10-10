@@ -1,7 +1,5 @@
-pub mod protocol;
-pub mod error;
-pub mod sender;
-pub mod metadata;
-pub mod magic_numbers;
 pub mod communication_structs;
+pub mod communication_structs;
+pub mod error;
+pub mod magic_numbers;
 pub mod network_interface;
