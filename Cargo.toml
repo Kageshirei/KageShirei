@@ -20,7 +20,6 @@ members = [
     "modules/srv-mod-database",
     "modules/srv-mod-handler-base",
     "modules/srv-mod-handler-http",
-    "modules/srv-mod-http-handler",
     "modules/srv-mod-operator-api",
     "modules/srv-mod-terminal-emulator-commands",
     "server",

@@ -1,5 +1,5 @@
 [package]
-name = "srv-mod-http-handler"
+name = "srv-mod-handler-http"
 version = "0.1.0"
 edition = "2021"
 
