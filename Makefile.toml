@@ -9,11 +9,11 @@ CARGO_MAKE_WORKSPACE_SKIP_MEMBERS = "libs/*"
 
 [env.development]
 # Define the default target to build
-BUILD_MODE = "--locked"
+BUILD_MODE = ""
 
 [env.release]
 # Define the default target to build
-BUILD_MODE = "--release --locked"
+BUILD_MODE = "--release"
 
 # Define the default task to run
 [tasks.default]
@@ -88,7 +88,7 @@ cargo +nightly build ${BUILD_MODE} --target i686${TARGET} --bin coffee-ldr
 '''
 
 # Define the tasks responsible for building the server (linux and windows)
-[tasks.build-server]
+[tasks.build-server.linux]
 clear = true
 description = "Build the server from linux, for linux"
 script_runner = "@shell"
@@ -96,3 +96,10 @@ script = '''
 echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server"
 cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server
 '''
+
+# Define the tasks responsible for building the server (linux and windows)
+[tasks.build-server.windows]
+clear = true
+description = "Build the server from windows, for windows"
+script_runner = "@shell"
+script = "powershell ./server/scripts/cargo-make-build.ps1"
