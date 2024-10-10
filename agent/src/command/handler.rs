@@ -109,9 +109,6 @@ where
                                 let result = match command.op {
                                     AgentCommands::Terminate => command_exit(0),
                                     AgentCommands::Checkin => command_checkin(command.metadata),
-                                    AgentCommands::PrintWorkingDirectory => {
-                                        command_pwd(command.metadata)
-                                    }
                                     AgentCommands::INVALID => TaskOutput::new(),
                                 };
 

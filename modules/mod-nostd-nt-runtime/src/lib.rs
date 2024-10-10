@@ -76,7 +76,6 @@ mod tests {
                 let result = match command.op {
                     AgentCommands::Terminate => task_type_a(command.metadata),
                     AgentCommands::Checkin => task_type_a(command.metadata),
-                    AgentCommands::PrintWorkingDirectory => task_type_a(command.metadata),
                     AgentCommands::INVALID => task_type_b(command.metadata),
                 };
                 result_tx.send(result).unwrap();
