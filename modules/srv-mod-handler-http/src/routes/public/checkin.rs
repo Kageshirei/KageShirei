@@ -12,12 +12,8 @@ use rs2_crypt::encoder::base64::Base64Encoder;
 use rs2_crypt::encoder::hex::HexEncoder;
 use rs2_crypt::encoder::Encoder as CryptEncoder;
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
+use srv_mod_handler_base::handle_command_result;
 use srv_mod_handler_base::state::HandlerSharedState;
-
-mod agent;
-mod process_body;
-mod signature;
-mod agent_profiles;
 
 /// Converts a byte array to a string
 fn body_to_string(body: Bytes) -> String {
@@ -91,112 +87,7 @@ async fn post_handler(
 	headers: HeaderMap,
 	body: Bytes,
 ) -> Response<Body> {
-	match state.config.security.encryption_scheme {
-		// handle plaintext communication no decryption needed
-		EncryptionScheme::Plain => {
-			match state.config.security.encoder.as_ref() {
-				// no encoding needed, this is definitely plaintext
-				None => {
-					process_body::process_body(state, body).await
-				}
-				// handle all the encodings
-				Some(encoding) => {
-					let decoded = decode_or_fail_response(encoding.clone(), body);
-
-					if decoded.is_err() {
-						return decoded.unwrap_err();
-					}
-
-					let decoded = decoded.unwrap();
-					process_body::process_body(state, decoded).await
-				}
-			}
-		}
-		// handle symmetric encryption, decryption needed with the symmetric key of the agent if available or fallback
-		// to plaintext
-		EncryptionScheme::Symmetric => {
-			match state.config.security.encoder.as_ref() {
-				// no encoding needed, jump straight to decryption
-				None => {
-					todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-					todo!("Process request body");
-
-					(StatusCode::OK, "").into_response()
-				}
-				// handle all the encodings
-				Some(encoding) => {
-					match encoding {
-						// decode hex, then start processing
-						Encoder::Hex => {
-							todo!("Decode from hex");
-							todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base32, then start processing
-						Encoder::Base32 => {
-							todo!("Decode from base32");
-							todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base64, then start processing
-						Encoder::Base64 => {
-							todo!("Decode from base64");
-							todo!("Try to decrypt the payload with the symmetric key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-					}
-				}
-			}
-		}
-		// handle asymmetric encryption, decryption needed with the private key of the agent if available or fallback
-		// to plaintext
-		EncryptionScheme::Asymmetric => {
-			match state.config.security.encoder.as_ref() {
-				// no encoding needed, jump straight to decryption
-				None => {
-					todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-					todo!("Process request body");
-
-					(StatusCode::OK, "").into_response()
-				}
-				// handle all the encodings
-				Some(encoding) => {
-					match encoding {
-						// decode hex, then start processing
-						Encoder::Hex => {
-							todo!("Decode from hex");
-							todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base32, then start processing
-						Encoder::Base32 => {
-							todo!("Decode from base32");
-							todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-						// decode base64, then start processing
-						Encoder::Base64 => {
-							todo!("Decode from base64");
-							todo!("Try to decrypt the payload with the shared key if any or fallback to plain text");
-							todo!("Process request body");
-
-							(StatusCode::OK, "").into_response()
-						}
-					}
-				}
-			}
-		}
-	}
+	handle_command_result(state, body, headers, String::new()).await
 }
 
 /// Creates the public authentication routes

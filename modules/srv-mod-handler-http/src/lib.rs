@@ -1,3 +1,5 @@
+#![feature(str_as_str)]
+
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -15,14 +17,14 @@ use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::trace::TraceLayer;
 use tower_http::validate_request::ValidateRequestHeaderLayer;
-use tracing::{error, info, info_span, instrument, Span, warn};
+use tracing::{error, info, info_span, instrument, warn, Span};
 
 use rs2_utils::duration_extension::DurationExt;
 use rs2_utils::unrecoverable_error::unrecoverable_error;
 use srv_mod_config::handlers::HandlerConfig;
 use srv_mod_database::{humantime, Pool};
 use srv_mod_handler_base::state;
-use srv_mod_handler_base::state::HttpHandlerSharedState;
+use srv_mod_handler_base::state::HandlerSharedState;
 
 mod routes;
 
@@ -33,7 +35,7 @@ pub async fn start(
 	pool: Pool,
 ) -> anyhow::Result<()> {
 	// create a shared state for the server
-	let shared_state: HttpHandlerSharedState = Arc::new(state::HttpHandlerState {
+	let shared_state: HandlerSharedState = Arc::new(state::HandlerState {
 		config: config.clone(),
 		db_pool: pool,
 	});

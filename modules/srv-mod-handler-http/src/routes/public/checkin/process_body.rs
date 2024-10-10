@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Result};
 use axum::body::{Body, Bytes};
 use axum::http::StatusCode;
-use axum::Json;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
 use tracing::{instrument, warn};
 
 use mod_protocol_json::protocol::JsonProtocol;
@@ -14,7 +14,7 @@ use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
 use srv_mod_database::humantime;
 use srv_mod_database::models::agent::Agent;
-use srv_mod_handler_base::state::HttpHandlerSharedState;
+use srv_mod_handler_base::state::HandlerSharedState;
 
 use crate::routes::public::checkin::agent;
 use crate::routes::public::checkin::agent_profiles::apply_filters;
@@ -44,7 +44,7 @@ fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
 }
 
 /// Persist the checkin data into the database as an agent
-async fn persist(data: Result<Checkin>, state: &HttpHandlerSharedState) -> Agent {
+async fn persist(data: Result<Checkin>, state: &HandlerSharedState) -> Agent {
 	let create_agent_instance = agent::prepare(data.unwrap());
 
 	let mut connection = state.db_pool.get().await.unwrap();
@@ -54,7 +54,7 @@ async fn persist(data: Result<Checkin>, state: &HttpHandlerSharedState) -> Agent
 }
 
 #[instrument(skip_all)]
-pub async fn process_body(state: HttpHandlerSharedState, body: Bytes) -> Response<Body> {
+pub async fn process_body(state: HandlerSharedState, body: Bytes) -> Response<Body> {
 	// ensure that the body is not empty or return a response
 	let is_empty = ensure_is_not_empty(body.clone());
 	if is_empty.is_some() {
@@ -132,12 +132,12 @@ mod test {
 	use rs2_communication_protocol::magic_numbers;
 	use srv_mod_config::handlers;
 	use srv_mod_config::handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType};
-	use srv_mod_database::{bb8, Pool};
 	use srv_mod_database::diesel::{Connection, PgConnection};
-	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_migrations::MigrationHarness;
 	use srv_mod_database::migration::MIGRATIONS;
+	use srv_mod_database::{bb8, Pool};
 	use srv_mod_handler_base::state::HttpHandlerState;
 
 	fn make_config() -> HandlerConfig {

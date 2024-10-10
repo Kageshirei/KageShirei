@@ -18,7 +18,7 @@ use srv_mod_handler_base::state::HandlerSharedState;
 /// The handler for the agent checking operation
 #[instrument(skip(state, body, headers))]
 async fn handle_request(
-	State(state): HandlerSharedState,
+    State(state): State<HandlerSharedState>,
 	headers: HeaderMap,
 	body: Bytes,
 	id: String,
@@ -93,11 +93,11 @@ pub async fn heuristic_handler_variant_1(
 	// Concatenate the fragments of the ID, appending an empty string for undefined positions
 	let id = id_positions
 		.iter()
-		.map(|&pos| parts.get(pos).unwrap_or(&""))
+        .map(|&pos| parts.get(pos).unwrap_or(&"").as_str())
 		.collect::<Vec<&str>>()
 		.join("");
 
-	handle_request(state, headers, body, id).await
+    handle_request(axum::extract::State(state), headers, body, id).await
 }
 
 /// This kind of route automatically takes the first string matching the ID length (32) as the request ID
@@ -134,7 +134,7 @@ pub async fn heuristic_handler_variant_2(
 	// Unwrap the id
 	let id = id.unwrap().to_string();
 
-	handle_request(state, headers, body, id).await
+    handle_request(axum::extract::State(state), headers, body, id).await
 }
 
 /// Creates the routes for the commands handlers

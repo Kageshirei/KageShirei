@@ -2,12 +2,12 @@ use clap::Args;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
 
-use srv_mod_database::{diesel, Pool};
-use srv_mod_database::diesel::{ExpressionMethods, Queryable, QueryDsl, SelectableHelper};
 use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
+use srv_mod_database::diesel::{ExpressionMethods, QueryDsl, Queryable, SelectableHelper};
 use srv_mod_database::diesel_async::RunQueryDsl;
 use srv_mod_database::models::agent::SessionRecord;
 use srv_mod_database::schema::agents;
+use srv_mod_database::{diesel, Pool};
 
 use crate::command_handler::CommandHandlerArguments;
 use crate::post_process_result::PostProcessResult;
@@ -85,7 +85,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTermina
 			agents::hostname,
 			agents::domain,
 			agents::username,
-			agents::ip,
+			agents::network_interfaces,
 			agents::integrity_level,
 			agents::operative_system,
 		))

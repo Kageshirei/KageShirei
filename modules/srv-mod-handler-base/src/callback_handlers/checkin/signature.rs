@@ -12,7 +12,7 @@ pub fn make_signature(checkin: &Checkin) -> String {
 	hasher.update(checkin.hostname.as_bytes());
 	hasher.update(checkin.domain.as_bytes());
 	hasher.update(checkin.username.as_bytes());
-	hasher.update(checkin.ip.as_bytes());
+	hasher.update(serde_json::to_string(&checkin.network_interfaces).unwrap().as_bytes());
 	hasher.update(checkin.process_id.to_le_bytes());
 	hasher.update(checkin.parent_process_id.to_le_bytes());
 	hasher.update(checkin.process_name.as_bytes());

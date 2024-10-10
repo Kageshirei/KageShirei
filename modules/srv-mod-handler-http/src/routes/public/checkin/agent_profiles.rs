@@ -7,7 +7,7 @@ use srv_mod_database::models::agent_profile::AgentProfile;
 use srv_mod_database::models::filter::Filter;
 use srv_mod_database::schema::agent_profiles::dsl::agent_profiles;
 use srv_mod_database::schema_extension::{FilterOperator, LogicalOperator};
-use srv_mod_handler_base::state::HttpHandlerSharedState;
+use srv_mod_handler_base::state::HandlerSharedState;
 
 struct GroupEvaluationResult {
 	result: bool,
@@ -131,7 +131,7 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
 }
 
 /// Apply filters to the agent and return the configuration profile
-pub async fn apply_filters(agent: &Agent, state: &HttpHandlerSharedState) -> CheckinResponse {
+pub async fn apply_filters(agent: &Agent, state: &HandlerSharedState) -> CheckinResponse {
 	use srv_mod_database::schema::filters::dsl::*;
 	use srv_mod_database::schema::agent_profiles::dsl as agent_dsl;
 
@@ -194,19 +194,17 @@ mod tests {
 
 	use srv_mod_config::handlers;
 	use srv_mod_config::handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType};
-	use srv_mod_database::{bb8, CUID2, diesel, Pool};
 	use srv_mod_database::diesel::{Connection, PgConnection, SelectableHelper};
-	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
+	use srv_mod_database::diesel_async::AsyncPgConnection;
 	use srv_mod_database::diesel_migrations::MigrationHarness;
 	use srv_mod_database::migration::MIGRATIONS;
 	use srv_mod_database::models::agent_profile::CreateAgentProfile;
 	use srv_mod_database::models::filter::CreateFilter;
 	use srv_mod_database::schema::filters::dsl::filters;
 	use srv_mod_database::schema_extension::AgentFields;
+	use srv_mod_database::{bb8, diesel, Pool, CUID2};
 	use srv_mod_handler_base::state::HttpHandlerState;
-
-	use super::*;
 
 	fn make_config() -> HandlerConfig {
 		let config = HandlerConfig {
