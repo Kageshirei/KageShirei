@@ -1,3 +1,5 @@
+#[allow(non_camel_case_types)]
+pub type SOCKET = usize;
 // Data structures for Winsock
 #[repr(C)]
 pub struct WsaData {
@@ -41,15 +43,31 @@ pub struct AddrInfo {
     pub ai_next: *mut AddrInfo,
 }
 
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct FD_SET {
+    pub fd_count: u32,
+    pub fd_array: [SOCKET; 64],
+}
+
+#[allow(non_camel_case_types)]
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct TIMEVAL {
+    pub tv_sec: i32,
+    pub tv_usec: i32,
+}
+
 // Define function types for Winsock functions
 type WSAStartupFunc =
     unsafe extern "system" fn(wVersionRequested: u16, lpWsaData: *mut WsaData) -> i32;
 type WSACleanupFunc = unsafe extern "system" fn() -> i32;
-type SocketFunc = unsafe extern "system" fn(af: i32, socket_type: i32, protocol: i32) -> u32;
-type ConnectFunc = unsafe extern "system" fn(s: u32, name: *const SockAddr, namelen: i32) -> i32;
-type SendFunc = unsafe extern "system" fn(s: u32, buf: *const i8, len: i32, flags: i32) -> i32;
-type RecvFunc = unsafe extern "system" fn(s: u32, buf: *mut i8, len: i32, flags: i32) -> i32;
-type ClosesocketFunc = unsafe extern "system" fn(s: u32) -> i32;
+type SocketFunc = unsafe extern "system" fn(af: i32, socket_type: i32, protocol: i32) -> SOCKET;
+type ConnectFunc = unsafe extern "system" fn(s: SOCKET, name: *const SockAddr, namelen: i32) -> i32;
+type SendFunc = unsafe extern "system" fn(s: SOCKET, buf: *const i8, len: i32, flags: i32) -> i32;
+type RecvFunc = unsafe extern "system" fn(s: SOCKET, buf: *mut i8, len: i32, flags: i32) -> i32;
+type ClosesocketFunc = unsafe extern "system" fn(s: SOCKET) -> i32;
 type InetAddrFunc = unsafe extern "system" fn(cp: *const i8) -> u32;
 type HtonsFunc = unsafe extern "system" fn(hostshort: u16) -> u16;
 type GetAddrInfoFunc = unsafe extern "system" fn(
@@ -59,6 +77,16 @@ type GetAddrInfoFunc = unsafe extern "system" fn(
     res: *mut *mut AddrInfo,
 ) -> i32;
 type FreeAddrInfoFunc = unsafe extern "system" fn(res: *mut AddrInfo);
+type Ioctlsocket = unsafe extern "system" fn(s: SOCKET, cmd: i32, argp: *mut u32) -> i32;
+
+type Select = unsafe extern "system" fn(
+    nfds: i32,
+    readfds: *mut FD_SET,
+    writefds: *mut FD_SET,
+    exceptfds: *mut FD_SET,
+    timeout: *mut TIMEVAL,
+) -> i32;
+type WSAGetLastError = unsafe extern "system" fn() -> i32;
 
 // Structure to hold function pointers
 pub struct Winsock {
@@ -73,6 +101,9 @@ pub struct Winsock {
     pub htons: HtonsFunc,
     pub getaddrinfo: GetAddrInfoFunc,
     pub freeaddrinfo: FreeAddrInfoFunc,
+    pub ioctlsocket: Ioctlsocket,
+    pub select: Select,
+    pub wsa_get_last_error: WSAGetLastError,
 }
 
 impl Winsock {
@@ -90,6 +121,11 @@ impl Winsock {
             htons: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             getaddrinfo: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             freeaddrinfo: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            ioctlsocket: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            select: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            wsa_get_last_error: unsafe {
+                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
+            },
         }
     }
 }

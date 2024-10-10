@@ -4,10 +4,9 @@ use core::{
 };
 
 use crate::ntdef::{
-    AccessMask, ClientId, InitialTeb, IoStatusBlock, LargeInteger, MemoryInformationClass,
-    ObjectAttributes, PEventType, PsAttributeList, PsCreateInfo, RtlPathType, RtlRelativeNameU,
-    RtlUserProcessParameters, TokenPrivileges, UnicodeString, CONTEXT, HANDLE, NTSTATUS, PHANDLE,
-    PWSTR, SIZE_T, ULONG,
+    AccessMask, ClientId, InitialTeb, IoStatusBlock, LargeInteger, ObjectAttributes, PEventType,
+    PsAttributeList, PsCreateInfo, RtlPathType, RtlRelativeNameU, RtlUserProcessParameters,
+    TokenPrivileges, UnicodeString, CONTEXT, HANDLE, NTSTATUS, PHANDLE, PWSTR, SIZE_T, ULONG,
 };
 use rs2_indirect_syscall::run_syscall;
 
