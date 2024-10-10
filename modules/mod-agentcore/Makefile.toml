@@ -2,9 +2,6 @@
 skip_core_tasks = true
 default_to_workspace = false
 
-[env]
-TARGET = "x86_64-pc-windows-gnu"
-
 [tasks.default]
 clear = true
 alias = "strip"
@@ -54,23 +51,13 @@ env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=/SUBSYSTEM:console -C link-arg
 [tasks.strip.linux]
 clear = true
 script_runner = "@shell"
-script = "strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/rs2-agent.exe"
+script = '''
+strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/i686-pc-windows-gnu/release/mod_agentcore.dll
+strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/mod_agentcore.dll
+'''
 dependencies = ["build"]
 
 [tasks.strip.windows]
 clear = true
 run_task = "build"
 
-[tasks.build-dev]
-description = "Build in development mode with std feature"
-clear = true
-script_runner = "@shell"
-script = '''
-echo "$ cargo build --features std --target x86_64-pc-windows-msvc"
-cargo build --features std --target x86_64-pc-windows-msvc
-'''
-
-[tasks.run-dev]
-description = "Run in development mode with std feature"
-command = "cargo"
-args = ["run", "--features", "std"]
