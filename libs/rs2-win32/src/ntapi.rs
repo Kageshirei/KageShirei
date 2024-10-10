@@ -4,9 +4,10 @@ use core::{
 };
 
 use crate::ntdef::{
-    AccessMask, ClientId, InitialTeb, IoStatusBlock, LargeInteger, ObjectAttributes, PEventType,
-    PsAttributeList, PsCreateInfo, RtlPathType, RtlRelativeNameU, RtlUserProcessParameters,
-    TokenPrivileges, UnicodeString, CONTEXT, HANDLE, NTSTATUS, PHANDLE, PWSTR, SIZE_T, ULONG,
+    AccessMask, ClientId, InitialTeb, IoStatusBlock, LargeInteger, MemoryInformationClass,
+    ObjectAttributes, PEventType, PsAttributeList, PsCreateInfo, RtlPathType, RtlRelativeNameU,
+    RtlUserProcessParameters, TokenPrivileges, UnicodeString, CONTEXT, HANDLE, NTSTATUS, PHANDLE,
+    PWSTR, SIZE_T, ULONG,
 };
 use rs2_indirect_syscall::run_syscall;
 
@@ -1615,6 +1616,57 @@ impl NtCreateProcess {
             section_handle,
             debug_port,
             exception_port
+        )
+    }
+}
+
+pub struct NtQueryVirtualMemory {
+    pub syscall: NtSyscall,
+}
+
+unsafe impl Sync for NtQueryVirtualMemory {}
+
+impl NtQueryVirtualMemory {
+    pub const fn new() -> Self {
+        NtQueryVirtualMemory {
+            syscall: NtSyscall::new(),
+        }
+    }
+
+    /// Wrapper for the NtQueryVirtualMemory syscall.
+    ///
+    /// This function queries information about the virtual memory of a specified process.
+    ///
+    /// # Arguments
+    ///
+    /// * `[in]` - `process_handle` A handle to the process whose virtual memory is to be queried.
+    /// * `[in]` - `base_address` A pointer to the base address in the process's virtual memory space.
+    /// * `[in]` - `memory_information_class` Specifies the type of information to be queried (e.g., MemoryBasicInformation).
+    /// * `[out]` - `memory_information` A pointer to a buffer that receives the information about the memory.
+    /// * `[in]` - `memory_information_length` The size, in bytes, of the buffer pointed to by `memory_information`.
+    /// * `[out, opt]` - `return_length` A pointer to a variable that receives the number of bytes returned.
+    ///
+    /// # Returns
+    ///
+    /// * `i32` - The NTSTATUS code of the operation.
+    pub fn run(
+        &self,
+        process_handle: HANDLE,
+        base_address: *const c_void,
+        memory_information_class: u32,
+        memory_information: *mut c_void,
+        memory_information_length: usize,
+        return_length: *mut usize,
+    ) -> i32 {
+        run_syscall!(
+            self.syscall.number,
+            self.syscall.address as usize,
+            process_handle,
+            base_address,
+            memory_information_class as usize,
+            memory_information,
+            memory_information_length,
+            return_length
         )
     }
 }

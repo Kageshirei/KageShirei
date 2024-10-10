@@ -1915,3 +1915,17 @@ pub struct RtlpCurdirRef {
 }
 
 pub const UNICODE_STRING_MAX_BYTES: u32 = 65534;
+
+pub enum MemoryInformationClass {
+    MemoryBasicInformation,
+    MemoryWorkingSetInformation,
+    MemoryMappedFilenameInformation,
+    MemoryRegionInformation,
+    MemoryWorkingSetExInformation,
+    MemorySharedCommitInformation,
+    MemoryImageInformation,
+    MemoryRegionInformationEx,
+    MemoryPrivilegedBasicInformation,
+    MemoryEnclaveImageInformation,
+    MemoryBasicInformationCapped,
+}

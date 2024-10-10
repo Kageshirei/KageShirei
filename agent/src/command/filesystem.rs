@@ -24,7 +24,7 @@ use rs2_communication_protocol::{
 /// # Returns
 /// - `TaskOutput`: A structure containing the details of the command execution, including:
 ///   - `output`: The new current directory as a `String` if the operation is successful.
-///   - `exit_code`: An `Option<u8>` representing the success or failure status (0 for success, non-zero for failure).
+///   - `exit_code`: An `Option<i32>` representing the success or failure status (0 for success, non-zero for failure).
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
 ///
@@ -41,7 +41,7 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
     if status > 0 {
         // If the change_directory function returns a positive value, it indicates an error occurred
         output.ended_at = Some(current_timestamp());
-        output.exit_code = Some(status as u8);
+        output.exit_code = Some(status);
         output.with_metadata(metadata);
         return output;
     }
@@ -72,7 +72,7 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
 /// # Returns
 /// - `TaskOutput`: A structure containing the details of the command execution, including:
 ///   - `output`: The current directory as a `String` if the operation is successful.
-///   - `exit_code`: An `Option<u8>` representing the success or failure status (0 for success, non-zero for failure).
+///   - `exit_code`: An `Option<i32>` representing the success or failure status (0 for success, non-zero for failure).
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
 ///
@@ -112,6 +112,9 @@ mod tests {
 
     #[test]
     fn test_cd() {
+        let cmdline_utf16: Vec<u16> = "cmd.exe\0".encode_utf16().collect();
+
+        libc_println!("Test: {:?}", cmdline_utf16);
         // Test changing to a valid directory
         let target_directory = "C:\\Windows\\System32\\drivers\\etc";
         let metadata = Metadata {
@@ -222,5 +225,40 @@ mod tests {
             !cwd_str.is_empty(),
             "Expected a non-empty current directory, but got an empty string"
         );
+    }
+
+    pub fn itoa_hex_i32(value: i32) -> String {
+        let hex_digits = b"0123456789ABCDEF"; // Uppercase hexadecimal digits
+        let mut result = String::new();
+        let mut num = value as u32; // Trattiamo il valore come u32 mantenendo il bit pattern di i32
+
+        if num == 0 {
+            return "0x0".to_string(); // Caso speciale per 0
+        }
+
+        // Convert the number to hexadecimal
+        while num > 0 {
+            let digit = (num % 16) as usize;
+            result.push(hex_digits[digit] as char);
+            num /= 16;
+        }
+
+        // Riempire con zeri fino a 8 cifre, perché gli NTSTATUS sono rappresentati su 8 caratteri esadecimali
+        while result.len() < 8 {
+            result.push('0');
+        }
+
+        // Aggiungi il prefisso "0x"
+        result.push_str("x0");
+
+        // Invertire la stringa per ottenere l'ordine corretto
+        result.chars().rev().collect()
+    }
+
+    #[test]
+    fn testttt() {
+        let ntstatus: i32 = -1073741819;
+        let hex_str = itoa_hex_i32(ntstatus);
+        libc_println!("{}", hex_str); // Output: "0xC0000023"
     }
 }

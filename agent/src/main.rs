@@ -16,6 +16,12 @@ use mod_win32::nt_time::wait_until;
 
 use rs2_runtime::Runtime;
 
+fn main() {
+    let rt = initialize_runtime();
+    initialize_system_data();
+    routine(rt.clone());
+}
+
 pub fn routine<R>(rt: Arc<R>)
 where
     R: Runtime,
@@ -35,10 +41,4 @@ where
             wait_until(instance().config.polling_interval);
         }
     }
-}
-
-fn main() {
-    let rt = initialize_runtime();
-    initialize_system_data();
-    routine(rt.clone());
 }
