@@ -24,6 +24,7 @@ const REQUIRED_PACKAGES: [&str; 15] = [
 ];
 
 /// Checks if the current user is root
+#[cfg(unix)]
 fn check_root() -> anyhow::Result<()> {
 	if !nix::unistd::Uid::effective().is_root() {
 		error!("This command must be run as root.");
@@ -314,42 +315,46 @@ fn build_command_and_control() -> anyhow::Result<()> {
 }
 
 pub fn compile() -> anyhow::Result<()> {
-	// Ensure the command is executed as root
-	check_root()?;
+	#[cfg(unix)] {
+		// Ensure the command is executed as root
+		check_root()?;
 
-	// Update the apt package list
-	update_apt()?;
+		// Update the apt package list
+		update_apt()?;
 
-	// Upgrade the apt package list
-	upgrade_apt()?;
+		// Upgrade the apt package list
+		upgrade_apt()?;
 
-	// Check and install required packages
-	install_packages()?;
+		// Check and install required packages
+		install_packages()?;
 
-	// Remove unused packages anc clean the apt cache
-	autoremove_apt()?;
+		// Remove unused packages anc clean the apt cache
+		autoremove_apt()?;
 
-	// Check and install Rust
-	install_rust()?;
+		// Check and install Rust
+		install_rust()?;
 
-	// Check and install NVM
-	install_nvm()?;
+		// Check and install NVM
+		install_nvm()?;
 
-	// Check and install PNPM
-	install_pnpm()?;
+		// Check and install PNPM
+		install_pnpm()?;
 
-	// Change to the specified directory and run the PNPM build script
-	let command_and_control_gui = "command-and-control-gui";
-	if env::set_current_dir(command_and_control_gui).is_err() {
-		error!("Failed to change directory to {}", command_and_control_gui);
-		return Err(anyhow::anyhow!("Failed to change directory"));
+		// Change to the specified directory and run the PNPM build script
+		let command_and_control_gui = "command-and-control-gui";
+		if env::set_current_dir(command_and_control_gui).is_err() {
+			error!("Failed to change directory to {}", command_and_control_gui);
+			return Err(anyhow::anyhow!("Failed to change directory"));
+		}
+
+		// Install XWin
+		install_xwin()?;
+
+		// Build the client application
+		build_command_and_control()?;
+		Ok(())
 	}
-
-	// Install XWin
-	install_xwin()?;
-
-	// Build the client application
-	build_command_and_control()?;
-
-	Ok(())
+	#[cfg(windows)] {
+		Err(anyhow::anyhow!("This command is only available on Unix systems"))
+	}
 }

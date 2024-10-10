@@ -1,10 +1,10 @@
 use std::io::Write;
 
 use clap::ValueEnum;
-use diesel::{AsExpression, deserialize, FromSqlRow, QueryId, serialize, SqlType};
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
+use diesel::{deserialize, serialize, AsExpression, FromSqlRow, QueryId, SqlType};
 use serde::{Deserialize, Serialize};
 
 /// Represent the list of fields that can be used to filter agents
@@ -15,7 +15,7 @@ pub enum AgentFields {
 	Hostname,
 	Domain,
 	Username,
-	Ip,
+    NetworkInterfaces,
 	ProcessId,
 	ParentProcessId,
 	ProcessName,
@@ -33,7 +33,7 @@ impl ToSql<AgentFields, Pg> for AgentFields {
 			Self::Hostname => out.write_all(b"hostname")?,
 			Self::Domain => out.write_all(b"domain")?,
 			Self::Username => out.write_all(b"username")?,
-			Self::Ip => out.write_all(b"ip")?,
+            Self::NetworkInterfaces => out.write_all(b"network_interfaces")?,
 			Self::ProcessId => out.write_all(b"process_id")?,
 			Self::ParentProcessId => out.write_all(b"parent_process_id")?,
 			Self::ProcessName => out.write_all(b"process_name")?,
@@ -54,7 +54,7 @@ impl FromSql<AgentFields, Pg> for AgentFields {
 			b"hostname" => Ok(Self::Hostname),
 			b"domain" => Ok(Self::Domain),
 			b"username" => Ok(Self::Username),
-			b"ip" => Ok(Self::Ip),
+            b"network_interfaces" => Ok(Self::NetworkInterfaces),
 			b"process_id" => Ok(Self::ProcessId),
 			b"parent_process_id" => Ok(Self::ParentProcessId),
 			b"process_name" => Ok(Self::ProcessName),

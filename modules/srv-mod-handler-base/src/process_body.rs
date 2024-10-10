@@ -4,6 +4,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
+use std::fmt::Debug;
 use tracing::{instrument, warn};
 
 use crate::callback_handlers;
@@ -48,22 +49,25 @@ fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
 }
 
 /// Handle the command by executing it and returning the response if any
-#[instrument(skip(raw_body))]
-async fn handle_command(
-	db_pool: Pool,
-	basic_response: BasicAgentResponse,
-	protocol: Box<dyn Protocol<IdentEncryptor>>,
-	raw_body: Bytes,
-	headers: HeaderMap,
-	cmd_request_id: String,
-) -> Result<Bytes> {
+#[instrument(skip(raw_body, protocol))]
+async fn handle_command<P>(
+    db_pool: Pool,
+    basic_response: BasicAgentResponse,
+    protocol: P,
+    raw_body: Bytes,
+    headers: HeaderMap,
+    cmd_request_id: String,
+) -> Result<Bytes>
+    where
+        P: Protocol<IdentEncryptor>,
+{
     // TODO: Implement the command handling
     match AgentCommands::from(basic_response.metadata.command_id) {
         AgentCommands::Terminate => {
             callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await
         }
         AgentCommands::Checkin => {
-			let checkin = protocol.read::<CheckinStruct>(raw_body, None);
+            let checkin = protocol.read::<CheckinStruct>(raw_body, None);
             callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool).await
         }
         AgentCommands::INVALID => {
@@ -93,18 +97,19 @@ pub async fn process_body(
     match match_magic_numbers(body.clone()) {
         Ok(protocol) => match protocol {
             handlers::Protocol::Json => {
-                let data = process_json(body.clone())?;
+                let data = process_json(body.clone()).unwrap();
                 let response = handle_command(
                     db_pool,
                     data,
-                    Box::new(make_json_protocol_instance()),
+                    make_json_protocol_instance(),
                     body.clone(),
                     headers,
                     cmd_request_id,
                 )
-                .await?;
+                    .await
+                    .unwrap_or(Bytes::new());
 
-                (StatusCode::OK, Json(response)).into_response()
+                Json(response.to_vec()).into_response()
             }
         },
         Err(_) => {
@@ -126,7 +131,7 @@ fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> {
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
 fn process_json<T>(body: Bytes) -> Result<T>
 where
-    T: Deserialize,
+    T: for<'a> Deserialize<'a>,
 {
     let now = std::time::Instant::now();
 
