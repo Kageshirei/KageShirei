@@ -1,0 +1,7 @@
+[package]
+name = "rs2-srv-test-helper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+srv-mod-database = { path = "../../modules/srv-mod-database" }

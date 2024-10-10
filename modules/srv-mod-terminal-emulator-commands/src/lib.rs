@@ -1,14 +1,15 @@
-use clap::{Parser, Subcommand};
 pub use clap::builder::StyledStr;
+use clap::Parser;
 use serde::{Serialize, Serializer};
 
-use crate::command_handler::{CommandHandler, SerializableCommandHandler};
+use crate::command_handler::{CommandHandler, CommandHandlerArguments};
 use crate::global_session::GlobalSessionTerminalEmulatorCommands;
 use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
 
 pub mod global_session;
 pub mod command_handler;
 pub mod session_terminal_emulator;
+mod post_process_result;
 
 #[derive(Debug, PartialEq)]
 pub enum Command {
@@ -27,42 +28,51 @@ impl Serialize for Command {
 	}
 }
 
-impl Command {
-	pub fn from_raw(session_id: Option<String>, value: String) -> Result<Box<Self>, StyledStr> {
-		// if a session_id is provided, parse the command as a SessionTerminalEmulatorCommands
-		return if session_id.is_some() {
-			let parsed_command = shellwords::split(value.as_str()).unwrap();
-			let cmd = SessionTerminalEmulatorCommands::try_parse_from(parsed_command)
-				.map_err(|e| e.render())
-				.map(|c| Box::new(c));
-
-			// if the command is successfully parsed, return it
-			if let Ok(cmd) = cmd {
-				return Ok(Box::new(Command::SessionTerminalEmulatorCommands(*cmd)));
-			}
-			Err(cmd.err().unwrap())
+/// Evaluate the command and return the opaque result
+macro_rules! make_result_from_cmd {
+    ($cmd:expr, $variant:path) => {
+        if let Ok(cmd) = $cmd {
+            Ok(Box::new($variant(*cmd)))
+        }
+        else {
+			Err($cmd.err().unwrap())
 		}
-		// otherwise, parse the command as a GlobalSessionTerminalEmulatorCommands
-		else {
-			let parsed_command = shellwords::split(value.as_str()).unwrap();
-			let cmd = GlobalSessionTerminalEmulatorCommands::try_parse_from(parsed_command)
-				.map_err(|e| e.render())
-				.map(|c| Box::new(c));
+    };
+}
 
-			// if the command is successfully parsed, return it
-			if let Ok(cmd) = cmd {
-				return Ok(Box::new(Command::GlobalSessionTerminalEmulatorCommands(*cmd)));
+
+impl Command {
+	/// Parse the command from the raw string to the specified type
+	fn internal_parse<T>(value: &str) -> Result<Box<T>, StyledStr>
+		where T: Parser {
+		let parsed_command = shellwords::split(value).unwrap();
+		T::try_parse_from(parsed_command)
+			.map_err(|e| e.render())
+			.map(|c| Box::new(c))
+	}
+
+	/// Parse the command from the raw string
+	pub fn from_raw(session_id: &str, value: &str) -> Result<Box<Self>, StyledStr> {
+		return match session_id {
+			// if the session_id is "global", parse the command as a GlobalSessionTerminalEmulatorCommands
+			"global" => {
+				let cmd = Self::internal_parse::<GlobalSessionTerminalEmulatorCommands>(value);
+				make_result_from_cmd!(cmd, Command::GlobalSessionTerminalEmulatorCommands)
 			}
-			Err(cmd.err().unwrap())
+			// otherwise, parse the command as a SessionTerminalEmulatorCommands
+			_ => {
+				let cmd = Self::internal_parse::<SessionTerminalEmulatorCommands>(value);
+				make_result_from_cmd!(cmd, Command::SessionTerminalEmulatorCommands)
+			}
 		};
 	}
 }
 
 impl CommandHandler for Command {
-	fn handle_command(&self) -> anyhow::Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> anyhow::Result<String> {
 		match self {
-			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(),
-			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(),
+			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
+			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
 		}
 	}
 }

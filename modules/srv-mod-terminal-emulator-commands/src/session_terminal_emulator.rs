@@ -1,9 +1,14 @@
 use clap::{Parser, Subcommand};
 use serde::Serialize;
-use tracing::info;
 
-use crate::command_handler::{CommandHandler, SerializableCommandHandler};
-use crate::StyledStr;
+use crate::command_handler::{CommandHandler, CommandHandlerArguments};
+use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
+use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
+
+pub(crate) mod clear;
+pub(crate) mod exit;
+pub(crate) mod history;
+mod terminate;
 
 #[derive(Parser, Debug, PartialEq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
@@ -30,31 +35,28 @@ The more occurrences increase the verbosity level
 pub enum Commands {
 	/// Clear the terminal screen
 	#[serde(rename = "clear")]
-	Clear,
+	Clear(TerminalSessionClearArguments),
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
+	/// Get the history of the terminal session and operate on it
+	#[serde(rename = "history")]
+	History(TerminalSessionHistoryArguments),
+	/// Terminate the agent linked to the terminal session.
+	///
+	/// This action cannot be undone and will cause the immediate
+	/// drop of any active connection
+	#[serde(rename = "terminate")]
+	Terminate,
 }
 
 impl CommandHandler for SessionTerminalEmulatorCommands {
-	fn handle_command(&self) -> anyhow::Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> anyhow::Result<String> {
 		match &self.command {
-			Commands::Clear => {
-				info!("Terminal clear command received");
-
-				// TODO: Implement the clear command hiding the output of previous commands (not dropping it by default)
-
-				// Signal the frontend terminal emulator to clear the terminal screen
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
-			}
-			Commands::Exit => {
-				info!("Terminal exit command received");
-
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
-			}
+			Commands::Clear(args) => clear::handle(config, args).await,
+			Commands::Exit => exit::handle(config).await,
+			Commands::History(args) => history::handle(config, args).await,
+			Commands::Terminate => terminate::handle(config).await,
 		}
 	}
 }
-
-impl SerializableCommandHandler for SessionTerminalEmulatorCommands {}

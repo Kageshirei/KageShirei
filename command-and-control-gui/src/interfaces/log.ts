@@ -2,7 +2,7 @@ export interface ILog {
     /**
      * The timestamp of the log entry. This is a Unix timestamp in seconds. UTC.
      */
-    timestamp: number;
+    created_at: number;
     /**
      * Extra data to be included in the log entry. This is a key-value pair.
      */

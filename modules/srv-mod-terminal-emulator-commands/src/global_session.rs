@@ -1,14 +1,16 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use clap::builder::StyledStr;
 use serde::Serialize;
-use tracing::{debug, info};
 
-use crate::command_handler::{CommandHandler, SerializableCommandHandler};
-use crate::global_session::session::GlobalSessionTerminalSessionArguments;
-use crate::session_terminal_emulator::SessionTerminalEmulatorCommands;
+use crate::command_handler::{CommandHandler, CommandHandlerArguments};
+use crate::global_session::make::TerminalSessionMakeArguments;
+use crate::global_session::session::GlobalSessionTerminalSessionsArguments;
+use crate::session_terminal_emulator::{clear, exit, history};
+use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
+use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
 mod session;
+mod make;
 
 #[derive(Parser, Debug, PartialEq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
@@ -35,48 +37,29 @@ The more occurrences increase the verbosity level
 pub enum Commands {
 	/// Clear the terminal screen
 	#[serde(rename = "clear")]
-	Clear,
+	Clear(TerminalSessionClearArguments),
 	/// Exit the terminal session, closing the terminal emulator
 	#[serde(rename = "exit")]
 	Exit,
-	/// Start a new terminal session
-	#[command(long_about = r#"Start a new terminal session
-
-This command is used to start a new terminal session. The session ID is used to identify the terminal session (aka agent id).
-
-Example:
-session --list
-session --ids agent-id-1 --ids agent-id-2 --ids agent-id-3"#)]
-	#[serde(rename = "session")]
-	Session(GlobalSessionTerminalSessionArguments),
+	/// Get the history of the terminal session and operate on it
+	#[serde(rename = "history")]
+	History(TerminalSessionHistoryArguments),
+	/// List terminal sessions or open the terminal session for the provided hostnames
+	#[serde(rename = "sessions")]
+	Sessions(GlobalSessionTerminalSessionsArguments),
+	/// Generate something
+	#[serde(rename = "make")]
+	Make(TerminalSessionMakeArguments),
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
-	fn handle_command(&self) -> Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String> {
 		match &self.command {
-			Commands::Clear => {
-				debug!("Terminal clear command received");
-
-				// TODO: Implement the clear command hiding the output of previous commands (not dropping it by default)
-
-				// Signal the frontend terminal emulator to clear the terminal screen
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
-			}
-			Commands::Exit => {
-				debug!("Terminal exit command received");
-
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
-			}
-			Commands::Session(_args) => {
-				todo!("Implement session command handling");
-				debug!("Terminal session command received");
-
-				// Signal the frontend terminal emulator to exit the terminal session
-				Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_SESSION__".to_string())
-			}
+			Commands::Clear(args) => clear::handle(config, args).await,
+			Commands::Exit => exit::handle(config).await,
+			Commands::History(args) => history::handle(config, args).await,
+			Commands::Sessions(args) => session::handle(config, args).await,
+			Commands::Make(args) => make::handle(config, args).await,
 		}
 	}
 }
-
-impl SerializableCommandHandler for GlobalSessionTerminalEmulatorCommands {}

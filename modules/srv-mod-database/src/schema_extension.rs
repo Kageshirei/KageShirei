@@ -1,9 +1,11 @@
 use std::io::Write;
 
-use diesel::{AsExpression, deserialize, FromSqlRow, QueryId, serialize, SqlType};
+use clap::ValueEnum;
 use diesel::deserialize::FromSql;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{IsNull, Output, ToSql};
+use diesel::{deserialize, serialize, AsExpression, FromSqlRow, QueryId, SqlType};
+use serde::{Deserialize, Serialize};
 
 /// Represent the list of fields that can be used to filter agents
 #[derive(Debug, Clone, PartialEq, FromSqlRow, QueryId, AsExpression, SqlType, Eq)]
@@ -13,14 +15,15 @@ pub enum AgentFields {
 	Hostname,
 	Domain,
 	Username,
-	Ip,
+    NetworkInterfaces,
 	ProcessId,
 	ParentProcessId,
 	ProcessName,
-	Elevated,
 	ServerSecretKey,
 	SecretKey,
 	Signature,
+	IntegrityLevel,
+	Cwd,
 }
 
 impl ToSql<AgentFields, Pg> for AgentFields {
@@ -30,14 +33,15 @@ impl ToSql<AgentFields, Pg> for AgentFields {
 			Self::Hostname => out.write_all(b"hostname")?,
 			Self::Domain => out.write_all(b"domain")?,
 			Self::Username => out.write_all(b"username")?,
-			Self::Ip => out.write_all(b"ip")?,
+            Self::NetworkInterfaces => out.write_all(b"network_interfaces")?,
 			Self::ProcessId => out.write_all(b"process_id")?,
 			Self::ParentProcessId => out.write_all(b"parent_process_id")?,
 			Self::ProcessName => out.write_all(b"process_name")?,
-			Self::Elevated => out.write_all(b"elevated")?,
 			Self::ServerSecretKey => out.write_all(b"server_secret_key")?,
 			Self::SecretKey => out.write_all(b"secret_key")?,
 			Self::Signature => out.write_all(b"signature")?,
+			Self::IntegrityLevel => out.write_all(b"integrity_level")?,
+			Self::Cwd => out.write_all(b"cwd")?,
 		}
 		Ok(IsNull::No)
 	}
@@ -50,11 +54,12 @@ impl FromSql<AgentFields, Pg> for AgentFields {
 			b"hostname" => Ok(Self::Hostname),
 			b"domain" => Ok(Self::Domain),
 			b"username" => Ok(Self::Username),
-			b"ip" => Ok(Self::Ip),
+            b"network_interfaces" => Ok(Self::NetworkInterfaces),
 			b"process_id" => Ok(Self::ProcessId),
 			b"parent_process_id" => Ok(Self::ParentProcessId),
 			b"process_name" => Ok(Self::ProcessName),
-			b"elevated" => Ok(Self::Elevated),
+			b"integrity_level" => Ok(Self::IntegrityLevel),
+			b"cwd" => Ok(Self::Cwd),
 			b"server_secret_key" => Ok(Self::ServerSecretKey),
 			b"secret_key" => Ok(Self::SecretKey),
 			b"signature" => Ok(Self::Signature),
@@ -126,6 +131,105 @@ impl FromSql<FilterOperator, Pg> for FilterOperator {
 			b"not_contains" => Ok(Self::NotContains),
 			b"starts_with" => Ok(Self::StartsWith),
 			b"ends_with" => Ok(Self::EndsWith),
+			_ => Err("Unrecognized enum variant".into()),
+		}
+	}
+}
+
+/// Represent the list of valid log levels
+#[derive(
+	Debug,
+	Clone,
+	PartialEq,
+	FromSqlRow,
+	QueryId,
+	SqlType,
+	AsExpression,
+	Eq,
+	Serialize,
+	Deserialize,
+	ValueEnum,
+)]
+#[diesel(postgres_type(name = "log_level"), sql_type = LogLevel)]
+pub enum LogLevel {
+	#[serde(rename = "INFO")]
+	INFO,
+	#[serde(rename = "WARN")]
+	WARN,
+	#[serde(rename = "ERROR")]
+	ERROR,
+	#[serde(rename = "DEBUG")]
+	DEBUG,
+	#[serde(rename = "TRACE")]
+	TRACE,
+}
+
+impl ToSql<LogLevel, Pg> for LogLevel {
+	fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+		match *self {
+			Self::INFO => out.write_all(b"INFO")?,
+			Self::WARN => out.write_all(b"WARN")?,
+			Self::ERROR => out.write_all(b"ERROR")?,
+			Self::DEBUG => out.write_all(b"DEBUG")?,
+			Self::TRACE => out.write_all(b"TRACE")?,
+		}
+		Ok(IsNull::No)
+	}
+}
+
+impl FromSql<LogLevel, Pg> for LogLevel {
+	fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
+		match bytes.as_bytes() {
+			b"INFO" => Ok(Self::INFO),
+			b"WARN" => Ok(Self::WARN),
+			b"ERROR" => Ok(Self::ERROR),
+			b"DEBUG" => Ok(Self::DEBUG),
+			b"TRACE" => Ok(Self::TRACE),
+			_ => Err("Unrecognized enum variant".into()),
+		}
+	}
+}
+
+/// Represent the list of valid agent command statuses
+#[derive(
+	Debug,
+	Clone,
+	PartialEq,
+	FromSqlRow,
+	QueryId,
+	SqlType,
+	AsExpression,
+	Serialize,
+	Deserialize,
+	Eq
+)]
+#[diesel(postgres_type(name = "agent_command_status"), sql_type = AgentCommandStatus)]
+pub enum AgentCommandStatus {
+	Pending,
+	Running,
+	Completed,
+	Failed,
+}
+
+impl ToSql<AgentCommandStatus, Pg> for AgentCommandStatus {
+	fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+		match *self {
+			Self::Pending => out.write_all(b"pending")?,
+			Self::Running => out.write_all(b"running")?,
+			Self::Completed => out.write_all(b"completed")?,
+			Self::Failed => out.write_all(b"failed")?,
+		}
+		Ok(IsNull::No)
+	}
+}
+
+impl FromSql<AgentCommandStatus, Pg> for AgentCommandStatus {
+	fn from_sql(bytes: PgValue<'_>) -> deserialize::Result<Self> {
+		match bytes.as_bytes() {
+			b"pending" => Ok(Self::Pending),
+			b"running" => Ok(Self::Running),
+			b"completed" => Ok(Self::Completed),
+			b"failed" => Ok(Self::Failed),
 			_ => Err("Unrecognized enum variant".into()),
 		}
 	}

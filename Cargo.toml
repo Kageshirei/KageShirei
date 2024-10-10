@@ -1,13 +1,29 @@
 [workspace]
 members = [
     "agent",
-    "server",
     "command-and-control-gui/src-tauri",
-    "libs/rs2-utils",
-    "libs/rs2-crypt",
     "libs/coffee",
-    "libs/rs2-win32", "modules/mod-ntallocator", "modules/mod-win32", "modules/mod-hhtgates", "modules/mod-agentcore",
+    "libs/rs2-communication-protocol",
+    "libs/rs2-crypt",
+    "libs/rs2-indirect-syscall",
+    "libs/rs2-srv-test-helper",
+    "libs/rs2-utils",
+    "libs/rs2-win32",
+    "modules/mod-agentcore",
+    "modules/mod-hhtgates",
+    "modules/mod-loader-coffee-core",
+    "modules/mod-ntallocator",
+    "modules/mod-protocol-json",
     "modules/mod-protocol-winhttp",
-    "modules/mod-loader-coffee-core", "modules/mod-protocol-json", "libs/rs2-indirect-syscall", "libs/rs2-communication-protocol", "modules/srv-mod-operator-api", "modules/srv-mod-config", "modules/srv-mod-database", "modules/srv-mod-http-handler", "modules/srv-mod-terminal-emulator-commands",]
+    "modules/mod-win32",
+    "modules/srv-mod-config",
+    "modules/srv-mod-database",
+    "modules/srv-mod-handler-base",
+    "modules/srv-mod-handler-http",
+    "modules/srv-mod-http-handler",
+    "modules/srv-mod-operator-api",
+    "modules/srv-mod-terminal-emulator-commands",
+    "server",
+]
 resolver = "2"
 package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }

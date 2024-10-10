@@ -27,6 +27,7 @@ The project is still in its early stages, we have many features planned, we'll p
 ### Working features
 
 #### Agent
+
 - None :(
 
 #### Server
@@ -36,6 +37,7 @@ The project is still in its early stages, we have many features planned, we'll p
 ### Planned features
 
 #### Agent
+
 - None :(
 
 #### Server
@@ -88,6 +90,12 @@ Additionally, the executable will be quite large, as it will contain all the dep
 optimized for performances (instead of size such as the agent and the control panel).
 
 Refer to the [server's own documentation](server/README.md) for a list of commands and usage instructions.
+
+#### Building on windows?
+
+It can be done, even if some features are not available.
+Refer to [this comment](https://github.com/diesel-rs/diesel/issues/587#issuecomment-574934244) for instruction on how to
+overcome some common issues.
 
 ### The server component superpowers
 
