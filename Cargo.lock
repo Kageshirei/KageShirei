@@ -2738,6 +2738,7 @@ version = "0.1.0"
 dependencies = [
  "rs2-communication-protocol",
  "rs2-runtime",
+ "serde",
 ]
 
 [[package]]

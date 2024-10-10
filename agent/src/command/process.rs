@@ -45,7 +45,7 @@ pub fn command_shell(cmdline: &str, metadata: Metadata) -> TaskOutput {
     // Check if the output is empty
     if result.is_empty() {
         output.ended_at = Some(current_timestamp());
-        output.exit_code = Some(1); // Error case
+        output.exit_code = Some(-1); // Error case
         output.with_metadata(metadata);
         return output;
     }
@@ -55,7 +55,6 @@ pub fn command_shell(cmdline: &str, metadata: Metadata) -> TaskOutput {
 
     // Set the output string (converted to a full String)
     output.output = Some(output_str.into_owned());
-
     output.ended_at = Some(current_timestamp());
     output.exit_code = Some(0); // Success case
     output.with_metadata(metadata);

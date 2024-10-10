@@ -1,5 +1,3 @@
-/// The `mod-std-runtime` module implements the `Runtime` trait using a custom thread pool.
-/// This module provides a thread pool-based runtime adapter that conforms to the generic `Runtime` interface.
 pub mod std_runtime;
 pub mod std_threadpool;
 
@@ -46,7 +44,7 @@ mod tests {
 
             let command = if i % 2 == 0 {
                 SimpleAgentCommand {
-                    op: AgentCommands::Test,
+                    op: AgentCommands::INVALID,
                     metadata,
                 }
             } else {
@@ -63,7 +61,8 @@ mod tests {
                 let result = match command.op {
                     AgentCommands::Terminate => task_type_a(command.metadata),
                     AgentCommands::Checkin => task_type_a(command.metadata),
-                    AgentCommands::Test => task_type_b(command.metadata),
+                    AgentCommands::PrintWorkingDirectory => task_type_a(command.metadata),
+                    AgentCommands::INVALID => task_type_b(command.metadata),
                 };
                 result_tx.send(result).unwrap();
             });

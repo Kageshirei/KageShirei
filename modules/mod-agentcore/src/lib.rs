@@ -136,6 +136,7 @@ pub static mut INSTANCE: Mutex<UnsafeCell<Option<Instance>>> = Mutex::new(Unsafe
 ///
 /// This function is unsafe because it involves mutable static data.
 /// The caller must ensure no data races occur when accessing the global instance.
+#[allow(static_mut_refs)]
 pub unsafe fn instance() -> &'static Instance {
     ensure_initialized();
     return INSTANCE.lock().get().as_ref().unwrap().as_ref().unwrap();
@@ -147,6 +148,7 @@ pub unsafe fn instance() -> &'static Instance {
 ///
 /// This function is unsafe because it involves mutable static data.
 /// The caller must ensure no data races occur when accessing the global instance.
+#[allow(static_mut_refs)]
 pub unsafe fn instance_mut() -> &'static mut Instance {
     ensure_initialized();
     INSTANCE.lock().get().as_mut().unwrap().as_mut().unwrap()

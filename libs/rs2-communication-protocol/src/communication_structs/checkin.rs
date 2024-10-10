@@ -1,8 +1,7 @@
-use std::sync::Arc;
-
-use serde::{Deserialize, Serialize};
-
 use crate::metadata::{Metadata, WithMetadata};
+use crate::network_interface::NetworkInterface;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 pub struct PartialCheckin {
     /// The OS name
@@ -13,18 +12,17 @@ pub struct PartialCheckin {
     pub domain: String,
     /// The username of whose runs the agent
     pub username: String,
-    /// The internal network adapters info of the victim (Interface name, IP address, and DHCP server)
-    // pub ips: Vec<(String, String, String)>,
-    pub ip: String,
+    /// The internal IP(s) of the victim (multiple network interfaces)
+    pub network_interfaces: Vec<NetworkInterface>,
     /// The process ID of the agent
     pub process_id: i64,
     /// The parent process ID of the agent
     pub parent_process_id: i64,
-    /// The integrity level of the process
+    /// The process name of the agent
     pub process_name: String,
-    /// Whether the agent is running as elevated
-    pub integrity_level: i32,
-    /// Current working directory
+    /// The integrity level of the agent
+    pub integrity_level: i16,
+    /// The current working directory of the agent
     pub cwd: String,
 }
 
@@ -39,18 +37,17 @@ pub struct Checkin {
     pub domain: String,
     /// The username of whose runs the agent
     pub username: String,
-    /// The internal network adapters info of the victim (Interface name, IP address, and DHCP server)
-    // pub ips: Vec<(String, String, String)>,
-    pub ip: String,
+    /// The internal IP(s) of the victim (multiple network interfaces)
+    pub network_interfaces: Vec<NetworkInterface>,
     /// The process ID of the agent
     pub process_id: i64,
     /// The parent process ID of the agent
     pub parent_process_id: i64,
     /// The process name of the agent
     pub process_name: String,
-    /// The integrity level of the process
-    pub integrity_level: i32,
-    /// Current working directory
+    /// The integrity level of the agent
+    pub integrity_level: i16,
+    /// The current working directory of the agent
     pub cwd: String,
     /// The metadata of the struct
     metadata: Option<Arc<Metadata>>,
@@ -63,7 +60,7 @@ impl Checkin {
             hostname: partial.hostname,
             domain: partial.domain,
             username: partial.username,
-            ip: partial.ip,
+            network_interfaces: partial.network_interfaces,
             process_id: partial.process_id,
             parent_process_id: partial.parent_process_id,
             process_name: partial.process_name,
@@ -111,7 +108,7 @@ mod tests {
             hostname: "DESKTOP-PC".to_string(),
             domain: "WORKGROUP".to_string(),
             username: "user".to_string(),
-            ip: String::new(),
+            network_interfaces: Vec::new(),
             process_id: 1234,
             parent_process_id: 5678,
             process_name: "agent.exe".to_string(),

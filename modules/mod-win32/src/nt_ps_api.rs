@@ -241,7 +241,7 @@ pub unsafe fn nt_open_process_token(process_handle: HANDLE) -> HANDLE {
 ///
 /// # Returns
 /// The integrity level as an `i32` representing the RID if successful, otherwise `-1` if the operation fails.
-pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
+pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i16 {
     // Get the process token
     let token_handle = nt_open_process_token(process_handle);
 
@@ -294,7 +294,7 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
         let rid = *sid.sub_authority.get_unchecked(sub_authority_count - 1);
 
         instance().ntdll.nt_close.run(token_handle);
-        return rid as i32;
+        return rid as i16;
     } else {
         libc_println!("[!] NtQueryInformationToken failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(token_handle);
@@ -326,7 +326,6 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i32 {
 /// # Safety
 /// This function uses unsafe operations to interact with low-level Windows APIs. Ensure that the inputs
 /// are valid and that the function is called in a safe context.
-
 pub unsafe fn nt_create_user_process(
     sz_target_process: &str,
     sz_target_process_parameters: &str,

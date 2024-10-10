@@ -56,7 +56,7 @@ mod tests {
             // Based on the index, alternate between two different commands.
             let command = if i % 2 == 0 {
                 SimpleAgentCommand {
-                    op: AgentCommands::Test,
+                    op: AgentCommands::INVALID,
                     metadata,
                 }
             } else {
@@ -76,7 +76,8 @@ mod tests {
                 let result = match command.op {
                     AgentCommands::Terminate => task_type_a(command.metadata),
                     AgentCommands::Checkin => task_type_a(command.metadata),
-                    AgentCommands::Test => task_type_b(command.metadata),
+                    AgentCommands::PrintWorkingDirectory => task_type_a(command.metadata),
+                    AgentCommands::INVALID => task_type_b(command.metadata),
                 };
                 result_tx.send(result).unwrap();
             });

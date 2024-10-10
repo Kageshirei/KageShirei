@@ -90,7 +90,7 @@ pub fn command_pwd(metadata: Metadata) -> TaskOutput {
     if current_dir.is_empty() {
         // If the directory is empty, an error occurred during retrieval
         output.ended_at = Some(current_timestamp());
-        output.exit_code = Some(1); // Changed to 1 to indicate an error
+        output.exit_code = Some(-1); // Changed to 1 to indicate an error
         output.with_metadata(metadata);
         return output;
     }
@@ -225,40 +225,5 @@ mod tests {
             !cwd_str.is_empty(),
             "Expected a non-empty current directory, but got an empty string"
         );
-    }
-
-    pub fn itoa_hex_i32(value: i32) -> String {
-        let hex_digits = b"0123456789ABCDEF"; // Uppercase hexadecimal digits
-        let mut result = String::new();
-        let mut num = value as u32; // Trattiamo il valore come u32 mantenendo il bit pattern di i32
-
-        if num == 0 {
-            return "0x0".to_string(); // Caso speciale per 0
-        }
-
-        // Convert the number to hexadecimal
-        while num > 0 {
-            let digit = (num % 16) as usize;
-            result.push(hex_digits[digit] as char);
-            num /= 16;
-        }
-
-        // Riempire con zeri fino a 8 cifre, perché gli NTSTATUS sono rappresentati su 8 caratteri esadecimali
-        while result.len() < 8 {
-            result.push('0');
-        }
-
-        // Aggiungi il prefisso "0x"
-        result.push_str("x0");
-
-        // Invertire la stringa per ottenere l'ordine corretto
-        result.chars().rev().collect()
-    }
-
-    #[test]
-    fn testttt() {
-        let ntstatus: i32 = -1073741819;
-        let hex_str = itoa_hex_i32(ntstatus);
-        libc_println!("{}", hex_str); // Output: "0xC0000023"
     }
 }

@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::ffi::c_void;
 use libc_print::libc_eprintln;
+use rs2_communication_protocol::communication_structs::checkin::CheckinResponse;
 
 use rs2_runtime::Runtime;
 
@@ -24,8 +25,6 @@ pub fn initialize_protocol<R>(rt: Arc<R>)
 where
     R: Runtime,
 {
-    let (tx, rx) = std::sync::mpsc::channel(); // Changed to std::sync::mpsc::channel for generic runtime compatibility
-
     #[cfg(feature = "protocol-json")]
     {
         let boxed_encryptor = Box::new(IdentEncryptor);
@@ -40,6 +39,7 @@ where
         unsafe {
             let encryptor = encryptor_from_raw(instance().session.encryptor_ptr);
             let protocol = protocol_from_raw(instance().session.protocol_ptr);
+            let protocol_read = protocol_from_raw(instance().session.protocol_ptr);
 
             // Check if the Checkin data is available in the global instance
             if let Some(checkin_ptr) = instance().pcheckindata.as_mut() {
@@ -50,39 +50,34 @@ where
                 protocol.set_is_checkin(true);
 
                 // Attempt to write the Checkin data using the protocol
-                rt.block_on(async move {
-                    let result = protocol
+                let result = rt.block_on(async {
+                    protocol
                         .write(checkin_data.clone(), Some(encryptor.clone()))
-                        .await;
-                    let _ = tx.send(result);
+                        .await
                 });
 
-                let result = rx.blocking_recv().unwrap();
-
                 if result.is_ok() {
-                    // If successful, mark the session as connected
-                    instance_mut().session.connected = true;
+                    let checkin_response: Result<CheckinResponse, anyhow::Error> =
+                        protocol_read.read(result.unwrap(), Some(encryptor.clone()));
 
-                    // let checkin_response: Result<CheckinResponse, anyhow::Error> =
-                    //     protocol.read(result.unwrap(), Some(encryptor.clone()));
+                    if checkin_response.is_ok() {
+                        let checkin_response_data = checkin_response.unwrap();
 
-                    // if checkin_response.is_ok() {
-                    //     let checkin_response_data = checkin_response.unwrap();
+                        instance_mut().config.id = checkin_response_data.id;
+                        instance_mut().config.kill_date = checkin_response_data.kill_date;
+                        instance_mut().config.working_hours = checkin_response_data.working_hours;
+                        instance_mut().config.polling_interval =
+                            checkin_response_data.polling_interval;
+                        instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
 
-                    //     instance_mut().config.id = checkin_response_data.id;
-                    //     instance_mut().config.kill_date = checkin_response_data.kill_date;
-                    //     instance_mut().config.working_hours = checkin_response_data.working_hours;
-                    //     instance_mut().config.polling_interval =
-                    //         checkin_response_data.polling_interval;
-                    //     instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
-
-                    //     libc_println!("Interval: {}", instance().config.polling_interval);
-                    // } else {
-                    //     libc_eprintln!(
-                    //         "Checkin Response Error: {}",
-                    //         checkin_response.err().unwrap()
-                    //     );
-                    // }
+                        // If successful, mark the session as connected
+                        instance_mut().session.connected = true;
+                    } else {
+                        libc_eprintln!(
+                            "Checkin Response Error: {}",
+                            checkin_response.err().unwrap()
+                        );
+                    }
                 } else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }
@@ -107,6 +102,7 @@ where
         unsafe {
             let encryptor = encryptor_from_raw(instance().session.encryptor_ptr);
             let protocol = protocol_from_raw(instance().session.protocol_ptr);
+            let protocol_read = protocol_from_raw(instance().session.protocol_ptr);
 
             // Check if the Checkin data is available in the global instance
             if let Some(checkin_ptr) = instance().pcheckindata.as_mut() {
@@ -116,40 +112,34 @@ where
                 // Set the protocol to checkin mode
                 protocol.set_is_checkin(true);
 
-                // Attempt to write the Checkin data using the protocol
-                rt.block_on(async move {
-                    let result = protocol
+                let result = rt.block_on(async {
+                    protocol
                         .write(checkin_data.clone(), Some(encryptor.clone()))
-                        .await;
-                    let _ = tx.send(result);
+                        .await
                 });
 
-                let result = rx.recv().unwrap();
-
                 if result.is_ok() {
-                    // If successful, mark the session as connected
-                    instance_mut().session.connected = true;
+                    let checkin_response: Result<CheckinResponse, anyhow::Error> =
+                        protocol_read.read(result.unwrap(), Some(encryptor.clone()));
 
-                    // let checkin_response: Result<CheckinResponse, anyhow::Error> =
-                    //     protocol.read(result.unwrap(), Some(encryptor.clone()));
+                    if checkin_response.is_ok() {
+                        let checkin_response_data = checkin_response.unwrap();
 
-                    // if checkin_response.is_ok() {
-                    //     let checkin_response_data = checkin_response.unwrap();
+                        instance_mut().config.id = checkin_response_data.id;
+                        instance_mut().config.kill_date = checkin_response_data.kill_date;
+                        instance_mut().config.working_hours = checkin_response_data.working_hours;
+                        instance_mut().config.polling_interval =
+                            checkin_response_data.polling_interval;
+                        instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
 
-                    //     instance_mut().config.id = checkin_response_data.id;
-                    //     instance_mut().config.kill_date = checkin_response_data.kill_date;
-                    //     instance_mut().config.working_hours = checkin_response_data.working_hours;
-                    //     instance_mut().config.polling_interval =
-                    //         checkin_response_data.polling_interval;
-                    //     instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
-
-                    //     libc_println!("Interval: {}", instance().config.polling_interval);
-                    // } else {
-                    //     libc_eprintln!(
-                    //         "Checkin Response Error: {}",
-                    //         checkin_response.err().unwrap()
-                    //     );
-                    // }
+                        // If successful, mark the session as connected
+                        instance_mut().session.connected = true;
+                    } else {
+                        libc_eprintln!(
+                            "Checkin Response Error: {}",
+                            checkin_response.err().unwrap()
+                        );
+                    }
                 } else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }

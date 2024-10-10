@@ -42,7 +42,6 @@ fn init_winhttp_funcs() {
             pub const WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2: usize = 0x028197a2;
             pub const WINHTTP_GET_PROXY_FOR_URL_DBJ2: usize = 0xa2cf3c6f;
 
-            //TODO: remove hardcoded dll name
             let dll_name = "winhttp.dll";
             let mut winhttp_dll_unicode = UnicodeString::new();
             let utf16_string: Vec<u16> = dll_name.encode_utf16().chain(Some(0)).collect();

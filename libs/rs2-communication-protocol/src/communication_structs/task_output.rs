@@ -7,7 +7,7 @@ use std::sync::Arc;
 /// - output: the result of the task as an Option<String>
 /// - started_at: the timestamp when the task started as an Option<i64>
 /// - ended_at: the timestamp when the task ended as an Option<i64>
-/// - exit_code: the task's exit code as an Option<u8>
+/// - exit_code: the task's exit code as an Option<i32>
 /// - metadata: an Arc-wrapped Metadata object, allowing shared ownership and thread safety
 pub struct TaskOutput {
     pub output: Option<String>,          // Optional task output as a String

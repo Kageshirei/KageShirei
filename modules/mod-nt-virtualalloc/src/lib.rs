@@ -27,15 +27,15 @@ static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall
 static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> =
     Mutex::new(UnsafeCell::new(None));
 
-pub const NTDLL_HASH: u32 = 0x1edab0ed;
-pub const NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2: usize = 0xf783b8ec;
-pub const NT_FREE_VIRTUAL_MEMORY_DBJ2: usize = 0x2802c609;
-
 /// Unsafe function to perform the initialization of the static variables.
 /// This includes locating and storing the addresses and syscall numbers for `NtAllocateVirtualMemory` and `NtFreeVirtualMemory`.
 pub unsafe fn initialize() {
     // Check if initialization has already occurred.
     if !INIT.load(Ordering::Acquire) {
+        const NTDLL_HASH: u32 = 0x1edab0ed;
+        const NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2: usize = 0xf783b8ec;
+        const NT_FREE_VIRTUAL_MEMORY_DBJ2: usize = 0x2802c609;
+
         // Get the address of ntdll module in memory.
         let ntdll_address = ldr_module_peb(NTDLL_HASH);
 
