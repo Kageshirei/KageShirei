@@ -23,6 +23,7 @@ members = [
     "modules/mod-win32",
     "modules/srv-mod-config",
     "modules/srv-mod-database",
+    "modules/srv-mod-entity",
     "modules/srv-mod-handler-base",
     "modules/srv-mod-handler-http",
     "modules/srv-mod-migration",
