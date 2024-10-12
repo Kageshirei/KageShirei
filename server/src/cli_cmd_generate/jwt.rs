@@ -1,7 +1,7 @@
-use base64::Engine;
 use base64::engine::general_purpose::STANDARD as b64_encode;
+use base64::Engine;
 use log::info;
-use rand::{Rng, thread_rng};
+use rand::{thread_rng, Rng};
 
 /// Generate a random secret for JWT signing
 fn generate_jwt_secret() -> String {
@@ -14,8 +14,9 @@ fn generate_jwt_secret() -> String {
 	b64_encode.encode(&secret_bytes)
 }
 
-pub fn generate_jwt() -> anyhow::Result<()> {
+pub fn generate_jwt() -> Result<(), String> {
 	let secret = generate_jwt_secret();
 	info!("JWT secret successfully generated: {}", secret);
+
 	Ok(())
 }

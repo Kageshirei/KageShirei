@@ -1,5 +1,5 @@
 [package]
-name = "rs2-server"
+name = "kageshirei-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,23 +11,23 @@ debug-assertions = false
 lto = true
 
 [dependencies]
-anyhow = "1.0.86"
-clap = { version = "4.5.4", features = ["derive"] }
-log = { version = "0.4.21" }
+humantime = "2.1.0"
+clap = { version = "4.5.20", features = ["derive"] }
+log = { version = "0.4.22" }
 fern = { version = "0.6.2", features = ["colored"] } 
 tracing-subscriber = { version = "0.3.18", features = ["json"] }
 colored = "2.1.0"
 nix = { version = "0.29.0", features = ["user"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
 rand = { version = "0.8.5" }
 base64 = "0.22.1"
 rcgen = { version = "0.13.1" }
-once_cell = "1.19.0"
-tokio = { version = "1.0", features = ["full", "tracing", "test-util"] }
-tokio-util = { version = "0.7.11", features = ["full"] }
-tracing = "0.1"
-futures = "0.3.30"
+once_cell = "1.20.2"
+tokio = { version = "1.40.0", features = ["full", "tracing", "test-util"] }
+tokio-util = { version = "0.7.12", features = ["full"] }
+tracing = "0.1.40"
+futures = "0.3.31"
 rs2-utils = { path = "../libs/rs2-utils" }
 rs2-crypt = { path = "../libs/rs2-crypt", features = ["argon2"] }
 srv-mod-config = { path = "../modules/srv-mod-config" }
@@ -35,5 +35,7 @@ srv-mod-operator-api = { path = "../modules/srv-mod-operator-api" }
 srv-mod-database = { path = "../modules/srv-mod-database" }
 srv-mod-handler-http = { path = "../modules/srv-mod-handler-http" }
 rs2-communication-protocol = { path = "../libs/rs2-communication-protocol" }
+srv-mod-migration = { path = "../modules/srv-mod-migration" }
+srv-mod-entity = { path = "../modules/srv-mod-entity" }
 
 [features]

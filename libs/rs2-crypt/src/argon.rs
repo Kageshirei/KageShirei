@@ -1,6 +1,5 @@
-use anyhow::anyhow;
-use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::SaltString;
+use argon2::{PasswordHash, PasswordHasher, PasswordVerifier};
 use bytes::Bytes;
 use rand::thread_rng;
 
@@ -8,7 +7,17 @@ pub struct Argon2;
 
 impl Argon2 {
 	/// Hash a password using Argon2
-	pub fn hash_password(password: &str) -> anyhow::Result<String> {
+	///
+	/// Returns a PHC string ($argon2id$v=19$...)
+	///
+	/// # Arguments
+	///
+	/// * `password` - The password to hash
+	///
+	/// # Returns
+	///
+	/// The hashed password
+	pub fn hash_password(password: &str) -> Result<String, String> {
 		// initialize the SRNG
 		let rng = thread_rng();
 
@@ -21,13 +30,22 @@ impl Argon2 {
 		// Hash password to PHC string ($argon2id$v=19$...)
 		let hash = config
 			.hash_password(password.as_bytes(), &salt)
-			.map_err(|e| anyhow!(e))?
+			.map_err(|e| e.to_string())?
 			.to_string();
 
 		Ok(hash)
 	}
 
 	/// Verify a password against a hash
+	///
+	/// # Arguments
+	///
+	/// * `password` - The password to verify
+	/// * `hash` - The hash to verify against
+	///
+	/// # Returns
+	///
+	/// True if the password matches the hash, false otherwise
 	pub fn verify_password(password: &str, hash: &str) -> bool {
 		let parsed_hash = PasswordHash::new(hash).unwrap();
 
@@ -37,11 +55,21 @@ impl Argon2 {
 	}
 
 	/// Derive a key from a password
+	///
+	/// # Arguments
+	///
+	/// * `password` - The password to derive the key from
+	/// * `salt` - The salt to use for the key derivation
+	/// * `output_length` - The length of the derived key
+	///
+	/// # Returns
+	///
+	/// The derived key as a byte array
 	pub fn derive_key(
 		password: &str,
 		salt: Option<Vec<u8>>,
 		output_length: u32,
-	) -> anyhow::Result<Bytes> {
+	) -> Result<Bytes, String> {
 		// initialize the salt if not provided
 		let salt = salt.unwrap_or_else(|| {
 			let rng = thread_rng();
@@ -51,7 +79,7 @@ impl Argon2 {
 		let mut result = vec![0u8; output_length as usize];
 		argon2::Argon2::default()
 			.hash_password_into(password.as_bytes(), &salt, &mut result)
-			.map_err(|e| anyhow::anyhow!("{:?}", e))?;
+			.map_err(|e| format!("{:?}", e))?;
 
 		Ok(Bytes::from(result))
 	}

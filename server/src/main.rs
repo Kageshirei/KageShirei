@@ -1,8 +1,9 @@
+#![feature(duration_constructors)]
+
 use clap::Parser;
 use log::trace;
 
 use srv_mod_config::RootConfig;
-use srv_mod_database::humantime;
 
 use crate::async_main::async_main;
 use crate::cli::base::{CliArguments, Commands};
@@ -15,8 +16,9 @@ mod cli;
 mod cli_cmd_compile;
 mod cli_cmd_generate;
 mod servers;
+mod auto_migrate;
 
-fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
+fn setup_logging(debug_level: u8) -> Result<(), String> {
 	let mut base_config = fern::Dispatch::new()
 		.format(|out, message, record| {
 			let level_padding = if record.level().to_string().len() < 5 {
@@ -65,7 +67,7 @@ fn setup_logging(debug_level: u8) -> anyhow::Result<()> {
 	Ok(())
 }
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), String> {
 	let args = CliArguments::parse();
 
 	setup_logging(args.debug)?;

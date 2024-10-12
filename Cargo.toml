@@ -32,4 +32,4 @@ members = [
     "server",
 ]
 resolver = "2"
-package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }
+package = { authors = ["ebalo <me@ebalo.xyz>", "Safe"], edition = "2021", version = "0.1.0" }

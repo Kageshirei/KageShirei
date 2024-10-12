@@ -18,7 +18,7 @@ pub struct Model {
     pub hostname: String,
     pub domain: Option<String>,
     pub username: String,
-    pub network_interfaces: NetworkInterface,
+    pub network_interfaces: Vec<NetworkInterface>,
     pub pid: i64,
     pub ppid: i64,
     pub process_name: String,
