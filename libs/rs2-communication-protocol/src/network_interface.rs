@@ -1,6 +1,10 @@
+#[cfg(feature = "server")]
+use sea_orm::FromJsonQueryResult;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(Debug, FromJsonQueryResult))]
 pub struct NetworkInterface {
     /// The name of the network interface
     pub name: Option<String>,
