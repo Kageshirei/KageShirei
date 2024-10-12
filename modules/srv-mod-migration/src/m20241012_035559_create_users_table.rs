@@ -1,7 +1,7 @@
 use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveIden)]
-enum User {
+pub enum User {
     Table,
     Id,
     Username,
@@ -34,16 +34,8 @@ impl MigrationTrait for Migration {
                             .unique_key()
                     )
                     .col(string(User::Password).not_null())
-                    .col(
-                        timestamp(User::CreatedAt)
-                            .not_null()
-                            .default(Expr::current_timestamp())
-                    )
-                    .col(
-                        timestamp(User::UpdatedAt)
-                            .not_null()
-                            .default(Expr::current_timestamp())
-                    )
+                    .col(timestamp(User::CreatedAt).not_null())
+                    .col(timestamp(User::UpdatedAt).not_null())
                     .to_owned(),
             )
             .await

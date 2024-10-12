@@ -34,16 +34,8 @@ impl MigrationTrait for Migration {
                     .col(string(Agent::Secret).not_null())
                     .col(string(Agent::Signature).not_null().unique_key())
                     .col(timestamp_null(Agent::TerminatedAt))
-                    .col(
-                        timestamp(Agent::CreatedAt)
-                            .not_null()
-                            .default(Expr::current_timestamp())
-                    )
-                    .col(
-                        timestamp(Agent::UpdatedAt)
-                            .not_null()
-                            .default(Expr::current_timestamp())
-                    )
+                    .col(timestamp(Agent::CreatedAt).not_null())
+                    .col(timestamp(Agent::UpdatedAt).not_null())
                     .to_owned(),
             )
             .await
@@ -56,8 +48,8 @@ impl MigrationTrait for Migration {
     }
 }
 
-#[derive(DeriveIden)]
-enum Agent {
+#[derive(DeriveIden, EnumIter)]
+pub enum Agent {
     Table,
     Id,
     #[sea_orm(iden = "operating_system")]
@@ -85,3 +77,5 @@ enum Agent {
     #[sea_orm(iden = "updated_at")]
     UpdatedAt,
 }
+
+pub type AgentFieldVariants = Agent;
