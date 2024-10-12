@@ -18,7 +18,7 @@ use srv_mod_database::Pool;
 ///
 /// The join handle for the API server task.
 pub fn spawn(config: Arc<HandlerConfig>, cancellation_token: CancellationToken, pool: Pool) -> tokio::task::JoinHandle<()> {
-	let api_server_task = srv_mod_http_handler::start(config.clone(), cancellation_token.clone(), pool.clone());
+	let api_server_task = srv_mod_handler_http::start(config.clone(), cancellation_token.clone(), pool.clone());
 	let api_server_thread = tokio::spawn(async move {
 		let exit_status = api_server_task.await;
 

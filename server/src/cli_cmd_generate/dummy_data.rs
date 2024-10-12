@@ -44,9 +44,9 @@ pub async fn make_dummy_data(config: SharedConfig) -> anyhow::Result<()> {
             domain: "example-domain".to_string(),
             username: "user".to_string(),
             network_interfaces: serde_json::to_string(&vec![NetworkInterface {
-                name: "Ethernet".to_string(),
-                address: "1.1.1.1".to_string(),
-                dhcp_server: "1.2.3.4".to_string(),
+                name: Some("Ethernet".to_string()),
+                address: Some("1.1.1.1".to_string()),
+                dhcp_server: Some("1.2.3.4".to_string()),
             }])?,
             process_id: 1234,
             parent_process_id: 5678,
