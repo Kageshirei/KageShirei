@@ -1,5 +1,5 @@
 use cuid2::CuidConstructor;
-use once_cell::unsync::Lazy;
+use once_cell::sync::Lazy;
 
 pub static CUID2: Lazy<CuidConstructor> = Lazy::new(|| {
     let mut cuid2 = CuidConstructor::new();

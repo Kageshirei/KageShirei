@@ -3,4 +3,10 @@
 pub mod prelude;
 
 pub mod agent;
+pub mod agent_command;
+pub mod agent_profile;
+pub mod filter;
+pub mod logs;
+pub mod read_logs;
+pub mod terminal_history;
 pub mod user;

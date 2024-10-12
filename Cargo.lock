@@ -5718,6 +5718,7 @@ name = "srv-mod-entity"
 version = "0.1.0"
 dependencies = [
  "cuid2",
+    "humantime",
  "once_cell",
  "rs2-communication-protocol",
  "sea-orm",

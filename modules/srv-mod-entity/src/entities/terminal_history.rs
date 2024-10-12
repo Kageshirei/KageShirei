@@ -7,35 +7,55 @@ use sea_orm::ActiveValue::Set;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "user")]
+#[sea_orm(table_name = "terminal_history")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
     pub id: String,
-    #[sea_orm(unique)]
-    pub username: String,
-    pub password: String,
+    pub ran_by: String,
+    #[sea_orm(column_type = "Text")]
+    pub command: String,
+    pub session_id: Option<String>,
+    pub is_global: bool,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub output: Option<String>,
+    pub exit_code: Option<i32>,
+    pub sequence_counter: i64,
+    pub deleted_at: Option<DateTime>,
+    pub restored_at: Option<DateTime>,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::read_logs::Entity")]
-    ReadLogs,
-    #[sea_orm(has_many = "super::terminal_history::Entity")]
-    TerminalHistory,
+    #[sea_orm(
+        belongs_to = "super::agent::Entity",
+        from = "Column::SessionId",
+        to = "super::agent::Column::Id",
+        on_update = "NoAction",
+        on_delete = "SetNull"
+    )]
+    Agent,
+    #[sea_orm(
+        belongs_to = "super::user::Entity",
+        from = "Column::RanBy",
+        to = "super::user::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    User,
 }
 
-impl Related<super::read_logs::Entity> for Entity {
+impl Related<super::agent::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::ReadLogs.def()
+        Relation::Agent.def()
     }
 }
 
-impl Related<super::terminal_history::Entity> for Entity {
+impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::TerminalHistory.def()
+        Relation::User.def()
     }
 }
 

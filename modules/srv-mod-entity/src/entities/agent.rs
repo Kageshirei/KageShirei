@@ -34,8 +34,26 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::agent_command::Entity")]
+    AgentCommand,
+    #[sea_orm(has_many = "super::terminal_history::Entity")]
+    TerminalHistory,
+}
 
+impl Related<super::agent_command::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AgentCommand.def()
+    }
+}
+
+impl Related<super::terminal_history::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::TerminalHistory.def()
+    }
+}
+
+#[async_trait::async_trait]
 impl ActiveModelBehavior for ActiveModel {
     fn new() -> Self {
         Self {
@@ -45,11 +63,19 @@ impl ActiveModelBehavior for ActiveModel {
         }
     }
 
-    async fn before_save<C>(mut self, db: &C, insert: bool) -> Result<Self, DbErr>
+    async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
                             where C: ConnectionTrait
     {
+        // Clone the model to avoid moving it
+        let mut model = self;
+
+        if insert {
+            // Update the `created_at` field with the current time
+            model.created_at = Set(Utc::now().naive_utc());
+        }
+
         // Update the `updated_at` field with the current time
-        self.updated_at = Set(Utc::now().naive_utc());
-        Ok(self)
+        model.updated_at = Set(Utc::now().naive_utc());
+        Ok(model)
     }
 }
