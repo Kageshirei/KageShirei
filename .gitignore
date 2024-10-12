@@ -2,4 +2,4 @@
 /**/.env*
 /**/.idea
 /**/.vscode
-!/modules/srv-mod-database/.env.example
+/**/.env.example
