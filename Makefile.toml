@@ -102,4 +102,4 @@ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-s
 clear = true
 description = "Build the server from windows, for windows"
 script_runner = "@shell"
-script = "powershell ./server/scripts/cargo-make-build.ps1"
+script = "powershell ./scripts/cargo-make-build.ps1"
