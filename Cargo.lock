@@ -2896,7 +2896,6 @@ dependencies = [
  "serde",
  "serde_json",
  "srv-mod-config",
- "srv-mod-database",
  "srv-mod-entity",
  "srv-mod-handler-http",
  "srv-mod-migration",
@@ -5702,7 +5701,7 @@ name = "srv-mod-entity"
 version = "0.1.0"
 dependencies = [
  "cuid2",
-    "humantime",
+ "humantime",
  "once_cell",
  "rs2-communication-protocol",
  "sea-orm",
@@ -5800,7 +5799,6 @@ dependencies = [
 name = "srv-mod-terminal-emulator-commands"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "clap",
  "futures",
@@ -5811,7 +5809,7 @@ dependencies = [
  "serial_test",
  "shellwords",
  "srv-mod-config",
- "srv-mod-database",
+ "srv-mod-entity",
  "tokio",
  "tracing",
 ]

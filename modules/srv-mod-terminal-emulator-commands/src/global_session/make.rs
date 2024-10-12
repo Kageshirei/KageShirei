@@ -3,15 +3,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, instrument};
 
-use srv_mod_database::{diesel, Pool};
-use srv_mod_database::diesel::{BoolExpressionMethods, ExpressionMethods, NullableExpressionMethods, Queryable, QueryDsl, SelectableHelper};
-use srv_mod_database::diesel::query_builder::BoxedSelectStatement;
-use srv_mod_database::diesel::sql_types::Varchar;
-use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::command::{Command, HistoryRecord};
-use srv_mod_database::schema::commands;
-use srv_mod_database::schema::users;
-
 use crate::command_handler::CommandHandlerArguments;
 use crate::global_session::make::notification::TerminalSessionMakeNotificationArguments;
 use crate::post_process_result::PostProcessResult;
@@ -34,7 +25,7 @@ pub enum MakeSubcommands {
 
 /// Handle the history command
 #[instrument]
-pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionMakeArguments) -> anyhow::Result<String> {
+pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionMakeArguments) -> Result<String, String> {
 	debug!("Terminal command received");
 
 	match &args.command {

@@ -69,7 +69,7 @@ impl Command {
 }
 
 impl CommandHandler for Command {
-	async fn handle_command(&self, config: CommandHandlerArguments) -> anyhow::Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
 		match self {
 			Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
 			Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,

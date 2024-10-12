@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 pub enum EventType {
 	#[serde(rename = "log")]
 	Log,
-	#[serde(rename = "notification")]
-	Notification,
 	#[serde(rename = "command_output")]
 	CommandOutput,
 }
@@ -17,7 +15,6 @@ impl Display for EventType {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
 			EventType::Log => write!(f, "log"),
-			EventType::Notification => write!(f, "notification"),
 			EventType::CommandOutput => write!(f, "command_output"),
 		}
 	}

@@ -1,14 +1,12 @@
-use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 
 use crate::command_handler::{CommandHandler, CommandHandlerArguments};
 use crate::global_session::make::TerminalSessionMakeArguments;
 use crate::global_session::session::GlobalSessionTerminalSessionsArguments;
-use crate::session_terminal_emulator::{clear, exit, history};
 use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
-
+use crate::session_terminal_emulator::{clear, exit, history};
 mod session;
 mod make;
 
@@ -53,7 +51,7 @@ pub enum Commands {
 }
 
 impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
-	async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String> {
+	async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
 		match &self.command {
 			Commands::Clear(args) => clear::handle(config, args).await,
 			Commands::Exit => exit::handle(config).await,

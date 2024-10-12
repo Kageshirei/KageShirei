@@ -4,7 +4,7 @@ use crate::command_handler::CommandHandlerArguments;
 
 /// Handle the exit command
 #[instrument]
-pub async fn handle(_config: CommandHandlerArguments) -> anyhow::Result<String> {
+pub async fn handle(_config: CommandHandlerArguments) -> Result<String, String> {
 	debug!("Terminal command received");
 
 	// Signal the frontend terminal emulator to exit the terminal session
