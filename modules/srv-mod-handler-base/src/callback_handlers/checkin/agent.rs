@@ -81,7 +81,8 @@ pub async fn create_or_update(agent: CreateAgent, connection: &mut AsyncPgConnec
 
         // return the updated object
         agent
-    } else {
+    }
+    else {
         info!("New agent detected, inserting ...");
 
         let agent = diesel::insert_into(agents)
@@ -143,15 +144,15 @@ mod tests {
     #[test]
     fn ensure_checkin_is_valid_returns_ok_when_data_is_ok() {
         let data = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let result = ensure_checkin_is_valid(Ok(data.clone()));
         assert_eq!(result.unwrap(), data);
@@ -160,15 +161,15 @@ mod tests {
     #[test]
     fn prepare_returns_create_agent() {
         let data = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let result = super::prepare(data);
         assert_eq!(result.operative_system, "Windows");
@@ -189,15 +190,15 @@ mod tests {
     #[tokio::test]
     async fn create_or_update_returns_agent() {
         let data = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
 
         let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();

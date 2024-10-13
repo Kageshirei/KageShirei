@@ -20,7 +20,7 @@ pub struct ApiServerConfig {
     pub host: String,
     /// TLS configuration
     #[validate(nested)]
-    pub tls: Option<TlsConfig>,
+    pub tls:  Option<TlsConfig>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
@@ -32,11 +32,11 @@ pub struct TlsConfig {
         range(min = 1, max = 65535),
         custom(function = "validators::validate_port")
     )]
-    pub port: u16,
+    pub port:    u16,
     /// The address to bind to for TLS connections (defaults to the host address)
-    pub host: Option<String>,
+    pub host:    Option<String>,
     /// The path to the certificate file in pem format
-    pub cert: PathBuf,
+    pub cert:    PathBuf,
     /// The path to the private key file in pem format
-    pub key: PathBuf,
+    pub key:     PathBuf,
 }

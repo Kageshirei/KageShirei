@@ -130,7 +130,8 @@ fn source_rust_environment() -> Result<(), String> {
             "PATH",
             format!("{}:{}", cargo_bin_path, env::var("PATH").unwrap()),
         );
-    } else {
+    }
+    else {
         error!("Failed to source Rust environment. Exiting.");
         return Err("Failed to source Rust environment".to_string());
     }

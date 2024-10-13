@@ -24,8 +24,8 @@ struct AuthenticatePostPayload {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthenticatePostResponse {
     pub access_token: String,
-    pub expires_in: u64,
-    pub token: String,
+    pub expires_in:   u64,
+    pub token:        String,
 }
 
 /// The handler for the public authentication route
@@ -70,7 +70,7 @@ async fn post_handler(
         &claims,
         &API_SERVER_JWT_KEYS.get().unwrap().encoding,
     )
-        .map_err(|_| ApiServerError::TokenCreation)?;
+    .map_err(|_| ApiServerError::TokenCreation)?;
 
     info!("User {} authenticated", user.username);
 
@@ -176,7 +176,7 @@ mod tests {
         generate_test_user(pool.clone()).await;
 
         let route_state = Arc::new(ApiServerState {
-            config: shared_config.clone(),
+            config:  shared_config.clone(),
             db_pool: pool.clone(),
         });
         // init the app router
@@ -188,7 +188,7 @@ mod tests {
                 "username": "test",
                 "password": "test"
             })
-                .to_string(),
+            .to_string(),
         );
         let request = Request::post("/authenticate")
             .header("Content-Type", "application/json")
@@ -211,7 +211,7 @@ mod tests {
                 .unwrap()
                 .as_ref(),
         )
-            .unwrap();
+        .unwrap();
         assert_eq!(body.access_token, "bearer");
         println!("Token: {}", body.token);
 

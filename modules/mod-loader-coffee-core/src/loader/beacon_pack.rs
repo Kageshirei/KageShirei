@@ -5,7 +5,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 pub struct BeaconPack {
     pub buffer: Vec<u8>,
-    pub size: u32,
+    pub size:   u32,
 }
 
 /// BeaconPack is a struct that contains a buffer and size
@@ -15,7 +15,7 @@ impl BeaconPack {
     pub fn new() -> BeaconPack {
         BeaconPack {
             buffer: vec![],
-            size: 0,
+            size:   0,
         }
     }
 

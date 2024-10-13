@@ -11,24 +11,24 @@ use crate::{active_enums::AgentIntegrity, helpers::CUID2};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
-    pub id: String,
-    pub operating_system: String,
-    pub hostname: String,
-    pub domain: Option<String>,
-    pub username: String,
+    pub id:                 String,
+    pub operating_system:   String,
+    pub hostname:           String,
+    pub domain:             Option<String>,
+    pub username:           String,
     pub network_interfaces: Vec<NetworkInterface>,
-    pub pid: i64,
-    pub ppid: i64,
-    pub process_name: String,
-    pub integrity: AgentIntegrity,
-    pub cwd: String,
-    pub server_secret: String,
-    pub secret: String,
+    pub pid:                i64,
+    pub ppid:               i64,
+    pub process_name:       String,
+    pub integrity:          AgentIntegrity,
+    pub cwd:                String,
+    pub server_secret:      String,
+    pub secret:             String,
     #[sea_orm(unique)]
-    pub signature: String,
-    pub terminated_at: Option<DateTime>,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub signature:          String,
+    pub terminated_at:      Option<DateTime>,
+    pub created_at:         DateTime,
+    pub updated_at:         DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -58,8 +58,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
-                                                         where
-                                                             C: ConnectionTrait,
+    where
+        C: ConnectionTrait,
     {
         // Clone the model to avoid moving it
         let mut model = self;

@@ -41,18 +41,18 @@ use crate::warn;
 #[derive(Clone, Copy)]
 pub struct Formatp {
     original: *mut c_char, // original buffer
-    buffer: *mut c_char, // pointer to the buffer
-    length: c_int,       // length of the data in the buffer
-    size: c_int,       // total size of the buffer
+    buffer:   *mut c_char, // pointer to the buffer
+    length:   c_int,       // length of the data in the buffer
+    size:     c_int,       // total size of the buffer
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Datap {
     original: *mut c_char, // original buffer
-    buffer: *mut c_char, // pointer to the buffer
-    length: c_int,       // length of the data in the buffer
-    size: c_int,       // total size of the buffer
+    buffer:   *mut c_char, // pointer to the buffer
+    length:   c_int,       // length of the data in the buffer
+    size:     c_int,       // total size of the buffer
 }
 
 /// is generic output. Cobalt Strike will convert this output to UTF-16 (internally) using the target's default
@@ -187,7 +187,8 @@ impl Carrier {
         for c in self.output.iter() {
             if (*c as u8) == 0 {
                 result.push(0x0a as char);
-            } else {
+            }
+            else {
                 result.push(*c as u8 as char);
             }
         }
@@ -252,7 +253,7 @@ extern "C" fn beacon_data_int(parser: *mut Datap) -> c_int {
     let result: &[u8] = unsafe { slice::from_raw_parts(data_parser.buffer as *const u8, 4) };
 
     let mut dst = [0u8; 4];
-    dst.clone_from_slice(&result[0..4]);
+    dst.clone_from_slice(&result[0 .. 4]);
 
     data_parser.buffer = unsafe { data_parser.buffer.add(4) };
     data_parser.length = data_parser.length - 4;
@@ -280,7 +281,7 @@ extern "C" fn beacon_data_short(parser: *mut Datap) -> c_short {
     let result: &[u8] = unsafe { slice::from_raw_parts(data_parser.buffer as *const u8, 4) };
 
     let mut dst = [0u8; 2];
-    dst.clone_from_slice(&result[0..2]);
+    dst.clone_from_slice(&result[0 .. 2]);
 
     data_parser.buffer = unsafe { data_parser.buffer.add(2) };
     data_parser.length = data_parser.length - 2;
@@ -321,7 +322,7 @@ extern "C" fn beacon_data_extract(parser: *mut Datap, size: *mut c_int) -> *mut 
     let length_parts: &[u8] = unsafe { slice::from_raw_parts(data_parser.buffer as *const u8, 4) };
 
     let mut length_holder = [0u8; 4];
-    length_holder.clone_from_slice(&length_parts[0..4]);
+    length_holder.clone_from_slice(&length_parts[0 .. 4]);
 
     let length: u32 = u32::from_ne_bytes(length_holder);
 
@@ -623,7 +624,7 @@ extern "C" fn beacon_is_admin() -> BOOL {
             std::mem::size_of::<TOKEN_ELEVATION>() as u32,
             ptr::null_mut(),
         )
-            .is_ok()
+        .is_ok()
         {
             return FALSE;
         }
@@ -683,7 +684,7 @@ extern "C" fn beacon_inject_process(
             payload_slice.len(),
             None,
         )
-            .is_ok()
+        .is_ok()
         {
             CloseHandle(process_handle);
             return;
@@ -698,7 +699,7 @@ extern "C" fn beacon_inject_process(
             0,
             None,
         )
-            .unwrap();
+        .unwrap();
 
         CloseHandle(process_handle);
         CloseHandle(thread);

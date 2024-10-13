@@ -9,9 +9,9 @@ use srv_mod_database::{
 };
 
 struct GroupEvaluationResult {
-    result: bool,
+    result:   bool,
     next_hop: Option<LogicalOperator>,
-    hops: usize,
+    hops:     usize,
 }
 
 /// Evaluate a filter and return the result
@@ -98,7 +98,8 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
 
             // skip the hops already evaluated
             i += evaluation_result.hops;
-        } else {
+        }
+        else {
             // apply the filter
             intermediary_result = evaluate_filter(agent, filter);
         }
@@ -106,7 +107,8 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
         // if the result is None, set the result to the intermediary result
         if result.is_none() {
             result = Some(intermediary_result);
-        } else {
+        }
+        else {
             result = Some(combine_results(
                 result,
                 next_hop.as_ref(),
@@ -116,7 +118,8 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
 
         if pending_next_hop.is_some() {
             next_hop = pending_next_hop.clone();
-        } else {
+        }
+        else {
             // if the filter has a next_hop_relation, set the next_hop_relation to the filter's next_hop_relation
             if filter.next_hop_relation.is_some() {
                 next_hop = filter.next_hop_relation.clone();
@@ -128,9 +131,9 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
         // (random_queries... and) equals (random_queries...)
         if filter.grouping_end {
             return GroupEvaluationResult {
-                result: result.unwrap_or(false),
+                result:   result.unwrap_or(false),
                 next_hop: pending_next_hop,
-                hops: i + 1 - original_index,
+                hops:     i + 1 - original_index,
             };
         }
 
@@ -139,9 +142,9 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
 
     // if the group ends, return the result
     return GroupEvaluationResult {
-        result: result.unwrap_or(false),
+        result:   result.unwrap_or(false),
         next_hop: None,
-        hops: filters.len() - original_index,
+        hops:     filters.len() - original_index,
     };
 }
 
@@ -160,10 +163,10 @@ pub async fn apply_filters(agent: &Agent, db_pool: Pool) -> CheckinResponse {
     // if there are no profiles or an error occurred, return the default values
     if available_profiles.is_err() || available_profiles.as_ref().unwrap().is_empty() {
         return CheckinResponse {
-            id: agent.id.clone(),
-            working_hours: None,
-            kill_date: None,
-            polling_jitter: 10_000, // 10 seconds of jitter (polling range from 20 to 40 seconds)
+            id:               agent.id.clone(),
+            working_hours:    None,
+            kill_date:        None,
+            polling_jitter:   10_000, // 10 seconds of jitter (polling range from 20 to 40 seconds)
             polling_interval: 30_000, // 30 seconds of polling interval
         };
     }
@@ -181,10 +184,10 @@ pub async fn apply_filters(agent: &Agent, db_pool: Pool) -> CheckinResponse {
         let final_result = evaluate_group(agent, profile_filters, 0);
         if final_result.result {
             return CheckinResponse {
-                id: agent.id.clone(),
-                working_hours: profile.working_hours.clone(),
-                kill_date: profile.kill_date.clone(),
-                polling_jitter: profile.polling_jitter.unwrap_or(10_000),
+                id:               agent.id.clone(),
+                working_hours:    profile.working_hours.clone(),
+                kill_date:        profile.kill_date.clone(),
+                polling_jitter:   profile.polling_jitter.unwrap_or(10_000),
                 polling_interval: profile.polling_interval.unwrap_or(30_000),
             };
         }
@@ -192,10 +195,10 @@ pub async fn apply_filters(agent: &Agent, db_pool: Pool) -> CheckinResponse {
 
     // fallback return type if none of the filters match
     return CheckinResponse {
-        id: agent.id.clone(),
-        working_hours: None,
-        kill_date: None,
-        polling_jitter: 10_000, // 10 seconds of jitter (polling range from 20 to 40 seconds)
+        id:               agent.id.clone(),
+        working_hours:    None,
+        kill_date:        None,
+        polling_jitter:   10_000, // 10 seconds of jitter (polling range from 20 to 40 seconds)
         polling_interval: 30_000, // 30 seconds of polling interval
     };
 }
@@ -228,16 +231,16 @@ mod tests {
 
     fn make_config() -> HandlerConfig {
         let config = HandlerConfig {
-            enabled: true,
-            r#type: HandlerType::Http,
+            enabled:   true,
+            r#type:    HandlerType::Http,
             protocols: vec![handlers::Protocol::Json],
-            port: 8081,
-            host: "127.0.0.1".to_string(),
-            tls: None,
-            security: HandlerSecurityConfig {
+            port:      8081,
+            host:      "127.0.0.1".to_string(),
+            tls:       None,
+            security:  HandlerSecurityConfig {
                 encryption_scheme: EncryptionScheme::Plain,
-                algorithm: None,
-                encoder: None,
+                algorithm:         None,
+                encoder:           None,
             },
         };
 
@@ -266,21 +269,21 @@ mod tests {
     #[serial]
     async fn test_apply_filters_simple_true_check() {
         let agent = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
 
         let shared_config = make_config();
@@ -291,18 +294,18 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
         let profile = diesel::insert_into(agent_profiles)
             .values(CreateAgentProfile {
-                id: CUID2.create_id(),
-                name: "Test Profile".to_string(),
-                kill_date: Some(1),
-                working_hours: Some(vec![1, 1]),
+                id:               CUID2.create_id(),
+                name:             "Test Profile".to_string(),
+                kill_date:        Some(1),
+                working_hours:    Some(vec![1, 1]),
                 polling_interval: Some(1),
-                polling_jitter: Some(1),
+                polling_jitter:   Some(1),
             })
             .returning(AgentProfile::as_returning())
             .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
@@ -311,15 +314,15 @@ mod tests {
 
         diesel::insert_into(filters)
             .values(&vec![CreateFilter {
-                id: CUID2.create_id(),
-                agent_profile_id: profile.id.clone(),
-                agent_field: AgentFields::Hostname,
-                filter_op: FilterOperator::Equals,
-                value: "DESKTOP-PC".to_string(),
-                sequence: 1,
+                id:                CUID2.create_id(),
+                agent_profile_id:  profile.id.clone(),
+                agent_field:       AgentFields::Hostname,
+                filter_op:         FilterOperator::Equals,
+                value:             "DESKTOP-PC".to_string(),
+                sequence:          1,
                 next_hop_relation: None,
-                grouping_start: false,
-                grouping_end: false,
+                grouping_start:    false,
+                grouping_end:      false,
             }])
             .execute(&mut route_state.db_pool.get().await.unwrap())
             .await
@@ -340,21 +343,21 @@ mod tests {
     #[serial]
     async fn test_apply_filters_simple_false_check() {
         let agent = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Windows".to_string(),
-            hostname: "example-hostname".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Windows".to_string(),
+            hostname:          "example-hostname".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
 
         let shared_config = make_config();
@@ -365,18 +368,18 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
         let profile = diesel::insert_into(agent_profiles)
             .values(CreateAgentProfile {
-                id: CUID2.create_id(),
-                name: "Test Profile".to_string(),
-                kill_date: Some(1),
-                working_hours: Some(vec![1, 1]),
+                id:               CUID2.create_id(),
+                name:             "Test Profile".to_string(),
+                kill_date:        Some(1),
+                working_hours:    Some(vec![1, 1]),
                 polling_interval: Some(1),
-                polling_jitter: Some(1),
+                polling_jitter:   Some(1),
             })
             .returning(AgentProfile::as_returning())
             .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
@@ -385,15 +388,15 @@ mod tests {
 
         diesel::insert_into(filters)
             .values(&vec![CreateFilter {
-                id: CUID2.create_id(),
-                agent_profile_id: profile.id.clone(),
-                agent_field: AgentFields::Hostname,
-                filter_op: FilterOperator::Equals,
-                value: "DESKTOP-PC".to_string(),
-                sequence: 1,
+                id:                CUID2.create_id(),
+                agent_profile_id:  profile.id.clone(),
+                agent_field:       AgentFields::Hostname,
+                filter_op:         FilterOperator::Equals,
+                value:             "DESKTOP-PC".to_string(),
+                sequence:          1,
                 next_hop_relation: None,
-                grouping_start: false,
-                grouping_end: false,
+                grouping_start:    false,
+                grouping_end:      false,
             }])
             .execute(&mut route_state.db_pool.get().await.unwrap())
             .await
@@ -421,18 +424,18 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
         let profile = diesel::insert_into(agent_profiles)
             .values(CreateAgentProfile {
-                id: CUID2.create_id(),
-                name: "Test Profile".to_string(),
-                kill_date: Some(1),
-                working_hours: Some(vec![1, 1]),
+                id:               CUID2.create_id(),
+                name:             "Test Profile".to_string(),
+                kill_date:        Some(1),
+                working_hours:    Some(vec![1, 1]),
                 polling_interval: Some(1),
-                polling_jitter: Some(1),
+                polling_jitter:   Some(1),
             })
             .returning(AgentProfile::as_returning())
             .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
@@ -451,39 +454,39 @@ mod tests {
             .values(&vec![
                 // hostname = "DESKTOP-PC"
                 CreateFilter {
-                    id: CUID2.create_id(),
-                    agent_profile_id: profile.id.clone(),
-                    agent_field: AgentFields::Hostname,
-                    filter_op: FilterOperator::Equals,
-                    value: "DESKTOP-PC".to_string(),
-                    sequence: 1,
+                    id:                CUID2.create_id(),
+                    agent_profile_id:  profile.id.clone(),
+                    agent_field:       AgentFields::Hostname,
+                    filter_op:         FilterOperator::Equals,
+                    value:             "DESKTOP-PC".to_string(),
+                    sequence:          1,
                     next_hop_relation: Some(LogicalOperator::And),
-                    grouping_start: false,
-                    grouping_end: false,
+                    grouping_start:    false,
+                    grouping_end:      false,
                 },
                 // operative_system = "Windows"
                 CreateFilter {
-                    id: CUID2.create_id(),
-                    agent_profile_id: profile.id.clone(),
-                    agent_field: AgentFields::OperativeSystem,
-                    filter_op: FilterOperator::Equals,
-                    value: "Windows".to_string(),
-                    sequence: 2,
+                    id:                CUID2.create_id(),
+                    agent_profile_id:  profile.id.clone(),
+                    agent_field:       AgentFields::OperativeSystem,
+                    filter_op:         FilterOperator::Equals,
+                    value:             "Windows".to_string(),
+                    sequence:          2,
                     next_hop_relation: Some(LogicalOperator::Or),
-                    grouping_start: false,
-                    grouping_end: false,
+                    grouping_start:    false,
+                    grouping_end:      false,
                 },
                 // ip = "1.1.1.1"
                 CreateFilter {
-                    id: CUID2.create_id(),
-                    agent_profile_id: profile.id.clone(),
-                    agent_field: AgentFields::Ip,
-                    filter_op: FilterOperator::Equals,
-                    value: "1.1.1.1".to_string(),
-                    sequence: 3,
+                    id:                CUID2.create_id(),
+                    agent_profile_id:  profile.id.clone(),
+                    agent_field:       AgentFields::Ip,
+                    filter_op:         FilterOperator::Equals,
+                    value:             "1.1.1.1".to_string(),
+                    sequence:          3,
                     next_hop_relation: None,
-                    grouping_start: false,
-                    grouping_end: false,
+                    grouping_start:    false,
+                    grouping_end:      false,
                 },
             ])
             .execute(&mut route_state.db_pool.get().await.unwrap())
@@ -491,21 +494,21 @@ mod tests {
             .unwrap();
 
         let agent_matching_hostname_and_os = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_hostname_and_os, &route_state).await;
 
@@ -519,21 +522,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 1);
 
         let agent_matching_hostname = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Linux".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "0.0.0.0".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Linux".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "0.0.0.0".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_hostname, &route_state).await;
 
@@ -547,21 +550,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 10_000);
 
         let agent_matching_hostname_and_ip = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Linux".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Linux".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_hostname_and_ip, &route_state).await;
 
@@ -575,21 +578,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 1);
 
         let agent_matching_os_and_ip = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Windows".to_string(),
-            hostname: "example-hostname".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Windows".to_string(),
+            hostname:          "example-hostname".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_os_and_ip, &route_state).await;
 
@@ -616,18 +619,18 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
         let profile = diesel::insert_into(agent_profiles)
             .values(CreateAgentProfile {
-                id: CUID2.create_id(),
-                name: "Test Profile".to_string(),
-                kill_date: Some(1),
-                working_hours: Some(vec![1, 1]),
+                id:               CUID2.create_id(),
+                name:             "Test Profile".to_string(),
+                kill_date:        Some(1),
+                working_hours:    Some(vec![1, 1]),
                 polling_interval: Some(1),
-                polling_jitter: Some(1),
+                polling_jitter:   Some(1),
             })
             .returning(AgentProfile::as_returning())
             .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
@@ -645,39 +648,39 @@ mod tests {
             .values(&vec![
                 // hostname = "DESKTOP-PC"
                 CreateFilter {
-                    id: CUID2.create_id(),
-                    agent_profile_id: profile.id.clone(),
-                    agent_field: AgentFields::Hostname,
-                    filter_op: FilterOperator::Equals,
-                    value: "DESKTOP-PC".to_string(),
-                    sequence: 1,
+                    id:                CUID2.create_id(),
+                    agent_profile_id:  profile.id.clone(),
+                    agent_field:       AgentFields::Hostname,
+                    filter_op:         FilterOperator::Equals,
+                    value:             "DESKTOP-PC".to_string(),
+                    sequence:          1,
                     next_hop_relation: Some(LogicalOperator::And),
-                    grouping_start: true,
-                    grouping_end: false,
+                    grouping_start:    true,
+                    grouping_end:      false,
                 },
                 // operative_system = "Windows"
                 CreateFilter {
-                    id: CUID2.create_id(),
-                    agent_profile_id: profile.id.clone(),
-                    agent_field: AgentFields::OperativeSystem,
-                    filter_op: FilterOperator::Equals,
-                    value: "Windows".to_string(),
-                    sequence: 2,
+                    id:                CUID2.create_id(),
+                    agent_profile_id:  profile.id.clone(),
+                    agent_field:       AgentFields::OperativeSystem,
+                    filter_op:         FilterOperator::Equals,
+                    value:             "Windows".to_string(),
+                    sequence:          2,
                     next_hop_relation: Some(LogicalOperator::Or),
-                    grouping_start: false,
-                    grouping_end: true,
+                    grouping_start:    false,
+                    grouping_end:      true,
                 },
                 // ip = "1.1.1.1"
                 CreateFilter {
-                    id: CUID2.create_id(),
-                    agent_profile_id: profile.id.clone(),
-                    agent_field: AgentFields::Ip,
-                    filter_op: FilterOperator::Equals,
-                    value: "1.1.1.1".to_string(),
-                    sequence: 3,
+                    id:                CUID2.create_id(),
+                    agent_profile_id:  profile.id.clone(),
+                    agent_field:       AgentFields::Ip,
+                    filter_op:         FilterOperator::Equals,
+                    value:             "1.1.1.1".to_string(),
+                    sequence:          3,
                     next_hop_relation: None,
-                    grouping_start: false,
-                    grouping_end: false,
+                    grouping_start:    false,
+                    grouping_end:      false,
                 },
             ])
             .execute(&mut route_state.db_pool.get().await.unwrap())
@@ -685,21 +688,21 @@ mod tests {
             .unwrap();
 
         let agent_matching_hostname_and_os = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_hostname_and_os, &route_state).await;
 
@@ -713,21 +716,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 1);
 
         let agent_matching_hostname = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Linux".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "0.0.0.0".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Linux".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "0.0.0.0".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_hostname, &route_state).await;
 
@@ -741,21 +744,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 10_000);
 
         let agent_matching_hostname_and_ip = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Linux".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Linux".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_hostname_and_ip, &route_state).await;
 
@@ -769,21 +772,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 1);
 
         let agent_matching_os_and_ip = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Windows".to_string(),
-            hostname: "example-hostname".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Windows".to_string(),
+            hostname:          "example-hostname".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_os_and_ip, &route_state).await;
 
@@ -797,21 +800,21 @@ mod tests {
         assert_eq!(response.polling_jitter, 1);
 
         let agent_matching_ip = Agent {
-            id: CUID2.create_id(),
-            operative_system: "Linux".to_string(),
-            hostname: "example-hostname".to_string(),
-            domain: "example-domain".to_string(),
-            username: "user".to_string(),
-            ip: "1.1.1.1".to_string(),
-            process_id: 1234,
+            id:                CUID2.create_id(),
+            operative_system:  "Linux".to_string(),
+            hostname:          "example-hostname".to_string(),
+            domain:            "example-domain".to_string(),
+            username:          "user".to_string(),
+            ip:                "1.1.1.1".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "example.exe".to_string(),
-            elevated: false,
+            process_name:      "example.exe".to_string(),
+            elevated:          false,
             server_secret_key: "server-key".to_string(),
-            secret_key: "key".to_string(),
-            signature: "signature".to_string(),
-            created_at: Default::default(),
-            updated_at: Default::default(),
+            secret_key:        "key".to_string(),
+            signature:         "signature".to_string(),
+            created_at:        Default::default(),
+            updated_at:        Default::default(),
         };
         let response = apply_filters(&agent_matching_ip, &route_state).await;
 

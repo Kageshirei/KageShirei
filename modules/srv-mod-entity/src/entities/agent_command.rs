@@ -10,18 +10,18 @@ use crate::{active_enums::CommandStatus, helpers::CUID2};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
-    pub id: String,
-    pub agent_id: String,
-    pub command: Json,
+    pub id:           String,
+    pub agent_id:     String,
+    pub command:      Json,
     #[sea_orm(column_type = "Text", nullable)]
-    pub output: Option<String>,
-    pub exit_code: Option<i32>,
-    pub status: CommandStatus,
+    pub output:       Option<String>,
+    pub exit_code:    Option<i32>,
+    pub status:       CommandStatus,
     pub retrieved_at: Option<DateTime>,
     pub completed_at: Option<DateTime>,
-    pub failed_at: Option<DateTime>,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub failed_at:    Option<DateTime>,
+    pub created_at:   DateTime,
+    pub updated_at:   DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -51,8 +51,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
-                                                         where
-                                                             C: ConnectionTrait,
+    where
+        C: ConnectionTrait,
     {
         // Clone the model to avoid moving it
         let mut model = self;

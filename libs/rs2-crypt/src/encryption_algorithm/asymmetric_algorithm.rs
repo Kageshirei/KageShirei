@@ -18,19 +18,19 @@ use crate::{
 /// An asymmetric encryption algorithm that uses a symmetric encryption algorithm for encryption and decryption
 pub struct AsymmetricAlgorithm<T> {
     /// The secret key of the pair
-    secret_key: Arc<SecretKey>,
+    secret_key:         Arc<SecretKey>,
     /// The public key of the pair
-    public_key: Arc<PublicKey>,
+    public_key:         Arc<PublicKey>,
     /// The implementation of a symmetric algorithm to use with this asymmetric algorithm
     algorithm_instance: T,
     /// The number of encrypted messages, this is a counter used to internally rotate the keys after a certain number
     /// of messages have been encrypted
     encrypted_messages: u16,
     /// The public key of the receiver of the encrypted text
-    receiver: Option<Arc<PublicKey>>,
+    receiver:           Option<Arc<PublicKey>>,
     /// The last used key for encryption, useful to retrieve the last key used for encryption in order to decrypt the
     /// message if the key has been rotated
-    last_used_key: Option<Arc<Bytes>>,
+    last_used_key:      Option<Arc<Bytes>>,
 }
 
 /// The size of the salt used for the HKDF key derivation function (128 bytes)
@@ -41,8 +41,8 @@ const KEY_ROTATION_THRESHOLD: u16 = 0x400;
 unsafe impl<T> Send for AsymmetricAlgorithm<T> {}
 
 impl<T> AsymmetricAlgorithm<T>
-    where
-        T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+where
+    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
 {
     /// Create a new key pair
     pub fn new() -> Self {
@@ -118,24 +118,24 @@ impl<T> AsymmetricAlgorithm<T>
 }
 
 impl<T> Clone for AsymmetricAlgorithm<T>
-    where
-        T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+where
+    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
 {
     fn clone(&self) -> Self {
         Self {
-            public_key: self.public_key.clone(),
-            secret_key: self.secret_key.clone(),
+            public_key:         self.public_key.clone(),
+            secret_key:         self.secret_key.clone(),
             algorithm_instance: T::new(),
             encrypted_messages: 0,
-            receiver: self.receiver.clone(),
-            last_used_key: self.last_used_key.clone(),
+            receiver:           self.receiver.clone(),
+            last_used_key:      self.last_used_key.clone(),
         }
     }
 }
 
 impl<T> From<Bytes> for AsymmetricAlgorithm<T>
-    where
-        T: EncryptionAlgorithm + SymmetricEncryptionAlgorithm + WithKeyDerivation,
+where
+    T: EncryptionAlgorithm + SymmetricEncryptionAlgorithm + WithKeyDerivation,
 {
     fn from(mut key: Bytes) -> Self {
         // Check if the key length is valid
@@ -155,7 +155,8 @@ impl<T> From<Bytes> for AsymmetricAlgorithm<T>
 
                 // Freeze the new key
                 key = new_key.freeze();
-            } else {
+            }
+            else {
                 // Truncate the key to the required length of 32 bytes if it's longer
                 key.truncate(32);
             }
@@ -178,8 +179,8 @@ impl<T> From<Bytes> for AsymmetricAlgorithm<T>
 }
 
 impl<T> EncryptionAlgorithm for AsymmetricAlgorithm<T>
-    where
-        T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+where
+    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
 {
     fn encrypt(&mut self, data: Bytes) -> Result<Bytes> {
         self.encrypted_messages += 1;
@@ -313,7 +314,7 @@ mod test {
         let mut previous_round_encrypted;
         let mut last_encrypted = None;
 
-        for _ in 0..=KEY_ROTATION_THRESHOLD + 1 {
+        for _ in 0 ..= KEY_ROTATION_THRESHOLD + 1 {
             // bob sends a message to alice
             bob.set_receiver(alice.public_key.clone());
 

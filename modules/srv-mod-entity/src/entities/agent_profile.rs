@@ -12,15 +12,15 @@ use crate::helpers::CUID2;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
-    pub id: String,
+    pub id:               String,
     #[sea_orm(unique)]
-    pub name: String,
-    pub kill_date: Option<DateTime>,
-    pub working_hours: Option<Vec<Time>>,
+    pub name:             String,
+    pub kill_date:        Option<DateTime>,
+    pub working_hours:    Option<Vec<Time>>,
     pub polling_interval: String,
-    pub polling_jitter: String,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub polling_jitter:   String,
+    pub created_at:       DateTime,
+    pub updated_at:       DateTime,
 }
 
 impl Model {
@@ -47,7 +47,7 @@ impl Model {
         }
 
         // Check if the working hours are ordered (each start time is before the end time)
-        for i in 0..working_hours.len() / 2 {
+        for i in 0 .. working_hours.len() / 2 {
             let start = working_hours[i * 2];
             let end = working_hours[i * 2 + 1];
             if start >= end {
@@ -136,8 +136,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
-                                                         where
-                                                             C: ConnectionTrait,
+    where
+        C: ConnectionTrait,
     {
         // Clone the model to avoid moving it
         let mut model = self;
@@ -179,7 +179,7 @@ impl ActiveModel {
         }
 
         // Check if the working hours are ordered (each start time is before the end time)
-        for i in 0..working_hours.len() / 2 {
+        for i in 0 .. working_hours.len() / 2 {
             let start = working_hours[i * 2];
             let end = working_hours[i * 2 + 1];
             if start >= end {

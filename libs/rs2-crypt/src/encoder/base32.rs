@@ -48,8 +48,8 @@ impl Encoder for Base32Encoder {
 
         for byte in data.bytes() {
             let value = match byte {
-                b'a'..=b'z' => byte - b'a',
-                b'2'..=b'7' => byte - b'2' + 26,
+                b'a' ..= b'z' => byte - b'a',
+                b'2' ..= b'7' => byte - b'2' + 26,
                 _ => return Err(anyhow!("Invalid character in input")),
             } as u32;
 
