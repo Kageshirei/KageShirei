@@ -4,16 +4,11 @@ use serde_json::json;
 use tracing::{debug, instrument};
 
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
-use srv_mod_database::{diesel, Pool};
-use srv_mod_database::diesel::{ExpressionMethods, SelectableHelper};
-use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
-use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::command::Command;
-use srv_mod_database::models::log::CreateLog;
-use srv_mod_database::schema::commands;
-use srv_mod_database::schema_extension::LogLevel;
 
 use crate::command_handler::CommandHandlerArguments;
+use srv_mod_entity::active_enums::LogLevel;
+use srv_mod_entity::entities::{logs, terminal_history};
+use srv_mod_entity::sea_orm::prelude::*;
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
@@ -24,44 +19,42 @@ pub struct TerminalSessionHistoryRestoreArguments {
 
 /// Handle the clear command
 #[instrument]
-pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHistoryRestoreArguments) -> anyhow::Result<String> {
+pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHistoryRestoreArguments) -> Result<String, String> {
 	debug!("Terminal command received");
 
-	let mut connection = config.db_pool
-	                           .get()
-	                           .await
-	                           .map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
+	let db = config.db_pool.clone();
 
 	// clear commands marking them as deleted (soft delete)
-	let result = diesel::update(commands::table)
-		.filter(commands::session_id.eq(&config.session.session_id))
-		.filter(commands::sequence_counter.eq_any(&args.command_ids))
-		.set((
-			commands::restored_at.eq(chrono::Utc::now()),
-		))
-		.execute(&mut connection)
+	let result = terminal_history::Entity::update_many()
+		.filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
+		.filter(terminal_history::Column::SequenceCounter.eq_any(&args.command_ids))
+		.col_expr(terminal_history::Column::RestoredAt, Expr::value(chrono::Utc::now()))
+		.exec(&db)
 		.await
-		.map_err(|e| anyhow::anyhow!(e))?;
+		.map_err(|e| e.to_string())?;
 
-	let message = format!("Restored {} command(s)", result);
+	let message = format!("Restored {} command(s)", result.rows_affected);
 
 	// create a log entry and save it
-	let log = CreateLog::new(LogLevel::INFO)
-		.with_message(message.clone())
-		.with_extra_value(json!({
+	let log = logs::ActiveModel {
+		level: LogLevel::Info,
+		title: "Command(s) restored".to_string(),
+		message: Some(message.clone()),
+		extra: Some(json!({
 			"session": config.session.hostname,
 			"ran_by": config.user.username,
-		}))
-		.save(&mut connection)
+		})),
+		..Default::default()
+	}
+		.insert(&db)
 		.await
-		.map_err(|e| anyhow::anyhow!(e))?;
+		.map_err(|e| e.to_string())?;
 
 	// broadcast the log
-	let log_id = log.id.clone();
 	config.broadcast_sender.send(SseEvent {
 		data: serde_json::to_string(&log)?,
 		event: EventType::Log,
-		id: Some(log_id),
+		id: Some(log.id),
 	})?;
 
 	// Signal the frontend terminal emulator to clear the terminal screen
