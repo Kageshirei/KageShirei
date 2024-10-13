@@ -20,7 +20,7 @@ mod restore;
 pub struct TerminalSessionHistoryArguments {
     /// Display the full history including the commands hidden using `clear`
     #[arg(short, long)]
-    pub full: bool,
+    pub full:    bool,
     #[command(subcommand)]
     pub command: Option<HistorySubcommands>,
 }
@@ -41,7 +41,8 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
         match subcommand {
             HistorySubcommands::Restore(args) => restore::handle(config.clone(), args).await,
         }
-    } else {
+    }
+    else {
         let db = config.db_pool.clone();
 
         let mut conditions = Condition::all().add(terminal_history::Column::SessionId.eq(&config.session.session_id));
@@ -74,9 +75,9 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 
         Ok(serde_json::to_string(&PostProcessResult {
             r#type: "history".to_string(),
-            data: history,
+            data:   history,
         })
-            .map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())?)
     }
 }
 

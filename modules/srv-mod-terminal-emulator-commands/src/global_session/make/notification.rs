@@ -16,10 +16,10 @@ use crate::{command_handler::CommandHandlerArguments, post_process_result::PostP
 pub struct TerminalSessionMakeNotificationArguments {
     /// The level of the notification to send
     #[arg(short, long)]
-    pub level: LogLevel,
+    pub level:   LogLevel,
     /// The title of the notification
     #[arg(short, long)]
-    pub title: String,
+    pub title:   String,
     /// The message of the notification
     #[arg(short, long)]
     pub message: String,
@@ -50,8 +50,8 @@ pub async fn handle(
         .broadcast_sender
         .send(SseEvent {
             event: EventType::Log,
-            id: Some(notification.id),
-            data: serde_json::to_string(&notification).map_err(|e| e.to_string())?,
+            id:    Some(notification.id),
+            data:  serde_json::to_string(&notification).map_err(|e| e.to_string())?,
         })
         .map_err(|e| e.to_string())?;
 

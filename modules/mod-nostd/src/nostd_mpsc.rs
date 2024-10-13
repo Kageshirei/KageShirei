@@ -10,9 +10,9 @@ use spin::Mutex;
 /// including the buffer, capacity, and atomic flags for data availability and space availability.
 #[derive(Debug)]
 pub struct NoStdChannel<T> {
-    buffer: Mutex<Vec<T>>, // A mutex-protected vector that serves as the buffer for the channel.
-    capacity: usize,         // The maximum number of items the buffer can hold.
-    available: AtomicBool,    // Indicates if there is data available for the receiver.
+    buffer:          Mutex<Vec<T>>, // A mutex-protected vector that serves as the buffer for the channel.
+    capacity:        usize,         // The maximum number of items the buffer can hold.
+    available:       AtomicBool,    // Indicates if there is data available for the receiver.
     space_available: AtomicBool,    // Indicates if there is space available for the sender.
 }
 
@@ -35,9 +35,9 @@ pub struct Receiver<T> {
 /// * `(Sender<T>, Receiver<T>)` - A pair of `Sender` and `Receiver` structs that represent the ends of the channel.
 pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
     let channel = Arc::new(NoStdChannel {
-        buffer: Mutex::new(Vec::new()),
-        capacity: 32, // Fixed size for the buffer; can be adjusted as needed.
-        available: AtomicBool::new(false),
+        buffer:          Mutex::new(Vec::new()),
+        capacity:        32, // Fixed size for the buffer; can be adjusted as needed.
+        available:       AtomicBool::new(false),
         space_available: AtomicBool::new(true),
     });
 
@@ -112,7 +112,8 @@ impl<T> Receiver<T> {
                 if let Some(item) = buffer.pop() {
                     self.channel.space_available.store(true, Ordering::Release); // Notify that there is space available
                     return Some(item);
-                } else if Arc::strong_count(&self.channel) == 1 {
+                }
+                else if Arc::strong_count(&self.channel) == 1 {
                     // If the buffer is empty and all senders have been dropped, terminate
                     return None;
                 }

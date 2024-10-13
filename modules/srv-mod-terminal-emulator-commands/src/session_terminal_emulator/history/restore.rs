@@ -53,15 +53,15 @@ pub async fn handle(
         })),
         ..Default::default()
     }
-        .insert(&db)
-        .await
-        .map_err(|e| e.to_string())?;
+    .insert(&db)
+    .await
+    .map_err(|e| e.to_string())?;
 
     // broadcast the log
     config.broadcast_sender.send(SseEvent {
-        data: serde_json::to_string(&log)?,
+        data:  serde_json::to_string(&log)?,
         event: EventType::Log,
-        id: Some(log.id),
+        id:    Some(log.id),
     })?;
 
     // Signal the frontend terminal emulator to clear the terminal screen

@@ -24,7 +24,7 @@ use crate::{
 
 pub struct XChaCha20Poly1305Algorithm {
     /// The key used for encryption
-    key: Arc<Bytes>,
+    key:   Arc<Bytes>,
     /// The last nonce used for encryption (automatically refreshed before each encryption)
     nonce: Arc<Bytes>,
 }
@@ -93,7 +93,7 @@ impl SymmetricEncryptionAlgorithm for XChaCha20Poly1305Algorithm {
 impl Clone for XChaCha20Poly1305Algorithm {
     fn clone(&self) -> Self {
         Self {
-            key: self.key.clone(),
+            key:   self.key.clone(),
             nonce: self.nonce.clone(),
         }
     }
@@ -127,7 +127,8 @@ impl From<Bytes> for XChaCha20Poly1305Algorithm {
 
                 // Freeze the new key
                 key = new_key.freeze();
-            } else {
+            }
+            else {
                 // Truncate the key to the required length of 32 bytes if it's longer
                 key.truncate(32);
             }
@@ -137,7 +138,7 @@ impl From<Bytes> for XChaCha20Poly1305Algorithm {
         nonce.put_bytes(0, nonce.capacity());
 
         let mut instance = Self {
-            key: Arc::new(key),
+            key:   Arc::new(key),
             nonce: Arc::new(nonce.freeze()),
         };
 
@@ -173,12 +174,12 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
         let mut new_encrypted = BytesMut::with_capacity(encrypted_length + 24);
         new_encrypted.put_bytes(0, new_encrypted.capacity());
 
-        for i in 0..encrypted_length {
+        for i in 0 .. encrypted_length {
             new_encrypted[i] = encrypted[i];
         }
 
         // Append the nonce to the encrypted data
-        for i in 0..24 {
+        for i in 0 .. 24 {
             new_encrypted[encrypted_length + i] = self.nonce[i];
         }
 
@@ -212,7 +213,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
 
     fn new() -> Self {
         let mut instance = Self {
-            key: Arc::new(Bytes::new()),
+            key:   Arc::new(Bytes::new()),
             nonce: Arc::new(Bytes::new()),
         };
 
@@ -250,9 +251,9 @@ impl WithKeyDerivation for XChaCha20Poly1305Algorithm {
     ///
     /// The updated current instance
     fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> anyhow::Result<&Self>
-                        where
-                            H: OutputSizeUser,
-                            I: HmacImpl<H>,
+    where
+        H: OutputSizeUser,
+        I: HmacImpl<H>,
     {
         let mut key = [0u8; 32];
         hkdf.expand(&[], &mut key).map_err(|e| anyhow!(e))?;

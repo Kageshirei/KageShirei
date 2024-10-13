@@ -79,7 +79,7 @@ pub type RtlFreeHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lp
 /// # Returns
 /// - `*mut u8`: A pointer to the reallocated memory block. If the reallocation fails, the pointer will be `NULL`.
 pub type RtlReAllocateHeap =
-unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8, dwBytes: usize) -> *mut u8;
+    unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8, dwBytes: usize) -> *mut u8;
 
 /// Type definition for the RtlDestroyHeap function.
 ///

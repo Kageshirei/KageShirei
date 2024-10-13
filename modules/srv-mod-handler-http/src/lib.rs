@@ -36,7 +36,7 @@ pub async fn start(
 ) -> anyhow::Result<()> {
     // create a shared state for the server
     let shared_state: HandlerSharedState = Arc::new(state::HandlerState {
-        config: config.clone(),
+        config:  config.clone(),
         db_pool: pool,
     });
 
@@ -54,7 +54,8 @@ pub async fn start(
                         .map(MatchedPath::as_str)
                     {
                         path
-                    } else {
+                    }
+                    else {
                         "None"
                     };
 
@@ -117,12 +118,13 @@ pub async fn start(
             "{}:{}",
             if let Some(tls_host) = tls_config.host.clone() {
                 tls_host
-            } else {
+            }
+            else {
                 config.host.clone()
             },
             tls_config.port
         ))
-            .await;
+        .await;
 
         let listener = unwrap_listener_or_fail(config.host.clone(), tls_config.port, listener);
 

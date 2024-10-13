@@ -48,64 +48,64 @@ pub const IMAGE_NT_SIGNATURE: u32 = 0x00004550; // "PE\0\0"
 
 #[repr(C)]
 pub struct ImageDosHeader {
-    pub e_magic: u16,
-    pub e_cblp: u16,
-    pub e_cp: u16,
-    pub e_crlc: u16,
-    pub e_cparhdr: u16,
+    pub e_magic:    u16,
+    pub e_cblp:     u16,
+    pub e_cp:       u16,
+    pub e_crlc:     u16,
+    pub e_cparhdr:  u16,
     pub e_minalloc: u16,
     pub e_maxalloc: u16,
-    pub e_ss: u16,
-    pub e_sp: u16,
-    pub e_csum: u16,
-    pub e_ip: u16,
-    pub e_cs: u16,
-    pub e_lfarlc: u16,
-    pub e_ovno: u16,
-    pub e_res: [u16; 4],
-    pub e_oemid: u16,
-    pub e_oeminfo: u16,
-    pub e_res2: [u16; 10],
-    pub e_lfanew: i32,
+    pub e_ss:       u16,
+    pub e_sp:       u16,
+    pub e_csum:     u16,
+    pub e_ip:       u16,
+    pub e_cs:       u16,
+    pub e_lfarlc:   u16,
+    pub e_ovno:     u16,
+    pub e_res:      [u16; 4],
+    pub e_oemid:    u16,
+    pub e_oeminfo:  u16,
+    pub e_res2:     [u16; 10],
+    pub e_lfanew:   i32,
 }
 
 #[repr(C)]
 pub struct ImageFileHeader {
-    pub machine: u16,
-    pub number_of_sections: u16,
-    pub time_date_stamp: u32,
+    pub machine:                 u16,
+    pub number_of_sections:      u16,
+    pub time_date_stamp:         u32,
     pub pointer_to_symbol_table: u32,
-    pub number_of_symbols: u32,
+    pub number_of_symbols:       u32,
     pub size_of_optional_header: u16,
-    pub characteristics: u16,
+    pub characteristics:         u16,
 }
 
 #[repr(C)]
 pub struct ImageDataDirectory {
     pub virtual_address: u32,
-    pub size: u32,
+    pub size:            u32,
 }
 
 #[repr(C)]
 pub struct ImageExportDirectory {
-    pub characteristics: u32,
-    pub time_date_stamp: u32,
-    pub major_version: u16,
-    pub minor_version: u16,
-    pub name: u32,
-    pub base: u32,
-    pub number_of_functions: u32,
-    pub number_of_names: u32,
-    pub address_of_functions: u32,
-    pub address_of_names: u32,
+    pub characteristics:          u32,
+    pub time_date_stamp:          u32,
+    pub major_version:            u16,
+    pub minor_version:            u16,
+    pub name:                     u32,
+    pub base:                     u32,
+    pub number_of_functions:      u32,
+    pub number_of_names:          u32,
+    pub address_of_functions:     u32,
+    pub address_of_names:         u32,
     pub address_of_name_ordinals: u32,
 }
 
 #[cfg(target_arch = "x86_64")]
 #[repr(C)]
 pub struct ImageNtHeaders {
-    pub signature: u32,
-    pub file_header: ImageFileHeader,
+    pub signature:       u32,
+    pub file_header:     ImageFileHeader,
     pub optional_header: ImageOptionalHeader64,
 }
 
@@ -183,8 +183,8 @@ pub struct ImageOptionalHeader32 {
 #[cfg(target_arch = "x86")]
 #[repr(C)]
 pub struct ImageNtHeaders {
-    pub signature: u32,
-    pub file_header: ImageFileHeader,
+    pub signature:       u32,
+    pub file_header:     ImageFileHeader,
     pub optional_header: ImageOptionalHeader32,
 }
 
@@ -200,17 +200,17 @@ pub struct ListEntry {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct UnicodeString {
-    pub length: u16,
+    pub length:         u16,
     pub maximum_length: u16,
-    pub buffer: *mut u16,
+    pub buffer:         *mut u16,
 }
 
 impl UnicodeString {
     pub fn new() -> Self {
         UnicodeString {
-            length: 0,
+            length:         0,
             maximum_length: 0,
-            buffer: ptr::null_mut(),
+            buffer:         ptr::null_mut(),
         }
     }
 
@@ -227,7 +227,8 @@ impl UnicodeString {
             self.length = dest_size as u16;
             self.maximum_length = (dest_size + 2) as u16; // 2 bytes for the null terminator
             self.buffer = source_string as *mut u16;
-        } else {
+        }
+        else {
             self.length = 0;
             self.maximum_length = 0;
             self.buffer = ptr::null_mut();
@@ -238,14 +239,14 @@ impl UnicodeString {
 #[repr(C)]
 pub struct ClientId {
     pub unique_process: HANDLE,
-    pub unique_thread: HANDLE,
+    pub unique_thread:  HANDLE,
 }
 
 impl ClientId {
     pub fn new() -> Self {
         ClientId {
             unique_process: ptr::null_mut(),
-            unique_thread: ptr::null_mut(),
+            unique_thread:  ptr::null_mut(),
         }
     }
 }
@@ -254,19 +255,19 @@ impl ClientId {
 #[derive(Copy, Clone)]
 pub struct SectionPointer {
     pub section_pointer: PVOID,
-    pub check_sum: c_ulong,
+    pub check_sum:       c_ulong,
 }
 
 #[repr(C)]
 pub union HashLinksOrSectionPointer {
-    pub hash_links: ListEntry,
+    pub hash_links:      ListEntry,
     pub section_pointer: SectionPointer,
 }
 
 #[repr(C)]
 pub union TimeDateStampOrLoadedImports {
     pub time_date_stamp: c_ulong,
-    pub loaded_imports: PVOID,
+    pub loaded_imports:  PVOID,
 }
 
 #[repr(C)]
@@ -361,108 +362,108 @@ pub struct PEB {
 
 pub struct CURDIR {
     pub dos_path: UnicodeString,
-    pub handle: HANDLE,
+    pub handle:   HANDLE,
 }
 
 impl CURDIR {
     pub fn new() -> Self {
         CURDIR {
             dos_path: UnicodeString::new(),
-            handle: null_mut(),
+            handle:   null_mut(),
         }
     }
 }
 
 #[repr(C)]
 pub struct RtlUserProcessParameters {
-    pub maximum_length: u32,
-    pub length: u32,
-    pub flags: u32,
-    pub debug_flags: u32,
-    pub console_handle: HANDLE,
-    pub console_flags: u32,
-    pub standard_input: HANDLE,
-    pub standard_output: HANDLE,
-    pub standard_error: HANDLE,
-    pub current_directory: CURDIR,
+    pub maximum_length:          u32,
+    pub length:                  u32,
+    pub flags:                   u32,
+    pub debug_flags:             u32,
+    pub console_handle:          HANDLE,
+    pub console_flags:           u32,
+    pub standard_input:          HANDLE,
+    pub standard_output:         HANDLE,
+    pub standard_error:          HANDLE,
+    pub current_directory:       CURDIR,
     // pub current_directory_path: UnicodeString,
     // pub current_directory_handle: HANDLE,
-    pub dll_path: UnicodeString,
-    pub image_path_name: UnicodeString,
-    pub command_line: UnicodeString,
-    pub environment: *mut c_void,
-    pub starting_x: u32,
-    pub starting_y: u32,
-    pub count_x: u32,
-    pub count_y: u32,
-    pub count_chars_x: u32,
-    pub count_chars_y: u32,
-    pub fill_attribute: u32,
-    pub window_flags: u32,
-    pub show_window_flags: u32,
-    pub window_title: UnicodeString,
-    pub desktop_info: UnicodeString,
-    pub shell_info: UnicodeString,
-    pub runtime_data: UnicodeString,
-    pub current_directories: [UnicodeString; 32],
-    pub environment_size: u32,
-    pub environment_version: u32,
+    pub dll_path:                UnicodeString,
+    pub image_path_name:         UnicodeString,
+    pub command_line:            UnicodeString,
+    pub environment:             *mut c_void,
+    pub starting_x:              u32,
+    pub starting_y:              u32,
+    pub count_x:                 u32,
+    pub count_y:                 u32,
+    pub count_chars_x:           u32,
+    pub count_chars_y:           u32,
+    pub fill_attribute:          u32,
+    pub window_flags:            u32,
+    pub show_window_flags:       u32,
+    pub window_title:            UnicodeString,
+    pub desktop_info:            UnicodeString,
+    pub shell_info:              UnicodeString,
+    pub runtime_data:            UnicodeString,
+    pub current_directories:     [UnicodeString; 32],
+    pub environment_size:        u32,
+    pub environment_version:     u32,
     pub package_dependency_data: *mut c_void,
-    pub process_group_id: u32,
-    pub loader_threads: u32,
+    pub process_group_id:        u32,
+    pub loader_threads:          u32,
 }
 
 impl RtlUserProcessParameters {
     pub fn new() -> Self {
         RtlUserProcessParameters {
-            maximum_length: 0,
-            length: 0,
-            flags: 0,
-            debug_flags: 0,
-            console_handle: null_mut(),
-            console_flags: 0,
-            standard_input: null_mut(),
-            standard_output: null_mut(),
-            standard_error: null_mut(),
-            current_directory: CURDIR::new(),
+            maximum_length:          0,
+            length:                  0,
+            flags:                   0,
+            debug_flags:             0,
+            console_handle:          null_mut(),
+            console_flags:           0,
+            standard_input:          null_mut(),
+            standard_output:         null_mut(),
+            standard_error:          null_mut(),
+            current_directory:       CURDIR::new(),
             // current_directory_path: UnicodeString::new(),
             // current_directory_handle: null_mut(),
-            dll_path: UnicodeString::new(),
-            image_path_name: UnicodeString::new(),
-            command_line: UnicodeString::new(),
-            environment: null_mut(),
-            starting_x: 0,
-            starting_y: 0,
-            count_x: 0,
-            count_y: 0,
-            count_chars_x: 0,
-            count_chars_y: 0,
-            fill_attribute: 0,
-            window_flags: 0,
-            show_window_flags: 0,
-            window_title: UnicodeString::new(),
-            desktop_info: UnicodeString::new(),
-            shell_info: UnicodeString::new(),
-            runtime_data: UnicodeString::new(),
-            current_directories: [UnicodeString::new(); 32],
-            environment_size: 0,
-            environment_version: 0,
+            dll_path:                UnicodeString::new(),
+            image_path_name:         UnicodeString::new(),
+            command_line:            UnicodeString::new(),
+            environment:             null_mut(),
+            starting_x:              0,
+            starting_y:              0,
+            count_x:                 0,
+            count_y:                 0,
+            count_chars_x:           0,
+            count_chars_y:           0,
+            fill_attribute:          0,
+            window_flags:            0,
+            show_window_flags:       0,
+            window_title:            UnicodeString::new(),
+            desktop_info:            UnicodeString::new(),
+            shell_info:              UnicodeString::new(),
+            runtime_data:            UnicodeString::new(),
+            current_directories:     [UnicodeString::new(); 32],
+            environment_size:        0,
+            environment_version:     0,
             package_dependency_data: null_mut(),
-            process_group_id: 0,
-            loader_threads: 0,
+            process_group_id:        0,
+            loader_threads:          0,
         }
     }
 }
 
 #[repr(C)]
 pub struct NtTib {
-    pub exception_list: *mut c_void,
-    pub stack_base: *mut c_void,
-    pub stack_limit: *mut c_void,
-    pub sub_system_tib: *mut c_void,
-    pub fiber_data: *mut c_void,
+    pub exception_list:         *mut c_void,
+    pub stack_base:             *mut c_void,
+    pub stack_limit:            *mut c_void,
+    pub sub_system_tib:         *mut c_void,
+    pub fiber_data:             *mut c_void,
     pub arbitrary_user_pointer: *mut c_void,
-    pub self_: *mut NtTib,
+    pub self_:                  *mut NtTib,
 }
 
 #[cfg(target_arch = "x86")]
@@ -544,14 +545,14 @@ unsafe impl Send for TEB {}
 
 #[repr(C)]
 pub struct InitialTebOldInitialTeb {
-    pub old_stack_base: PVOID,
+    pub old_stack_base:  PVOID,
     pub old_stack_limit: PVOID,
 }
 
 pub struct InitialTeb {
-    pub old_initial_teb: InitialTebOldInitialTeb,
-    pub stack_base: PVOID,
-    pub stack_limit: PVOID,
+    pub old_initial_teb:       InitialTebOldInitialTeb,
+    pub stack_base:            PVOID,
+    pub stack_limit:           PVOID,
     pub stack_allocation_base: PVOID,
 }
 
@@ -610,33 +611,33 @@ pub struct SystemBasicInformation {
 
 #[repr(C)]
 pub struct OSVersionInfo {
-    pub dw_os_version_info_size: u32,
-    pub dw_major_version: u32,
-    pub dw_minor_version: u32,
-    pub dw_build_number: u32,
-    pub dw_platform_id: u32,
-    pub sz_csd_version: [u16; 128], // WCHAR is usually represented as u16 in Rust
+    pub dw_os_version_info_size:   u32,
+    pub dw_major_version:          u32,
+    pub dw_minor_version:          u32,
+    pub dw_build_number:           u32,
+    pub dw_platform_id:            u32,
+    pub sz_csd_version:            [u16; 128], // WCHAR is usually represented as u16 in Rust
     pub dw_os_version_info_size_2: u32,
-    pub dw_major_version_2: u32,
-    pub dw_minor_version_2: u32,
-    pub dw_build_number_2: u32,
-    pub dw_platform_id_2: u32,
+    pub dw_major_version_2:        u32,
+    pub dw_minor_version_2:        u32,
+    pub dw_build_number_2:         u32,
+    pub dw_platform_id_2:          u32,
 }
 
 impl OSVersionInfo {
     pub fn new() -> Self {
         OSVersionInfo {
-            dw_os_version_info_size: core::mem::size_of::<OSVersionInfo>() as u32,
-            dw_major_version: 0,
-            dw_minor_version: 0,
-            dw_build_number: 0,
-            dw_platform_id: 0,
-            sz_csd_version: [0; 128],
+            dw_os_version_info_size:   core::mem::size_of::<OSVersionInfo>() as u32,
+            dw_major_version:          0,
+            dw_minor_version:          0,
+            dw_build_number:           0,
+            dw_platform_id:            0,
+            sz_csd_version:            [0; 128],
             dw_os_version_info_size_2: core::mem::size_of::<OSVersionInfo>() as u32,
-            dw_major_version_2: 0,
-            dw_minor_version_2: 0,
-            dw_build_number_2: 0,
-            dw_platform_id_2: 0,
+            dw_major_version_2:        0,
+            dw_minor_version_2:        0,
+            dw_build_number_2:         0,
+            dw_platform_id_2:          0,
         }
     }
 }
@@ -653,27 +654,27 @@ pub const KEY_READ: AccessMask =
 #[repr(C)]
 pub struct KeyBasicInformation {
     pub last_write_time: i64,
-    pub title_index: u32,
-    pub name_length: u32,
-    pub name: [u16; 1],
+    pub title_index:     u32,
+    pub name_length:     u32,
+    pub name:            [u16; 1],
 }
 
 #[repr(C)]
 pub struct KeyValuePartialInformation {
     pub title_index: ULONG,
-    pub data_type: ULONG,
+    pub data_type:   ULONG,
     pub data_length: ULONG,
-    pub data: [u8; 1],
+    pub data:        [u8; 1],
 }
 
 #[repr(C)]
 pub struct KeyValueFullInformation {
     pub title_index: u32,
-    pub data_type: u32,
+    pub data_type:   u32,
     pub data_offset: u32,
     pub data_length: u32,
     pub name_length: u32,
-    pub name: [u16; 1],
+    pub name:        [u16; 1],
 }
 
 // NT PROCESS DEFINES
@@ -700,113 +701,113 @@ pub struct ProcessBasicInformation {
 
 #[repr(C)]
 pub struct StartupInfoA {
-    pub cb: u32,
-    pub lp_reserved: *mut u8,
-    pub lp_desktop: *mut u8,
-    pub lp_title: *mut u8,
-    pub dw_x: u32,
-    pub dw_y: u32,
-    pub dw_x_size: u32,
-    pub dw_y_size: u32,
-    pub dw_x_count_chars: u32,
-    pub dw_y_count_chars: u32,
+    pub cb:                u32,
+    pub lp_reserved:       *mut u8,
+    pub lp_desktop:        *mut u8,
+    pub lp_title:          *mut u8,
+    pub dw_x:              u32,
+    pub dw_y:              u32,
+    pub dw_x_size:         u32,
+    pub dw_y_size:         u32,
+    pub dw_x_count_chars:  u32,
+    pub dw_y_count_chars:  u32,
     pub dw_fill_attribute: u32,
-    pub dw_flags: u32,
-    pub w_show_window: u16,
-    pub cb_reserved2: u16,
-    pub lp_reserved2: *mut u8,
-    pub h_std_input: *mut c_void,
-    pub h_std_output: *mut c_void,
-    pub h_std_error: *mut c_void,
+    pub dw_flags:          u32,
+    pub w_show_window:     u16,
+    pub cb_reserved2:      u16,
+    pub lp_reserved2:      *mut u8,
+    pub h_std_input:       *mut c_void,
+    pub h_std_output:      *mut c_void,
+    pub h_std_error:       *mut c_void,
 }
 
 impl StartupInfoA {
     pub fn new() -> Self {
         StartupInfoA {
-            cb: core::mem::size_of::<StartupInfoA>() as u32,
-            lp_reserved: ptr::null_mut(),
-            lp_desktop: ptr::null_mut(),
-            lp_title: ptr::null_mut(),
-            dw_x: 0,
-            dw_y: 0,
-            dw_x_size: 0,
-            dw_y_size: 0,
-            dw_x_count_chars: 0,
-            dw_y_count_chars: 0,
+            cb:                core::mem::size_of::<StartupInfoA>() as u32,
+            lp_reserved:       ptr::null_mut(),
+            lp_desktop:        ptr::null_mut(),
+            lp_title:          ptr::null_mut(),
+            dw_x:              0,
+            dw_y:              0,
+            dw_x_size:         0,
+            dw_y_size:         0,
+            dw_x_count_chars:  0,
+            dw_y_count_chars:  0,
             dw_fill_attribute: 0,
-            dw_flags: 0,
-            w_show_window: 0,
-            cb_reserved2: 0,
-            lp_reserved2: ptr::null_mut(),
-            h_std_input: ptr::null_mut(),
-            h_std_output: ptr::null_mut(),
-            h_std_error: ptr::null_mut(),
+            dw_flags:          0,
+            w_show_window:     0,
+            cb_reserved2:      0,
+            lp_reserved2:      ptr::null_mut(),
+            h_std_input:       ptr::null_mut(),
+            h_std_output:      ptr::null_mut(),
+            h_std_error:       ptr::null_mut(),
         }
     }
 }
 
 #[repr(C)]
 pub struct StartupInfoW {
-    pub cb: u32,
-    pub lp_reserved: *mut u16,
-    pub lp_desktop: *mut u16,
-    pub lp_title: *mut u16,
-    pub dw_x: u32,
-    pub dw_y: u32,
-    pub dw_x_size: u32,
-    pub dw_y_size: u32,
-    pub dw_x_count_chars: u32,
-    pub dw_y_count_chars: u32,
+    pub cb:                u32,
+    pub lp_reserved:       *mut u16,
+    pub lp_desktop:        *mut u16,
+    pub lp_title:          *mut u16,
+    pub dw_x:              u32,
+    pub dw_y:              u32,
+    pub dw_x_size:         u32,
+    pub dw_y_size:         u32,
+    pub dw_x_count_chars:  u32,
+    pub dw_y_count_chars:  u32,
     pub dw_fill_attribute: u32,
-    pub dw_flags: u32,
-    pub w_show_window: u16,
-    pub cb_reserved2: u16,
-    pub lp_reserved2: *mut u8,
-    pub h_std_input: *mut c_void,
-    pub h_std_output: *mut c_void,
-    pub h_std_error: *mut c_void,
+    pub dw_flags:          u32,
+    pub w_show_window:     u16,
+    pub cb_reserved2:      u16,
+    pub lp_reserved2:      *mut u8,
+    pub h_std_input:       *mut c_void,
+    pub h_std_output:      *mut c_void,
+    pub h_std_error:       *mut c_void,
 }
 
 impl StartupInfoW {
     pub fn new() -> Self {
         StartupInfoW {
-            cb: core::mem::size_of::<StartupInfoW>() as u32,
-            lp_reserved: ptr::null_mut(),
-            lp_desktop: ptr::null_mut(),
-            lp_title: ptr::null_mut(),
-            dw_x: 0,
-            dw_y: 0,
-            dw_x_size: 0,
-            dw_y_size: 0,
-            dw_x_count_chars: 0,
-            dw_y_count_chars: 0,
+            cb:                core::mem::size_of::<StartupInfoW>() as u32,
+            lp_reserved:       ptr::null_mut(),
+            lp_desktop:        ptr::null_mut(),
+            lp_title:          ptr::null_mut(),
+            dw_x:              0,
+            dw_y:              0,
+            dw_x_size:         0,
+            dw_y_size:         0,
+            dw_x_count_chars:  0,
+            dw_y_count_chars:  0,
             dw_fill_attribute: 0,
-            dw_flags: 0,
-            w_show_window: 0,
-            cb_reserved2: 0,
-            lp_reserved2: ptr::null_mut(),
-            h_std_input: ptr::null_mut(),
-            h_std_output: ptr::null_mut(),
-            h_std_error: ptr::null_mut(),
+            dw_flags:          0,
+            w_show_window:     0,
+            cb_reserved2:      0,
+            lp_reserved2:      ptr::null_mut(),
+            h_std_input:       ptr::null_mut(),
+            h_std_output:      ptr::null_mut(),
+            h_std_error:       ptr::null_mut(),
         }
     }
 }
 
 #[repr(C)]
 pub struct ProcessInformation {
-    pub h_process: *mut c_void,
-    pub h_thread: *mut c_void,
+    pub h_process:     *mut c_void,
+    pub h_thread:      *mut c_void,
     pub dw_process_id: u32,
-    pub dw_thread_id: u32,
+    pub dw_thread_id:  u32,
 }
 
 impl ProcessInformation {
     pub fn new() -> Self {
         ProcessInformation {
-            h_process: ptr::null_mut(),
-            h_thread: ptr::null_mut(),
+            h_process:     ptr::null_mut(),
+            h_thread:      ptr::null_mut(),
             dw_process_id: 0,
-            dw_thread_id: 0,
+            dw_thread_id:  0,
         }
     }
 }
@@ -861,15 +862,15 @@ pub const SECURITY_MANDATORY_SYSTEM_RID: u32 = 0x00004000;
 
 #[repr(C)]
 pub struct Sid {
-    pub revision: u8,
-    pub sub_authority_count: u8,
+    pub revision:             u8,
+    pub sub_authority_count:  u8,
     pub identifier_authority: [u8; 6],
-    pub sub_authority: [u32; 1], // Note: This is a flexible array member in C
+    pub sub_authority:        [u32; 1], // Note: This is a flexible array member in C
 }
 
 #[repr(C)]
 pub struct SidAndAttributes {
-    pub sid: *mut Sid,
+    pub sid:        *mut Sid,
     pub attributes: u32,
 }
 
@@ -880,33 +881,33 @@ pub struct TokenMandatoryLabel {
 
 #[repr(C)]
 pub struct LUID {
-    pub low_part: u32,
+    pub low_part:  u32,
     pub high_part: i32,
 }
 
 #[repr(C)]
 pub struct LuidAndAttributes {
-    pub luid: LUID,
+    pub luid:       LUID,
     pub attributes: u32,
 }
 
 #[repr(C)]
 pub struct TokenPrivileges {
     pub privilege_count: u32,
-    pub privileges: [LuidAndAttributes; 1],
+    pub privileges:      [LuidAndAttributes; 1],
 }
 
 pub const SE_PRIVILEGE_ENABLED: u32 = 0x00000002;
 
 #[repr(C)]
 pub union IO_STATUS_BLOCK_u {
-    pub status: i32,
+    pub status:  i32,
     pub pointer: *mut c_void,
 }
 
 #[repr(C)]
 pub struct IoStatusBlock {
-    pub u: IO_STATUS_BLOCK_u,
+    pub u:           IO_STATUS_BLOCK_u,
     pub information: ULONG,
 }
 
@@ -918,7 +919,7 @@ impl IoStatusBlock {
     /// A new instance of `IoStatusBlock` with default initialization.
     pub fn new() -> Self {
         IoStatusBlock {
-            u: IO_STATUS_BLOCK_u {
+            u:           IO_STATUS_BLOCK_u {
                 status: 0,
             },
             information: 0,
@@ -928,7 +929,7 @@ impl IoStatusBlock {
 
 #[repr(C)]
 pub enum EventType {
-    NotificationEvent = 0,
+    NotificationEvent    = 0,
     SynchronizationEvent = 1,
 }
 
@@ -1077,7 +1078,7 @@ pub const GENERIC_READ: u32 = 0x80000000;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct KSystemTime {
-    pub low_part: u32,
+    pub low_part:   u32,
     pub high1_time: i32,
     pub high2_time: i32,
 }
@@ -1085,7 +1086,7 @@ pub struct KSystemTime {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct LargeInteger {
-    pub low_part: u32,
+    pub low_part:  u32,
     pub high_part: i32,
 }
 
@@ -1093,7 +1094,7 @@ impl LargeInteger {
     pub fn new() -> Self {
         LargeInteger {
             high_part: 0,
-            low_part: 0,
+            low_part:  0,
         }
     }
 }
@@ -1101,7 +1102,7 @@ impl LargeInteger {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union TickCountUnion {
-    pub tick_count_quad: u64,
+    pub tick_count_quad:   u64,
     pub tick_count_struct: TickCountStruct,
 }
 
@@ -1109,7 +1110,7 @@ pub union TickCountUnion {
 #[derive(Clone, Copy)]
 pub struct TickCountStruct {
     pub reserved_tick_count_overlay: [u32; 3],
-    pub tick_count_pad: [u32; 1],
+    pub tick_count_pad:              [u32; 1],
 }
 
 #[repr(C)]
@@ -1203,44 +1204,44 @@ pub struct KUserSharedData {
 // START NtCreateUserProcess STRUCT
 #[repr(C)]
 pub struct PsCreateInfo {
-    pub size: SIZE_T,
-    pub state: PsCreateState,
+    pub size:        SIZE_T,
+    pub state:       PsCreateState,
     pub union_state: PsCreateInfoUnion,
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub enum PsCreateState {
-    PsCreateInitialState = 0,
-    PsCreateFailOnFileOpen = 1,
+    PsCreateInitialState        = 0,
+    PsCreateFailOnFileOpen      = 1,
     PsCreateFailOnSectionCreate = 2,
-    PsCreateFailExeFormat = 3,
+    PsCreateFailExeFormat       = 3,
     PsCreateFailMachineMismatch = 4,
-    PsCreateFailExeName = 5,
-    PsCreateSuccess = 6,
-    PsCreateMaximumStates = 7,
+    PsCreateFailExeName         = 5,
+    PsCreateSuccess             = 6,
+    PsCreateMaximumStates       = 7,
 }
 
 #[repr(C)]
 pub union PsCreateInfoUnion {
-    pub init_state: PsCreateInitialState,
-    pub file_handle: HANDLE,
+    pub init_state:          PsCreateInitialState,
+    pub file_handle:         HANDLE,
     pub dll_characteristics: USHORT,
-    pub ifeo_key: HANDLE,
-    pub success_state: PsCreateSuccess,
+    pub ifeo_key:            HANDLE,
+    pub success_state:       PsCreateSuccess,
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct PsCreateInitialState {
-    pub init_flags: PsCreateInitialFlags,
+    pub init_flags:             PsCreateInitialFlags,
     pub additional_file_access: AccessMask,
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union PsCreateInitialFlags {
-    pub flags: ULONG, // 4 byte
+    pub flags:     ULONG, // 4 byte
     pub flag_bits: PsCreateInitialFlagBits,
 }
 
@@ -1278,7 +1279,7 @@ impl Default for PsCreateInitialFlags {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union PsCreateSuccessFlags {
-    pub flags: ULONG, // 4 byte
+    pub flags:     ULONG, // 4 byte
     pub flag_bits: PsCreateSuccessFlagBits,
 }
 
@@ -1317,36 +1318,36 @@ impl Default for PsCreateSuccessFlags {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct PsCreateSuccess {
-    pub output_flags: PsCreateSuccessFlags, // 4 byte
-    pub file_handle: *mut c_void,          // HANDLE
-    pub section_handle: *mut c_void,          // HANDLE
+    pub output_flags:                   PsCreateSuccessFlags, // 4 byte
+    pub file_handle:                    *mut c_void,          // HANDLE
+    pub section_handle:                 *mut c_void,          // HANDLE
     pub user_process_parameters_native: u64,
-    pub user_process_parameters_wow64: ULONG,
-    pub current_parameter_flags: ULONG,
-    pub peb_address_native: u64,
-    pub peb_address_wow64: ULONG,
-    pub manifest_address: u64,
-    pub manifest_size: ULONG,
+    pub user_process_parameters_wow64:  ULONG,
+    pub current_parameter_flags:        ULONG,
+    pub peb_address_native:             u64,
+    pub peb_address_wow64:              ULONG,
+    pub manifest_address:               u64,
+    pub manifest_size:                  ULONG,
 }
 
 #[repr(C)]
 pub struct PsAttribute {
-    pub attribute: usize,
-    pub size: usize,
-    pub value: PsAttributeValueUnion,
+    pub attribute:     usize,
+    pub size:          usize,
+    pub value:         PsAttributeValueUnion,
     pub return_length: *mut usize,
 }
 
 #[repr(C)]
 pub union PsAttributeValueUnion {
-    pub value: usize,
+    pub value:     usize,
     pub value_ptr: PVOID,
 }
 
 #[repr(C)]
 pub struct PsAttributeList {
     pub total_length: usize,
-    pub attributes: [PsAttribute; 2],
+    pub attributes:   [PsAttribute; 2],
 }
 
 impl PsAttribute {
@@ -1472,9 +1473,9 @@ pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS
 
 #[repr(C)]
 pub struct SecurityAttributes {
-    pub n_length: u32,
+    pub n_length:               u32,
     pub lp_security_descriptor: *mut c_void,
-    pub b_inherit_handle: bool,
+    pub b_inherit_handle:       bool,
 }
 
 // END NtCreateUserProcess STRUCT
@@ -1519,9 +1520,9 @@ mod tests {
     #[test]
     fn test_initialize_object_attributes() {
         let mut object_name = UnicodeString {
-            length: 0,
+            length:         0,
             maximum_length: 0,
-            buffer: ptr::null_mut(),
+            buffer:         ptr::null_mut(),
         };
 
         let mut obj_attrs = ObjectAttributes {
@@ -1705,17 +1706,17 @@ pub struct SystemProcessInformation {
 
 #[repr(C)]
 pub struct SystemThreadInformation {
-    pub kernel_time: LargeInteger,
-    pub user_time: LargeInteger,
-    pub create_time: LargeInteger,
-    pub wait_time: ULONG,
-    pub start_address: PVOID,
-    pub client_id: ClientId,
-    pub priority: c_long,
-    pub base_priority: c_long,
+    pub kernel_time:      LargeInteger,
+    pub user_time:        LargeInteger,
+    pub create_time:      LargeInteger,
+    pub wait_time:        ULONG,
+    pub start_address:    PVOID,
+    pub client_id:        ClientId,
+    pub priority:         c_long,
+    pub base_priority:    c_long,
     pub context_switches: ULONG,
-    pub thread_state: u32,
-    pub wait_reason: u32,
+    pub thread_state:     u32,
+    pub wait_reason:      u32,
 }
 
 #[repr(C)]
@@ -1758,58 +1759,58 @@ pub struct SystemProcessInformation2 {
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct M128A {
-    pub Low: ULONGLONG,
+    pub Low:  ULONGLONG,
     pub High: LONGLONG,
 }
 
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct CONTEXT {
-    pub P1Home: DWORD64,
-    pub P2Home: DWORD64,
-    pub P3Home: DWORD64,
-    pub P4Home: DWORD64,
-    pub P5Home: DWORD64,
-    pub P6Home: DWORD64,
-    pub ContextFlags: DWORD,
-    pub MxCsr: DWORD,
-    pub SegCs: WORD,
-    pub SegDs: WORD,
-    pub SegEs: WORD,
-    pub SegFs: WORD,
-    pub SegGs: WORD,
-    pub SegSs: WORD,
-    pub EFlags: DWORD,
-    pub Dr0: DWORD64,
-    pub Dr1: DWORD64,
-    pub Dr2: DWORD64,
-    pub Dr3: DWORD64,
-    pub Dr6: DWORD64,
-    pub Dr7: DWORD64,
-    pub Rax: DWORD64,
-    pub Rcx: DWORD64,
-    pub Rdx: DWORD64,
-    pub Rbx: DWORD64,
-    pub Rsp: DWORD64,
-    pub Rbp: DWORD64,
-    pub Rsi: DWORD64,
-    pub Rdi: DWORD64,
-    pub R8: DWORD64,
-    pub R9: DWORD64,
-    pub R10: DWORD64,
-    pub R11: DWORD64,
-    pub R12: DWORD64,
-    pub R13: DWORD64,
-    pub R14: DWORD64,
-    pub R15: DWORD64,
-    pub Rip: DWORD64,
-    pub u: [u64; 64],
-    pub VectorRegister: [M128A; 26],
-    pub VectorControl: DWORD64,
-    pub DebugControl: DWORD64,
-    pub LastBranchToRip: DWORD64,
-    pub LastBranchFromRip: DWORD64,
-    pub LastExceptionToRip: DWORD64,
+    pub P1Home:               DWORD64,
+    pub P2Home:               DWORD64,
+    pub P3Home:               DWORD64,
+    pub P4Home:               DWORD64,
+    pub P5Home:               DWORD64,
+    pub P6Home:               DWORD64,
+    pub ContextFlags:         DWORD,
+    pub MxCsr:                DWORD,
+    pub SegCs:                WORD,
+    pub SegDs:                WORD,
+    pub SegEs:                WORD,
+    pub SegFs:                WORD,
+    pub SegGs:                WORD,
+    pub SegSs:                WORD,
+    pub EFlags:               DWORD,
+    pub Dr0:                  DWORD64,
+    pub Dr1:                  DWORD64,
+    pub Dr2:                  DWORD64,
+    pub Dr3:                  DWORD64,
+    pub Dr6:                  DWORD64,
+    pub Dr7:                  DWORD64,
+    pub Rax:                  DWORD64,
+    pub Rcx:                  DWORD64,
+    pub Rdx:                  DWORD64,
+    pub Rbx:                  DWORD64,
+    pub Rsp:                  DWORD64,
+    pub Rbp:                  DWORD64,
+    pub Rsi:                  DWORD64,
+    pub Rdi:                  DWORD64,
+    pub R8:                   DWORD64,
+    pub R9:                   DWORD64,
+    pub R10:                  DWORD64,
+    pub R11:                  DWORD64,
+    pub R12:                  DWORD64,
+    pub R13:                  DWORD64,
+    pub R14:                  DWORD64,
+    pub R15:                  DWORD64,
+    pub Rip:                  DWORD64,
+    pub u:                    [u64; 64],
+    pub VectorRegister:       [M128A; 26],
+    pub VectorControl:        DWORD64,
+    pub DebugControl:         DWORD64,
+    pub LastBranchToRip:      DWORD64,
+    pub LastBranchFromRip:    DWORD64,
+    pub LastExceptionToRip:   DWORD64,
     pub LastExceptionFromRip: DWORD64,
 }
 
@@ -1877,9 +1878,9 @@ pub enum RtlPathType {
 
 #[repr(C)]
 pub struct RtlRelativeNameU {
-    pub relative_name: UnicodeString,
+    pub relative_name:        UnicodeString,
     pub containing_directory: HANDLE,
-    pub cur_dir_ref: *mut RtlpCurdirRef,
+    pub cur_dir_ref:          *mut RtlpCurdirRef,
 }
 
 impl RtlRelativeNameU {
@@ -1890,15 +1891,15 @@ impl RtlRelativeNameU {
     /// and a null pointer for `cur_dir_ref`.
     pub fn new() -> Self {
         RtlRelativeNameU {
-            relative_name: UnicodeString::new(), // Initialize with an empty UnicodeString
+            relative_name:        UnicodeString::new(), // Initialize with an empty UnicodeString
             containing_directory: null_mut(),           // Set HANDLE to null
-            cur_dir_ref: null_mut(),           // Set pointer to null
+            cur_dir_ref:          null_mut(),           // Set pointer to null
         }
     }
 }
 
 pub struct RtlpCurdirRef {
-    pub reference_count: LONG,
+    pub reference_count:  LONG,
     pub directory_handle: HANDLE,
 }
 

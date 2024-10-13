@@ -54,7 +54,8 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
 
         update.map_err(|e| e.to_string())?;
         log = log_insertion.map_err(|e| e.to_string())?;
-    } else {
+    }
+    else {
         // clear commands permanently
         let pending_log = logs::ActiveModel {
             level: Set(LogLevel::Warning),
@@ -81,9 +82,9 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
     config
         .broadcast_sender
         .send(SseEvent {
-            data: serde_json::to_string(&log).map_err(|e| e.to_string())?,
+            data:  serde_json::to_string(&log).map_err(|e| e.to_string())?,
             event: EventType::Log,
-            id: Some(log.id),
+            id:    Some(log.id),
         })
         .map_err(|e| e.to_string())?;
 

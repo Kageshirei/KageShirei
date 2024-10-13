@@ -38,8 +38,8 @@ pub async fn make_dummy_data(config: SharedConfig) -> Result<(), String> {
         domain: Set(Some("example-domain".to_string())),
         username: Set("user".to_string()),
         network_interfaces: Set(vec![NetworkInterface {
-            name: Some("Ethernet".to_string()),
-            address: Some("1.2.3.4".to_string()),
+            name:        Some("Ethernet".to_string()),
+            address:     Some("1.2.3.4".to_string()),
             dhcp_server: Some("10.1.2.3".to_string()),
         }]),
         pid: Set(1234),

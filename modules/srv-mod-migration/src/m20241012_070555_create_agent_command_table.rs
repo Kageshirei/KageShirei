@@ -49,7 +49,7 @@ impl MigrationTrait for Migration {
                             Alias::new("command_status"),
                             CommandStatusVariants::iter(),
                         )
-                            .default("pending"),
+                        .default("pending"),
                     )
                     .col(timestamp_null(AgentCommand::RetrievedAt))
                     .col(timestamp_null(AgentCommand::CompletedAt))

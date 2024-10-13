@@ -31,11 +31,11 @@ use crate::ntdef::{
 
 pub struct NtSyscall {
     /// The number of the syscall
-    pub number: u16,
+    pub number:  u16,
     /// The address of the syscall
     pub address: *mut u8,
     /// The hash of the syscall (used for lookup)
-    pub hash: usize,
+    pub hash:    usize,
 }
 
 /// We implement Sync for NtSyscall to ensure that it can be safely shared
@@ -47,9 +47,9 @@ unsafe impl Sync for NtSyscall {}
 impl NtSyscall {
     pub const fn new() -> Self {
         NtSyscall {
-            number: 0,
+            number:  0,
             address: null_mut(),
-            hash: 0,
+            hash:    0,
         }
     }
 }
@@ -1856,7 +1856,7 @@ type RtlFreeHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem:
 /// # Returns
 /// - `*mut u8`: A pointer to the reallocated memory block. If the reallocation fails, the pointer will be `NULL`.
 type RtlReAllocateHeap =
-unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8, dwBytes: usize) -> *mut u8;
+    unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8, dwBytes: usize) -> *mut u8;
 
 /// Type definition for the RtlDestroyHeap function.
 ///
@@ -1894,7 +1894,7 @@ type RtlDestroyHeap = unsafe extern "system" fn(hHeap: HANDLE) -> HANDLE;
 /// - This function operates on wide character strings (`wchar_t`), meaning it is designed for use with the Windows
 ///   Unicode string types.
 type RtlGetFullPathNameU =
-unsafe extern "system" fn(FileName: PWSTR, BufferLength: ULONG, Buffer: PWSTR, FilePart: *mut PWSTR) -> ULONG;
+    unsafe extern "system" fn(FileName: PWSTR, BufferLength: ULONG, Buffer: PWSTR, FilePart: *mut PWSTR) -> ULONG;
 
 /// Type definition for the RtlGetFullPathName_UstrEx function.
 ///
@@ -1965,55 +1965,55 @@ pub struct NtDll {
     pub rtl_dos_path_name_to_nt_path_name_u: RtlDosPathNameToNtPathNameU,
 
     // Heap management functions
-    pub rtl_create_heap: RtlCreateHeap,
-    pub rtl_allocate_heap: RtlAllocateHeap,
-    pub rtl_free_heap: RtlFreeHeap,
+    pub rtl_create_heap:     RtlCreateHeap,
+    pub rtl_allocate_heap:   RtlAllocateHeap,
+    pub rtl_free_heap:       RtlFreeHeap,
     pub rtl_reallocate_heap: RtlReAllocateHeap,
-    pub rtl_destroy_heap: RtlDestroyHeap,
+    pub rtl_destroy_heap:    RtlDestroyHeap,
 
     // Process Management functions
-    pub nt_create_process: NtCreateProcess,
-    pub nt_create_process_ex: NtCreateProcessEx,
-    pub nt_create_user_process: NtCreateUserProcess,
-    pub nt_terminate_process: NtTerminateProcess,
-    pub nt_open_process: NtOpenProcess,
+    pub nt_create_process:            NtCreateProcess,
+    pub nt_create_process_ex:         NtCreateProcessEx,
+    pub nt_create_user_process:       NtCreateUserProcess,
+    pub nt_terminate_process:         NtTerminateProcess,
+    pub nt_open_process:              NtOpenProcess,
     pub nt_query_information_process: NtQueryInformationProcess,
 
     // File Management functions
-    pub nt_open_file: NtOpenFile,
-    pub nt_write_file: NtWriteFile,
+    pub nt_open_file:   NtOpenFile,
+    pub nt_write_file:  NtWriteFile,
     pub nt_create_file: NtCreateFile,
-    pub nt_read_file: NtReadFile,
+    pub nt_read_file:   NtReadFile,
 
     // Registry Management functions
-    pub nt_open_key: NtOpenKey,
+    pub nt_open_key:        NtOpenKey,
     pub nt_query_value_key: NtQueryValueKey,
-    pub nt_enumerate_key: NtEnumerateKey,
+    pub nt_enumerate_key:   NtEnumerateKey,
 
     // Memory Management functions
     pub nt_allocate_virtual_memory: NtAllocateVirtualMemory,
-    pub nt_free_virtual_memory: NtFreeVirtualMemory,
-    pub nt_read_virtual_memory: NtReadVirtualMemory,
-    pub nt_write_virtual_memory: NtWriteVirtualMemory,
+    pub nt_free_virtual_memory:     NtFreeVirtualMemory,
+    pub nt_read_virtual_memory:     NtReadVirtualMemory,
+    pub nt_write_virtual_memory:    NtWriteVirtualMemory,
 
     // Thread Management functions
-    pub nt_create_thread: NtCreateThread,
-    pub nt_create_thread_ex: NtCreateThreadEx,
-    pub nt_zw_create_thread_ex: ZwCreateThreadEx,
-    pub nt_resume_thread: NtResumeThread,
+    pub nt_create_thread:          NtCreateThread,
+    pub nt_create_thread_ex:       NtCreateThreadEx,
+    pub nt_zw_create_thread_ex:    ZwCreateThreadEx,
+    pub nt_resume_thread:          NtResumeThread,
     pub nt_wait_for_single_object: NtWaitForSingleObject,
-    pub nt_terminate_thread: NtTerminateThread,
+    pub nt_terminate_thread:       NtTerminateThread,
 
     // Token Management functions
     pub nt_query_information_token: NtQueryInformationToken,
     pub nt_adjust_privileges_token: NtAdjustPrivilegesToken,
-    pub nt_open_process_token: NtOpenProcessToken,
-    pub nt_open_process_token_ex: NtOpenProcessTokenEx,
+    pub nt_open_process_token:      NtOpenProcessToken,
+    pub nt_open_process_token_ex:   NtOpenProcessTokenEx,
 
-    pub nt_close: NtClose,
+    pub nt_close:                    NtClose,
     pub nt_query_system_information: NtQuerySystemInformation,
-    pub nt_delay_execution: NtDelayExecution,
-    pub nt_create_named_pipe_file: NtCreateNamedPipeFile,
+    pub nt_delay_execution:          NtDelayExecution,
+    pub nt_create_named_pipe_file:   NtCreateNamedPipeFile,
 }
 
 impl NtDll {
@@ -2029,55 +2029,55 @@ impl NtDll {
             rtl_dos_path_name_to_nt_path_name_u: unsafe { core::mem::transmute(null_mut::<c_void>()) },
 
             // Heap management functions
-            rtl_create_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_allocate_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_free_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_create_heap:     unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_allocate_heap:   unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_free_heap:       unsafe { core::mem::transmute(null_mut::<c_void>()) },
             rtl_reallocate_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_destroy_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_destroy_heap:    unsafe { core::mem::transmute(null_mut::<c_void>()) },
 
             // Process Management functions
-            nt_create_process: NtCreateProcess::new(),
-            nt_create_process_ex: NtCreateProcessEx::new(), // unused
-            nt_create_user_process: NtCreateUserProcess::new(),
-            nt_terminate_process: NtTerminateProcess::new(),
-            nt_open_process: NtOpenProcess::new(),
+            nt_create_process:            NtCreateProcess::new(),
+            nt_create_process_ex:         NtCreateProcessEx::new(), // unused
+            nt_create_user_process:       NtCreateUserProcess::new(),
+            nt_terminate_process:         NtTerminateProcess::new(),
+            nt_open_process:              NtOpenProcess::new(),
             nt_query_information_process: NtQueryInformationProcess::new(),
 
             // File Management functions
-            nt_open_file: NtOpenFile::new(),
-            nt_write_file: NtWriteFile::new(),
+            nt_open_file:   NtOpenFile::new(),
+            nt_write_file:  NtWriteFile::new(),
             nt_create_file: NtCreateFile::new(),
-            nt_read_file: NtReadFile::new(),
+            nt_read_file:   NtReadFile::new(),
 
             // Registry Management functions
-            nt_open_key: NtOpenKey::new(),
+            nt_open_key:        NtOpenKey::new(),
             nt_query_value_key: NtQueryValueKey::new(),
-            nt_enumerate_key: NtEnumerateKey::new(),
+            nt_enumerate_key:   NtEnumerateKey::new(),
 
             // Memory Management functions
             nt_allocate_virtual_memory: NtAllocateVirtualMemory::new(),
-            nt_free_virtual_memory: NtFreeVirtualMemory::new(),
-            nt_read_virtual_memory: NtReadVirtualMemory::new(),
-            nt_write_virtual_memory: NtWriteVirtualMemory::new(), // unused
+            nt_free_virtual_memory:     NtFreeVirtualMemory::new(),
+            nt_read_virtual_memory:     NtReadVirtualMemory::new(),
+            nt_write_virtual_memory:    NtWriteVirtualMemory::new(), // unused
 
             // Thread Management functions
-            nt_create_thread: NtCreateThread::new(),
-            nt_create_thread_ex: NtCreateThreadEx::new(),
-            nt_zw_create_thread_ex: ZwCreateThreadEx::new(),
-            nt_resume_thread: NtResumeThread::new(), // unused
+            nt_create_thread:          NtCreateThread::new(),
+            nt_create_thread_ex:       NtCreateThreadEx::new(),
+            nt_zw_create_thread_ex:    ZwCreateThreadEx::new(),
+            nt_resume_thread:          NtResumeThread::new(), // unused
             nt_wait_for_single_object: NtWaitForSingleObject::new(),
-            nt_terminate_thread: NtTerminateThread::new(),
+            nt_terminate_thread:       NtTerminateThread::new(),
 
             // Token Management functions
             nt_query_information_token: NtQueryInformationToken::new(),
             nt_adjust_privileges_token: NtAdjustPrivilegesToken::new(), // unused, untested
-            nt_open_process_token: NtOpenProcessToken::new(),
-            nt_open_process_token_ex: NtOpenProcessTokenEx::new(),
+            nt_open_process_token:      NtOpenProcessToken::new(),
+            nt_open_process_token_ex:   NtOpenProcessTokenEx::new(),
 
-            nt_close: NtClose::new(),
+            nt_close:                    NtClose::new(),
             nt_query_system_information: NtQuerySystemInformation::new(),
-            nt_delay_execution: NtDelayExecution::new(),
-            nt_create_named_pipe_file: NtCreateNamedPipeFile::new(), // untested
+            nt_delay_execution:          NtDelayExecution::new(),
+            nt_create_named_pipe_file:   NtCreateNamedPipeFile::new(), // untested
         }
     }
 }

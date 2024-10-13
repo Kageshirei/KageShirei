@@ -49,7 +49,7 @@ use crate::{
 #[derive(Deserialize, Debug)]
 struct TerminalCommand {
     /// The raw command written in the terminal emulator
-    command: String,
+    command:    String,
     /// The terminal session ID, if any. This is used to identify the terminal session (aka agent id). If empty the
     /// "global" terminal session is used.
     session_id: Option<String>,
@@ -61,9 +61,9 @@ struct TerminalCommandResponse {
     /// "global" terminal session is used.
     session_id: Option<String>,
     /// The raw command written in the terminal emulator
-    command: String,
+    command:    String,
     /// The response from the terminal emulator
-    response: String,
+    response:   String,
 }
 
 /// Update the command state in the database
@@ -182,7 +182,8 @@ async fn post_handler(
 
     let hostname = if session_id == "global" {
         "RS2".to_string()
-    } else {
+    }
+    else {
         let mut connection = state.db_pool.get().await.unwrap();
         agents::table
             .select((agents::hostname))
@@ -217,15 +218,15 @@ async fn post_handler(
     // Handle the command
     let response = cmd
         .handle_command(Arc::new(HandleArguments {
-            session: HandleArgumentsSession {
+            session:          HandleArgumentsSession {
                 session_id: session_id.clone(),
                 hostname,
             },
-            user: HandleArgumentsUser {
+            user:             HandleArgumentsUser {
                 user_id: jwt_claims.sub,
                 username,
             },
-            db_pool: state.db_pool.clone(),
+            db_pool:          state.db_pool.clone(),
             broadcast_sender: state.broadcast_sender.clone(),
         }))
         .await;

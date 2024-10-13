@@ -308,33 +308,33 @@ impl WinHttp {
 #[derive(Copy, Clone, Debug)]
 pub enum WinHttpError {
     /// The requested operation requires a connection to the server.
-    ErrorWinhttpCannotConnect = 12029,
+    ErrorWinhttpCannotConnect        = 12029,
     /// The connection with the server has been reset or terminated, or an incompatible SSL protocol was encountered.
-    ErrorWinhttpConnectionError = 12030,
+    ErrorWinhttpConnectionError      = 12030,
     /// The data being supplied is of wrong type.
     ErrorWinhttpIncorrectHandleState = 12019,
     /// The request handle is invalid.
-    ErrorWinhttpIncorrectHandleType = 12018,
+    ErrorWinhttpIncorrectHandleType  = 12018,
     /// The application made a request for a resource that the server could not understand.
-    ErrorWinhttpInternalError = 12004,
+    ErrorWinhttpInternalError        = 12004,
     /// An invalid option value was specified.
-    ErrorWinhttpInvalidOption = 12009,
+    ErrorWinhttpInvalidOption        = 12009,
     /// The specified option is not supported.
-    ErrorWinhttpOptionNotSettable = 12011,
+    ErrorWinhttpOptionNotSettable    = 12011,
     /// The application requested an operation that is not allowed when the current operation is asynchronous.
-    ErrorWinhttpShutdown = 12012,
+    ErrorWinhttpShutdown             = 12012,
     /// The operation timed out.
-    ErrorWinhttpTimeout = 12002,
+    ErrorWinhttpTimeout              = 12002,
     /// The URL is invalid.
-    ErrorWinhttpUnrecognizedScheme = 12006,
+    ErrorWinhttpUnrecognizedScheme   = 12006,
     /// The connection was aborted.
-    ErrorWinhttpOperationCancelled = 12017,
+    ErrorWinhttpOperationCancelled   = 12017,
     /// The SSL certificate is invalid.
-    ErrorWinhttpSecureFailure = 12175,
+    ErrorWinhttpSecureFailure        = 12175,
     /// The SSL certificate is invalid or could not be validated.
-    ErrorWinhttpSecureInvalidCert = 12169,
+    ErrorWinhttpSecureInvalidCert    = 12169,
     /// An unknown error occurred.
-    ErrorWinhttpUnknownError = -1,
+    ErrorWinhttpUnknownError         = -1,
 }
 
 impl WinHttpError {

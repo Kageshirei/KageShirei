@@ -47,12 +47,12 @@ type Result<T> = std::result::Result<T, Box<dyn Error>>;
 #[derive(Debug)]
 struct MappedFunction {
     address: usize,
-    name: String,
+    name:    String,
 }
 
 struct MappedFunctions {
     list: [MappedFunction; 512], // Defines the limit of mapped functions, in this case a hard-coded 512.
-    len: usize,
+    len:  usize,
 }
 
 /// MappedFunctions is a struct that contains a list of mapped functions and the length of the list.
@@ -100,7 +100,7 @@ impl Drop for MappedFunctions {
 /// CoffLoader is a struct that contains a slice of bytes representing a COFF file and a parsed COFF file.
 pub struct Coffee<'a> {
     coff_buffer: &'a [u8],
-    coff: Coff<'a>,
+    coff:        Coff<'a>,
 }
 
 /// Static variable that contains the mapped functions.
@@ -137,7 +137,8 @@ impl<'a> Coffee<'a> {
         // Check if COFF is running on the current architecture
         if self.is_x86()? && cfg!(target_arch = "x86_64") {
             panic!("Cannot run x86 COFF on x86_64 architecture");
-        } else if self.is_x64()? && cfg!(target_arch = "x86") {
+        }
+        else if self.is_x64()? && cfg!(target_arch = "x86") {
             panic!("Cannot run x64 COFF on i686 architecture");
         }
 
@@ -153,7 +154,8 @@ impl<'a> Coffee<'a> {
         // Clone output data before resetting
         let out_data: String = if output_data.len() > 0 {
             output_data.flush()
-        } else {
+        }
+        else {
             String::new()
         };
 
@@ -258,7 +260,8 @@ impl<'a> Coffee<'a> {
 
                 symbol_address = procedure_address.unwrap() as usize;
             }
-        } else {
+        }
+        else {
             // This is an internal symbol
             if INTERNAL_FUNCTION_NAMES.contains(&polished_import_name.unwrap()) {
                 info!(
@@ -268,14 +271,15 @@ impl<'a> Coffee<'a> {
                 let internal_func_address = get_function_ptr(polished_import_name.unwrap()).unwrap();
 
                 symbol_address = internal_func_address;
-            } else {
+            }
+            else {
                 warn!("Unknown internal symbol: {}", polished_import_name.unwrap());
             }
         }
 
         let mapped_func_entry = MappedFunction {
             address: symbol_address,
-            name: polished_import_name.unwrap().to_string(),
+            name:    polished_import_name.unwrap().to_string(),
         };
 
         if unsafe { FUNCTION_MAPPING.is_none() } {
@@ -308,7 +312,7 @@ impl<'a> Coffee<'a> {
         );
 
         // Handle the allocation and copying of the sections we're going to use
-        for idx in 0..self.coff.header.number_of_sections {
+        for idx in 0 .. self.coff.header.number_of_sections {
             let section = &self.coff.sections[idx as usize];
             let section_size = section.size_of_raw_data as usize;
 
@@ -352,7 +356,8 @@ impl<'a> Coffee<'a> {
                         section_size,
                     );
                 }
-            } else {
+            }
+            else {
                 debug!(
                     "Skipping copy for section: {}, base: {:#x}, size: {:#x}",
                     section.name()?,
@@ -396,7 +401,8 @@ impl<'a> Coffee<'a> {
                                 );
 
                                 continue;
-                            } else if symbol.section_number == 0 {
+                            }
+                            else if symbol.section_number == 0 {
                                 import_address_ptr = self.get_import_from_symbol(symbol)?;
                                 debug!(
                                     "Symbol import address ptr: 0x{:X}",
@@ -409,7 +415,8 @@ impl<'a> Coffee<'a> {
                             let target_section_base = {
                                 if import_address_ptr == 0 {
                                     unsafe { SECTION_MAPPING[(symbol.section_number as usize) - 1] }
-                                } else {
+                                }
+                                else {
                                     0
                                 }
                             };
@@ -438,7 +445,8 @@ impl<'a> Coffee<'a> {
                                                             as usize
                                                     } +
                                                     symbol.value as usize
-                                            } else {
+                                            }
+                                            else {
                                                 import_address_ptr
                                             }
                                         };
@@ -470,7 +478,8 @@ impl<'a> Coffee<'a> {
                                                             as usize
                                                     } +
                                                     symbol.value as usize
-                                            } else {
+                                            }
+                                            else {
                                                 import_address_ptr
                                             }
                                         };
@@ -499,7 +508,8 @@ impl<'a> Coffee<'a> {
                                                 ((target_section_base as isize) + offset as isize)
                                                     .checked_sub((relocation_overwrite_address as isize) + 4)
                                                     .unwrap()
-                                            } else {
+                                            }
+                                            else {
                                                 (import_address_ptr as isize)
                                                     .checked_sub((relocation_overwrite_address as isize) + 4)
                                                     .unwrap()
@@ -539,7 +549,8 @@ impl<'a> Coffee<'a> {
                                                     symbol.value as usize as isize)
                                                     .checked_sub((relocation_overwrite_address as isize) + 4)
                                                     .unwrap()
-                                            } else {
+                                            }
+                                            else {
                                                 (import_address_ptr as isize)
                                                     .checked_sub((relocation_overwrite_address as isize) + 4)
                                                     .unwrap()
@@ -570,7 +581,8 @@ impl<'a> Coffee<'a> {
                                         panic!("Unsupported relocation type: {:#?}", relocation.typ);
                                     },
                                 }
-                            } else if self.is_x86()? {
+                            }
+                            else if self.is_x86()? {
                                 match relocation.typ {
                                     // The target's 32-bit VA.
                                     IMAGE_REL_I386_DIR32 => {
@@ -584,7 +596,8 @@ impl<'a> Coffee<'a> {
                                                             as usize
                                                     } +
                                                     symbol.value as usize
-                                            } else {
+                                            }
+                                            else {
                                                 import_address_ptr
                                             }
                                         };
@@ -623,7 +636,8 @@ impl<'a> Coffee<'a> {
                                                     symbol.value as usize as isize)
                                                     .checked_sub((relocation_overwrite_address as isize) + 4)
                                                     .unwrap()
-                                            } else {
+                                            }
+                                            else {
                                                 (import_address_ptr as isize)
                                                     .checked_sub((relocation_overwrite_address as isize) + 4)
                                                     .unwrap()
@@ -721,7 +735,8 @@ impl<'a> Coffee<'a> {
 
             let entry_name: String = if entrypoint_name.is_some() {
                 entrypoint_name.as_ref().unwrap().to_string()
-            } else {
+            }
+            else {
                 "go".to_string()
             };
 

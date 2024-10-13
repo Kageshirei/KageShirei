@@ -23,5 +23,5 @@ pub trait Sender {
     ///
     /// A result indicating success or failure with the response data.
     fn send(&mut self, data: Bytes, metadata: Arc<Metadata>)
-            -> impl std::future::Future<Output = Result<Bytes>> + Send;
+        -> impl std::future::Future<Output = Result<Bytes>> + Send;
 }

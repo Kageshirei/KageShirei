@@ -230,7 +230,8 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
     unsafe {
         let addr = if addr == "localhost" {
             "127.0.0.1"
-        } else {
+        }
+        else {
             addr
         };
 
@@ -294,11 +295,13 @@ pub fn receive_response(sock: SOCKET) -> Result<String, String> {
                     "Receive response failed with error code: {}",
                     error_code
                 ));
-            } else if bytes_received == 0 {
+            }
+            else if bytes_received == 0 {
                 break;
-            } else {
+            }
+            else {
                 response.push_str(&String::from_utf8_lossy(
-                    &buffer[..bytes_received as usize],
+                    &buffer[.. bytes_received as usize],
                 ));
             }
         }

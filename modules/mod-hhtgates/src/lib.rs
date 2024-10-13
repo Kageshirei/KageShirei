@@ -41,7 +41,7 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
 
     // Halo's Gate Patch
     if address.read() == 0xe9 {
-        for idx in 1..500 {
+        for idx in 1 .. 500 {
             // if hooked check the neighborhood to find clean syscall (downwards)
             if address.add(idx * DOWN).read() == 0x4c &&
                 address.add(1 + idx * DOWN).read() == 0x8b &&
@@ -76,7 +76,7 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
 
     // Tartarus' Gate Patch
     if address.add(3).read() == 0xe9 {
-        for idx in 1..500 {
+        for idx in 1 .. 500 {
             if address.add(idx * DOWN).read() == 0x4c &&
                 address.add(1 + idx * DOWN).read() == 0x8b &&
                 address.add(2 + idx * DOWN).read() == 0xd1 &&

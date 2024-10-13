@@ -42,8 +42,8 @@ pub unsafe fn initialize() {
         let alloc_syscall_address = ldr_function_addr(ntdll_address, NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2);
         let alloc_syscall = NtSyscall {
             address: alloc_syscall_address,
-            number: get_syscall_number(alloc_syscall_address),
-            hash: NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2,
+            number:  get_syscall_number(alloc_syscall_address),
+            hash:    NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2,
         };
 
         *NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(alloc_syscall);
@@ -52,8 +52,8 @@ pub unsafe fn initialize() {
         let free_syscall_address = ldr_function_addr(ntdll_address, NT_FREE_VIRTUAL_MEMORY_DBJ2);
         let free_syscall = NtSyscall {
             address: free_syscall_address,
-            number: get_syscall_number(free_syscall_address),
-            hash: NT_FREE_VIRTUAL_MEMORY_DBJ2,
+            number:  get_syscall_number(free_syscall_address),
+            hash:    NT_FREE_VIRTUAL_MEMORY_DBJ2,
         };
 
         *NT_FREE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(free_syscall);

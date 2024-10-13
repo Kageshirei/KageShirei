@@ -330,7 +330,8 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i16 {
 
         instance().ntdll.nt_close.run(token_handle);
         return rid as i16;
-    } else {
+    }
+    else {
         libc_println!("[!] NtQueryInformationToken failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(token_handle);
         return -1;
@@ -426,7 +427,8 @@ pub unsafe fn nt_create_user_process(
         attribute_list.attributes[1].attribute = PS_ATTRIBUTE_PARENT_PROCESS; // Attribute for parent process
         attribute_list.attributes[1].size = mem::size_of::<HANDLE>();
         attribute_list.attributes[1].value.value = h_parent_process as usize;
-    } else {
+    }
+    else {
         attribute_list.attributes[1].attribute = PS_ATTRIBUTE_PARENT_PROCESS; // Attribute for parent process
         attribute_list.attributes[1].size = mem::size_of::<HANDLE>();
         attribute_list.attributes[1].value.value = nt_current_process() as usize;
@@ -440,11 +442,11 @@ pub unsafe fn nt_create_user_process(
 
     // Initialize the PS_CREATE_INFO structure, which contains process creation information
     let mut ps_create_info = PsCreateInfo {
-        size: mem::size_of::<PsCreateInfo>(),
-        state: PsCreateState::PsCreateInitialState,
+        size:        mem::size_of::<PsCreateInfo>(),
+        state:       PsCreateState::PsCreateInitialState,
         union_state: PsCreateInfoUnion {
             init_state: PsCreateInitialState {
-                init_flags: PsCreateInitialFlags::default(),
+                init_flags:             PsCreateInitialFlags::default(),
                 additional_file_access: 0,
             },
         },
@@ -656,10 +658,12 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
             if status == STATUS_END_OF_FILE || io_status_block.information == 0 {
                 // End of file or no more data is available, break the loop
                 break;
-            } else if status == STATUS_PENDING {
+            }
+            else if status == STATUS_PENDING {
                 // If operation is pending, continue waiting for data
                 continue;
-            } else {
+            }
+            else {
                 // Some other error occurred, so break the loop
                 return false;
             }
@@ -674,7 +678,7 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
         }
 
         // Append the data from the local buffer to the provided buffer
-        buffer.extend_from_slice(&local_buffer[..bytes_read as usize]);
+        buffer.extend_from_slice(&local_buffer[.. bytes_read as usize]);
 
         // Mark that we have successfully read some data
         has_data = true;
@@ -735,9 +739,9 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
 
     // Define security attributes to allow handle inheritance.
     let mut lp_pipe_attributes = SecurityAttributes {
-        n_length: mem::size_of::<SecurityAttributes>() as u32, // Size of the structure.
+        n_length:               mem::size_of::<SecurityAttributes>() as u32, // Size of the structure.
         lp_security_descriptor: null_mut(),                                  // No specific security descriptor.
-        b_inherit_handle: true,                                        // Allow handle inheritance.
+        b_inherit_handle:       true,                                        // Allow handle inheritance.
     };
 
     unsafe {
@@ -960,7 +964,8 @@ pub extern "system" fn my_thread_start_routine(param: *mut c_void) -> c_ulong {
         unsafe {
             libc_println!("Thread running with param: {}", *arg);
         }
-    } else {
+    }
+    else {
         libc_println!("Thread running with no param");
     }
     0
@@ -1019,7 +1024,8 @@ mod tests {
             if !handle.is_null() {
                 libc_println!("Handle obtained: {:?}", handle);
                 instance().ntdll.nt_close.run(handle);
-            } else {
+            }
+            else {
                 libc_println!("Process not found.");
             }
         }
@@ -1052,7 +1058,8 @@ mod tests {
                 );
 
                 instance().ntdll.nt_terminate_process.run(h_process, 0);
-            } else {
+            }
+            else {
                 libc_println!("Failed to create process: {}", NT_STATUS(status));
             }
         }
@@ -1073,7 +1080,8 @@ mod tests {
             if h_parent_process_handle.is_null() {
                 libc_println!("[!] GetProcHandle Failed");
                 return;
-            } else {
+            }
+            else {
                 libc_println!("[!] Parent Process Handle: {:p}", h_parent_process_handle);
             }
 
@@ -1094,7 +1102,8 @@ mod tests {
                 );
 
                 // instance().ntdll.nt_terminate_process.run(h_process, 0);
-            } else {
+            }
+            else {
                 libc_println!("Failed to create process: {:?}", NT_STATUS(status));
             }
         }
@@ -1136,7 +1145,8 @@ mod tests {
                             (*current).unique_process_id as u32,
                             unicodestring_to_string(&(*current).image_name).unwrap()
                         );
-                    } else {
+                    }
+                    else {
                         libc_println!(
                             "PID: {} - Name: <unknown>",
                             (*current).unique_process_id as u32
@@ -1150,7 +1160,8 @@ mod tests {
                     current = (current as *const u8).add((*current).next_entry_offset as usize)
                         as *mut SystemProcessInformation;
                 }
-            } else {
+            }
+            else {
                 libc_println!(
                     "Failed to retrieve process snapshot: Status[{}]",
                     NT_STATUS(status),

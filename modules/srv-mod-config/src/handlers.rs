@@ -8,9 +8,9 @@ use crate::{api_server::TlsConfig, validators};
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct HandlerConfig {
     /// Whether the handler is enabled
-    pub enabled: bool,
+    pub enabled:   bool,
     /// The type of handler
-    pub r#type: HandlerType,
+    pub r#type:    HandlerType,
     /// The protocols supported by the handler
     pub protocols: Vec<Protocol>,
     /// The port to listen on
@@ -18,17 +18,17 @@ pub struct HandlerConfig {
         range(min = 1, max = 65535),
         custom(function = "validators::validate_port")
     )]
-    pub port: u16,
+    pub port:      u16,
     /// The address to bind to
     #[validate(regex(
 		path = * validators::IP_V4_REGEX, message = "Host must be a valid IPv4 address or localhost, ':params.value' provided"
 	))]
-    pub host: String,
+    pub host:      String,
     /// TLS configuration
     #[validate(nested)]
-    pub tls: Option<TlsConfig>,
+    pub tls:       Option<TlsConfig>,
     #[validate(nested)]
-    pub security: HandlerSecurityConfig,
+    pub security:  HandlerSecurityConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
@@ -50,8 +50,8 @@ pub enum Protocol {
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct HandlerSecurityConfig {
     pub encryption_scheme: EncryptionScheme,
-    pub algorithm: Option<EncryptionAlgorithm>,
-    pub encoder: Option<Encoder>,
+    pub algorithm:         Option<EncryptionAlgorithm>,
+    pub encoder:           Option<Encoder>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]

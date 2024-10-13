@@ -131,7 +131,8 @@ fn is_leap_year(year: i64) -> bool { (year % 4 == 0 && year % 100 != 0) || (year
 fn days_in_year(year: i64) -> i64 {
     if is_leap_year(year) {
         366
-    } else {
+    }
+    else {
         365
     }
 }
@@ -143,7 +144,8 @@ fn days_in_month(year: i64, month: usize) -> i64 {
         1 => {
             if is_leap_year(year) {
                 29
-            } else {
+            }
+            else {
                 28
             }
         }, // February

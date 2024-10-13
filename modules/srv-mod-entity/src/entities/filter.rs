@@ -13,17 +13,17 @@ use crate::{
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
-    pub id: String,
-    pub agent_profile_id: String,
-    pub agent_field: AgentField,
-    pub filter_op: FilterOperation,
-    pub value: Json,
-    pub sequence: i32,
+    pub id:                String,
+    pub agent_profile_id:  String,
+    pub agent_field:       AgentField,
+    pub filter_op:         FilterOperation,
+    pub value:             Json,
+    pub sequence:          i32,
     pub next_hop_relation: Option<LogicalOperator>,
-    pub grouping_start: bool,
-    pub grouping_end: bool,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub grouping_start:    bool,
+    pub grouping_end:      bool,
+    pub created_at:        DateTime,
+    pub updated_at:        DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -53,8 +53,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
-                                                         where
-                                                             C: ConnectionTrait,
+    where
+        C: ConnectionTrait,
     {
         // Clone the model to avoid moving it
         let mut model = self;

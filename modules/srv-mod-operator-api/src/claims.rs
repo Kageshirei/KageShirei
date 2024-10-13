@@ -43,8 +43,8 @@ impl JwtClaims {
 
 #[async_trait]
 impl<S> FromRequestParts<S> for JwtClaims
-    where
-        S: Send + Sync,
+where
+    S: Send + Sync,
 {
     type Rejection = ApiServerError;
 
@@ -74,7 +74,7 @@ impl<S> FromRequestParts<S> for JwtClaims
             &API_SERVER_JWT_KEYS.get().unwrap().decoding,
             &validation,
         )
-            .map_err(|_| ApiServerError::InvalidToken)?;
+        .map_err(|_| ApiServerError::InvalidToken)?;
 
         Ok(token_data.claims)
     }

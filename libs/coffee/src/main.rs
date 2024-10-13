@@ -39,9 +39,9 @@ fn unhexilify_args(value: &str) -> Result<Vec<u8>> {
         panic!("Invalid argument hexadecimal string");
     }
 
-    let bytes: Result<Vec<u8>, _> = (0..value.len())
+    let bytes: Result<Vec<u8>, _> = (0 .. value.len())
         .step_by(2)
-        .map(|i| u8::from_str_radix(&value[i..i + 2], 16))
+        .map(|i| u8::from_str_radix(&value[i .. i + 2], 16))
         .collect();
 
     Ok(bytes?)
@@ -66,14 +66,16 @@ fn hexlify_args(args: Vec<String>) -> Result<String> {
             "int" => {
                 if let Ok(int_value) = argument_value.parse::<i32>() {
                     beacon_pack.add_int(int_value);
-                } else {
+                }
+                else {
                     panic!("Invalid integer value");
                 }
             },
             "short" => {
                 if let Ok(short_value) = argument_value.parse::<i16>() {
                     beacon_pack.add_short(short_value);
-                } else {
+                }
+                else {
                     panic!("Invalid short value");
                 }
             },

@@ -244,7 +244,7 @@ pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *
     let ordinals = core::slice::from_raw_parts(array_of_ordinals, number_of_functions as _);
 
     // Iterate over the names to find the function with the matching hash
-    for i in 0..number_of_functions {
+    for i in 0 .. number_of_functions {
         // Get the address of the current export name
         let name_addr = module_base.offset(names[i as usize] as isize) as *const i8;
         // Get the length of the C string

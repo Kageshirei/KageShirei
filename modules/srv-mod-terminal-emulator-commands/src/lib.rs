@@ -21,8 +21,8 @@ pub enum Command {
 
 impl Serialize for Command {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-                    where
-                        S: Serializer,
+    where
+        S: Serializer,
     {
         match self {
             Self::SessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
@@ -46,8 +46,8 @@ macro_rules! make_result_from_cmd {
 impl Command {
     /// Parse the command from the raw string to the specified type
     fn internal_parse<T>(value: &str) -> Result<Box<T>, StyledStr>
-                         where
-                             T: Parser,
+    where
+        T: Parser,
     {
         let parsed_command = shellwords::split(value).unwrap();
         T::try_parse_from(parsed_command)

@@ -120,14 +120,17 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
         if ntstatus == STATUS_OBJECT_NAME_NOT_FOUND {
             // The specified value name was not found
             return Err(STATUS_OBJECT_NAME_NOT_FOUND);
-        } else if ntstatus == STATUS_BUFFER_OVERFLOW || ntstatus == STATUS_BUFFER_TOO_SMALL {
+        }
+        else if ntstatus == STATUS_BUFFER_OVERFLOW || ntstatus == STATUS_BUFFER_TOO_SMALL {
             // The buffer was too small; resize it and retry
             value_info.reserve(value_result_length as usize);
             continue;
-        } else if ntstatus != 0 {
+        }
+        else if ntstatus != 0 {
             // Other errors
             return Err(ntstatus);
-        } else {
+        }
+        else {
             break; // Successfully retrieved the value data
         }
     }
@@ -191,7 +194,8 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
                 // If the first enumeration fails, close the key handle and return the error
                 instance().ntdll.nt_close.run(key_handle);
                 return Err(status);
-            } else {
+            }
+            else {
                 // If there are no more sub-keys, break the loop
                 break;
             }

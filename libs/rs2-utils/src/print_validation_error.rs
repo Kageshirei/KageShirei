@@ -91,33 +91,39 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                     error.params.get("min").unwrap(),
                     if value.is_array() {
                         value.as_array().unwrap().len()
-                    } else {
+                    }
+                    else {
                         value.as_str().unwrap().len()
                     }
                 ));
-            } else if !has_min && has_max {
+            }
+            else if !has_min && has_max {
                 let value = error.params.get("value").unwrap();
                 message.push_str(&format!(
                     "A maximum length of {} is required, {} given",
                     error.params.get("max").unwrap(),
                     if value.is_array() {
                         value.as_array().unwrap().len()
-                    } else {
+                    }
+                    else {
                         value.as_str().unwrap().len()
                     }
                 ));
-            } else if has_equal {
+            }
+            else if has_equal {
                 let value = error.params.get("value").unwrap();
                 message.push_str(&format!(
                     "An exact length of {} is required, {} given",
                     error.params.get("equal").unwrap(),
                     if value.is_array() {
                         value.as_array().unwrap().len()
-                    } else {
+                    }
+                    else {
                         value.as_str().unwrap().len()
                     }
                 ));
-            } else {
+            }
+            else {
                 let value = error.params.get("value").unwrap();
                 message.push_str(&format!(
                     "A length between {} and {} is required, {} given",
@@ -125,7 +131,8 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                     error.params.get("max").unwrap(),
                     if value.is_array() {
                         value.as_array().unwrap().len()
-                    } else {
+                    }
+                    else {
                         value.as_str().unwrap().len()
                     }
                 ));

@@ -41,13 +41,13 @@ mod tests {
         });
 
         // Spawn 100 tasks using the CustomRuntime.
-        for i in 0..100 {
+        for i in 0 .. 100 {
             // Generate metadata for each task
             let metadata = Metadata {
                 request_id: format!("req-{}", i),
                 command_id: format!("cmd-{}", i),
-                agent_id: "agent-1234".to_string(),
-                path: None,
+                agent_id:   "agent-1234".to_string(),
+                path:       None,
             };
 
             let command = if i % 2 == 0 {
@@ -55,7 +55,8 @@ mod tests {
                     op: AgentCommands::INVALID,
                     metadata,
                 }
-            } else {
+            }
+            else {
                 SimpleAgentCommand {
                     op: AgentCommands::Checkin,
                     metadata,

@@ -9,9 +9,9 @@ pub type ApiServerSharedState = Arc<ApiServerState>;
 #[derive(Debug, Clone)]
 pub struct ApiServerState {
     /// The shared configuration
-    pub config: SharedConfig,
+    pub config:           SharedConfig,
     /// The database connection pool
-    pub db_pool: Pool,
+    pub db_pool:          Pool,
     /// The broadcast sender for the API server
     pub broadcast_sender: tokio::sync::broadcast::Sender<SseEvent>,
 }

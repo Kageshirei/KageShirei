@@ -17,24 +17,24 @@ pub struct GlobalSessionTerminalSessionsArguments {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionOpeningRecordUnparsed {
-    pub id: String,
+    pub id:       String,
     pub hostname: String,
-    pub cwd: String,
+    pub cwd:      String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionOpeningRecord {
     pub hostname: String,
-    pub cwd: String,
-    pub args: Vec<String>,
+    pub cwd:      String,
+    pub args:     Vec<String>,
 }
 
 impl From<agent::Model> for SessionOpeningRecord {
     fn from(record: agent::Model) -> Self {
         Self {
             hostname: record.hostname,
-            cwd: record.cwd,
-            args: vec![record.id],
+            cwd:      record.cwd,
+            args:     vec![record.id],
         }
     }
 }
@@ -90,9 +90,9 @@ pub async fn handle(
     // Serialize the result
     Ok(serde_json::to_string(&PostProcessResult {
         r#type: "sessions".to_string(),
-        data: result,
+        data:   result,
     })
-        .map_err(|e| e.to_string())?)
+    .map_err(|e| e.to_string())?)
 }
 
 #[cfg(test)]
@@ -121,15 +121,15 @@ mod tests {
             let mut connection = binding.get().await.unwrap();
 
             let mut agent = CreateAgent::from(Checkin::new(PartialCheckin {
-                operative_system: "Windows".to_string(),
-                hostname: "DESKTOP-PC".to_string(),
-                domain: "WORKGROUP".to_string(),
-                username: "user".to_string(),
-                ip: "10.2.123.45".to_string(),
-                process_id: 1234,
+                operative_system:  "Windows".to_string(),
+                hostname:          "DESKTOP-PC".to_string(),
+                domain:            "WORKGROUP".to_string(),
+                username:          "user".to_string(),
+                ip:                "10.2.123.45".to_string(),
+                process_id:        1234,
                 parent_process_id: 5678,
-                process_name: "agent.exe".to_string(),
-                elevated: false,
+                process_name:      "agent.exe".to_string(),
+                elevated:          false,
             }));
 
             agent.signature = "random-signature-0".to_string();
@@ -142,15 +142,15 @@ mod tests {
                 .unwrap();
 
             let mut agent = CreateAgent::from(Checkin::new(PartialCheckin {
-                operative_system: "Windows".to_string(),
-                hostname: "NICE-DC".to_string(),
-                domain: "NICE-DOMAIN".to_string(),
-                username: "guest".to_string(),
-                ip: "10.2.123.56".to_string(),
-                process_id: 1234,
+                operative_system:  "Windows".to_string(),
+                hostname:          "NICE-DC".to_string(),
+                domain:            "NICE-DOMAIN".to_string(),
+                username:          "guest".to_string(),
+                ip:                "10.2.123.56".to_string(),
+                process_id:        1234,
                 parent_process_id: 5678,
-                process_name: "agent.exe".to_string(),
-                elevated: true,
+                process_name:      "agent.exe".to_string(),
+                elevated:          true,
             }));
 
             agent.signature = "random-signature-1".to_string();

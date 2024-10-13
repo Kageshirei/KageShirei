@@ -100,7 +100,7 @@ impl MigrationTrait for Migration {
             $$ language plpgsql;
             "#,
         )
-          .await?;
+        .await?;
 
         db.execute_unprepared(
             r#"
@@ -111,7 +111,7 @@ impl MigrationTrait for Migration {
             execute function set_terminal_history_sequence_counter();
             "#,
         )
-          .await?;
+        .await?;
 
         Ok(())
     }
@@ -124,14 +124,14 @@ impl MigrationTrait for Migration {
             drop trigger before_insert_terminal_history on terminal_history;
             "#,
         )
-          .await?;
+        .await?;
 
         db.execute_unprepared(
             r#"
             drop function set_terminal_history_sequence_counter;
             "#,
         )
-          .await?;
+        .await?;
 
         manager
             .drop_table(Table::drop().table(TerminalHistory::Table).to_owned())

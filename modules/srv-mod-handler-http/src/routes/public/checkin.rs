@@ -111,16 +111,16 @@ mod tests {
 
     fn make_config() -> HandlerConfig {
         let config = HandlerConfig {
-            enabled: true,
-            r#type: HandlerType::Http,
+            enabled:   true,
+            r#type:    HandlerType::Http,
             protocols: vec![handlers::Protocol::Json],
-            port: 8081,
-            host: "127.0.0.1".to_string(),
-            tls: None,
-            security: HandlerSecurityConfig {
+            port:      8081,
+            host:      "127.0.0.1".to_string(),
+            tls:       None,
+            security:  HandlerSecurityConfig {
                 encryption_scheme: EncryptionScheme::Plain,
-                algorithm: None,
-                encoder: None,
+                algorithm:         None,
+                encoder:           None,
             },
         };
 
@@ -156,22 +156,22 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
         // init the app router
         let app = route(route_state.clone());
 
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -214,22 +214,22 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
         // init the app router
         let app = route(route_state.clone());
 
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -274,22 +274,22 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
         // init the app router
         let app = route(route_state.clone());
 
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -334,22 +334,22 @@ mod tests {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
         // init the app router
         let app = route(route_state.clone());
 
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 

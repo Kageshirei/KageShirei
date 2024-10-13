@@ -23,7 +23,7 @@ use crate::utils::{parse_url, to_pcwstr, ParseUrlResult};
 /// The WinHttpClient struct is responsible for managing WinHTTP session and connection handles.
 pub struct WinHttpClient {
     /// Atomic pointer to the WinHTTP session handle.
-    pub session_handle: AtomicPtr<c_void>,
+    pub session_handle:    AtomicPtr<c_void>,
     /// Atomic pointer to the WinHTTP connection handle.
     pub connection_handle: AtomicPtr<c_void>,
 }
@@ -34,7 +34,7 @@ impl WinHttpClient {
     /// Initializes the session and connection handles to null.
     pub fn new() -> Self {
         Self {
-            session_handle: AtomicPtr::new(null_mut()),
+            session_handle:    AtomicPtr::new(null_mut()),
             connection_handle: AtomicPtr::new(null_mut()),
         }
     }
@@ -133,7 +133,7 @@ impl WinHttpClient {
                 break;
             }
             // Append the read data to the response body.
-            response_body.put_slice(&buffer[..bytes_read as usize]);
+            response_body.put_slice(&buffer[.. bytes_read as usize]);
         }
 
         // Return the complete response body as a `Bytes` object.
@@ -158,7 +158,8 @@ impl WinHttpClient {
         // Determine if the connection should use a secure flag based on the scheme.
         let secure_flag = if parsed_url_result.scheme == 0x02 {
             WINHTTP_FLAG_SECURE
-        } else {
+        }
+        else {
             0
         };
 

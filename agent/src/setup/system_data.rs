@@ -34,7 +34,8 @@ pub fn initialize_system_data() {
             hostname = String::from_utf16_lossy(&buffer)
                 .trim_end_matches('\0')
                 .to_string();
-        } else {
+        }
+        else {
             libc_println!("[!] get_computer_name_ex failed");
         }
 
@@ -86,8 +87,8 @@ pub fn initialize_system_data() {
         let metadata = Metadata {
             request_id: generate_request_id(32),
             command_id: generate_request_id(32),
-            agent_id: generate_request_id(32),
-            path: None,
+            agent_id:   generate_request_id(32),
+            path:       None,
         };
 
         checkin.with_metadata(metadata);

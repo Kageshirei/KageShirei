@@ -128,7 +128,8 @@ impl NoStdThread {
         // Return Ok(()) if the wait was successful, or the error code otherwise.
         if status == 0 {
             Ok(())
-        } else {
+        }
+        else {
             Err(status)
         }
     }

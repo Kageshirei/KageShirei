@@ -54,7 +54,8 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
             if index == 0 {
                 instance().ntdll.nt_close.run(key_handle);
                 return Err(status);
-            } else {
+            }
+            else {
                 break;
             }
         }
@@ -88,7 +89,8 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
                 ip_address = ip_address_value;
                 dhcp_server = dhcp_server_value;
             }
-        } else if let Ok(ip_address_value) = nt_query_value_key(sub_key_handle, "IPAddress\0") {
+        }
+        else if let Ok(ip_address_value) = nt_query_value_key(sub_key_handle, "IPAddress\0") {
             ip_address = ip_address_value;
         }
 

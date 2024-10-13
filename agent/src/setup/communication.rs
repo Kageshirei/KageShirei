@@ -64,16 +64,19 @@ where
 
                         // If successful, mark the session as connected
                         instance_mut().session.connected = true;
-                    } else {
+                    }
+                    else {
                         libc_eprintln!(
                             "Checkin Response Error: {}",
                             checkin_response.err().unwrap()
                         );
                     }
-                } else {
+                }
+                else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }
-            } else {
+            }
+            else {
                 // Handle error if Checkin data is null (currently commented out)
                 libc_eprintln!("Error: Checkin data is null");
             }
@@ -125,16 +128,19 @@ where
 
                         // If successful, mark the session as connected
                         instance_mut().session.connected = true;
-                    } else {
+                    }
+                    else {
                         libc_eprintln!(
                             "Checkin Response Error: {}",
                             checkin_response.err().unwrap()
                         );
                     }
-                } else {
+                }
+                else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }
-            } else {
+            }
+            else {
                 // Handle error if Checkin data is null (currently commented out)
                 libc_eprintln!("Error: Checkin data is null");
             }

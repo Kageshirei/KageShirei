@@ -7,7 +7,7 @@ use std::{
 #[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,                           // Vector of workers (threads) in the pool.
-    sender: Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
+    sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
 }
 
 /// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and must be `Send` and
@@ -34,7 +34,7 @@ impl ThreadPool {
         let receiver = Arc::new(Mutex::new(receiver)); // Arc and Mutex protect the receiver so it can be safely shared among multiple threads.
 
         let mut workers = Vec::with_capacity(size); // Create a vector with the capacity to hold all workers.
-        for _ in 0..size {
+        for _ in 0 .. size {
             workers.push(Worker::new(Arc::clone(&receiver))); // Create and push each worker to the workers vector.
         }
 

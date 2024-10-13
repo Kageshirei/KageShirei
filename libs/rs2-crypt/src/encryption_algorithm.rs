@@ -62,7 +62,7 @@ pub trait WithKeyDerivation {
     ///
     /// The updated current instance
     fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> Result<&Self>
-                        where
-                            H: OutputSizeUser,
-                            I: HmacImpl<H>;
+    where
+        H: OutputSizeUser,
+        I: HmacImpl<H>;
 }

@@ -25,13 +25,13 @@ where
     /// Initiating a client allows for the creation of keep-alive connections, which can be reused
     /// for multiple requests, reducing the overhead of establishing a new connection for each
     /// request and improving performance.
-    client: Client,
+    client:           Client,
     /// A flag indicating whether the protocol is used for checkin.
     /// This is used to determine whether the checkin endpoint should be appended to the URL.
     /// It's automatically reset to false after each request.
-    is_checkin: bool,
+    is_checkin:       bool,
     /// The base URL for the protocol. This is the URL to which requests are sent.
-    base_url: String,
+    base_url:         String,
     /// The global encryptor used to encrypt and decrypt data.
     /// This is used only if an encryptor is not provided when sending or receiving data.
     /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as fallback;
@@ -73,7 +73,8 @@ where
     fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> {
         encryptor.or(if let Some(encryptor) = self.global_encryptor.clone() {
             Some(encryptor)
-        } else {
+        }
+        else {
             None
         })
     }
@@ -148,7 +149,8 @@ where
         // Decrypt the data if an encryptor is provided.
         let data = if let Some(encryptor) = encryptor {
             encryptor.decrypt(Bytes::from(data), None)?
-        } else {
+        }
+        else {
             data
         };
 
@@ -157,11 +159,11 @@ where
         }
 
         // Check if the magic number is correct.
-        if data[..magic_numbers::JSON.len()] != magic_numbers::JSON {
+        if data[.. magic_numbers::JSON.len()] != magic_numbers::JSON {
             return Err(anyhow::anyhow!("Invalid magic number"));
         }
 
-        serde_json::from_slice(data.get(magic_numbers::JSON.len()..).unwrap()).map_err(|e| e.into())
+        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.into())
     }
 
     async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>
@@ -188,7 +190,8 @@ where
             // Encrypt the data if an encryptor is provided.
             let data = if let Some(encryptor) = encryptor.as_mut() {
                 encryptor.encrypt(data)?
-            } else {
+            }
+            else {
                 data
             };
 
@@ -234,8 +237,8 @@ mod tests {
             Arc::new(Metadata {
                 request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
                 command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-                agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-                path: None,
+                agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
+                path:       None,
             })
         }
     }

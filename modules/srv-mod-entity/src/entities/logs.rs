@@ -10,11 +10,11 @@ use crate::{active_enums::LogLevel, helpers::CUID2};
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
-    pub id: String,
-    pub level: LogLevel,
-    pub title: String,
-    pub message: Option<String>,
-    pub extra: Option<Json>,
+    pub id:         String,
+    pub level:      LogLevel,
+    pub title:      String,
+    pub message:    Option<String>,
+    pub extra:      Option<Json>,
     pub created_at: DateTime,
     pub updated_at: DateTime,
 }
@@ -40,8 +40,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
-                                                         where
-                                                             C: ConnectionTrait,
+    where
+        C: ConnectionTrait,
     {
         // Clone the model to avoid moving it
         let mut model = self;

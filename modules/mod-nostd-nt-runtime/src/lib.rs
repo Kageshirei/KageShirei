@@ -48,13 +48,13 @@ mod tests {
 
         // Spawn 10 tasks using the NoStdNtRuntime.
         // Each task will either execute `task_type_a` or `task_type_b` depending on the loop index.
-        for i in 0..100 {
+        for i in 0 .. 100 {
             // Generate metadata for each task, which includes a unique request ID and command ID.
             let metadata = Metadata {
                 request_id: format!("req-{}", i),
                 command_id: format!("cmd-{}", i),
-                agent_id: "agent-1234".to_string(),
-                path: None,
+                agent_id:   "agent-1234".to_string(),
+                path:       None,
             };
 
             // Based on the index, alternate between two different commands.
@@ -63,7 +63,8 @@ mod tests {
                     op: AgentCommands::INVALID,
                     metadata,
                 }
-            } else {
+            }
+            else {
                 SimpleAgentCommand {
                     op: AgentCommands::Checkin,
                     metadata,

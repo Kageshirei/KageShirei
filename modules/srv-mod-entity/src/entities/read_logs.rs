@@ -8,7 +8,7 @@ use crate::helpers::CUID2;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "read_logs")]
 pub struct Model {
-    pub log_id: String,
+    pub log_id:  String,
     pub read_by: String,
     pub read_at: DateTime,
 }

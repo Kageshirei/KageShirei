@@ -52,22 +52,22 @@ pub type CreateProcessW = unsafe extern "system" fn(
 pub type GetConsoleWindow = unsafe extern "system" fn() -> *mut c_void;
 
 pub struct Kernel32 {
-    pub module_base: *mut u8,
-    pub create_pipe: CreatePipe,
-    pub write_file: WriteFile,
-    pub read_file: ReadFile,
-    pub create_process_w: CreateProcessW,
+    pub module_base:        *mut u8,
+    pub create_pipe:        CreatePipe,
+    pub write_file:         WriteFile,
+    pub read_file:          ReadFile,
+    pub create_process_w:   CreateProcessW,
     pub get_console_window: GetConsoleWindow,
 }
 
 impl Kernel32 {
     pub fn new() -> Self {
         Kernel32 {
-            module_base: null_mut(),
-            create_pipe: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            write_file: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            read_file: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            create_process_w: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            module_base:        null_mut(),
+            create_pipe:        unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            write_file:         unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            read_file:          unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            create_process_w:   unsafe { core::mem::transmute(null_mut::<c_void>()) },
             get_console_window: unsafe { core::mem::transmute(null_mut::<c_void>()) },
         }
     }

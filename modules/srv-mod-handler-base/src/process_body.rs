@@ -43,7 +43,7 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
 /// Match the magic numbers of the body to the appropriate protocol
 #[instrument(skip_all)]
 fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
-    if body.len() >= magic_numbers::JSON.len() && body[..magic_numbers::JSON.len()] == magic_numbers::JSON {
+    if body.len() >= magic_numbers::JSON.len() && body[.. magic_numbers::JSON.len()] == magic_numbers::JSON {
         return Ok(handlers::Protocol::Json);
     }
 
@@ -60,8 +60,8 @@ async fn handle_command<P>(
     headers: HeaderMap,
     cmd_request_id: String,
 ) -> Result<Bytes>
-  where
-      P: Protocol<IdentEncryptor>,
+where
+    P: Protocol<IdentEncryptor>,
 {
     // TODO: Implement the command handling
     match AgentCommands::from(basic_response.metadata.command_id) {
@@ -173,16 +173,16 @@ mod test {
 
     fn make_config() -> HandlerConfig {
         let config = HandlerConfig {
-            enabled: true,
-            r#type: HandlerType::Http,
+            enabled:   true,
+            r#type:    HandlerType::Http,
             protocols: vec![handlers::Protocol::Json],
-            port: 8081,
-            host: "127.0.0.1".to_string(),
-            tls: None,
-            security: HandlerSecurityConfig {
+            port:      8081,
+            host:      "127.0.0.1".to_string(),
+            tls:       None,
+            security:  HandlerSecurityConfig {
                 encryption_scheme: EncryptionScheme::Plain,
-                algorithm: None,
-                encoder: None,
+                algorithm:         None,
+                encoder:           None,
             },
         };
 
@@ -240,15 +240,15 @@ mod test {
     #[test]
     fn test_process_json() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -270,15 +270,15 @@ mod test {
     #[serial]
     async fn test_persist() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
 
         let shared_config = make_config();
@@ -289,7 +289,7 @@ mod test {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
@@ -319,15 +319,15 @@ mod test {
     #[serial]
     async fn test_process_body() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -347,7 +347,7 @@ mod test {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
@@ -364,15 +364,15 @@ mod test {
     #[serial]
     async fn test_process_body_with_invalid_magic_numbers() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -389,7 +389,7 @@ mod test {
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 

@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "server", derive(Debug, FromJsonQueryResult))]
 pub struct NetworkInterface {
     /// The name of the network interface
-    pub name: Option<String>,
+    pub name:        Option<String>,
     /// The IP address of the network interface
-    pub address: Option<String>,
+    pub address:     Option<String>,
     /// The DHCP server of the network interface
     pub dhcp_server: Option<String>,
 }
@@ -42,8 +42,8 @@ impl NetworkInterface {
         data.into_iter()
             .map(|(name, address, dhcp_server)| {
                 NetworkInterface {
-                    name: Some(name),
-                    address: Some(address),
+                    name:        Some(name),
+                    address:     Some(address),
                     dhcp_server: Some(dhcp_server),
                 }
             })

@@ -46,7 +46,7 @@ impl MigrationTrait for Migration {
                             Alias::new("log_level"),
                             LogLevelVariants::iter(),
                         )
-                            .not_null(),
+                        .not_null(),
                     )
                     .col(string(Logs::Title).not_null())
                     .col(string_null(Logs::Message))

@@ -8,7 +8,7 @@ pub use tokio_runtime_wrapper::TokioRuntimeWrapper;
 
 // Task structure holds the name of the task and a sender to return the result.
 pub struct Task {
-    name: String,
+    name:     String,
     response: oneshot::Sender<String>,
 }
 
@@ -104,10 +104,11 @@ mod tests {
         });
 
         // Spawn 100 tasks with logic for alternating long and short tasks.
-        for i in 0..100 {
+        for i in 0 .. 100 {
             let task_name = if i % 2 == 0 {
                 "Long Task".to_string()
-            } else {
+            }
+            else {
                 format!("Test Task {}", i)
             };
 

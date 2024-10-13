@@ -73,7 +73,8 @@ pub async fn start(config: SharedConfig, cancellation_token: CancellationToken, 
                         .map(MatchedPath::as_str)
                     {
                         path
-                    } else {
+                    }
+                    else {
                         "None"
                     };
 
@@ -139,12 +140,13 @@ pub async fn start(config: SharedConfig, cancellation_token: CancellationToken, 
             "{}:{}",
             if let Some(tls_host) = tls_config.host {
                 tls_host
-            } else {
+            }
+            else {
                 readonly_config.api_server.host.clone()
             },
             tls_config.port
         ))
-            .await;
+        .await;
 
         let listener = unwrap_listener_or_fail(
             readonly_config.api_server.host.clone(),
@@ -167,7 +169,7 @@ pub async fn start(config: SharedConfig, cancellation_token: CancellationToken, 
         "{}:{}",
         readonly_config.api_server.host, readonly_config.api_server.port
     ))
-        .await;
+    .await;
 
     let listener = unwrap_listener_or_fail(
         readonly_config.api_server.host.clone(),

@@ -14,11 +14,11 @@ pub struct InferBody<T>(pub T);
 
 #[async_trait]
 impl<S, T> FromRequest<S> for InferBody<T>
-    where
-        S: Send + Sync,
-        Json<T>: FromRequest<()>,
-        Form<T>: FromRequest<()>,
-        T: 'static,
+where
+    S: Send + Sync,
+    Json<T>: FromRequest<()>,
+    Form<T>: FromRequest<()>,
+    T: 'static,
 {
     type Rejection = Response;
 

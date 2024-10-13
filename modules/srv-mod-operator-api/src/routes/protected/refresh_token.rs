@@ -46,7 +46,7 @@ async fn post_handler(
         &claims,
         &API_SERVER_JWT_KEYS.get().unwrap().encoding,
     )
-        .map_err(|_| ApiServerError::TokenCreation)?;
+    .map_err(|_| ApiServerError::TokenCreation)?;
 
     info!("User {} refreshed token", user.username);
 

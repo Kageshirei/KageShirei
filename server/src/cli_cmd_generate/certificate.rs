@@ -76,7 +76,7 @@ pub fn make_tls(args: &GenerateCertificateArguments) -> Result<(), String> {
         .unwrap();
 
     let server_cert = rcgen::CertifiedKey {
-        cert: server_cert,
+        cert:     server_cert,
         key_pair: ee_key,
     };
 

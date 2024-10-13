@@ -133,7 +133,7 @@ pub struct Response {
     /// The status code of the HTTP response.
     pub status_code: u32,
     /// The body of the HTTP response as a string.
-    pub body: String,
+    pub body:        String,
 }
 
 /// Reads the response from an HTTP request.
@@ -179,7 +179,7 @@ pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> 
         if b_result == 0 || bytes_read == 0 {
             break;
         }
-        response_body.push_str(&String::from_utf8_lossy(&buffer[..bytes_read as usize]));
+        response_body.push_str(&String::from_utf8_lossy(&buffer[.. bytes_read as usize]));
     }
 
     Ok(Response {
@@ -222,7 +222,8 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
 
         let secure_flag = if parsed_url.scheme == 0x02 {
             WINHTTP_FLAG_SECURE
-        } else {
+        }
+        else {
             0
         };
 
@@ -331,7 +332,8 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
 
         let secure_flag = if parsed_url.scheme == 0x02 {
             WINHTTP_FLAG_SECURE
-        } else {
+        }
+        else {
             0
         };
 

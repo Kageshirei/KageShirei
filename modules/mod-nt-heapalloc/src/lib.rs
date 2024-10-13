@@ -367,7 +367,7 @@ mod tests {
     fn test_vec_allocation() {
         // Test Vec allocation and deallocation
         let mut vec: Vec<i32> = Vec::new();
-        for i in 0..10 {
+        for i in 0 .. 10 {
             vec.push(i);
         }
 

@@ -9,7 +9,7 @@ use spin::Mutex;
 /// (multiple-producer, single-consumer) channel for job distribution among workers.
 pub struct NoStdThreadPool {
     workers: Vec<Worker>,                     // Vector holding the worker threads in the pool.
-    sender: Option<Arc<Mutex<Sender<Job>>>>, // Channel sender used to dispatch jobs to the workers.
+    sender:  Option<Arc<Mutex<Sender<Job>>>>, // Channel sender used to dispatch jobs to the workers.
 }
 
 /// Type alias for a job, which is represented as a boxed closure. The closure takes no arguments,
@@ -37,7 +37,7 @@ impl NoStdThreadPool {
 
         // Create a vector to hold the worker threads, with an initial capacity equal to the pool size.
         let mut workers = Vec::with_capacity(size);
-        for _ in 0..size {
+        for _ in 0 .. size {
             // Create each worker and push it into the vector.
             workers.push(Worker::new(Arc::clone(&receiver)));
         }

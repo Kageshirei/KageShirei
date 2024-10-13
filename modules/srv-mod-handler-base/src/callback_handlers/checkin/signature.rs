@@ -39,15 +39,15 @@ mod test {
     #[test]
     fn test_make_signature() {
         let checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
 
         let signature = make_signature(&checkin);

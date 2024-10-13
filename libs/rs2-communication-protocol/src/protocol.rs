@@ -7,8 +7,8 @@ use crate::{metadata::WithMetadata, sender::Sender};
 
 /// Define the protocol trait responsible for sending and receiving data.
 pub trait Protocol<E>: Sender + Send
-    where
-        E: EncryptionAlgorithm,
+where
+    E: EncryptionAlgorithm,
 {
     /// Receive some data as raw bytes and deserialize it into a type.
     ///
@@ -21,8 +21,8 @@ pub trait Protocol<E>: Sender + Send
     ///
     /// A result containing the deserialized data or an error.
     fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S>
-               where
-                   S: serde::de::DeserializeOwned;
+    where
+        S: serde::de::DeserializeOwned;
 
     /// Serialize some data into raw bytes and send it.
     ///
@@ -36,6 +36,6 @@ pub trait Protocol<E>: Sender + Send
     ///
     /// A result indicating success or failure.
     fn write<D>(&mut self, data: D, encryptor: Option<E>) -> impl std::future::Future<Output = Result<Bytes>> + Send
-                where
-                    D: Serialize + WithMetadata + Send;
+    where
+        D: Serialize + WithMetadata + Send;
 }

@@ -27,13 +27,13 @@ pub fn to_pcwstr(s: &str) -> Vec<u16> {
 /// Represents the result of parsing a URL.
 pub struct ParseUrlResult {
     /// The scheme of the URL (0x01 for HTTP, 0x02 for HTTPS).
-    pub scheme: u16,
+    pub scheme:   u16,
     /// The hostname extracted from the URL.
     pub hostname: String,
     /// The port number extracted from the URL.
-    pub port: u16,
+    pub port:     u16,
     /// The path extracted from the URL.
-    pub path: String,
+    pub path:     String,
 }
 
 impl ParseUrlResult {
@@ -76,9 +76,11 @@ impl ParseUrlResult {
 pub fn parse_url(url: &str) -> ParseUrlResult {
     let (scheme, rest) = if url.starts_with("http://") {
         (0x01, url.trim_start_matches("http://"))
-    } else if url.starts_with("https://") {
+    }
+    else if url.starts_with("https://") {
         (0x02, url.trim_start_matches("https://"))
-    } else {
+    }
+    else {
         (0x01, url)
     };
 
@@ -91,14 +93,16 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
             .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
         let path = parts.next().unwrap_or("");
         (host.to_string(), port, format!("/{}", path))
-    } else if let Some(pos) = rest.find('/') {
+    }
+    else if let Some(pos) = rest.find('/') {
         let (host, path) = rest.split_at(pos);
         (
             host.to_string(),
             if scheme == 0x01 { 80 } else { 443 },
             path.to_string(),
         )
-    } else {
+    }
+    else {
         (
             rest.to_string(),
             if scheme == 0x01 { 80 } else { 443 },
@@ -269,7 +273,7 @@ pub fn ptr_to_str(ptr: *mut u16) -> String {
     }
 
     // Calculate the length of the string by finding the null terminator
-    let len = (0..).take_while(|&i| unsafe { *ptr.add(i) } != 0).count();
+    let len = (0 ..).take_while(|&i| unsafe { *ptr.add(i) } != 0).count();
 
     // Create a slice from the pointer and the calculated length
     let slice = unsafe { core::slice::from_raw_parts(ptr, len) };

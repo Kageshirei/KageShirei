@@ -6,7 +6,7 @@ use validator::Validate;
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct LogConfig {
     /// Configuration for the file logger
-    pub file: FileLogConfig,
+    pub file:    FileLogConfig,
     /// Configuration for the console logger
     pub console: ConsoleLogConfig,
 }
@@ -14,7 +14,7 @@ pub struct LogConfig {
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct FileLogConfig {
     /// The path to the log file
-    pub path: PathBuf,
+    pub path:    PathBuf,
     /// Whether to enable the logger
     pub enabled: bool,
 }
@@ -24,7 +24,7 @@ pub struct ConsoleLogConfig {
     /// Whether to enable the logger
     pub enabled: bool,
     /// The format to use for the log output
-    pub format: ConsoleLogFormat,
+    pub format:  ConsoleLogFormat,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]

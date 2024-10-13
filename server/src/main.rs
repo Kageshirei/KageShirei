@@ -26,8 +26,9 @@ fn setup_logging(debug_level: u8) -> Result<(), String> {
         .format(|out, message, record| {
             let level_padding = if record.level().to_string().len() < 5 {
                 " ".repeat(5 - record.level().to_string().len() + 1)
-                   .to_string()
-            } else {
+                    .to_string()
+            }
+            else {
                 " ".to_string()
             };
 
@@ -44,7 +45,8 @@ fn setup_logging(debug_level: u8) -> Result<(), String> {
                     record.file().unwrap_or(""),
                     record.line().unwrap_or(0)
                 )
-            } else {
+            }
+            else {
                 "".to_string()
             };
 

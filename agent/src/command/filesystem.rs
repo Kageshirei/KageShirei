@@ -116,8 +116,8 @@ mod tests {
         let metadata = Metadata {
             request_id: format!("req-{}", 1),
             command_id: format!("cmd-{}", 1),
-            agent_id: "agent-1234".to_string(),
-            path: None,
+            agent_id:   "agent-1234".to_string(),
+            path:       None,
         };
 
         let result = command_cd(target_directory, metadata.clone());
@@ -190,8 +190,8 @@ mod tests {
         let metadata = Metadata {
             request_id: format!("req-{}", 1),
             command_id: format!("cmd-{}", 1),
-            agent_id: "agent-1234".to_string(),
-            path: None,
+            agent_id:   "agent-1234".to_string(),
+            path:       None,
         };
         let cwd_output = command_pwd(metadata);
 

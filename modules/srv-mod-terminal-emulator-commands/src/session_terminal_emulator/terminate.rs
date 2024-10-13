@@ -38,15 +38,15 @@ pub async fn handle(config: CommandHandlerArguments) -> Result<String, String> {
         ..Default::default()
     };
     agent_command.command = Set(serde_json::to_value(SimpleAgentCommand {
-        op: AgentCommands::Terminate,
+        op:       AgentCommands::Terminate,
         metadata: Metadata {
             request_id: agent_command.id.clone().unwrap(),
             command_id: AgentCommands::Terminate.to_string(),
-            agent_id: config.session.session_id.clone(),
-            path: None,
+            agent_id:   config.session.session_id.clone(),
+            path:       None,
         },
     })
-        .map_err(|e| e.to_string())?);
+    .map_err(|e| e.to_string())?);
 
     let (command_request, log_insertion) = tokio::join!(agent_command.insert(&db), pending_log.insert(&db));
 
@@ -57,9 +57,9 @@ pub async fn handle(config: CommandHandlerArguments) -> Result<String, String> {
     config
         .broadcast_sender
         .send(SseEvent {
-            data: serde_json::to_string(&log).map_err(|e| e.to_string())?,
+            data:  serde_json::to_string(&log).map_err(|e| e.to_string())?,
             event: EventType::Log,
-            id: Some(log.id),
+            id:    Some(log.id),
         })
         .map_err(|e| e.to_string())?;
 

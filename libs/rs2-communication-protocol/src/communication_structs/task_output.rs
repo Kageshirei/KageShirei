@@ -12,22 +12,22 @@ use crate::metadata::{Metadata, WithMetadata};
 /// - exit_code: the task's exit code as an Option<i32>
 /// - metadata: an Arc-wrapped Metadata object, allowing shared ownership and thread safety
 pub struct TaskOutput {
-    pub output: Option<String>,        // Optional task output as a String
+    pub output:     Option<String>,        // Optional task output as a String
     pub started_at: Option<i64>,           // Optional timestamp for when the task started
-    pub ended_at: Option<i64>,           // Optional timestamp for when the task ended
-    pub exit_code: Option<i32>,           // Optional exit code of the task
-    pub metadata: Option<Arc<Metadata>>, // Optional metadata associated with the task
+    pub ended_at:   Option<i64>,           // Optional timestamp for when the task ended
+    pub exit_code:  Option<i32>,           // Optional exit code of the task
+    pub metadata:   Option<Arc<Metadata>>, // Optional metadata associated with the task
 }
 
 impl TaskOutput {
     // Constructor for TaskOutput that initializes all fields to None.
     pub fn new() -> Self {
         TaskOutput {
-            output: None,
+            output:     None,
             started_at: None,
-            ended_at: None,
-            exit_code: None,
-            metadata: None,
+            ended_at:   None,
+            exit_code:  None,
+            metadata:   None,
         }
     }
 

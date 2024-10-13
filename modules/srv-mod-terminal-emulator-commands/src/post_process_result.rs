@@ -9,5 +9,5 @@ where
     /// The type of the data.
     pub r#type: String,
     /// The data to be processed.
-    pub data: T,
+    pub data:   T,
 }

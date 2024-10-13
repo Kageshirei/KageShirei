@@ -9,7 +9,7 @@ pub type HandlerSharedState = Arc<HandlerState>;
 #[derive(Debug, Clone)]
 pub struct HandlerState {
     /// The shared configuration
-    pub config: Arc<HandlerConfig>,
+    pub config:  Arc<HandlerConfig>,
     /// The database connection pool
     pub db_pool: Pool,
 }

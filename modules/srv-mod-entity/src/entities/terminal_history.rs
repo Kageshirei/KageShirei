@@ -10,20 +10,20 @@ use crate::helpers::CUID2;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     #[serde(skip_deserializing)]
-    pub id: String,
-    pub ran_by: String,
+    pub id:               String,
+    pub ran_by:           String,
     #[sea_orm(column_type = "Text")]
-    pub command: String,
-    pub session_id: Option<String>,
-    pub is_global: bool,
+    pub command:          String,
+    pub session_id:       Option<String>,
+    pub is_global:        bool,
     #[sea_orm(column_type = "Text", nullable)]
-    pub output: Option<String>,
-    pub exit_code: Option<i32>,
+    pub output:           Option<String>,
+    pub exit_code:        Option<i32>,
     pub sequence_counter: i64,
-    pub deleted_at: Option<DateTime>,
-    pub restored_at: Option<DateTime>,
-    pub created_at: DateTime,
-    pub updated_at: DateTime,
+    pub deleted_at:       Option<DateTime>,
+    pub restored_at:      Option<DateTime>,
+    pub created_at:       DateTime,
+    pub updated_at:       DateTime,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -65,8 +65,8 @@ impl ActiveModelBehavior for ActiveModel {
     }
 
     async fn before_save<C>(self, _db: &C, insert: bool) -> Result<Self, DbErr>
-                                                         where
-                                                             C: ConnectionTrait,
+    where
+        C: ConnectionTrait,
     {
         // Clone the model to avoid moving it
         let mut model = self;

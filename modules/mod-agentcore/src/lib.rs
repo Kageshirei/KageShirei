@@ -25,32 +25,32 @@ use spin::Mutex;
 /// Represents a session containing connection information.
 pub struct Session {
     /// Indicates if the session is connected.
-    pub connected: bool,
+    pub connected:     bool,
     /// Unique identifier for the session.
-    pub id: String,
+    pub id:            String,
     /// Process ID.
-    pub pid: i64,
+    pub pid:           i64,
     /// Parent Process ID.
-    pub ppid: i64,
+    pub ppid:          i64,
     /// Thread ID.
-    pub tid: i64,
+    pub tid:           i64,
     /// Encryptor
     pub encryptor_ptr: *mut c_void,
     /// Protocol
-    pub protocol_ptr: *mut c_void,
+    pub protocol_ptr:  *mut c_void,
 }
 
 impl Session {
     /// Creates a new, disconnected session with default values.
     pub fn new() -> Self {
         Session {
-            connected: false,
-            id: String::new(),
-            pid: 0,
-            ppid: 0,
-            tid: 0,
+            connected:     false,
+            id:            String::new(),
+            pid:           0,
+            ppid:          0,
+            tid:           0,
             encryptor_ptr: null_mut(),
-            protocol_ptr: null_mut(),
+            protocol_ptr:  null_mut(),
         }
     }
 
@@ -64,26 +64,26 @@ impl Session {
 /// Configuration settings for the instance.
 pub struct Config {
     /// The unique identifier of the agent, required to poll for tasks
-    pub id: String,
+    pub id:               String,
     /// The unix timestamp of the kill date, if any.
-    pub kill_date: Option<i64>,
+    pub kill_date:        Option<i64>,
     /// The working hours for the current day (unix timestamp), if any.
-    pub working_hours: Option<Vec<Option<i64>>>,
+    pub working_hours:    Option<Vec<Option<i64>>>,
     /// The agent polling interval in milliseconds.
     pub polling_interval: i64,
     /// The agent polling jitter in milliseconds.
-    pub polling_jitter: i64,
+    pub polling_jitter:   i64,
 }
 
 impl Config {
     /// Creates a new configuration with default values.
     pub fn new() -> Self {
         Config {
-            id: String::new(),
-            kill_date: None,
+            id:               String::new(),
+            kill_date:        None,
             polling_interval: 0,
-            polling_jitter: 0,
-            working_hours: None,
+            polling_jitter:   0,
+            working_hours:    None,
         }
     }
 }
@@ -91,31 +91,31 @@ impl Config {
 /// Represents the global instance containing configuration and session information.
 pub struct Instance {
     /// Pointer to the Thread Environment Block.
-    pub teb: *mut TEB,
+    pub teb:          *mut TEB,
     /// Kernel User Shared Data.
-    pub kdata: *mut KUserSharedData,
+    pub kdata:        *mut KUserSharedData,
     /// NtDll instance for native API calls.
-    pub ntdll: NtDll,
+    pub ntdll:        NtDll,
     /// Session information.
-    pub session: Session,
+    pub session:      Session,
     /// Configuration settings.
-    pub config: Config,
+    pub config:       Config,
     /// Pointer to Checkin Data
     pub pcheckindata: *mut c_void,
-    pub kernel32: Kernel32,
+    pub kernel32:     Kernel32,
 }
 
 impl Instance {
     /// Creates a new instance with default values.
     pub fn new() -> Self {
         Instance {
-            teb: null_mut(),
-            kdata: null_mut(),
-            ntdll: NtDll::new(),
-            session: Session::new(),
-            config: Config::new(),
+            teb:          null_mut(),
+            kdata:        null_mut(),
+            ntdll:        NtDll::new(),
+            session:      Session::new(),
+            config:       Config::new(),
             pcheckindata: null_mut(),
-            kernel32: Kernel32::new(),
+            kernel32:     Kernel32::new(),
         }
     }
 

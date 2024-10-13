@@ -107,7 +107,8 @@ pub fn command_checkin(metadata: Metadata) -> TaskOutput {
         hostname = String::from_utf16_lossy(&buffer)
             .trim_end_matches('\0') // Remove any trailing null characters.
             .to_string();
-    } else {
+    }
+    else {
         // Log an error if retrieving the computer name fails.
         libc_println!("[!] get_computer_name_ex failed");
     }
@@ -144,16 +145,16 @@ pub fn command_checkin(metadata: Metadata) -> TaskOutput {
     // Create a `Checkin` object with the gathered metadata.
     let mut checkin = unsafe {
         Box::new(Checkin::new(PartialCheckin {
-            operative_system: operating_system,      // OS details.
-            hostname,                                  // Computer hostname.
-            domain: get_user_domain(),     // User's domain name.
-            username: get_username(),        // User's username.
-            network_interfaces,                        // Network adapter IP addresses.
-            process_id: pid as i64,            // Process ID.
-            parent_process_id: ppid as i64,           // Parent Process ID.
-            process_name: get_process_name(),    // Name of the current process.
-            integrity_level: rid,                   // Process integrity level.
-            cwd: get_image_path_name(), // Current working directory.
+            operative_system: operating_system, // OS details.
+            hostname,                           // Computer hostname.
+            domain: get_user_domain(),          // User's domain name.
+            username: get_username(),           // User's username.
+            network_interfaces,                 // Network adapter IP addresses.
+            process_id: pid as i64,             // Process ID.
+            parent_process_id: ppid as i64,     // Parent Process ID.
+            process_name: get_process_name(),   // Name of the current process.
+            integrity_level: rid,               // Process integrity level.
+            cwd: get_image_path_name(),         // Current working directory.
         }))
     };
 
@@ -187,8 +188,8 @@ mod tests {
         let metadata = Metadata {
             request_id: format!("req-{}", 1),
             command_id: format!("cmd-{}", 1),
-            agent_id: "agent-1234".to_string(),
-            path: None,
+            agent_id:   "agent-1234".to_string(),
+            path:       None,
         };
 
         // Test gathering system information and metadata for check-in
