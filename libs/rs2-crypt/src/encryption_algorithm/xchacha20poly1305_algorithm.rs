@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
 use bytes::{BufMut, Bytes, BytesMut};
 use chacha20poly1305::{
     aead::{Aead, Payload},
@@ -41,11 +40,9 @@ impl SymmetricEncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     /// # Returns
     ///
     /// The updated current instance
-    fn set_nonce(&mut self, nonce: Bytes) -> Result<&mut Self> {
+    fn set_nonce(&mut self, nonce: Bytes) -> Result<&mut Self, String> {
         if nonce.len() != 24 {
-            return Err(anyhow::anyhow!(
-                SymmetricEncryptionAlgorithmError::InvalidNonceLength(24, nonce.len())
-            ));
+            return Err(SymmetricEncryptionAlgorithmError::InvalidNonceLength(24, nonce.len()).to_string());
         }
 
         self.nonce = Arc::new(nonce);
@@ -62,11 +59,9 @@ impl SymmetricEncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     /// # Returns
     ///
     /// The updated current instance
-    fn set_key(&mut self, key: Bytes) -> Result<&mut Self> {
+    fn set_key(&mut self, key: Bytes) -> Result<&mut Self, String> {
         if key.len() != 32 {
-            return Err(anyhow::anyhow!(
-                SymmetricEncryptionAlgorithmError::InvalidKeyLength(32, key.len())
-            ));
+            return Err(SymmetricEncryptionAlgorithmError::InvalidKeyLength(32, key.len()).to_string());
         }
 
         self.key = Arc::new(key);
@@ -158,7 +153,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     /// # Returns
     ///
     /// The encrypted data
-    fn encrypt(&mut self, data: Bytes) -> anyhow::Result<Bytes> {
+    fn encrypt(&mut self, data: Bytes) -> Result<Bytes, String> {
         let cipher = XChaCha20Poly1305::new(Key::from_slice(self.key.as_ref()));
 
         self.make_nonce();
@@ -167,7 +162,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
                 XNonce::from_slice(self.nonce.as_ref()),
                 Payload::from(data.as_ref()),
             )
-            .map_err(|e| anyhow::anyhow!(e))?;
+            .map_err(|e| e.to_string())?;
 
         let encrypted_length = encrypted.len();
 
@@ -196,7 +191,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     /// # Returns
     ///
     /// The decrypted data
-    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes> {
+    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes, String> {
         let (data, nonce) = data.split_at(data.len() - 24);
 
         // Check if the key is provided, otherwise use the instance key
@@ -206,7 +201,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
 
         let decrypted = cipher
             .decrypt(XNonce::from_slice(nonce), Payload::from(data))
-            .map_err(|e| anyhow::anyhow!(e))?;
+            .map_err(|e| e.to_string())?;
 
         Ok(Bytes::from(decrypted))
     }
@@ -229,7 +224,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     /// # Returns
     ///
     /// The updated current instance
-    fn make_key(&mut self) -> Result<&mut Self> {
+    fn make_key(&mut self) -> Result<&mut Self, String> {
         let mut rng = rand::thread_rng();
 
         let key = XChaCha20Poly1305::generate_key(&mut rng);
@@ -250,13 +245,13 @@ impl WithKeyDerivation for XChaCha20Poly1305Algorithm {
     /// # Returns
     ///
     /// The updated current instance
-    fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> anyhow::Result<&Self>
+    fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> Result<&Self, String>
     where
         H: OutputSizeUser,
         I: HmacImpl<H>,
     {
         let mut key = [0u8; 32];
-        hkdf.expand(&[], &mut key).map_err(|e| anyhow!(e))?;
+        hkdf.expand(&[], &mut key).map_err(|e| e.to_string())?;
 
         self.key = Arc::new(Bytes::from(key.to_vec()));
 

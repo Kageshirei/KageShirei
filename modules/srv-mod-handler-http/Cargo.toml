@@ -6,17 +6,15 @@ edition = "2021"
 [dependencies]
 srv-mod-operator-api = { path = "../srv-mod-operator-api" }
 srv-mod-config = { path = "../srv-mod-config" }
-srv-mod-database = { path = "../srv-mod-database" }
 rs2-utils = { path = "../../libs/rs2-utils" }
-anyhow = "1.0.86"
-serde = { version = "1.0.203", features = ["derive"] }
+serde = { version = "1.0.210", features = ["derive"] }
 rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
-tracing = "0.1"
-axum = { version = "0.7.5", features = ["http2", "multipart", "macros"] }
-axum-extra = { version = "0.9.3", features = ["typed-header"] }
-axum-server = { version = "0.6.0", features = ["tls-rustls"] }
-tower = { version = "0.4.4" }
-tower-http = { version = "0.5.2", features = [
+tracing = "0.1.40"
+axum = { version = "0.7.7", features = ["http2", "multipart", "macros"] }
+axum-extra = { version = "0.9.4", features = ["typed-header"] }
+axum-server = { version = "0.7.1", features = ["tls-rustls"] }
+tower = { version = "0.5.1" }
+tower-http = { version = "0.6.1", features = [
     "catch-panic",
     "normalize-path",
     "sensitive-headers",
@@ -25,8 +23,8 @@ tower-http = { version = "0.5.2", features = [
     "compression-full",
     "limit"
 ] }
-tokio = { version = "1.0", features = ["full", "tracing", "test-util"] }
-tokio-util = { version = "0.7.11", features = ["full"] }
+tokio = { version = "1.40.0", features = ["full", "tracing", "test-util"] }
+tokio-util = { version = "0.7.12", features = ["full"] }
 mod-protocol-json = { path = "../mod-protocol-json" }
 rs2-crypt = { path = "../../libs/rs2-crypt", features = [
     "sha3",
@@ -35,9 +33,11 @@ rs2-crypt = { path = "../../libs/rs2-crypt", features = [
     "base64-encoding",
     "asymmetric-encryption",
 ] }
-bytes = "1.6.0"
+bytes = "1.7.2"
 srv-mod-handler-base = { path = "../srv-mod-handler-base" }
+srv-mod-entity = { path = "../srv-mod-entity" }
+humantime = "2.1.0"
 
 [dev-dependencies]
-serde_json = "1.0.117"
+serde_json = "1.0.128"
 serial_test = "3.1.1"

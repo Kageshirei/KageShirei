@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 
-use anyhow::{anyhow, Result};
 use axum::{
     body::{Body, Bytes},
     http::{HeaderMap, StatusCode},
@@ -21,7 +20,7 @@ use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use rs2_utils::duration_extension::DurationExt;
 use serde::Deserialize;
 use srv_mod_config::handlers;
-use srv_mod_database::{humantime, models::agent::Agent, Pool};
+use srv_mod_entity::sea_orm::DatabaseConnection;
 use tracing::{instrument, warn};
 
 use crate::{callback_handlers, state::HandlerSharedState};
@@ -42,28 +41,27 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
 
 /// Match the magic numbers of the body to the appropriate protocol
 #[instrument(skip_all)]
-fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
+fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol, String> {
     if body.len() >= magic_numbers::JSON.len() && body[.. magic_numbers::JSON.len()] == magic_numbers::JSON {
         return Ok(handlers::Protocol::Json);
     }
 
-    Err(anyhow!("Unknown protocol"))
+    Err("Unknown protocol".to_string())
 }
 
 /// Handle the command by executing it and returning the response if any
 #[instrument(skip(raw_body, protocol))]
 async fn handle_command<P>(
-    db_pool: Pool,
+    db_pool: DatabaseConnection,
     basic_response: BasicAgentResponse,
     protocol: P,
     raw_body: Bytes,
     headers: HeaderMap,
     cmd_request_id: String,
-) -> Result<Bytes>
+) -> Result<Bytes, String>
 where
     P: Protocol<IdentEncryptor>,
 {
-    // TODO: Implement the command handling
     match AgentCommands::from(basic_response.metadata.command_id) {
         AgentCommands::Terminate => callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await,
         AgentCommands::Checkin => {
@@ -82,7 +80,12 @@ where
 
 /// Process the body by matching the protocol and handling the command
 #[instrument(skip_all)]
-pub async fn process_body(db_pool: Pool, body: Bytes, headers: HeaderMap, cmd_request_id: String) -> Response<Body> {
+pub async fn process_body(
+    db_pool: DatabaseConnection,
+    body: Bytes,
+    headers: HeaderMap,
+    cmd_request_id: String,
+) -> Response<Body> {
     // ensure that the body is not empty or return a response
     let is_empty = ensure_is_not_empty(body.clone());
     if is_empty.is_some() {
@@ -124,7 +127,7 @@ fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> { JsonProtocol:
 
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json<T>(body: Bytes) -> Result<T>
+fn process_json<T>(body: Bytes) -> Result<T, String>
 where
     T: for<'a> Deserialize<'a>,
 {

@@ -12,7 +12,7 @@ use axum::{
 use axum_server::tls_rustls::RustlsConfig;
 use rs2_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
 use srv_mod_config::handlers::HandlerConfig;
-use srv_mod_database::{humantime, Pool};
+use srv_mod_entity::sea_orm::DatabaseConnection;
 use srv_mod_handler_base::{state, state::HandlerSharedState};
 use tokio::select;
 use tokio_util::sync::CancellationToken;
@@ -32,8 +32,8 @@ mod routes;
 pub async fn start(
     config: Arc<HandlerConfig>,
     cancellation_token: CancellationToken,
-    pool: Pool,
-) -> anyhow::Result<()> {
+    pool: DatabaseConnection,
+) -> Result<(), String> {
     // create a shared state for the server
     let shared_state: HandlerSharedState = Arc::new(state::HandlerState {
         config:  config.clone(),
@@ -179,7 +179,7 @@ async fn redirect_http_to_https(
     http_port: u16,
     https_port: u16,
     cancellation_token: CancellationToken,
-) -> anyhow::Result<()> {
+) -> Result<(), String> {
     let redirect = move |Host(host): Host, uri: Uri| {
         async move {
             match make_https(host, uri.clone(), http_port, https_port) {
@@ -208,7 +208,7 @@ async fn redirect_http_to_https(
 }
 
 /// Converts a http uri to https
-fn make_https(host: String, uri: Uri, http_port: u16, https_port: u16) -> anyhow::Result<Uri> {
+fn make_https(host: String, uri: Uri, http_port: u16, https_port: u16) -> Result<Uri, String> {
     let mut parts = uri.into_parts();
 
     parts.scheme = Some(axum::http::uri::Scheme::HTTPS);
@@ -218,7 +218,7 @@ fn make_https(host: String, uri: Uri, http_port: u16, https_port: u16) -> anyhow
     }
 
     let https_host = host.replace(&http_port.to_string(), &https_port.to_string());
-    parts.authority = Some(https_host.parse()?);
+    parts.authority = Some(https_host.parse().map_err(|_| "Invalid authority")?);
 
-    Ok(Uri::from_parts(parts)?)
+    Ok(Uri::from_parts(parts).map_err(|_| "Invalid URI")?)
 }

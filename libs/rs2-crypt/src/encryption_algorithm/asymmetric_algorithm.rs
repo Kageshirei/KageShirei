@@ -4,7 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::{anyhow, Result};
 use bytes::{BufMut, Bytes, BytesMut};
 use hkdf::{hmac::SimpleHmac, Hkdf};
 use k256::{elliptic_curve::rand_core::RngCore, FieldBytes, PublicKey, SecretKey};
@@ -182,7 +181,7 @@ impl<T> EncryptionAlgorithm for AsymmetricAlgorithm<T>
 where
     T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
 {
-    fn encrypt(&mut self, data: Bytes) -> Result<Bytes> {
+    fn encrypt(&mut self, data: Bytes) -> Result<Bytes, String> {
         self.encrypted_messages += 1;
 
         // Rotate the key if the threshold is reached
@@ -197,7 +196,7 @@ where
         self.algorithm_instance.encrypt(data)
     }
 
-    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes> {
+    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes, String> {
         // proxy the decryption to the symmetric algorithm
         self.algorithm_instance.decrypt(data, key)
     }
@@ -207,11 +206,9 @@ where
         Self::new()
     }
 
-    fn make_key(&mut self) -> Result<&mut Self> {
+    fn make_key(&mut self) -> Result<&mut Self, String> {
         if self.receiver.is_none() {
-            return Err(anyhow!(
-                AsymmetricEncryptionAlgorithmError::MissingReceiverPublicKey
-            ));
+            return Err(AsymmetricEncryptionAlgorithmError::MissingReceiverPublicKey.to_string());
         }
 
         let derived_key = self.derive_shared_secret(self.receiver.clone().unwrap());

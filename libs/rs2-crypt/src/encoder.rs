@@ -28,5 +28,5 @@ pub trait Encoder {
     /// # Returns
     ///
     /// The decoded data
-    fn decode(&self, data: &str) -> anyhow::Result<Bytes>;
+    fn decode(&self, data: &str) -> Result<Bytes, String>;
 }

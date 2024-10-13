@@ -7,7 +7,6 @@ edition = "2021"
 serde = { version = "1.0.210", features = ["derive", "rc"] }
 bytes = "1.7.2"
 rs2-crypt = { path = "../rs2-crypt" }
-anyhow = "1.0.89"
 hex-literal = "0.4.1"
 sea-orm = { version = "1.0.1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono", "with-json"], optional = true }
 serde_json = { version = "1.0.128", optional = true }

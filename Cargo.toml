@@ -6,7 +6,6 @@ members = [
     "libs/rs2-communication-protocol",
     "libs/rs2-crypt",
     "libs/rs2-indirect-syscall",
-    "libs/rs2-srv-test-helper",
     "libs/rs2-utils",
     "libs/rs2-win32",
     "modules/mod-agentcore",

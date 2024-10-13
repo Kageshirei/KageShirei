@@ -1,6 +1,5 @@
 use std::any::Any;
 
-use anyhow::Result;
 use bytes::Bytes;
 #[cfg(feature = "hkdf")]
 use hkdf::hmac::digest::OutputSizeUser;
@@ -24,7 +23,7 @@ pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
     /// # Returns
     ///
     /// * `Result<Vec<u8>, Box<dyn Error>>` - A result containing the encrypted data or an error.
-    fn encrypt(&mut self, data: Bytes) -> Result<Bytes>;
+    fn encrypt(&mut self, data: Bytes) -> Result<Bytes, String>;
 
     /// Decrypts a slice of bytes and returns the decrypted data.
     ///
@@ -36,7 +35,7 @@ pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
     /// # Returns
     ///
     /// * `Result<Vec<u8>, Box<dyn Error>>` - A result containing the decrypted data or an error.
-    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes>;
+    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes, String>;
 
     /// Create a new instance
     fn new() -> Self;
@@ -46,7 +45,7 @@ pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
     /// # Returns
     ///
     /// The updated current instance
-    fn make_key(&mut self) -> Result<&mut Self>;
+    fn make_key(&mut self) -> Result<&mut Self, String>;
 }
 
 #[cfg(feature = "hkdf")]
@@ -61,7 +60,7 @@ pub trait WithKeyDerivation {
     /// # Returns
     ///
     /// The updated current instance
-    fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> Result<&Self>
+    fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> Result<&Self, String>
     where
         H: OutputSizeUser,
         I: HmacImpl<H>;

@@ -25,7 +25,7 @@ impl Sender for TerminalSender {
         self
     }
 
-    async fn send(&mut self, data: Bytes, _metadata: Arc<Metadata>) -> Result<Bytes> {
+    async fn send(&mut self, data: Bytes, _metadata: Arc<Metadata>) -> Result<Bytes, String> {
         println!("{:?}", data);
         Ok(data)
     }

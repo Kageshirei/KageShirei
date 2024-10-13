@@ -9,9 +9,9 @@ pub struct Base64Encoder;
 impl Encoder for Base64Encoder {
     fn encode(&self, data: Bytes) -> String { base64ct::Base64UrlUnpadded::encode_string(data.as_ref()) }
 
-    fn decode(&self, data: &str) -> anyhow::Result<Bytes> {
+    fn decode(&self, data: &str) -> Result<Bytes, String> {
         Ok(Bytes::from(
-            base64ct::Base64UrlUnpadded::decode_vec(data).map_err(|e| anyhow::anyhow!(e))?,
+            base64ct::Base64UrlUnpadded::decode_vec(data).map_err(|e| e.to_string())?,
         ))
     }
 }

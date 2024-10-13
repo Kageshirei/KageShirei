@@ -10,6 +10,21 @@ pub enum AgentIntegrity {
     High             = 0x00003000,
     System           = 0x00004000,
     ProtectedProcess = 0x00005000,
+    INVALID          = i16::MAX as isize,
+}
+
+impl From<i16> for AgentIntegrity {
+    fn from(value: i16) -> Self {
+        match value {
+            0x00000000 => Self::Untrusted,
+            0x00001000 => Self::Low,
+            0x00002000 => Self::Medium,
+            0x00003000 => Self::High,
+            0x00004000 => Self::System,
+            0x00005000 => Self::ProtectedProcess,
+            _ => AgentIntegrity::INVALID,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]

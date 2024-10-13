@@ -12,60 +12,6 @@ use srv_mod_config::handlers::{Encoder, EncryptionScheme};
 use srv_mod_handler_base::{handle_command_result, state::HandlerSharedState};
 use tracing::{instrument, warn};
 
-/// Converts a byte array to a string
-fn body_to_string(body: Bytes) -> String { body.iter().map(|b| *b as char).collect::<String>() }
-
-/// Decodes the body of the request based on the encoder or return a failed response
-fn decode_or_fail_response(encoder: Encoder, body: Bytes) -> Result<Bytes, Response> {
-    match encoder {
-        // decode hex, then start processing
-        Encoder::Hex => {
-            let decoded = HexEncoder::default().decode(body_to_string(body).as_str());
-
-            if decoded.is_err() {
-                // if no protocol matches, drop the request
-                warn!("Unknown format (not hex), request refused");
-                warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
-
-                // always return OK to avoid leaking information
-                return Err((StatusCode::OK, "").into_response());
-            }
-
-            Ok(decoded.unwrap())
-        },
-        // decode base32, then start processing
-        Encoder::Base32 => {
-            let decoded = Base32Encoder::default().decode(body_to_string(body).as_str());
-
-            if decoded.is_err() {
-                // if no protocol matches, drop the request
-                warn!("Unknown format (not base32), request refused");
-                warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
-
-                // always return OK to avoid leaking information
-                return Err((StatusCode::OK, "").into_response());
-            }
-
-            Ok(decoded.unwrap())
-        },
-        // decode base64, then start processing
-        Encoder::Base64 => {
-            let decoded = Base64Encoder::default().decode(body_to_string(body).as_str());
-
-            if decoded.is_err() {
-                // if no protocol matches, drop the request
-                warn!("Unknown format (not base64), request refused");
-                warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
-
-                // always return OK to avoid leaking information
-                return Err((StatusCode::OK, "").into_response());
-            }
-
-            Ok(decoded.unwrap())
-        },
-    }
-}
-
 /// The handler for the agent checking operation
 #[debug_handler]
 #[instrument(name = "POST /checkin", skip_all)]

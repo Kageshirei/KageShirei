@@ -20,7 +20,7 @@ where
     /// # Returns
     ///
     /// A result containing the deserialized data or an error.
-    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S>
+    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, String>
     where
         S: serde::de::DeserializeOwned;
 
@@ -35,7 +35,11 @@ where
     /// # Returns
     ///
     /// A result indicating success or failure.
-    fn write<D>(&mut self, data: D, encryptor: Option<E>) -> impl std::future::Future<Output = Result<Bytes>> + Send
+    fn write<D>(
+        &mut self,
+        data: D,
+        encryptor: Option<E>,
+    ) -> impl std::future::Future<Output = Result<Bytes, String>> + Send
     where
         D: Serialize + WithMetadata + Send;
 }

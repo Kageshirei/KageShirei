@@ -2,7 +2,7 @@ use log::error;
 use validator::{ValidationErrors, ValidationErrorsKind};
 
 /// Print validation errors to the SYNC log
-pub fn print_validation_error(validation_errors: ValidationErrors) -> anyhow::Result<()> {
+pub fn print_validation_error(validation_errors: ValidationErrors) -> Result<(), String> {
     for (field, errors) in validation_errors.errors() {
         // Errors is an enum with 3 variants: Struct, List, Field
         match errors {

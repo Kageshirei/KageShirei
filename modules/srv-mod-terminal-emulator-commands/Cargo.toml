@@ -18,4 +18,3 @@ srv-mod-entity = { path = "../srv-mod-entity" }
 
 [dev-dependencies]
 serial_test = "3.1.1"
-rs2-srv-test-helper = { path = "../../libs/rs2-srv-test-helper" }

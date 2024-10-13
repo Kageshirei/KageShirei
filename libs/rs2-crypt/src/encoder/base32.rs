@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Result};
 use bytes::Bytes;
 
 use crate::encoder::Encoder;
@@ -41,7 +40,7 @@ impl Encoder for Base32Encoder {
         output.iter().map(|c| *c as char).collect::<String>()
     }
 
-    fn decode(&self, data: &str) -> Result<Bytes> {
+    fn decode(&self, data: &str) -> Result<Bytes, String> {
         let mut bits = 0u32;
         let mut bit_count = 0;
         let mut output = Vec::new();
@@ -50,7 +49,7 @@ impl Encoder for Base32Encoder {
             let value = match byte {
                 b'a' ..= b'z' => byte - b'a',
                 b'2' ..= b'7' => byte - b'2' + 26,
-                _ => return Err(anyhow!("Invalid character in input")),
+                _ => return Err("Invalid character in input".to_string()),
             } as u32;
 
             bits = (bits << 5) | value;

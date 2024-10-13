@@ -135,6 +135,7 @@ pub async fn heuristic_handler_variant_2(
 
 /// Creates the routes for the commands handlers
 pub fn route(state: HandlerSharedState) -> Router<HandlerSharedState> {
+    // TODO: Implement the command retrieval using the base handler, simple stub already present in lib.rs
     Router::new()
         .route("/:id_position/*path", post(heuristic_handler_variant_1))
         .route("/*path", post(heuristic_handler_variant_2))

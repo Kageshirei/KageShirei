@@ -1,22 +1,20 @@
-use anyhow::{anyhow, Result};
 use axum::http::StatusCode;
 use rs2_communication_protocol::communication_structs::checkin::Checkin;
 use rs2_crypt::{
     encoder::{base64::Base64Encoder, Encoder},
     encryption_algorithm::{asymmetric_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
 };
-use srv_mod_database::{
-    diesel,
-    diesel::{ExpressionMethods, QueryDsl, SelectableHelper},
-    diesel_async::{AsyncPgConnection, RunQueryDsl},
-    models::agent::{Agent, CreateAgent},
+use srv_mod_entity::{
+    active_enums::AgentIntegrity,
+    entities::agent,
+    sea_orm::{prelude::*, ActiveValue::Set, DatabaseConnection},
 };
 use tracing::{info, warn};
 
 use super::signature::make_signature;
 
 /// Ensure that the checkin data is valid
-pub fn ensure_checkin_is_valid(data: Result<Checkin>) -> Result<Checkin> {
+pub fn ensure_checkin_is_valid(data: Result<Checkin, String>) -> Result<Checkin, String> {
     // if the data is not a checkin struct, drop the request
     if data.is_err() {
         warn!(
@@ -26,7 +24,7 @@ pub fn ensure_checkin_is_valid(data: Result<Checkin>) -> Result<Checkin> {
         warn!("Internal status code: {}", StatusCode::UNPROCESSABLE_ENTITY);
 
         // always return OK to avoid leaking information
-        return Err(anyhow!("Failed to parse checkin data"));
+        return Err("Failed to parse checkin data".to_string());
     }
 
     // return the checkin data
@@ -34,7 +32,7 @@ pub fn ensure_checkin_is_valid(data: Result<Checkin>) -> Result<Checkin> {
 }
 
 /// Prepare the agent for insertion into the database
-pub fn prepare(data: Checkin) -> CreateAgent {
+pub fn prepare(data: Checkin) -> agent::ActiveModel {
     let agent_signature = make_signature(&data);
 
     let encoder = Base64Encoder;
@@ -49,33 +47,42 @@ pub fn prepare(data: Checkin) -> CreateAgent {
     let server_secret = encoder.encode(server_secret);
 
     // prepare the agent object for insertion
-    let mut agent = CreateAgent::from(data);
-    // update the agent with the new server/agent secret key and signature
-    agent.server_secret_key = server_secret;
-    agent.secret_key = agent_secret_key;
-    agent.signature = agent_signature;
-
-    agent
+    agent::ActiveModel {
+        operating_system: Set(data.operative_system),
+        hostname: Set(data.hostname),
+        domain: Set(Some(data.domain)),
+        username: Set(data.username),
+        network_interfaces: Set(data.network_interfaces),
+        pid: Set(data.process_id),
+        ppid: Set(data.parent_process_id),
+        process_name: Set(data.process_name),
+        integrity: Set(AgentIntegrity::from(data.integrity_level)),
+        cwd: Set(data.cwd),
+        server_secret: Set(server_secret),
+        secret: Set(agent_secret_key),
+        signature: Set(agent_signature),
+        ..Default::default()
+    }
 }
 
-pub async fn create_or_update(agent: CreateAgent, connection: &mut AsyncPgConnection) -> Agent {
-    use srv_mod_database::schema::agents::dsl::*;
-
+pub async fn create_or_update(agent: agent::ActiveModel, connection: &mut DatabaseConnection) -> agent::Model {
     // check if the agent already exists
-    let agent_exists = agents
-        .filter(signature.eq(&agent.signature))
-        .first::<Agent>(connection)
+    let agent_exists = agent::Entity::find()
+        .filter(agent::Column::Signature.eq(&agent.signature))
+        .one(connection)
         .await;
 
     if agent_exists.is_ok() {
         info!("Existing agent detected, updating ...");
 
-        let agent = diesel::update(agents.filter(signature.eq(&agent.signature)))
-            .set(&agent)
-            .returning(Agent::as_returning())
-            .get_result::<Agent>(connection)
+        let agent = agent::Entity::update_many()
+            .filter(agent::Column::Signature.eq(&agent.signature))
+            .set(agent)
+            .exec_with_returning(&connection)
             .await
             .unwrap();
+
+        let agent = agent.get(0).unwrap().to_owned();
 
         info!("Agent data updated (id: {})", agent.id);
 
@@ -85,12 +92,7 @@ pub async fn create_or_update(agent: CreateAgent, connection: &mut AsyncPgConnec
     else {
         info!("New agent detected, inserting ...");
 
-        let agent = diesel::insert_into(agents)
-            .values(&agent)
-            .returning(Agent::as_returning())
-            .get_result::<Agent>(connection)
-            .await
-            .unwrap();
+        let agent = agent.insert(&connection).await.unwrap();
 
         info!("New agent recorded (id: {})", agent.id);
 

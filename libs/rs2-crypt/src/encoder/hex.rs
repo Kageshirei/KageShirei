@@ -1,4 +1,3 @@
-use anyhow::Result;
 use bytes::Bytes;
 
 use crate::encoder::Encoder;
@@ -9,9 +8,9 @@ pub struct HexEncoder;
 impl Encoder for HexEncoder {
     fn encode(&self, data: Bytes) -> String { base16ct::lower::encode_string(data.as_ref()) }
 
-    fn decode(&self, data: &str) -> Result<Bytes> {
+    fn decode(&self, data: &str) -> Result<Bytes, String> {
         Ok(Bytes::from(
-            base16ct::lower::decode_vec(data).map_err(|e| anyhow::anyhow!(e))?,
+            base16ct::lower::decode_vec(data).map_err(|e| e.to_string())?,
         ))
     }
 }

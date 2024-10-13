@@ -1,11 +1,11 @@
+use std::time::Duration;
+
+use chrono::{DateTime, NaiveTime, Timelike};
 use rs2_communication_protocol::communication_structs::checkin::CheckinResponse;
-use srv_mod_database::{
-    diesel::{ExpressionMethods, QueryDsl},
-    diesel_async::RunQueryDsl,
-    models::{agent::Agent, agent_profile::AgentProfile, filter::Filter},
-    schema::agent_profiles::dsl::agent_profiles,
-    schema_extension::{FilterOperator, LogicalOperator},
-    Pool,
+use srv_mod_entity::{
+    active_enums::{FilterOperation, LogicalOperator},
+    entities::{agent, agent_profile, filter},
+    sea_orm::{prelude::*, sqlx::types::time::UtcOffset, DatabaseConnection, QueryOrder},
 };
 
 struct GroupEvaluationResult {
@@ -15,39 +15,39 @@ struct GroupEvaluationResult {
 }
 
 /// Evaluate a filter and return the result
-fn evaluate_filter(agent: &Agent, filter: &Filter) -> bool {
+fn evaluate_filter(agent: &agent::Model, filter: &filter::Model) -> bool {
     match filter.filter_op {
-        FilterOperator::Equals => {
+        FilterOperation::Equals => {
             let v = agent
                 .get_field_value(&filter.agent_field)
                 .unwrap_or(String::new());
             v.as_str() == filter.value.as_str()
         },
-        FilterOperator::NotEquals => {
+        FilterOperation::NotEquals => {
             let v = agent
                 .get_field_value(&filter.agent_field)
                 .unwrap_or(String::new());
             v.as_str() != filter.value.as_str()
         },
-        FilterOperator::Contains => {
+        FilterOperation::Contains => {
             let v = agent
                 .get_field_value(&filter.agent_field)
                 .unwrap_or(String::new());
             v.contains(filter.value.as_str())
         },
-        FilterOperator::NotContains => {
+        FilterOperation::NotContains => {
             let v = agent
                 .get_field_value(&filter.agent_field)
                 .unwrap_or(String::new());
             !v.contains(filter.value.as_str())
         },
-        FilterOperator::StartsWith => {
+        FilterOperation::StartsWith => {
             let v = agent
                 .get_field_value(&filter.agent_field)
                 .unwrap_or(String::new());
             v.starts_with(filter.value.as_str())
         },
-        FilterOperator::EndsWith => {
+        FilterOperation::EndsWith => {
             let v = agent
                 .get_field_value(&filter.agent_field)
                 .unwrap_or(String::new());
@@ -73,7 +73,7 @@ fn combine_results(result: Option<bool>, next_hop: Option<&LogicalOperator>, int
 }
 
 /// Evaluate a group of filters and exits returning the result once a group end is found or the filters are exhausted
-fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEvaluationResult {
+fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usize) -> GroupEvaluationResult {
     // init the result container
     let mut result: Option<bool> = None;
     let mut next_hop: Option<LogicalOperator> = None;
@@ -148,16 +148,16 @@ fn evaluate_group(agent: &Agent, filters: Vec<Filter>, index: usize) -> GroupEva
     };
 }
 
-/// Apply filters to the agent and return the configuration profile
-pub async fn apply_filters(agent: &Agent, db_pool: Pool) -> CheckinResponse {
-    use srv_mod_database::schema::{agent_profiles::dsl as agent_dsl, filters::dsl::*};
+fn seconds_since_midnight(time: &NaiveTime) -> i64 { (time.hour() * 3600 + time.minute() * 60 + time.second()) as i64 }
 
-    let mut connection = db_pool.get().await.unwrap();
+/// Apply filters to the agent and return the configuration profile
+pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) -> CheckinResponse {
+    let db = db_pool.clone();
 
     // get all the agent profiles, ordered by creation date, descending, so the latest profile is first
-    let available_profiles = agent_profiles
-        .order_by(agent_dsl::created_at.desc())
-        .get_results::<AgentProfile>(&mut connection)
+    let available_profiles = agent_profile::Entity::find()
+        .order_by_desc(agent_profile::Column::CreatedAt)
+        .all(&db)
         .await;
 
     // if there are no profiles or an error occurred, return the default values
@@ -170,13 +170,14 @@ pub async fn apply_filters(agent: &Agent, db_pool: Pool) -> CheckinResponse {
             polling_interval: 30_000, // 30 seconds of polling interval
         };
     }
+
     let available_profiles = available_profiles.unwrap();
 
     for profile in available_profiles.iter() {
-        let profile_filters = filters
-            .filter(agent_profile_id.eq(profile.id.clone()))
-            .order_by(sequence)
-            .get_results::<Filter>(&mut connection)
+        let profile_filters = filter::Entity::find()
+            .filter(filter::Column::AgentProfileId.eq(profile.id.clone()))
+            .order_by_asc(filter::Column::Sequence)
+            .all(&db)
             .await
             .unwrap();
 
@@ -185,10 +186,23 @@ pub async fn apply_filters(agent: &Agent, db_pool: Pool) -> CheckinResponse {
         if final_result.result {
             return CheckinResponse {
                 id:               agent.id.clone(),
-                working_hours:    profile.working_hours.clone(),
-                kill_date:        profile.kill_date.clone(),
-                polling_jitter:   profile.polling_jitter.unwrap_or(10_000),
-                polling_interval: profile.polling_interval.unwrap_or(30_000),
+                working_hours:    profile.working_hours.as_ref().map(|v| {
+                    v.iter()
+                        .map(|v| Some(seconds_since_midnight(v)))
+                        .collect::<Vec<_>>()
+                }),
+                kill_date:        profile
+                    .kill_date
+                    .as_ref()
+                    .map(|v| DateTime::from_naive_utc_and_offset(*v, chrono::offset::Utc).timestamp()),
+                polling_jitter:   profile
+                    .get_polling_jitter()
+                    .unwrap_or(Duration::from_secs(10))
+                    .as_millis(),
+                polling_interval: profile
+                    .get_polling_interval()
+                    .unwrap_or(Duration::from_secs(30))
+                    .as_millis(),
             };
         }
     }

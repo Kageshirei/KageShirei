@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Result};
 use axum::{
     body::{Body, Bytes},
     http::StatusCode,
@@ -14,7 +13,7 @@ use rs2_communication_protocol::{
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
-use srv_mod_database::{humantime, models::agent::Agent, Pool};
+use srv_mod_entity::{entities::agent as agent_entity, sea_orm::DatabaseConnection};
 use tracing::{instrument, warn};
 
 use super::{agent, agent_profiles::apply_filters};
@@ -33,28 +32,18 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
     None
 }
 
-/// Match the magic numbers of the body to the appropriate protocol
-#[instrument(skip_all)]
-fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
-    if body.len() >= magic_numbers::JSON.len() && body[.. magic_numbers::JSON.len()] == magic_numbers::JSON {
-        return Ok(handlers::Protocol::Json);
-    }
-
-    Err(anyhow!("Unknown protocol"))
-}
-
 /// Persist the checkin data into the database as an agent
-async fn persist(data: Result<Checkin>, db_pool: Pool) -> Agent {
+async fn persist(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> agent_entity::Model {
     let create_agent_instance = agent::prepare(data.unwrap());
 
-    let mut connection = db_pool.get().await.unwrap();
-    let agent = agent::create_or_update(create_agent_instance, &mut connection).await;
+    let db = db_pool.clone();
+    let agent = agent::create_or_update(create_agent_instance, &db).await;
 
     agent
 }
 
 #[instrument]
-pub async fn handle_checkin(data: Result<Checkin>, db_pool: Pool) -> Result<Bytes> {
+pub async fn handle_checkin(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> Result<Bytes, String> {
     let data = agent::ensure_checkin_is_valid(data);
 
     // if the data is not a checkin struct, drop the request
@@ -67,12 +56,14 @@ pub async fn handle_checkin(data: Result<Checkin>, db_pool: Pool) -> Result<Byte
     // apply filters to the agent
     let config = apply_filters(&agent, db_pool.clone()).await;
 
-    Ok(Bytes::from(serde_json::to_vec(&config)?))
+    Ok(Bytes::from(
+        serde_json::to_vec(&config).map_err(|e| e.to_string())?,
+    ))
 }
 
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json(body: Bytes) -> Result<Checkin> {
+fn process_json(body: Bytes) -> Result<Checkin, String> {
     let now = std::time::Instant::now();
 
     // initialize the protocol implementation

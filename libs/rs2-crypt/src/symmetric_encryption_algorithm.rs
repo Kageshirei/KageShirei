@@ -4,7 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use anyhow::Result;
 use bytes::Bytes;
 
 /// Abstract empty trait used to refer to symmetric encryption algorithms.
@@ -18,7 +17,7 @@ pub trait SymmetricEncryptionAlgorithm {
     /// # Returns
     ///
     /// The updated current instance
-    fn set_nonce(&mut self, nonce: Bytes) -> Result<&mut Self>;
+    fn set_nonce(&mut self, nonce: Bytes) -> Result<&mut Self, String>;
 
     /// Set the key
     ///
@@ -29,7 +28,7 @@ pub trait SymmetricEncryptionAlgorithm {
     /// # Returns
     ///
     /// The updated current instance
-    fn set_key(&mut self, key: Bytes) -> Result<&mut Self>;
+    fn set_key(&mut self, key: Bytes) -> Result<&mut Self, String>;
 
     /// Create a new nonce
     ///
