@@ -1,9 +1,9 @@
 use axum::{debug_handler, extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
-use srv_mod_database::{
-    diesel::{ExpressionMethods, QueryDsl, SelectableHelper},
-    diesel_async::RunQueryDsl,
-    models::user::User,
+use srv_mod_entity::{
+    active_enums::LogLevel,
+    entities::{logs, user},
+    sea_orm::{prelude::*, ActiveValue::Set},
 };
 use tracing::{info, instrument};
 
@@ -35,36 +35,30 @@ async fn post_handler(
     State(state): State<ApiServerSharedState>,
     InferBody(payload): InferBody<AuthenticatePostPayload>,
 ) -> Result<Json<AuthenticatePostResponse>, ApiServerError> {
-    use srv_mod_database::schema::users::dsl::*;
-
     // Ensure the username and password are not empty
     if payload.username.is_empty() || payload.password.is_empty() {
         return Err(ApiServerError::MissingCredentials);
     }
 
-    let mut connection = state
-        .db_pool
-        .get()
-        .await
-        .map_err(|_| ApiServerError::InternalServerError)?;
+    let db = state.db_pool.clone();
 
     // Fetch the user from the database
-    let user = users
-        .filter(username.eq(&payload.username))
-        .select(User::as_select())
-        .first(&mut connection)
+    let usr = user::Entity::find()
+        .filter(user::Column::Username.eq(&payload.username))
+        .one(&db)
         .await
-        .map_err(|_| ApiServerError::WrongCredentials)?;
+        .map_err(|_| ApiServerError::WrongCredentials)?
+        .ok_or(ApiServerError::WrongCredentials)?;
 
     // Verify the password
-    if !rs2_crypt::argon::Argon2::verify_password(&payload.password, &user.password) {
+    if !rs2_crypt::argon::Argon2::verify_password(&payload.password, &usr.password) {
         return Err(ApiServerError::WrongCredentials);
     }
 
     // Create the JWT token
     let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS512);
     let token_lifetime = chrono::Duration::minutes(15);
-    let claims = JwtClaims::new(user.id.to_string(), token_lifetime);
+    let claims = JwtClaims::new(usr.id.clone(), token_lifetime);
     let token = jsonwebtoken::encode(
         &header,
         &claims,
@@ -72,7 +66,17 @@ async fn post_handler(
     )
     .map_err(|_| ApiServerError::TokenCreation)?;
 
-    info!("User {} authenticated", user.username);
+    // Log the authentication on the cli and db
+    info!("User {} authenticated", usr.username);
+    logs::ActiveModel {
+        level: Set(LogLevel::Info),
+        message: Set(Some(format!("User {} authenticated", usr.username))),
+        title: Set("User Authenticated".to_string()),
+        ..Default::default()
+    }
+    .insert(&db)
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(Json(AuthenticatePostResponse {
         access_token: "bearer".to_string(),

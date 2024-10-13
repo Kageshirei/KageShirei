@@ -1,9 +1,5 @@
 use axum::{debug_handler, extract::State, routing::post, Json, Router};
-use srv_mod_database::{
-    diesel::{ExpressionMethods, QueryDsl, SelectableHelper},
-    diesel_async::RunQueryDsl,
-    models::user::User,
-};
+use srv_mod_entity::{entities::user, sea_orm::prelude::*};
 use tracing::{info, instrument};
 
 use crate::{
@@ -21,26 +17,20 @@ async fn post_handler(
     State(state): State<ApiServerSharedState>,
     jwt_claims: JwtClaims,
 ) -> Result<Json<AuthenticatePostResponse>, ApiServerError> {
-    use srv_mod_database::schema::users::dsl::*;
-
-    let mut connection = state
-        .db_pool
-        .get()
-        .await
-        .map_err(|_| ApiServerError::InternalServerError)?;
+    let db = state.db_pool.clone();
 
     // Fetch the user from the database
-    let user = users
-        .filter(id.eq(&jwt_claims.sub))
-        .select(User::as_select())
-        .first(&mut connection)
+    let current_user = user::Entity::find()
+        .filter(user::Column::Id.eq(jwt_claims.sub))
+        .one(&db)
         .await
-        .map_err(|_| ApiServerError::InvalidToken)?;
+        .map_err(|_| ApiServerError::InvalidToken)?
+        .ok_or(ApiServerError::InvalidToken)?;
 
     // Create the JWT token
     let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::HS512);
     let token_lifetime = chrono::Duration::minutes(15);
-    let claims = JwtClaims::new(user.id.to_string(), token_lifetime);
+    let claims = JwtClaims::new(current_user.id.to_string(), token_lifetime);
     let token = jsonwebtoken::encode(
         &header,
         &claims,
@@ -48,7 +38,7 @@ async fn post_handler(
     )
     .map_err(|_| ApiServerError::TokenCreation)?;
 
-    info!("User {} refreshed token", user.username);
+    info!("User {} refreshed token", current_user.username);
 
     Ok(Json(AuthenticatePostResponse {
         access_token: "bearer".to_string(),

@@ -7,14 +7,9 @@ use axum::{
     Json,
     Router,
 };
-use srv_mod_database::{
-    diesel::{ExpressionMethods, QueryDsl, SelectableHelper},
-    diesel_async::RunQueryDsl,
-    models::{
-        agent::{Agent, FullSessionRecord},
-        log::Log,
-    },
-    schema::{agents, logs},
+use srv_mod_entity::{
+    entities::{agent, agent::FullSessionRecord},
+    sea_orm::{prelude::*, QueryOrder},
 };
 use tracing::{error, info, instrument};
 
@@ -29,17 +24,13 @@ async fn get_handler(
     State(state): State<ApiServerSharedState>,
     jwt_claims: JwtClaims,
 ) -> Result<Json<Vec<FullSessionRecord>>, ApiServerError> {
-    let mut connection = state
-        .db_pool
-        .get()
-        .await
-        .map_err(|_| ApiServerError::InternalServerError)?;
+    let db = state.db_pool.clone();
 
     // Fetch the user from the database
-    let mut agents = agents::table
-        .order_by(agents::created_at.desc())
-        .select(FullSessionRecord::as_select())
-        .get_results::<FullSessionRecord>(&mut connection)
+    let agents = agent::Entity::find()
+        .order_by_desc(agent::Column::CreatedAt)
+        .into_partial_model::<FullSessionRecord>()
+        .all(&db)
         .await
         .map_err(|e| {
             error!("Failed to fetch agent sessions: {}", e.to_string());
