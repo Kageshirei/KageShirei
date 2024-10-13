@@ -1,9 +1,10 @@
 pub mod tokio_runtime_wrapper;
 
+use tokio::{
+    runtime::Handle,
+    sync::{mpsc, oneshot},
+};
 pub use tokio_runtime_wrapper::TokioRuntimeWrapper;
-
-use tokio::runtime::Handle;
-use tokio::sync::{mpsc, oneshot};
 
 // Task structure holds the name of the task and a sender to return the result.
 pub struct Task {
@@ -12,9 +13,7 @@ pub struct Task {
 }
 
 // Simulated asynchronous task that takes 2 seconds to complete.
-async fn task_type_a() -> String {
-    "Result from task type A".to_string()
-}
+async fn task_type_a() -> String { "Result from task type A".to_string() }
 
 // Simulated asynchronous task that takes 3 seconds to complete.
 async fn task_type_b() -> String {
@@ -48,7 +47,9 @@ impl TaskSpawner {
             }
         });
 
-        TaskSpawner { spawn: send }
+        TaskSpawner {
+            spawn: send,
+        }
     }
 
     // Method to spawn a new task by name, returning a receiver to get the task's result.
@@ -69,11 +70,12 @@ impl TaskSpawner {
 mod tests {
     use std::{sync::Arc, thread};
 
-    use super::*;
     use tokio::{
         runtime::{Builder, Runtime},
         sync::mpsc,
     };
+
+    use super::*;
 
     #[test]
     fn custom_runtime_test_with_tokio() {

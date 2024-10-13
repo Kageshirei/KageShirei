@@ -1,8 +1,14 @@
 use core::{ffi::c_void, ptr::null_mut};
 
 use crate::ntdef::{
-    ProcessInformation, SecurityAttributes, StartupInfoW, DWORD, HANDLE, LPCWSTR,
-    LPSECURITY_ATTRIBUTES, LPWSTR,
+    ProcessInformation,
+    SecurityAttributes,
+    StartupInfoW,
+    DWORD,
+    HANDLE,
+    LPCWSTR,
+    LPSECURITY_ATTRIBUTES,
+    LPWSTR,
 };
 
 pub type CreatePipe = unsafe extern "system" fn(

@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::communication_structs::agent_commands::AgentCommands;
-use crate::metadata::Metadata;
+use crate::{communication_structs::agent_commands::AgentCommands, metadata::Metadata};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SimpleAgentCommand {

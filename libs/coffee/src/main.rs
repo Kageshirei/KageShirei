@@ -5,10 +5,9 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use color_eyre::Result;
+use mod_coffee_core::loader::{beacon_pack::BeaconPack, Coffee};
 use tracing::{debug, info};
 use tracing_subscriber::filter::LevelFilter;
-
-use mod_coffee_core::loader::{beacon_pack::BeaconPack, Coffee};
 
 #[derive(Parser, Debug)]
 #[command(name = "Coffee")]
@@ -70,14 +69,14 @@ fn hexlify_args(args: Vec<String>) -> Result<String> {
                 } else {
                     panic!("Invalid integer value");
                 }
-            }
+            },
             "short" => {
                 if let Ok(short_value) = argument_value.parse::<i16>() {
                     beacon_pack.add_short(short_value);
                 } else {
                     panic!("Invalid short value");
                 }
-            }
+            },
             _ => panic!("Invalid argument type"),
         }
     }

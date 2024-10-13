@@ -1,7 +1,6 @@
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
-
 use alloc::collections::BTreeSet;
+
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 /// Generates a random request ID consisting of 32 alphanumeric characters.
 ///
@@ -38,11 +37,7 @@ pub fn generate_random_string() -> String {
 /// # Returns
 ///
 /// A `Vec<usize>` containing the unique random positions.
-pub fn generate_unique_positions(
-    num_positions: usize,
-    start_index: usize,
-    end_index: usize,
-) -> Vec<usize> {
+pub fn generate_unique_positions(num_positions: usize, start_index: usize, end_index: usize) -> Vec<usize> {
     let mut positions: BTreeSet<usize> = BTreeSet::new();
     // let mut positions = HashSet::new();
     while positions.len() < num_positions {
@@ -69,10 +64,10 @@ pub fn generate_random_lengths_for_request_id(len: usize) -> (usize, usize, usiz
 /// This function randomly generates a path of three types:
 /// - Type 0: A single position for the request ID within a range of random strings. The index of the request ID
 ///   position is included as part of the path.
-/// - Type 1: Three positions for fragments of the request ID within a range of random strings,
-///   separated by randomly chosen separators. The positions of the fragments are included in the path.
-/// - Type 2: The request ID is inserted randomly into the path without any indices or positions being included in the path.
-///   The first string of length 32 is automatically recognized as the request ID.
+/// - Type 1: Three positions for fragments of the request ID within a range of random strings, separated by randomly
+///   chosen separators. The positions of the fragments are included in the path.
+/// - Type 2: The request ID is inserted randomly into the path without any indices or positions being included in the
+///   path. The first string of length 32 is automatically recognized as the request ID.
 ///
 /// # Arguments
 ///
@@ -95,16 +90,13 @@ pub fn generate_random_lengths_for_request_id(len: usize) -> (usize, usize, usiz
 ///
 /// **Type 1:**
 /// Path: `/0;2-4/a/b/part1/c/part2/d/part3`
-/// - "0;2-4" indicates the positions where the request ID is split and inserted as fragments ("part1", "part2", "part3").
+/// - "0;2-4" indicates the positions where the request ID is split and inserted as fragments ("part1", "part2",
+///   "part3").
 ///
 /// **Type 2:**
 /// Path: `/a/b/request_id/c/d`
 /// - The request ID appears as a string of length 32 somewhere in the path without any numerical indices.
-pub fn generate_path(
-    request_id_len: usize,
-    start_index: usize,
-    end_index: usize,
-) -> (usize, String, String) {
+pub fn generate_path(request_id_len: usize, start_index: usize, end_index: usize) -> (usize, String, String) {
     // Randomly choose the path type (0 or 1)
     let path_type = thread_rng().gen_range(0..3);
     // Generate a random request ID of the specified length
@@ -197,9 +189,7 @@ impl AgentErrors {
     pub fn message(&self) -> &str {
         match self {
             AgentErrors::ChangeDirectoryFailed => "Failed to change directory",
-            AgentErrors::PrintWorkingDirectoryFailed => {
-                "Failed to retrieve current working directory"
-            }
+            AgentErrors::PrintWorkingDirectoryFailed => "Failed to retrieve current working directory",
             AgentErrors::CmdOutputIsEmpty => "Failed to retrieve output from cmd",
             AgentErrors::Other(msg) => msg,
         }
@@ -208,8 +198,9 @@ impl AgentErrors {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use libc_print::libc_println;
+
+    use super::*;
 
     #[test]
     fn test_generate_request_id() {
@@ -230,8 +221,7 @@ mod tests {
             let end_index = 6;
 
             // Generate the path, path type, and request ID
-            let (path_type, path, request_id) =
-                generate_path(request_id_len, start_index, end_index);
+            let (path_type, path, request_id) = generate_path(request_id_len, start_index, end_index);
 
             libc_println!("Generated Path: - {}: {}", path_type, path);
             libc_println!("Request ID: {}", request_id);
@@ -278,8 +268,7 @@ mod tests {
                 assert_eq!(separator_count, 2, "Path does not contain 2 separators");
 
                 // Extract positions from the first part
-                let positions_and_separators: Vec<&str> =
-                    first_part.split(|c: char| !c.is_numeric()).collect();
+                let positions_and_separators: Vec<&str> = first_part.split(|c: char| !c.is_numeric()).collect();
                 for pos in positions_and_separators {
                     if let Ok(position) = pos.parse::<usize>() {
                         id_positions.push(position);

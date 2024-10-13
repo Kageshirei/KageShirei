@@ -1,18 +1,25 @@
 extern crate alloc;
 
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
-use core::ptr::null_mut;
-use core::slice;
-use rs2_win32::ntdef::{
-    KeyBasicInformation, KeyValuePartialInformation, ObjectAttributes, UnicodeString, HANDLE,
-    KEY_ENUMERATE_SUB_KEYS, KEY_READ, OBJ_CASE_INSENSITIVE,
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
 };
-use rs2_win32::ntstatus::{
-    STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_OBJECT_NAME_NOT_FOUND,
-};
+use core::{ptr::null_mut, slice};
 
 use mod_agentcore::instance;
+use rs2_win32::{
+    ntdef::{
+        KeyBasicInformation,
+        KeyValuePartialInformation,
+        ObjectAttributes,
+        UnicodeString,
+        HANDLE,
+        KEY_ENUMERATE_SUB_KEYS,
+        KEY_READ,
+        OBJ_CASE_INSENSITIVE,
+    },
+    ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_OBJECT_NAME_NOT_FOUND},
+};
 
 /// Opens a registry key and returns the handle.
 ///
@@ -24,8 +31,8 @@ use mod_agentcore::instance;
 /// - `key`: A string slice containing the path to the registry key that needs to be opened.
 ///
 /// # Returns
-/// - `Result<HANDLE, i32>`: A result containing the handle to the opened registry key if successful,
-///   otherwise an error code (`NTSTATUS`) indicating the reason for failure.
+/// - `Result<HANDLE, i32>`: A result containing the handle to the opened registry key if successful, otherwise an error
+///   code (`NTSTATUS`) indicating the reason for failure.
 ///
 /// # Details
 /// This function uses the following NT API function:
@@ -80,8 +87,8 @@ pub unsafe fn nt_open_key(key: &str) -> Result<HANDLE, i32> {
 /// - `value_name`: A string slice that specifies the name of the registry value to be read.
 ///
 /// # Returns
-/// - `Result<String, i32>`: A result containing the value content as a string if successful,
-///   or an error code (`NTSTATUS`) if the operation fails.
+/// - `Result<String, i32>`: A result containing the value content as a string if successful, or an error code
+///   (`NTSTATUS`) if the operation fails.
 ///
 /// # Safety
 /// This function is marked as unsafe because it directly interacts with raw pointers and performs low-level
@@ -131,8 +138,7 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
     let data_length = value_info_ref.data_length as usize;
 
     // Extract the data as a UTF-16 string
-    let data_slice =
-        slice::from_raw_parts(value_info_ref.data.as_ptr() as *const u16, data_length / 2);
+    let data_slice = slice::from_raw_parts(value_info_ref.data.as_ptr() as *const u16, data_length / 2);
 
     // Convert the UTF-16 string to a Rust string and remove trailing null characters
     let value = String::from_utf16_lossy(&data_slice)
@@ -152,8 +158,8 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
 /// - `key`: A string slice that specifies the path to the registry key to be enumerated.
 ///
 /// # Returns
-/// - `Result<Vec<String>, i32>`: A result containing a vector of sub-key names if successful,
-///   or an error code (`NTSTATUS`) if the operation fails.
+/// - `Result<Vec<String>, i32>`: A result containing a vector of sub-key names if successful, or an error code
+///   (`NTSTATUS`) if the operation fails.
 ///
 /// # Safety
 /// This function is marked as unsafe because it directly interacts with raw pointers and performs low-level
@@ -173,10 +179,10 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
         let status = instance().ntdll.nt_enumerate_key.run(
             key_handle,
             index,                                // Index of the sub-key to enumerate
-            0, // Key information class (0 for KeyBasicInformation)
+            0,                                    // Key information class (0 for KeyBasicInformation)
             result_buffer.as_mut_ptr() as *mut _, // Buffer to receive the sub-key information
-            result_buffer.len() as u32 * 2, // Buffer length in bytes
-            &mut result_length, // Variable to receive the length of the result
+            result_buffer.len() as u32 * 2,       // Buffer length in bytes
+            &mut result_length,                   // Variable to receive the length of the result
         );
 
         // Check the status of the operation
@@ -212,11 +218,11 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::NT_STATUS;
-
-    use super::*;
     use libc_print::libc_println;
     use rs2_win32::ntstatus::NT_SUCCESS;
+
+    use super::*;
+    use crate::utils::NT_STATUS;
 
     #[test]
     fn test_nt_open_key() {
@@ -227,7 +233,7 @@ mod tests {
                 Ok(handle) => {
                     libc_println!("Successfully opened registry key: {}\n", registry_key);
                     instance().ntdll.nt_close.run(handle);
-                }
+                },
                 Err(status) => {
                     libc_println!(
                         "Failed to open registry key: {}. NTSTATUS: {}",
@@ -239,7 +245,7 @@ mod tests {
                         "Expected success, but got NTSTATUS: {}",
                         NT_STATUS(status)
                     );
-                }
+                },
             }
         }
     }
@@ -258,7 +264,7 @@ mod tests {
                         NT_STATUS(status)
                     );
                     return;
-                }
+                },
             };
 
             // Query a well-known value from the opened registry key
@@ -266,7 +272,7 @@ mod tests {
             match nt_query_value_key(key_handle, value_name) {
                 Ok(value) => {
                     libc_println!("Successfully queried value: {} = {}\n", value_name, value);
-                }
+                },
                 Err(status) => {
                     libc_println!(
                         "Failed to query value: {}. NTSTATUS: {}",
@@ -278,7 +284,7 @@ mod tests {
                         "Expected success, but got NTSTATUS: {}",
                         NT_STATUS(status)
                     );
-                }
+                },
             }
 
             instance().ntdll.nt_close.run(key_handle);
@@ -295,13 +301,13 @@ mod tests {
                     for sub_key in sub_keys {
                         libc_println!("Sub-key: {}\\{}", registry_key, sub_key);
                     }
-                }
+                },
                 Err(status) => {
                     libc_println!(
                         "Failed to enumerate sub-keys. NT STATUS: {}",
                         NT_STATUS(status)
                     );
-                }
+                },
             }
         }
     }

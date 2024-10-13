@@ -1,15 +1,15 @@
 use clap::{Args, Subcommand};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
+use srv_mod_entity::{
+    active_enums::LogLevel,
+    entities::logs,
+    sea_orm::{ActiveModelTrait, ActiveValue::Set},
+};
 use tracing::{debug, instrument};
 
-use crate::command_handler::CommandHandlerArguments;
-use crate::post_process_result::PostProcessResult;
-use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
-use srv_mod_entity::active_enums::LogLevel;
-use srv_mod_entity::entities::logs;
-use srv_mod_entity::sea_orm::ActiveModelTrait;
-use srv_mod_entity::sea_orm::ActiveValue::Set;
+use crate::{command_handler::CommandHandlerArguments, post_process_result::PostProcessResult};
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
@@ -27,7 +27,10 @@ pub struct TerminalSessionMakeNotificationArguments {
 
 /// Handle the history command
 #[instrument]
-pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionMakeNotificationArguments) -> Result<String, String> {
+pub async fn handle(
+    config: CommandHandlerArguments,
+    args: &TerminalSessionMakeNotificationArguments,
+) -> Result<String, String> {
     debug!("Terminal command received");
 
     let db = config.db_pool.clone();
@@ -38,27 +41,31 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionMakeN
         message: Set(Some(args.message.clone())),
         ..Default::default()
     };
-    let notification = new_notification.insert(&db).await.map_err(|e| e.to_string())?;
+    let notification = new_notification
+        .insert(&db)
+        .await
+        .map_err(|e| e.to_string())?;
 
-    config.broadcast_sender.send(SseEvent {
-        event: EventType::Log,
-        id: Some(notification.id),
-        data: serde_json::to_string(&notification).map_err(|e| e.to_string())?,
-    }).map_err(|e| e.to_string())?;
+    config
+        .broadcast_sender
+        .send(SseEvent {
+            event: EventType::Log,
+            id: Some(notification.id),
+            data: serde_json::to_string(&notification).map_err(|e| e.to_string())?,
+        })
+        .map_err(|e| e.to_string())?;
 
     Ok("Notification sent".to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-
     use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 
-    use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
-
     use super::*;
+    use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
     #[tokio::test]
     #[serial]
@@ -69,7 +76,9 @@ mod tests {
         let user = generate_test_user(db_pool.clone()).await;
 
         let session_id_v = "global";
-        let args = TerminalSessionHistoryArguments { command: None };
+        let args = TerminalSessionHistoryArguments {
+            command: None,
+        };
 
         let binding = db_pool.clone();
 

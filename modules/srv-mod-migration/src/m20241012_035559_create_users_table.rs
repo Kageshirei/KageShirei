@@ -23,16 +23,8 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(User::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(User::Id)
-                            .string_len(32)
-                            .primary_key()
-                    )
-                    .col(
-                        string(User::Username)
-                            .not_null()
-                            .unique_key()
-                    )
+                    .col(ColumnDef::new(User::Id).string_len(32).primary_key())
+                    .col(string(User::Username).not_null().unique_key())
                     .col(string(User::Password).not_null())
                     .col(timestamp(User::CreatedAt).not_null())
                     .col(timestamp(User::UpdatedAt).not_null())

@@ -1,12 +1,12 @@
-use crate::command_handler::CommandHandlerArguments;
-use crate::post_process_result::PostProcessResult;
 use clap::Args;
 use serde::{Deserialize, Serialize};
-use srv_mod_entity::entities::agent;
-use srv_mod_entity::sea_orm::Condition;
+use srv_mod_entity::{
+    entities::agent,
+    sea_orm::{prelude::*, Condition},
+};
 use tracing::{debug, instrument};
 
-use srv_mod_entity::sea_orm::prelude::*;
+use crate::{command_handler::CommandHandlerArguments, post_process_result::PostProcessResult};
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
@@ -52,7 +52,10 @@ impl From<agent::Model> for SessionOpeningRecord {
 ///
 /// The serialized result of the command
 #[instrument]
-pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTerminalSessionsArguments) -> Result<String, String> {
+pub async fn handle(
+    config: CommandHandlerArguments,
+    args: &GlobalSessionTerminalSessionsArguments,
+) -> Result<String, String> {
     debug!("Terminal command received");
 
     let connection = config.db_pool.clone();
@@ -60,25 +63,22 @@ pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTermina
     // If the ids are provided, return the terminal emulator internal handle open sessions command
     if args.ids.is_some() {
         let agents = agent::Entity::find()
-            .filter(
-                args.ids.iter().fold(Condition::any(), |acc, id| {
-                    acc.add(agent::Column::Hostname.eq(id))
-                })
-            )
+            .filter(args.ids.iter().fold(Condition::any(), |acc, id| {
+                acc.add(agent::Column::Hostname.eq(id))
+            }))
             .all(&connection)
             .await
             .map_err(|e| e.to_string())?;
 
-        let results = agents.into_iter().map(|record| {
-            SessionOpeningRecord::from(record)
-        }).collect::<Vec<_>>();
+        let results = agents
+            .into_iter()
+            .map(|record| SessionOpeningRecord::from(record))
+            .collect::<Vec<_>>();
 
-        return Ok(
-            format!(
-                "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__{}",
-                serde_json::to_string(&results).map_err(|e| e.to_string())?
-            )
-        );
+        return Ok(format!(
+            "__TERMINAL_EMULATOR_INTERNAL_HANDLE_OPEN_SESSIONS__{}",
+            serde_json::to_string(&results).map_err(|e| e.to_string())?
+        ));
     }
 
     // list all the agents (sessions) in the database
@@ -88,22 +88,18 @@ pub async fn handle(config: CommandHandlerArguments, args: &GlobalSessionTermina
         .map_err(|e| e.to_string())?;
 
     // Serialize the result
-    Ok(
-        serde_json::to_string(
-            &PostProcessResult {
-                r#type: "sessions".to_string(),
-                data: result,
-            }
-        ).map_err(|e| e.to_string())?
-    )
+    Ok(serde_json::to_string(&PostProcessResult {
+        r#type: "sessions".to_string(),
+        data: result,
+    })
+        .map_err(|e| e.to_string())?)
 }
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-
     use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
     use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use serial_test::serial;
     use srv_mod_database::models::agent::CreateAgent;
 
     use super::*;
@@ -167,7 +163,9 @@ mod tests {
                 .unwrap();
         }
 
-        let args = GlobalSessionTerminalSessionsArguments { ids: None };
+        let args = GlobalSessionTerminalSessionsArguments {
+            ids: None,
+        };
         let result = handle(db_pool.clone(), &args).await;
 
         assert!(result.is_ok());

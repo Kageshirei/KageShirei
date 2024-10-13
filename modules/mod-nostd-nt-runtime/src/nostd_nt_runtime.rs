@@ -1,22 +1,24 @@
-use crate::nostd_nt_threadpool::NoStdThreadPool;
-use mod_nostd::nostd_mpsc;
-use rs2_runtime::Runtime;
-
 use alloc::sync::Arc;
 use core::{
     fmt,
     pin::Pin,
     task::{Context, Poll, Waker},
 };
+
 use futures::Future;
+use mod_nostd::nostd_mpsc;
+use rs2_runtime::Runtime;
 use spin::Mutex;
+
+use crate::nostd_nt_threadpool::NoStdThreadPool;
 
 /// The `NoStdNtRuntime` struct provides a custom implementation of the `Runtime` trait,
 /// using a thread pool to manage the execution of jobs. This runtime is designed to work
 /// in a `no_std` environment, relying on custom synchronization primitives and a custom MPSC channel.
 #[derive(Clone)]
 pub struct NoStdNtRuntime {
-    pool: Arc<Mutex<NoStdThreadPool>>, // The thread pool is protected by a Mutex for safe concurrent access and is wrapped in an Arc for shared ownership.
+    pool: Arc<Mutex<NoStdThreadPool>>, /* The thread pool is protected by a Mutex for safe concurrent access and is
+                                        * wrapped in an Arc for shared ownership. */
 }
 
 impl fmt::Debug for NoStdNtRuntime {
@@ -105,7 +107,7 @@ impl Runtime for NoStdNtRuntime {
                 Poll::Pending => {
                     // Wait for the signal that the future has made progress
                     let _ = rx.recv();
-                }
+                },
             }
         }
     }
@@ -116,7 +118,8 @@ impl Runtime for NoStdNtRuntime {
 /// This struct is used within the `block_on` method to notify the runtime that the future
 /// has made progress and should be polled again.
 struct SimpleWaker {
-    tx: Mutex<Option<nostd_mpsc::Sender<()>>>, // The sender half of the MPSC channel, wrapped in a Mutex for safe access.
+    tx: Mutex<Option<nostd_mpsc::Sender<()>>>, /* The sender half of the MPSC channel, wrapped in a Mutex for safe
+                                                * access. */
 }
 
 impl alloc::task::Wake for SimpleWaker {

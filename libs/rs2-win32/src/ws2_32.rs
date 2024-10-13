@@ -60,8 +60,7 @@ pub struct TIMEVAL {
 }
 
 // Define function types for Winsock functions
-type WSAStartupFunc =
-    unsafe extern "system" fn(wVersionRequested: u16, lpWsaData: *mut WsaData) -> i32;
+type WSAStartupFunc = unsafe extern "system" fn(wVersionRequested: u16, lpWsaData: *mut WsaData) -> i32;
 type WSACleanupFunc = unsafe extern "system" fn() -> i32;
 type SocketFunc = unsafe extern "system" fn(af: i32, socket_type: i32, protocol: i32) -> SOCKET;
 type ConnectFunc = unsafe extern "system" fn(s: SOCKET, name: *const SockAddr, namelen: i32) -> i32;
@@ -123,9 +122,7 @@ impl Winsock {
             freeaddrinfo: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             ioctlsocket: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             select: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            wsa_get_last_error: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
+            wsa_get_last_error: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
         }
     }
 }

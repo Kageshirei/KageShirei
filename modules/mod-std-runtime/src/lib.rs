@@ -5,15 +5,23 @@ pub use std_runtime::StdRuntime;
 
 #[cfg(test)]
 mod tests {
-    use crate::std_runtime::StdRuntime;
-    use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
-    use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
-    use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
-    use rs2_communication_protocol::metadata::Metadata;
+    use std::{
+        sync::{mpsc, Arc},
+        thread,
+        time::Duration,
+    };
+
+    use rs2_communication_protocol::{
+        communication_structs::{
+            agent_commands::AgentCommands,
+            simple_agent_command::SimpleAgentCommand,
+            task_output::TaskOutput,
+        },
+        metadata::Metadata,
+    };
     use rs2_runtime::Runtime; // Import the Runtime trait
-    use std::sync::{mpsc, Arc};
-    use std::thread;
-    use std::time::Duration;
+
+    use crate::std_runtime::StdRuntime;
 
     #[test]
     fn custom_runtime_test() {

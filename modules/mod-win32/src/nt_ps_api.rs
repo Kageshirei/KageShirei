@@ -1,12 +1,11 @@
+use alloc::vec::Vec;
 use core::{
     ffi::{c_ulong, c_void},
     mem::{self, size_of},
     ptr::{null, null_mut},
 };
 
-use alloc::vec::Vec;
 use libc_print::libc_println;
-
 use mod_agentcore::{
     instance,
     ldr::{nt_current_teb, nt_get_last_error},
@@ -14,22 +13,59 @@ use mod_agentcore::{
 use rs2_win32::{
     ntapi::nt_current_process,
     ntdef::{
-        AccessMask, ClientId, IoStatusBlock, LargeInteger, ObjectAttributes,
-        ProcessBasicInformation, ProcessInformation, PsAttributeList, PsCreateInfo,
-        PsCreateInfoUnion, PsCreateInitialFlags, PsCreateInitialState, PsCreateState,
-        RtlUserProcessParameters, SecurityAttributes, StartupInfoW, SystemInformationClass,
-        SystemProcessInformation, TokenMandatoryLabel, UnicodeString, FILE_CREATE,
-        FILE_GENERIC_WRITE, FILE_NON_DIRECTORY_FILE, FILE_PIPE_BYTE_STREAM_MODE,
-        FILE_PIPE_BYTE_STREAM_TYPE, FILE_PIPE_QUEUE_OPERATION, FILE_SHARE_READ, FILE_SHARE_WRITE,
-        FILE_SYNCHRONOUS_IO_NONALERT, FILE_WRITE_ATTRIBUTES, GENERIC_READ, HANDLE, NTSTATUS,
-        OBJ_CASE_INSENSITIVE, OBJ_INHERIT, PROCESS_ALL_ACCESS,
-        PROCESS_CREATE_FLAGS_INHERIT_HANDLES, PS_ATTRIBUTE_IMAGE_NAME, PS_ATTRIBUTE_PARENT_PROCESS,
-        RTL_USER_PROC_PARAMS_NORMALIZED, SYNCHRONIZE, THREAD_ALL_ACCESS, TOKEN_INTEGRITY_LEVEL,
-        TOKEN_QUERY, ULONG,
+        AccessMask,
+        ClientId,
+        IoStatusBlock,
+        LargeInteger,
+        ObjectAttributes,
+        ProcessBasicInformation,
+        ProcessInformation,
+        PsAttributeList,
+        PsCreateInfo,
+        PsCreateInfoUnion,
+        PsCreateInitialFlags,
+        PsCreateInitialState,
+        PsCreateState,
+        RtlUserProcessParameters,
+        SecurityAttributes,
+        StartupInfoW,
+        SystemInformationClass,
+        SystemProcessInformation,
+        TokenMandatoryLabel,
+        UnicodeString,
+        FILE_CREATE,
+        FILE_GENERIC_WRITE,
+        FILE_NON_DIRECTORY_FILE,
+        FILE_PIPE_BYTE_STREAM_MODE,
+        FILE_PIPE_BYTE_STREAM_TYPE,
+        FILE_PIPE_QUEUE_OPERATION,
+        FILE_SHARE_READ,
+        FILE_SHARE_WRITE,
+        FILE_SYNCHRONOUS_IO_NONALERT,
+        FILE_WRITE_ATTRIBUTES,
+        GENERIC_READ,
+        HANDLE,
+        NTSTATUS,
+        OBJ_CASE_INSENSITIVE,
+        OBJ_INHERIT,
+        PROCESS_ALL_ACCESS,
+        PROCESS_CREATE_FLAGS_INHERIT_HANDLES,
+        PS_ATTRIBUTE_IMAGE_NAME,
+        PS_ATTRIBUTE_PARENT_PROCESS,
+        RTL_USER_PROC_PARAMS_NORMALIZED,
+        SYNCHRONIZE,
+        THREAD_ALL_ACCESS,
+        TOKEN_INTEGRITY_LEVEL,
+        TOKEN_QUERY,
+        ULONG,
     },
     ntstatus::{
-        NT_SUCCESS, STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_END_OF_FILE,
-        STATUS_INFO_LENGTH_MISMATCH, STATUS_PENDING,
+        NT_SUCCESS,
+        STATUS_BUFFER_OVERFLOW,
+        STATUS_BUFFER_TOO_SMALL,
+        STATUS_END_OF_FILE,
+        STATUS_INFO_LENGTH_MISMATCH,
+        STATUS_PENDING,
     },
 };
 
@@ -57,8 +93,8 @@ pub unsafe fn get_pid_and_ppid() -> (u32, u32) {
 
     // Perform a system call to NtQueryInformationProcess to retrieve the basic process information.
     let status = instance().ntdll.nt_query_information_process.run(
-        -1isize as HANDLE, // Use the special handle `-1` to refer to the current process.
-        0,                 // Query the `ProcessBasicInformation`.
+        -1isize as HANDLE,            // Use the special handle `-1` to refer to the current process.
+        0,                            // Query the `ProcessBasicInformation`.
         &mut pbi as *mut _ as *mut _, // Provide a pointer to the ProcessBasicInformation structure.
         size_of::<ProcessBasicInformation>() as u32, // Specify the size of the structure.
         &mut return_length as *mut u32, // Receive the actual size of the returned data.
@@ -66,7 +102,7 @@ pub unsafe fn get_pid_and_ppid() -> (u32, u32) {
 
     if status == 0 {
         return (
-            pbi.unique_process_id as u32, // Return the PID of the current process.
+            pbi.unique_process_id as u32,                // Return the PID of the current process.
             pbi.inherited_from_unique_process_id as u32, // Return the PPID of the parent process.
         );
     }
@@ -91,8 +127,8 @@ pub unsafe fn get_current_process_id() -> u32 {
 
     // Perform a system call to NtQueryInformationProcess to retrieve the basic process information.
     let status = instance().ntdll.nt_query_information_process.run(
-        -1isize as HANDLE, // Use the special handle `-1` to refer to the current process.
-        0,                 // Query the `ProcessBasicInformation`.
+        -1isize as HANDLE,            // Use the special handle `-1` to refer to the current process.
+        0,                            // Query the `ProcessBasicInformation`.
         &mut pbi as *mut _ as *mut _, // Provide a pointer to the ProcessBasicInformation structure.
         size_of::<ProcessBasicInformation>() as u32, // Specify the size of the structure.
         &mut return_length as *mut u32, // Receive the actual size of the returned data.
@@ -141,8 +177,8 @@ pub unsafe fn get_process_handle(pid: i32, desired_access: AccessMask) -> HANDLE
 
     // Perform a system call to NtOpenProcess to obtain a handle to the specified process.
     instance().ntdll.nt_open_process.run(
-        &mut process_handle, // Pointer to the handle that will receive the process handle.
-        desired_access,      // Specify the access rights desired for the process handle.
+        &mut process_handle,    // Pointer to the handle that will receive the process handle.
+        desired_access,         // Specify the access rights desired for the process handle.
         &mut object_attributes, // Provide the object attributes for the process.
         &mut client_id as *mut _ as *mut c_void, // Pass the client ID (target process ID).
     );
@@ -156,8 +192,8 @@ pub unsafe fn get_process_handle(pid: i32, desired_access: AccessMask) -> HANDLE
 /// and then opens a handle to the process using `NtOpenProcess`.
 ///
 /// # Safety
-/// This function involves unsafe operations, including raw pointer dereferencing, memory allocations, and direct system calls.
-/// Ensure that the parameters passed to the function are valid and the function is called in a safe context.
+/// This function involves unsafe operations, including raw pointer dereferencing, memory allocations, and direct system
+/// calls. Ensure that the parameters passed to the function are valid and the function is called in a safe context.
 ///
 /// # Parameters
 /// - `process_name`: The name of the target process as a string slice.
@@ -194,8 +230,7 @@ pub unsafe fn get_process_handle_by_name(process_name: &str, desired_access: Acc
         if (*current).next_entry_offset == 0 {
             break;
         }
-        current = (current as *const u8).add((*current).next_entry_offset as usize)
-            as *mut SystemProcessInformation;
+        current = (current as *const u8).add((*current).next_entry_offset as usize) as *mut SystemProcessInformation;
     }
 
     null_mut() // Return null_mut() if the process is not found.
@@ -315,13 +350,14 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i16 {
 /// - `sz_target_process`: A string slice that specifies the NT path of the process image to be created.
 /// - `sz_target_process_parameters`: A string slice that specifies the command line for the process.
 /// - `sz_target_process_path`: A string slice that specifies the current directory for the process.
-/// - `h_parent_process`: A handle to the parent process. If `null_mut()`, the current process will be used as the parent.
+/// - `h_parent_process`: A handle to the parent process. If `null_mut()`, the current process will be used as the
+///   parent.
 /// - `h_process`: A mutable reference to a `HANDLE` that will receive the process handle upon creation.
 /// - `h_thread`: A mutable reference to a `HANDLE` that will receive the thread handle upon creation.
 ///
 /// # Returns
-/// - `NTSTATUS`: The status code indicating the result of the process creation. A value of `0` indicates success,
-///   while any other value represents an error.
+/// - `NTSTATUS`: The status code indicating the result of the process creation. A value of `0` indicates success, while
+///   any other value represents an error.
 ///
 /// # Safety
 /// This function uses unsafe operations to interact with low-level Windows APIs. Ensure that the inputs
@@ -330,7 +366,7 @@ pub unsafe fn nt_create_user_process(
     sz_target_process: &str,
     sz_target_process_parameters: &str,
     sz_target_process_path: &str,
-    h_parent_process: HANDLE, //PPID Spoofing
+    h_parent_process: HANDLE, // PPID Spoofing
     h_process: &mut HANDLE,
     h_thread: &mut HANDLE,
 ) -> NTSTATUS {
@@ -343,8 +379,7 @@ pub unsafe fn nt_create_user_process(
     let mut upp_process_parameters: *mut RtlUserProcessParameters = null_mut();
 
     // Convert the input strings to UTF-16 and initialize the corresponding UNICODE_STRING structures.
-    let sz_target_process_utf16: Vec<u16> =
-        sz_target_process.encode_utf16().chain(Some(0)).collect();
+    let sz_target_process_utf16: Vec<u16> = sz_target_process.encode_utf16().chain(Some(0)).collect();
     us_nt_image_path.init(sz_target_process_utf16.as_ptr());
 
     let sz_target_process_parameters_utf16: Vec<u16> = sz_target_process_parameters
@@ -452,7 +487,8 @@ pub unsafe fn nt_create_user_process(
 ///
 /// - `h_read_pipe`: A mutable reference to a handle that will receive the read handle of the created pipe.
 /// - `h_write_pipe`: A mutable reference to a handle that will receive the write handle of the created pipe.
-/// - `lp_pipe_attributes`: A pointer to a `SecurityAttributes` structure that specifies the security attributes for the pipe.
+/// - `lp_pipe_attributes`: A pointer to a `SecurityAttributes` structure that specifies the security attributes for the
+///   pipe.
 /// - `n_size`: The buffer size for the pipe. If set to 0, a default size of 4096 bytes is used.
 ///
 /// # Returns
@@ -465,12 +501,13 @@ pub unsafe fn nt_create_user_process(
 /// The function generates a unique named pipe path using the format:
 /// `\\Device\\NamedPipe\\Win32Pipes.<process_id>.<pipe_id>`.
 ///
-/// - `<process_id>`: The ID of the process creating the pipe, ensuring that the pipe is uniquely associated with
-///   the current process.
-/// - `<pipe_id>`: A unique identifier for the pipe within the process, allowing multiple pipes to be created by
-///   the same process without name collisions.
+/// - `<process_id>`: The ID of the process creating the pipe, ensuring that the pipe is uniquely associated with the
+///   current process.
+/// - `<pipe_id>`: A unique identifier for the pipe within the process, allowing multiple pipes to be created by the
+///   same process without name collisions.
 ///
-/// This name ensures that the pipe is uniquely identifiable by the creating process and the specific instance of the pipe.
+/// This name ensures that the pipe is uniquely identifiable by the creating process and the specific instance of the
+/// pipe.
 ///
 /// # Safety
 ///
@@ -607,11 +644,11 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
             null_mut(),                               // Event, usually null
             null_mut(),                               // APC routine, usually null
             null_mut(),                               // APC context, usually null
-            &mut io_status_block, // IO status block to receive status and information
+            &mut io_status_block,                     // IO status block to receive status and information
             local_buffer.as_mut_ptr() as *mut c_void, // Buffer to receive the data
-            local_buffer.len() as u32, // Length of the buffer
-            null_mut(),           // Offset, usually null for pipes
-            null_mut(),           // Key, usually null
+            local_buffer.len() as u32,                // Length of the buffer
+            null_mut(),                               // Offset, usually null for pipes
+            null_mut(),                               // Key, usually null
         );
 
         // If the call was not successful, handle the error
@@ -699,8 +736,8 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
     // Define security attributes to allow handle inheritance.
     let mut lp_pipe_attributes = SecurityAttributes {
         n_length: mem::size_of::<SecurityAttributes>() as u32, // Size of the structure.
-        lp_security_descriptor: null_mut(),                    // No specific security descriptor.
-        b_inherit_handle: true,                                // Allow handle inheritance.
+        lp_security_descriptor: null_mut(),                                  // No specific security descriptor.
+        b_inherit_handle: true,                                        // Allow handle inheritance.
     };
 
     unsafe {
@@ -798,10 +835,7 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
 /// # Safety
 /// This function performs unsafe operations, such as memory allocation and system calls. The caller
 /// must ensure that the inputs are valid and that the function is called in a safe context.
-pub unsafe fn nt_process_snapshot(
-    snapshot: &mut *mut SystemProcessInformation,
-    size: &mut usize,
-) -> NTSTATUS {
+pub unsafe fn nt_process_snapshot(snapshot: &mut *mut SystemProcessInformation, size: &mut usize) -> NTSTATUS {
     let mut length: u32 = 0;
 
     // First call to determine the required length of the buffer for process information.
@@ -850,15 +884,18 @@ pub unsafe fn nt_process_snapshot(
 /// to create a new thread in the specified process with the given start routine and arguments.
 ///
 /// # Parameters
-/// - `proc_handle`: The handle to the process in which to create the thread. This is usually obtained via `get_process_handle`.
+/// - `proc_handle`: The handle to the process in which to create the thread. This is usually obtained via
+///   `get_process_handle`.
 /// - `start_routine`: A pointer to the function that the new thread will execute.
 /// - `arg_ptr`: A pointer to the arguments that will be passed to the thread's start routine.
 ///
 /// # Returns
-/// - `HANDLE`: A handle to the newly created thread if successful. The handle will be `null_mut()` if the thread creation fails.
+/// - `HANDLE`: A handle to the newly created thread if successful. The handle will be `null_mut()` if the thread
+///   creation fails.
 ///
 /// # Safety
-/// This function is unsafe because it directly interacts with low-level Windows APIs and performs raw pointer dereferencing.
+/// This function is unsafe because it directly interacts with low-level Windows APIs and performs raw pointer
+/// dereferencing.
 pub unsafe fn nt_create_thread_ex(
     proc_handle: HANDLE,
     start_routine: extern "system" fn(*mut c_void) -> u32,
@@ -932,11 +969,12 @@ pub extern "system" fn my_thread_start_routine(param: *mut c_void) -> c_ulong {
 #[cfg(test)]
 mod tests {
 
-    use crate::utils::NT_STATUS;
+    use alloc::string::String;
+
+    use libc_print::libc_println;
 
     use super::*;
-    use alloc::string::String;
-    use libc_print::libc_println;
+    use crate::utils::NT_STATUS;
 
     #[test]
     fn test_nt_create_thread_ex() {
@@ -946,8 +984,7 @@ mod tests {
         let arg: i32 = 42; // Esempio di argomento da passare al thread
         let arg_ptr = &arg as *const _ as *mut c_void;
 
-        let thread_handle =
-            unsafe { nt_create_thread_ex(proc_handle, my_thread_start_routine, arg_ptr) };
+        let thread_handle = unsafe { nt_create_thread_ex(proc_handle, my_thread_start_routine, arg_ptr) };
 
         // Assicurati di chiudere il thread handle quando non è più necessario.
         if !thread_handle.is_null() {
@@ -1009,9 +1046,7 @@ mod tests {
 
             if !h_process.is_null() {
                 libc_println!(
-                    "NtCreateUserProcess Success:\n\
-                    hProcess: {:?}\n\
-                    hThread: {:?}",
+                    "NtCreateUserProcess Success:\nhProcess: {:?}\nhThread: {:?}",
                     h_process,
                     h_thread
                 );
@@ -1033,8 +1068,7 @@ mod tests {
             let mut h_process: HANDLE = null_mut();
             let mut h_thread: HANDLE = null_mut();
 
-            let h_parent_process_handle: HANDLE =
-                get_process_handle_by_name("explorer.exe", PROCESS_ALL_ACCESS);
+            let h_parent_process_handle: HANDLE = get_process_handle_by_name("explorer.exe", PROCESS_ALL_ACCESS);
 
             if h_parent_process_handle.is_null() {
                 libc_println!("[!] GetProcHandle Failed");
@@ -1054,9 +1088,7 @@ mod tests {
 
             if !h_process.is_null() {
                 libc_println!(
-                    "NtCreateUserProcess Success:\n\
-                    hProcess: {:?}\n\
-                    hThread: {:?}",
+                    "NtCreateUserProcess Success:\nhProcess: {:?}\nhThread: {:?}",
                     h_process,
                     h_thread
                 );

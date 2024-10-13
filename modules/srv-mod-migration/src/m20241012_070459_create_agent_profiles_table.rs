@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
                     .col(
                         ColumnDef::new(AgentProfile::Id)
                             .string_len(32)
-                            .primary_key()
+                            .primary_key(),
                     )
                     .col(string(AgentProfile::Name).unique_key())
                     .col(timestamp_null(AgentProfile::KillDate))
@@ -22,12 +22,12 @@ impl MigrationTrait for Migration {
                     .col(
                         interval(AgentProfile::PollingInterval, None, None)
                             .not_null()
-                            .default("1 minute")
+                            .default("1 minute"),
                     )
                     .col(
                         interval(AgentProfile::PollingJitter, None, None)
                             .not_null()
-                            .default("10 seconds")
+                            .default("10 seconds"),
                     )
                     .col(timestamp(AgentProfile::CreatedAt).not_null())
                     .col(timestamp(AgentProfile::UpdatedAt).not_null())

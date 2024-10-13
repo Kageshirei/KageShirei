@@ -19,14 +19,10 @@ extern crate alloc;
 ///
 /// In Windows, `-1` is used as a special value to represent the current process handle.
 /// This function mimics the behavior of the `NtCurrentProcess` macro in C.
-pub fn nt_current_process() -> HANDLE {
-    (-1isize) as HANDLE
-}
+pub fn nt_current_process() -> HANDLE { (-1isize) as HANDLE }
 
 /// Returns a handle to the current thread.
 ///
 /// Similar to the process handle, `-2` is used as a special value to represent the current thread handle.
 /// This function mimics the behavior of the `NtCurrentThread` macro in C.
-pub fn nt_current_thread() -> HANDLE {
-    (-2isize) as HANDLE
-}
+pub fn nt_current_thread() -> HANDLE { (-2isize) as HANDLE }

@@ -1,20 +1,21 @@
 use std::collections::HashMap;
 
-use axum::{debug_handler, Json, Router};
-use axum::extract::{Query, State};
-use axum::routing::get;
+use axum::{
+    debug_handler,
+    extract::{Query, State},
+    routing::get,
+    Json,
+    Router,
+};
+use srv_mod_database::{
+    diesel::{ExpressionMethods, QueryDsl, SelectableHelper},
+    diesel_async::RunQueryDsl,
+    models::{log::Log, notification::Notification},
+    schema::{logs, notifications},
+};
 use tracing::{error, info, instrument};
 
-use srv_mod_database::diesel::{QueryDsl, SelectableHelper};
-use srv_mod_database::diesel::ExpressionMethods;
-use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::log::Log;
-use srv_mod_database::models::notification::Notification;
-use srv_mod_database::schema::{logs, notifications};
-
-use crate::claims::JwtClaims;
-use crate::errors::ApiServerError;
-use crate::state::ApiServerSharedState;
+use crate::{claims::JwtClaims, errors::ApiServerError, state::ApiServerSharedState};
 
 /// The handler for the notifications route
 ///
@@ -36,11 +37,15 @@ async fn get_handler(
         .await
         .map_err(|_| ApiServerError::InternalServerError)?;
 
-    let page = params.get("page").and_then(|page| page.parse::<u32>().ok()).unwrap_or(1);
+    let page = params
+        .get("page")
+        .and_then(|page| page.parse::<u32>().ok())
+        .unwrap_or(1);
     let page_size = 50;
 
     // Fetch the user from the database
-    let mut notification = notifications::table.order_by(notifications::created_at.desc())
+    let mut notification = notifications::table
+        .order_by(notifications::created_at.desc())
         .offset(((page - 1) * page_size) as i64)
         .limit(page_size as i64)
         .select(Notification::as_select())

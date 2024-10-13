@@ -3,14 +3,14 @@ use std::sync::Arc;
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
 use reqwest::{Client, ClientBuilder};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::metadata::{Metadata, WithMetadata};
-use rs2_communication_protocol::protocol::Protocol;
-use rs2_communication_protocol::sender::Sender;
+use rs2_communication_protocol::{
+    magic_numbers,
+    metadata::{Metadata, WithMetadata},
+    protocol::Protocol,
+    sender::Sender,
+};
 use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
+use serde::{de::DeserializeOwned, Serialize};
 
 /// Define the JSON protocol for sending and receiving data.
 pub struct JsonProtocol<E>
@@ -201,14 +201,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use axum::http::HeaderMap;
-    use axum::routing::get;
-    use axum::Router;
+    use axum::{http::HeaderMap, routing::get, Router};
+    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;
-
-    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
     use super::*;
 
@@ -265,27 +262,29 @@ mod tests {
     #[tokio::test]
     async fn test_write() {
         let cancellation_token = CancellationToken::new();
-        let handler = |headers: HeaderMap, body: Bytes| async move {
-            assert_eq!(headers.get("content-type").unwrap(), "text/plain");
-            assert_eq!(
-                headers.get("cf-ray").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
-            );
-            assert_eq!(
-                headers.get("cf-worker").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5w"
-            );
+        let handler = |headers: HeaderMap, body: Bytes| {
+            async move {
+                assert_eq!(headers.get("content-type").unwrap(), "text/plain");
+                assert_eq!(
+                    headers.get("cf-ray").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
+                );
+                assert_eq!(
+                    headers.get("cf-worker").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5w"
+                );
 
-            let mut check = BytesMut::new();
-            for i in magic_numbers::JSON.iter() {
-                check.put_u8(*i);
-            }
-            for i in "{\"foo\":\"bar\"}".as_bytes() {
-                check.put_u8(*i);
-            }
+                let mut check = BytesMut::new();
+                for i in magic_numbers::JSON.iter() {
+                    check.put_u8(*i);
+                }
+                for i in "{\"foo\":\"bar\"}".as_bytes() {
+                    check.put_u8(*i);
+                }
 
-            assert_eq!(body, check.freeze());
-            "Ok"
+                assert_eq!(body, check.freeze());
+                "Ok"
+            }
         };
         let router = Router::new().route("/", get(handler).post(handler));
 

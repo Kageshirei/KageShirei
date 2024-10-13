@@ -1,8 +1,11 @@
-use crate::extension::postgres::Type;
-use crate::m20241012_035559_create_users_table::User;
-use crate::m20241012_041618_create_agents_table::AgentFieldVariants;
-use crate::sea_orm::{EnumIter, Iterable};
 use sea_orm_migration::{prelude::*, schema::*};
+
+use crate::{
+    extension::postgres::Type,
+    m20241012_035559_create_users_table::User,
+    m20241012_041618_create_agents_table::AgentFieldVariants,
+    sea_orm::{EnumIter, Iterable},
+};
 
 #[derive(DeriveIden)]
 struct LogLevel;
@@ -27,7 +30,7 @@ impl MigrationTrait for Migration {
                 Type::create()
                     .as_enum(LogLevel)
                     .values(LogLevelVariants::iter())
-                    .to_owned()
+                    .to_owned(),
             )
             .await?;
 
@@ -36,12 +39,15 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Logs::Table)
                     .if_not_exists()
+                    .col(ColumnDef::new(Logs::Id).string_len(32).primary_key())
                     .col(
-                        ColumnDef::new(Logs::Id)
-                            .string_len(32)
-                            .primary_key()
+                        enumeration(
+                            Logs::Level,
+                            Alias::new("log_level"),
+                            LogLevelVariants::iter(),
+                        )
+                            .not_null(),
                     )
-                    .col(enumeration(Logs::Level, Alias::new("log_level"), LogLevelVariants::iter()).not_null())
                     .col(string(Logs::Title).not_null())
                     .col(string_null(Logs::Message))
                     .col(json_null(Logs::Extra))
@@ -71,27 +77,29 @@ impl MigrationTrait for Migration {
                     .col(ReadLogs::LogId)
                     .col(ReadLogs::ReadBy)
                     .unique()
-                    .to_owned()
+                    .to_owned(),
             )
             .await?;
 
         manager
-            .create_foreign_key(ForeignKey::create()
-                .name("fk_read_logs_log_id")
-                .from(ReadLogs::Table, ReadLogs::LogId)
-                .to(Logs::Table, Logs::Id)
-                .on_delete(ForeignKeyAction::Cascade)
-                .to_owned()
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk_read_logs_log_id")
+                    .from(ReadLogs::Table, ReadLogs::LogId)
+                    .to(Logs::Table, Logs::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
             )
             .await?;
 
         manager
-            .create_foreign_key(ForeignKey::create()
-                .name("fk_read_logs_read_by")
-                .from(ReadLogs::Table, ReadLogs::ReadBy)
-                .to(User::Table, User::Id)
-                .on_delete(ForeignKeyAction::Cascade)
-                .to_owned()
+            .create_foreign_key(
+                ForeignKey::create()
+                    .name("fk_read_logs_read_by")
+                    .from(ReadLogs::Table, ReadLogs::ReadBy)
+                    .to(User::Table, User::Id)
+                    .on_delete(ForeignKeyAction::Cascade)
+                    .to_owned(),
             )
             .await
     }
@@ -135,5 +143,3 @@ enum ReadLogs {
     #[sea_orm(ident = "read_at")]
     ReadAt,
 }
-
-

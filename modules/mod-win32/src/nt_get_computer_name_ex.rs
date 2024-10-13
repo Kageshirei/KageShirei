@@ -1,18 +1,17 @@
-use core::ffi::c_void;
-use core::ptr;
+use core::{ffi::c_void, ptr};
 
 extern crate alloc;
 
-use alloc::vec;
-use alloc::vec::Vec;
+use alloc::{vec, vec::Vec};
+
 use libc_print::libc_println;
+use mod_agentcore::instance;
 use rs2_win32::{
     ntdef::{KeyValuePartialInformation, UnicodeString, REG_SZ, ULONG},
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL},
 };
 
 use crate::{nt_reg_api::nt_open_key, utils::NT_STATUS};
-use mod_agentcore::instance;
 
 /// Retrieves the computer name from the registry.
 ///
@@ -46,7 +45,7 @@ pub unsafe fn get_computer_name_from_registry(
         Err(_) => {
             libc_println!("[!] NtOpenKey failed handle is null");
             return false;
-        }
+        },
     };
 
     // Initialize the Unicode string for the registry value name
@@ -154,21 +153,17 @@ pub enum ComputerNameFormat {
 ///     - `ComputerNameFormat::ComputerNameDnsHostname`: The DNS hostname of the computer.
 ///     - `ComputerNameFormat::ComputerNamePhysicalDnsDomain`: The physical DNS domain name of the computer.
 ///     - `ComputerNameFormat::ComputerNamePhysicalDnsHostname`: The physical DNS hostname of the computer.
-/// * `lp_buffer` - A mutable reference to a vector where the retrieved name will be stored. The buffer
-///     will be resized as needed to accommodate the name.
-/// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved data.
-///     On input, it specifies the size of the buffer. On output, it receives the number of characters
-///     stored in the buffer, excluding the null terminator.
+/// * `lp_buffer` - A mutable reference to a vector where the retrieved name will be stored. The buffer will be resized
+///   as needed to accommodate the name.
+/// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved data. On input, it
+///   specifies the size of the buffer. On output, it receives the number of characters stored in the buffer, excluding
+///   the null terminator.
 ///
 /// # Returns
 ///
-/// * `true` if the operation was successful, `false` otherwise. If the function fails, the buffer and
-///   size are not modified.
-pub unsafe fn get_computer_name_ex(
-    name_type: ComputerNameFormat,
-    lp_buffer: &mut Vec<u16>,
-    n_size: &mut u32,
-) -> bool {
+/// * `true` if the operation was successful, `false` otherwise. If the function fails, the buffer and size are not
+///   modified.
+pub unsafe fn get_computer_name_ex(name_type: ComputerNameFormat, lp_buffer: &mut Vec<u16>, n_size: &mut u32) -> bool {
     // Check if the buffer is empty and the requested size is greater than 0
     if lp_buffer.is_empty() && *n_size > 0 {
         return false;
@@ -192,37 +187,46 @@ pub unsafe fn get_computer_name_ex(
                 );
             }
             ret
-        }
-        ComputerNameFormat::ComputerNameDnsDomain => get_computer_name_from_registry(
-            "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
-            "Domain\0",
-            lp_buffer,
-            n_size,
-        ),
-        ComputerNameFormat::ComputerNameDnsHostname => get_computer_name_from_registry(
-            "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
-            "Hostname\0",
-            lp_buffer,
-            n_size,
-        ),
-        ComputerNameFormat::ComputerNamePhysicalDnsDomain => get_computer_name_from_registry(
-            "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
-            "NV Domain\0",
-            lp_buffer,
-            n_size,
-        ),
-        ComputerNameFormat::ComputerNamePhysicalDnsHostname => get_computer_name_from_registry(
-            "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
-            "NV Hostname\0",
-            lp_buffer,
-            n_size,
-        ),
+        },
+        ComputerNameFormat::ComputerNameDnsDomain => {
+            get_computer_name_from_registry(
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
+                "Domain\0",
+                lp_buffer,
+                n_size,
+            )
+        },
+        ComputerNameFormat::ComputerNameDnsHostname => {
+            get_computer_name_from_registry(
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
+                "Hostname\0",
+                lp_buffer,
+                n_size,
+            )
+        },
+        ComputerNameFormat::ComputerNamePhysicalDnsDomain => {
+            get_computer_name_from_registry(
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
+                "NV Domain\0",
+                lp_buffer,
+                n_size,
+            )
+        },
+        ComputerNameFormat::ComputerNamePhysicalDnsHostname => {
+            get_computer_name_from_registry(
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\0",
+                "NV Hostname\0",
+                lp_buffer,
+                n_size,
+            )
+        },
     }
 }
 
 #[cfg(test)]
 mod tests {
     use alloc::string::String;
+
     use libc_print::libc_println;
 
     use super::*;
@@ -231,16 +235,11 @@ mod tests {
     fn test_get_computer_name_from_registry() {
         unsafe {
             let registry_key =
-            "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\ComputerName\\ActiveComputerName\0";
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\ComputerName\\ActiveComputerName\0";
             let value_name_str = "ComputerName\0";
             let mut lp_buffer = Vec::new();
             let mut n_size: ULONG = 0;
-            let success = get_computer_name_from_registry(
-                registry_key,
-                value_name_str,
-                &mut lp_buffer,
-                &mut n_size,
-            );
+            let success = get_computer_name_from_registry(registry_key, value_name_str, &mut lp_buffer, &mut n_size);
 
             libc_println!("Success: {:?}", success);
             libc_println!("Computer Name: {:?}", String::from_utf16_lossy(&lp_buffer));

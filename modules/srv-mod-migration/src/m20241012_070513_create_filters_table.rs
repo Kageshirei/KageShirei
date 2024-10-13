@@ -1,8 +1,11 @@
-use crate::extension::postgres::Type;
-use crate::m20241012_041618_create_agents_table::AgentFieldVariants;
-use crate::m20241012_070459_create_agent_profiles_table::AgentProfile;
-use crate::sea_orm::{EnumIter, Iterable};
 use sea_orm_migration::{prelude::*, schema::*};
+
+use crate::{
+    extension::postgres::Type,
+    m20241012_041618_create_agents_table::AgentFieldVariants,
+    m20241012_070459_create_agent_profiles_table::AgentProfile,
+    sea_orm::{EnumIter, Iterable},
+};
 
 #[derive(DeriveIden)]
 struct AgentField;
@@ -40,7 +43,7 @@ impl MigrationTrait for Migration {
                 Type::create()
                     .as_enum(AgentField)
                     .values(AgentFieldVariants::iter())
-                    .to_owned()
+                    .to_owned(),
             )
             .await?;
 
@@ -49,7 +52,7 @@ impl MigrationTrait for Migration {
                 Type::create()
                     .as_enum(FilterOperation)
                     .values(FilterOperationVariants::iter())
-                    .to_owned()
+                    .to_owned(),
             )
             .await?;
 
@@ -58,7 +61,7 @@ impl MigrationTrait for Migration {
                 Type::create()
                     .as_enum(LogicalOperator)
                     .values(LogicalOperatorVariants::iter())
-                    .to_owned()
+                    .to_owned(),
             )
             .await?;
 
@@ -67,21 +70,29 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Filter::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Filter::Id)
-                            .string_len(32)
-                            .primary_key()
-                    )
+                    .col(ColumnDef::new(Filter::Id).string_len(32).primary_key())
                     .col(
                         ColumnDef::new(Filter::AgentProfileId)
                             .string_len(32)
-                            .not_null()
+                            .not_null(),
                     )
-                    .col(enumeration(Filter::AgentField, Alias::new("agent_field"), AgentFieldVariants::iter()))
-                    .col(enumeration(Filter::FilterOp, Alias::new("filter_operation"), FilterOperationVariants::iter()))
+                    .col(enumeration(
+                        Filter::AgentField,
+                        Alias::new("agent_field"),
+                        AgentFieldVariants::iter(),
+                    ))
+                    .col(enumeration(
+                        Filter::FilterOp,
+                        Alias::new("filter_operation"),
+                        FilterOperationVariants::iter(),
+                    ))
                     .col(json(Filter::Value).not_null())
                     .col(integer(Filter::Sequence).not_null().default(0i64))
-                    .col(enumeration_null(Filter::NextHopRelation, Alias::new("logical_operator"), LogicalOperatorVariants::iter()))
+                    .col(enumeration_null(
+                        Filter::NextHopRelation,
+                        Alias::new("logical_operator"),
+                        LogicalOperatorVariants::iter(),
+                    ))
                     .col(boolean(Filter::GroupingStart).not_null().default(false))
                     .col(boolean(Filter::GroupingEnd).not_null().default(false))
                     .col(timestamp(Filter::CreatedAt).not_null())
@@ -97,7 +108,7 @@ impl MigrationTrait for Migration {
                     .from(Filter::Table, Filter::AgentProfileId)
                     .to(AgentProfile::Table, AgentProfile::Id)
                     .on_delete(ForeignKeyAction::Cascade)
-                    .to_owned()
+                    .to_owned(),
             )
             .await
     }

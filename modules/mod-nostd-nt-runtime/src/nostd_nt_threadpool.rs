@@ -1,15 +1,14 @@
-use mod_nostd::{nostd_mpsc, nostd_thread};
-
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
-use spin::Mutex;
 
+use mod_nostd::{nostd_mpsc, nostd_thread};
 use nostd_mpsc::{Receiver, Sender};
+use spin::Mutex;
 
 /// The `NoStdThreadPool` struct manages a pool of worker threads that execute jobs.
 /// It provides a simple implementation of a thread pool that uses a custom MPSC
 /// (multiple-producer, single-consumer) channel for job distribution among workers.
 pub struct NoStdThreadPool {
-    workers: Vec<Worker>, // Vector holding the worker threads in the pool.
+    workers: Vec<Worker>,                     // Vector holding the worker threads in the pool.
     sender: Option<Arc<Mutex<Sender<Job>>>>, // Channel sender used to dispatch jobs to the workers.
 }
 
@@ -54,8 +53,8 @@ impl NoStdThreadPool {
     ///
     /// # Arguments
     ///
-    /// * `f` - A closure representing the job to be executed. The closure must implement
-    ///         `FnOnce`, `Send`, and `'static` to be safely executed across threads.
+    /// * `f` - A closure representing the job to be executed. The closure must implement `FnOnce`, `Send`, and
+    ///   `'static` to be safely executed across threads.
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
@@ -97,16 +96,19 @@ impl Worker {
     ///
     /// * A `Worker` instance wrapping the thread handle.
     fn new(receiver: Arc<Mutex<Receiver<Job>>>) -> Worker {
-        let handle = nostd_thread::NoStdThread::spawn(move || loop {
-            // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the worker.
-            let job = receiver.lock().recv();
+        let handle = nostd_thread::NoStdThread::spawn(move || {
+            loop {
+                // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the
+                // worker.
+                let job = receiver.lock().recv();
 
-            match job {
-                Some(job) => {
-                    job(); // Execute the received job.
-                }
-                None => {
-                    break; // Exit the loop if the channel is closed (no more jobs to process).
+                match job {
+                    Some(job) => {
+                        job(); // Execute the received job.
+                    },
+                    None => {
+                        break; // Exit the loop if the channel is closed (no more jobs to process).
+                    },
                 }
             }
         });

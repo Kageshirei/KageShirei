@@ -43,7 +43,7 @@ pub type DWORD64 = u64;
 pub type WORD = c_ushort;
 
 // Windows NT Headers
-pub const IMAGE_DOS_SIGNATURE: u16 = 0x5A4D; // "MZ"
+pub const IMAGE_DOS_SIGNATURE: u16 = 0x5a4d; // "MZ"
 pub const IMAGE_NT_SIGNATURE: u32 = 0x00004550; // "PE\0\0"
 
 #[repr(C)]
@@ -220,7 +220,7 @@ impl UnicodeString {
         unicode_string
     }
 
-    //RtlInitUnicodeString
+    // RtlInitUnicodeString
     pub fn init(&mut self, source_string: *const u16) {
         if !source_string.is_null() {
             let dest_size = string_length_w(source_string) * 2; // 2 bytes per u16
@@ -580,14 +580,8 @@ impl ObjectAttributes {
         }
     }
 
-    //InitializeObjectAttributes
-    pub fn initialize(
-        p: &mut ObjectAttributes,
-        n: *mut UnicodeString,
-        a: ULONG,
-        r: HANDLE,
-        s: PVOID,
-    ) {
+    // InitializeObjectAttributes
+    pub fn initialize(p: &mut ObjectAttributes, n: *mut UnicodeString, a: ULONG, r: HANDLE, s: PVOID) {
         p.length = core::mem::size_of::<ObjectAttributes>() as ULONG;
         p.root_directory = r;
         p.attributes = a;
@@ -683,7 +677,7 @@ pub struct KeyValueFullInformation {
 }
 
 // NT PROCESS DEFINES
-pub const PROCESS_ALL_ACCESS: u32 = 0x1F0FFF;
+pub const PROCESS_ALL_ACCESS: u32 = 0x1f0fff;
 pub const PROCESS_QUERY_INFORMATION: AccessMask = 0x0400;
 pub const PROCESS_VM_READ: AccessMask = 0x0010;
 pub const PROCESS_CREATE_THREAD: AccessMask = 0x0002;
@@ -820,7 +814,7 @@ impl ProcessInformation {
 // Define the valid flags for process creation based on the provided mask
 pub const PROCESS_CREATE_FLAGS_ALL_LARGE_PAGE_FLAGS: u32 = 0x00000010;
 
-//https://captmeelo.com/redteam/maldev/2022/05/10/ntcreateuserprocess.html
+// https://captmeelo.com/redteam/maldev/2022/05/10/ntcreateuserprocess.html
 pub const PROCESS_CREATE_FLAGS_BREAKAWAY: u32 = 0x00000001; // NtCreateProcessEx & NtCreateUserProcess
 pub const PROCESS_CREATE_FLAGS_NO_DEBUG_INHERIT: u32 = 0x00000002; // NtCreateProcessEx & NtCreateUserProcess
 pub const PROCESS_CREATE_FLAGS_INHERIT_HANDLES: u32 = 0x00000004; // NtCreateProcessEx & NtCreateUserProcess
@@ -924,7 +918,9 @@ impl IoStatusBlock {
     /// A new instance of `IoStatusBlock` with default initialization.
     pub fn new() -> Self {
         IoStatusBlock {
-            u: IO_STATUS_BLOCK_u { status: 0 },
+            u: IO_STATUS_BLOCK_u {
+                status: 0,
+            },
             information: 0,
         }
     }
@@ -941,7 +937,7 @@ pub type PEventType = *mut EventType;
 /// Standard rights required to read a file.
 pub const STANDARD_RIGHTS_READ: AccessMask = 0x00020000;
 /// Standard rights required for most file operations.
-pub const STANDARD_RIGHTS_REQUIRED: AccessMask = 0x000F0000;
+pub const STANDARD_RIGHTS_REQUIRED: AccessMask = 0x000f0000;
 /// Standard rights required to execute a file.
 pub const STANDARD_RIGHTS_EXECUTE: AccessMask = 0x00020000;
 /// Standard rights required to write to a file.
@@ -991,16 +987,11 @@ pub const FILE_GENERIC_READ: u32 =
     STANDARD_RIGHTS_READ | FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE;
 
 /// Generic write access mask for a file.
-pub const FILE_GENERIC_WRITE: u32 = STANDARD_RIGHTS_WRITE
-    | FILE_WRITE_DATA
-    | FILE_WRITE_ATTRIBUTES
-    | FILE_WRITE_EA
-    | FILE_APPEND_DATA
-    | SYNCHRONIZE;
+pub const FILE_GENERIC_WRITE: u32 =
+    STANDARD_RIGHTS_WRITE | FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | FILE_APPEND_DATA | SYNCHRONIZE;
 
 /// Generic execute access mask for a file.
-pub const FILE_GENERIC_EXECUTE: u32 =
-    STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE;
+pub const FILE_GENERIC_EXECUTE: u32 = STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE;
 
 /// IoStatusBlock return value indicating a file was created.
 pub const FILE_CREATED: u32 = 0x00000001;
@@ -1209,7 +1200,7 @@ pub struct KUserSharedData {
     pub reserved10: [u32; 210],
 }
 
-//START NtCreateUserProcess STRUCT
+// START NtCreateUserProcess STRUCT
 #[repr(C)]
 pub struct PsCreateInfo {
     pub size: SIZE_T,
@@ -1270,7 +1261,9 @@ impl PsCreateInitialFlagBits {
         bits |= 8 << 8; // SpareBits2 : 8;
         bits |= 16 << 16; // ProhibitedImageCharacteristics : 16;
 
-        PsCreateInitialFlagBits { bits }
+        PsCreateInitialFlagBits {
+            bits,
+        }
     }
 }
 
@@ -1307,7 +1300,9 @@ impl PsCreateSuccessFlagBits {
         bits |= 8 << 8; // SpareBits2 : 8;
         bits |= 16 << 16; // SpareBits3 : 16;
 
-        PsCreateSuccessFlagBits { bits }
+        PsCreateSuccessFlagBits {
+            bits,
+        }
     }
 }
 
@@ -1323,8 +1318,8 @@ impl Default for PsCreateSuccessFlags {
 #[derive(Clone, Copy)]
 pub struct PsCreateSuccess {
     pub output_flags: PsCreateSuccessFlags, // 4 byte
-    pub file_handle: *mut c_void,           // HANDLE
-    pub section_handle: *mut c_void,        // HANDLE
+    pub file_handle: *mut c_void,          // HANDLE
+    pub section_handle: *mut c_void,          // HANDLE
     pub user_process_parameters_native: u64,
     pub user_process_parameters_wow64: ULONG,
     pub current_parameter_flags: ULONG,
@@ -1355,30 +1350,24 @@ pub struct PsAttributeList {
 }
 
 impl PsAttribute {
-    pub const fn new(
-        attribute: usize,
-        size: usize,
-        value: usize,
-        return_length: *mut usize,
-    ) -> Self {
+    pub const fn new(attribute: usize, size: usize, value: usize, return_length: *mut usize) -> Self {
         PsAttribute {
             attribute,
             size,
-            value: PsAttributeValueUnion { value },
+            value: PsAttributeValueUnion {
+                value,
+            },
             return_length,
         }
     }
 
-    pub const fn new_ptr(
-        attribute: usize,
-        size: usize,
-        value_ptr: PVOID,
-        return_length: *mut usize,
-    ) -> Self {
+    pub const fn new_ptr(attribute: usize, size: usize, value_ptr: PVOID, return_length: *mut usize) -> Self {
         PsAttribute {
             attribute,
             size,
-            value: PsAttributeValueUnion { value_ptr },
+            value: PsAttributeValueUnion {
+                value_ptr,
+            },
             return_length,
         }
     }
@@ -1463,10 +1452,10 @@ pub const RTL_USER_PROC_IMAGE_KEY_MISSING: u32 = 0x00004000;
 pub const RTL_USER_PROC_OPTIN_PROCESS: u32 = 0x00020000;
 
 /// Provides all possible access rights to a thread.
-pub const THREAD_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xFFFF;
+pub const THREAD_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xffff;
 
 /// Mask to extract the attribute number from a PS_ATTRIBUTE value.
-pub const PS_ATTRIBUTE_NUMBER_MASK: usize = 0x0000FFFF;
+pub const PS_ATTRIBUTE_NUMBER_MASK: usize = 0x0000ffff;
 /// Indicates that the attribute is specific to a thread rather than a process.
 pub const PS_ATTRIBUTE_THREAD: usize = 0x10000000;
 /// Indicates that the attribute is an input to the process or thread creation function.
@@ -1479,8 +1468,7 @@ pub const PS_ATTRIBUTE_ADDITIVE: usize = 0x40000000;
 ///
 /// This constant is equivalent to `PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON`
 /// in the Windows API, defined as `0x00000001ui64 << 44`.
-pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON: u64 =
-    0x00000001u64 << 44;
+pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON: u64 = 0x00000001u64 << 44;
 
 #[repr(C)]
 pub struct SecurityAttributes {
@@ -1489,7 +1477,7 @@ pub struct SecurityAttributes {
     pub b_inherit_handle: bool,
 }
 
-//END NtCreateUserProcess STRUCT
+// END NtCreateUserProcess STRUCT
 
 #[cfg(test)]
 mod tests {
@@ -1836,7 +1824,7 @@ pub const HEAP_DISABLE_COALESCE_ON_FREE: DWORD = 0x00000080;
 pub const HEAP_CREATE_ALIGN_16: DWORD = 0x00010000;
 pub const HEAP_CREATE_ENABLE_TRACING: DWORD = 0x00020000;
 pub const HEAP_CREATE_ENABLE_EXECUTE: DWORD = 0x00040000;
-pub const HEAP_MAXIMUM_TAG: DWORD = 0x0FFF;
+pub const HEAP_MAXIMUM_TAG: DWORD = 0x0fff;
 pub const HEAP_PSEUDO_TAG_FLAG: DWORD = 0x8000;
 pub const HEAP_TAG_SHIFT: usize = 18;
 pub const HEAP_CREATE_SEGMENT_HEAP: DWORD = 0x00000100;
@@ -1903,8 +1891,8 @@ impl RtlRelativeNameU {
     pub fn new() -> Self {
         RtlRelativeNameU {
             relative_name: UnicodeString::new(), // Initialize with an empty UnicodeString
-            containing_directory: null_mut(),    // Set HANDLE to null
-            cur_dir_ref: null_mut(),             // Set pointer to null
+            containing_directory: null_mut(),           // Set HANDLE to null
+            cur_dir_ref: null_mut(),           // Set pointer to null
         }
     }
 }

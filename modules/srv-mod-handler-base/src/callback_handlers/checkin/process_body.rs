@@ -1,23 +1,23 @@
 use anyhow::{anyhow, Result};
-use axum::body::{Body, Bytes};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
-use tracing::{instrument, warn};
-
+use axum::{
+    body::{Body, Bytes},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use mod_protocol_json::protocol::JsonProtocol;
-use rs2_communication_protocol::communication_structs::basic_agent_response::BasicAgentResponse;
-use rs2_communication_protocol::communication_structs::checkin::Checkin;
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::protocol::Protocol;
+use rs2_communication_protocol::{
+    communication_structs::{basic_agent_response::BasicAgentResponse, checkin::Checkin},
+    magic_numbers,
+    protocol::Protocol,
+};
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use rs2_utils::duration_extension::DurationExt;
 use srv_mod_config::handlers;
-use srv_mod_database::models::agent::Agent;
-use srv_mod_database::{humantime, Pool};
+use srv_mod_database::{humantime, models::agent::Agent, Pool};
+use tracing::{instrument, warn};
 
-use super::agent;
-use super::agent_profiles::apply_filters;
+use super::{agent, agent_profiles::apply_filters};
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
@@ -36,9 +36,7 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
 /// Match the magic numbers of the body to the appropriate protocol
 #[instrument(skip_all)]
 fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
-    if body.len() >= magic_numbers::JSON.len()
-        && body[..magic_numbers::JSON.len()] == magic_numbers::JSON
-    {
+    if body.len() >= magic_numbers::JSON.len() && body[..magic_numbers::JSON.len()] == magic_numbers::JSON {
         return Ok(handlers::Protocol::Json);
     }
 
@@ -97,23 +95,25 @@ fn process_json(body: Bytes) -> Result<Checkin> {
 mod test {
     use std::sync::Arc;
 
-    use axum::body::Bytes;
-    use axum::http::StatusCode;
+    use axum::{body::Bytes, http::StatusCode};
     use bytes::{BufMut, BytesMut};
-    use serial_test::serial;
-
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
-    use rs2_communication_protocol::magic_numbers;
-    use srv_mod_config::handlers;
-    use srv_mod_config::handlers::{
-        EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType,
+    use rs2_communication_protocol::{
+        communication_structs::checkin::{Checkin, PartialCheckin},
+        magic_numbers,
     };
-    use srv_mod_database::diesel::{Connection, PgConnection};
-    use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-    use srv_mod_database::diesel_async::AsyncPgConnection;
-    use srv_mod_database::diesel_migrations::MigrationHarness;
-    use srv_mod_database::migration::MIGRATIONS;
-    use srv_mod_database::{bb8, Pool};
+    use serial_test::serial;
+    use srv_mod_config::{
+        handlers,
+        handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType},
+    };
+    use srv_mod_database::{
+        bb8,
+        diesel::{Connection, PgConnection},
+        diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection},
+        diesel_migrations::MigrationHarness,
+        migration::MIGRATIONS,
+        Pool,
+    };
     use srv_mod_handler_base::state::HttpHandlerState;
 
     fn make_config() -> HandlerConfig {
@@ -154,9 +154,9 @@ mod test {
 
     #[test]
     fn test_ensure_is_not_empty() {
+        use axum::{body::Bytes, http::StatusCode};
+
         use crate::routes::public::checkin::process_body::ensure_is_not_empty;
-        use axum::body::Bytes;
-        use axum::http::StatusCode;
 
         let empty_body = Bytes::new();
         let response = ensure_is_not_empty(empty_body);
@@ -168,8 +168,9 @@ mod test {
 
     #[test]
     fn test_match_magic_numbers() {
-        use crate::routes::public::checkin::process_body::match_magic_numbers;
         use axum::body::Bytes;
+
+        use crate::routes::public::checkin::process_body::match_magic_numbers;
 
         let json_magic_numbers = Bytes::from(magic_numbers::JSON.to_vec());
         let result = match_magic_numbers(json_magic_numbers);
@@ -250,7 +251,10 @@ mod test {
         assert_eq!(agent.elevated, true);
         assert_ne!(agent.server_secret_key, "");
         assert_ne!(agent.secret_key, "");
-        assert_eq!(agent.signature, "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g");
+        assert_eq!(
+            agent.signature,
+            "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g"
+        );
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;

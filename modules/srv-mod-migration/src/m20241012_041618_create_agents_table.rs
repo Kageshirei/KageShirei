@@ -1,6 +1,9 @@
+use sea_orm_migration::{
+    prelude::{extension::postgres::Type, *},
+    schema::*,
+};
+
 use crate::sea_orm::{ActiveEnum, DbBackend, EnumIter, Iterable, Schema};
-use sea_orm_migration::prelude::extension::postgres::Type;
-use sea_orm_migration::{prelude::*, schema::*};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -13,11 +16,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Agent::Table)
                     .if_not_exists()
-                    .col(
-                        ColumnDef::new(Agent::Id)
-                            .string_len(32)
-                            .primary_key()
-                    )
+                    .col(ColumnDef::new(Agent::Id).string_len(32).primary_key())
                     .col(string(Agent::OperativeSystem).not_null())
                     .col(string(Agent::Hostname).not_null())
                     .col(string_null(Agent::Domain))
@@ -26,9 +25,7 @@ impl MigrationTrait for Migration {
                     .col(big_integer(Agent::PID).not_null().default(0i64))
                     .col(big_integer(Agent::PPID).not_null().default(0i64))
                     .col(string(Agent::ProcessName).not_null())
-                    .col(
-                        small_integer(Agent::Integrity).not_null()
-                    )
+                    .col(small_integer(Agent::Integrity).not_null())
                     .col(string(Agent::CurrentWorkingDirectory).not_null())
                     .col(string(Agent::ServerSecret).not_null())
                     .col(string(Agent::Secret).not_null())

@@ -9,18 +9,22 @@ extern crate alloc;
 
 #[cfg(test)]
 mod tests {
-    use crate::nostd_nt_runtime::NoStdNtRuntime;
-    use alloc::format;
-    use alloc::string::ToString;
-    use alloc::sync::Arc;
+    use alloc::{format, string::ToString, sync::Arc};
+
     use libc_print::libc_println;
     use mod_nostd::{nostd_mpsc, nostd_thread};
     use mod_win32::nt_time::delay;
-    use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
-    use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
-    use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
-    use rs2_communication_protocol::metadata::Metadata;
-    use rs2_runtime::Runtime; // Import the Runtime trait
+    use rs2_communication_protocol::{
+        communication_structs::{
+            agent_commands::AgentCommands,
+            simple_agent_command::SimpleAgentCommand,
+            task_output::TaskOutput,
+        },
+        metadata::Metadata,
+    };
+    use rs2_runtime::Runtime;
+
+    use crate::nostd_nt_runtime::NoStdNtRuntime; // Import the Runtime trait
 
     #[test]
     fn custom_runtime_test() {

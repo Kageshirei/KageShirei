@@ -1,7 +1,11 @@
-use crate::metadata::{Metadata, WithMetadata};
-use crate::network_interface::NetworkInterface;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    metadata::{Metadata, WithMetadata},
+    network_interface::NetworkInterface,
+};
 
 pub struct PartialCheckin {
     /// The OS name
@@ -77,9 +81,7 @@ impl Checkin {
 }
 
 impl WithMetadata for Checkin {
-    fn get_metadata(&self) -> Arc<Metadata> {
-        self.metadata.as_ref().unwrap().clone()
-    }
+    fn get_metadata(&self) -> Arc<Metadata> { self.metadata.as_ref().unwrap().clone() }
 }
 
 /// The checkin response struct

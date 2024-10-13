@@ -1,5 +1,4 @@
-use std::env;
-use std::process::Command;
+use std::{env, process::Command};
 
 use colored::Colorize;
 use log::{error, info, warn};
@@ -311,7 +310,8 @@ fn build_command_and_control() -> Result<(), String> {
 }
 
 pub fn compile() -> Result<(), String> {
-    #[cfg(unix)] {
+    #[cfg(unix)]
+    {
         // Ensure the command is executed as root
         check_root()?;
 
@@ -350,7 +350,8 @@ pub fn compile() -> Result<(), String> {
         build_command_and_control()?;
         Ok(())
     }
-    #[cfg(windows)] {
+    #[cfg(windows)]
+    {
         error!("This command is only available on Unix systems");
         Err("This command is only available on Unix systems".to_string())
     }

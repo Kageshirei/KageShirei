@@ -1,6 +1,8 @@
-use crate::metadata::{Metadata, WithMetadata};
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+use serde::{Deserialize, Serialize};
+
+use crate::metadata::{Metadata, WithMetadata};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// TaskOutput structure to represent task-related information, including optional fields for:
@@ -10,10 +12,10 @@ use std::sync::Arc;
 /// - exit_code: the task's exit code as an Option<i32>
 /// - metadata: an Arc-wrapped Metadata object, allowing shared ownership and thread safety
 pub struct TaskOutput {
-    pub output: Option<String>,          // Optional task output as a String
-    pub started_at: Option<i64>,         // Optional timestamp for when the task started
+    pub output: Option<String>,        // Optional task output as a String
+    pub started_at: Option<i64>,           // Optional timestamp for when the task started
     pub ended_at: Option<i64>,           // Optional timestamp for when the task ended
-    pub exit_code: Option<i32>,          // Optional exit code of the task
+    pub exit_code: Option<i32>,           // Optional exit code of the task
     pub metadata: Option<Arc<Metadata>>, // Optional metadata associated with the task
 }
 

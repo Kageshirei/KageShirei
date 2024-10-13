@@ -1,5 +1,6 @@
 use alloc::{sync::Arc, vec::Vec};
 use core::sync::atomic::{AtomicBool, Ordering};
+
 use spin::Mutex;
 
 /// A simple implementation of a multiple-producer, single-consumer (MPSC) channel
@@ -10,9 +11,9 @@ use spin::Mutex;
 #[derive(Debug)]
 pub struct NoStdChannel<T> {
     buffer: Mutex<Vec<T>>, // A mutex-protected vector that serves as the buffer for the channel.
-    capacity: usize,       // The maximum number of items the buffer can hold.
-    available: AtomicBool, // Indicates if there is data available for the receiver.
-    space_available: AtomicBool, // Indicates if there is space available for the sender.
+    capacity: usize,         // The maximum number of items the buffer can hold.
+    available: AtomicBool,    // Indicates if there is data available for the receiver.
+    space_available: AtomicBool,    // Indicates if there is space available for the sender.
 }
 
 /// The `Sender` struct represents the sending side of the channel. It allows
@@ -44,7 +45,9 @@ pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
         Sender {
             channel: Arc::clone(&channel),
         },
-        Receiver { channel },
+        Receiver {
+            channel,
+        },
     )
 }
 
@@ -133,7 +136,5 @@ impl<T> Receiver<T> {
 impl<T> Iterator for Receiver<T> {
     type Item = T;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        self.recv()
-    }
+    fn next(&mut self) -> Option<Self::Item> { self.recv() }
 }

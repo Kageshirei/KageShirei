@@ -1,15 +1,15 @@
-use alloc::string::String;
-use alloc::sync::Arc;
+use alloc::{string::String, sync::Arc};
+
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::metadata::{Metadata, WithMetadata};
-use rs2_communication_protocol::protocol::Protocol;
-use rs2_communication_protocol::sender::Sender;
+use rs2_communication_protocol::{
+    magic_numbers,
+    metadata::{Metadata, WithMetadata},
+    protocol::Protocol,
+    sender::Sender,
+};
 use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::client::WinHttpClient;
 
@@ -56,9 +56,7 @@ where
 
     /// Get the encryptor to use for encryption or decryption, falling back to the global encryptor
     /// if necessary.
-    fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> {
-        encryptor.or(self.global_encryptor.clone())
-    }
+    fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> { encryptor.or(self.global_encryptor.clone()) }
 }
 
 impl<E> Sender for WinHttpProtocol<E>
@@ -166,15 +164,14 @@ where
 #[cfg(test)]
 mod tests {
     use alloc::string::ToString;
-    use axum::http::HeaderMap;
-    use axum::routing::get;
-    use axum::Router;
+
+    use axum::{http::HeaderMap, routing::get, Router};
+    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;
 
     use super::*;
-    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
     async fn make_dummy_server(cancellation_token: CancellationToken, router: Router<()>) {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
@@ -229,27 +226,29 @@ mod tests {
     #[tokio::test]
     async fn test_write() {
         let cancellation_token = CancellationToken::new();
-        let handler = |headers: HeaderMap, body: Bytes| async move {
-            assert_eq!(headers.get("content-type").unwrap(), "text/plain");
-            assert_eq!(
-                headers.get("cf-ray").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
-            );
-            assert_eq!(
-                headers.get("cf-worker").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5w"
-            );
+        let handler = |headers: HeaderMap, body: Bytes| {
+            async move {
+                assert_eq!(headers.get("content-type").unwrap(), "text/plain");
+                assert_eq!(
+                    headers.get("cf-ray").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
+                );
+                assert_eq!(
+                    headers.get("cf-worker").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5w"
+                );
 
-            let mut check = BytesMut::new();
-            for i in magic_numbers::JSON.iter() {
-                check.put_u8(*i);
-            }
-            for i in "{\"foo\":\"bar\"}".as_bytes() {
-                check.put_u8(*i);
-            }
+                let mut check = BytesMut::new();
+                for i in magic_numbers::JSON.iter() {
+                    check.put_u8(*i);
+                }
+                for i in "{\"foo\":\"bar\"}".as_bytes() {
+                    check.put_u8(*i);
+                }
 
-            assert_eq!(body, check.freeze());
-            "Ok"
+                assert_eq!(body, check.freeze());
+                "Ok"
+            }
         };
         let router = Router::new().route("/", get(handler).post(handler));
 

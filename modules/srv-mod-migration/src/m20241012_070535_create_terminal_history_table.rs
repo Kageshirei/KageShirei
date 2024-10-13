@@ -1,6 +1,6 @@
-use crate::m20241012_035559_create_users_table::User;
-use crate::m20241012_041618_create_agents_table::Agent;
 use sea_orm_migration::{prelude::*, schema::*};
+
+use crate::{m20241012_035559_create_users_table::User, m20241012_041618_create_agents_table::Agent};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -48,7 +48,8 @@ impl MigrationTrait for Migration {
                     .name("i_session_id")
                     .col(TerminalHistory::SessionId)
                     .to_owned(),
-            ).await?;
+            )
+            .await?;
 
         manager
             .create_foreign_key(
@@ -97,8 +98,9 @@ impl MigrationTrait for Migration {
                 return new;
             end;
             $$ language plpgsql;
-            "#
-        ).await?;
+            "#,
+        )
+          .await?;
 
         db.execute_unprepared(
             r#"
@@ -107,8 +109,9 @@ impl MigrationTrait for Migration {
                 on terminal_history
                 for each row
             execute function set_terminal_history_sequence_counter();
-            "#
-        ).await?;
+            "#,
+        )
+          .await?;
 
         Ok(())
     }
@@ -119,14 +122,16 @@ impl MigrationTrait for Migration {
         db.execute_unprepared(
             r#"
             drop trigger before_insert_terminal_history on terminal_history;
-            "#
-        ).await?;
+            "#,
+        )
+          .await?;
 
         db.execute_unprepared(
             r#"
             drop function set_terminal_history_sequence_counter;
-            "#
-        ).await?;
+            "#,
+        )
+          .await?;
 
         manager
             .drop_table(Table::drop().table(TerminalHistory::Table).to_owned())

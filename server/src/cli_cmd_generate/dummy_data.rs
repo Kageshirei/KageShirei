@@ -1,13 +1,17 @@
-use crate::auto_migrate;
-use crate::cli::generate::operator::GenerateOperatorArguments;
 use log::{error, info};
 use rs2_communication_protocol::network_interface::NetworkInterface;
 use srv_mod_config::SharedConfig;
-use srv_mod_entity::active_enums::{AgentField, AgentIntegrity, FilterOperation};
-use srv_mod_entity::entities::{agent, agent_profile, filter, user};
-use srv_mod_entity::sea_orm::prelude::*;
-use srv_mod_entity::sea_orm::sqlx::types::chrono::{NaiveDate, NaiveTime, Utc};
-use srv_mod_entity::sea_orm::ActiveValue::Set;
+use srv_mod_entity::{
+    active_enums::{AgentField, AgentIntegrity, FilterOperation},
+    entities::{agent, agent_profile, filter, user},
+    sea_orm::{
+        prelude::*,
+        sqlx::types::chrono::{NaiveDate, NaiveTime, Utc},
+        ActiveValue::Set,
+    },
+};
+
+use crate::{auto_migrate, cli::generate::operator::GenerateOperatorArguments};
 
 pub async fn make_dummy_data(config: SharedConfig) -> Result<(), String> {
     let readonly_config = config.read().await;
@@ -33,13 +37,11 @@ pub async fn make_dummy_data(config: SharedConfig) -> Result<(), String> {
         hostname: Set("DESKTOP-PC".to_string()),
         domain: Set(Some("example-domain".to_string())),
         username: Set("user".to_string()),
-        network_interfaces: Set(vec![
-            NetworkInterface {
-                name: Some("Ethernet".to_string()),
-                address: Some("1.2.3.4".to_string()),
-                dhcp_server: Some("10.1.2.3".to_string()),
-            }
-        ]),
+        network_interfaces: Set(vec![NetworkInterface {
+            name: Some("Ethernet".to_string()),
+            address: Some("1.2.3.4".to_string()),
+            dhcp_server: Some("10.1.2.3".to_string()),
+        }]),
         pid: Set(1234),
         ppid: Set(5678),
         process_name: Set("example.exe".to_string()),
@@ -65,7 +67,7 @@ pub async fn make_dummy_data(config: SharedConfig) -> Result<(), String> {
         ))),
         working_hours: Set(Some(vec![
             NaiveTime::from_hms_opt(8, 0, 0).unwrap(),
-            NaiveTime::from_hms_opt(17, 0, 0).unwrap()
+            NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
         ])),
         polling_interval: Set(humantime::Duration::from(std::time::Duration::from_mins(1)).to_string()),
         polling_jitter: Set(humantime::Duration::from(std::time::Duration::from_secs(20)).to_string()),

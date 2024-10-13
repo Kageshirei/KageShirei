@@ -86,8 +86,7 @@ pub fn make_tls(args: &GenerateCertificateArguments) -> Result<(), String> {
     let cert_pem = server_cert.cert.pem();
     let key_pem = server_cert.key_pair.serialize_pem();
 
-    std::fs::create_dir_all(&args.output_folder)
-        .map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&args.output_folder).map_err(|e| e.to_string())?;
     std::fs::File::create(args.output_folder.join("cert.pem"))
         .map_err(|e| e.to_string())?
         .write_all(cert_pem.as_bytes())

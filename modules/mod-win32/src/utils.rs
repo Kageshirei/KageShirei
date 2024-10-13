@@ -1,10 +1,10 @@
-use core::str;
-
 use alloc::{
     format,
     string::{String, ToString},
     vec::Vec,
 };
+use core::str;
+
 use rs2_win32::{ntdef::UnicodeString, ntstatus::*};
 
 /// Converts a Rust string slice to a wide string (Vec<u16>) with a null terminator.
@@ -130,9 +130,7 @@ pub fn unicodestring_to_string(unicode_string: &UnicodeString) -> Option<String>
     }
 
     // Convert the raw UTF-16 buffer into a Rust slice.
-    let slice = unsafe {
-        core::slice::from_raw_parts(unicode_string.buffer, (unicode_string.length / 2) as usize)
-    };
+    let slice = unsafe { core::slice::from_raw_parts(unicode_string.buffer, (unicode_string.length / 2) as usize) };
 
     // Attempt to convert the UTF-16 slice into a Rust String.
     String::from_utf16(slice).ok()
@@ -151,7 +149,7 @@ pub fn NT_STATUS(status: i32) -> String {
         STATUS_INVALID_HANDLE => format!("STATUS_INVALID_HANDLE [0x{:08X}]", status),
         STATUS_INSUFFICIENT_RESOURCES => {
             format!("STATUS_INSUFFICIENT_RESOURCES [0x{:08X}]", status)
-        }
+        },
         STATUS_NOT_IMPLEMENTED => format!("STATUS_NOT_IMPLEMENTED [0x{:08X}]", status),
         STATUS_INVALID_PARAMETER => format!("STATUS_INVALID_PARAMETER [0x{:08X}]", status),
         STATUS_CONFLICTING_ADDRESSES => format!("STATUS_CONFLICTING_ADDRESSES [0x{:08X}]", status),
@@ -159,24 +157,24 @@ pub fn NT_STATUS(status: i32) -> String {
         STATUS_MEMORY_NOT_ALLOCATED => format!("STATUS_MEMORY_NOT_ALLOCATED [0x{:08X}]", status),
         STATUS_INVALID_PAGE_PROTECTION => {
             format!("STATUS_INVALID_PAGE_PROTECTION [0x{:08X}]", status)
-        }
+        },
         STATUS_ILLEGAL_INSTRUCTION => format!("STATUS_ILLEGAL_INSTRUCTION [0x{:08X}]", status),
         STATUS_INTEGER_DIVIDE_BY_ZERO => {
             format!("STATUS_INTEGER_DIVIDE_BY_ZERO [0x{:08X}]", status)
-        }
+        },
         STATUS_DLL_NOT_FOUND => format!("STATUS_DLL_NOT_FOUND [0x{:08X}]", status),
         STATUS_DLL_INIT_FAILED => format!("STATUS_DLL_INIT_FAILED [0x{:08X}]", status),
         STATUS_NO_SUCH_FILE => format!("STATUS_NO_SUCH_FILE [0x{:08X}]", status),
         STATUS_INVALID_DEVICE_REQUEST => {
             format!("STATUS_INVALID_DEVICE_REQUEST [0x{:08X}]", status)
-        }
+        },
         STATUS_NOT_FOUND => format!("STATUS_NOT_FOUND [0x{:08X}]", status),
         STATUS_DATATYPE_MISALIGNMENT => format!("STATUS_DATATYPE_MISALIGNMENT [0x{:08X}]", status),
         STATUS_OBJECT_NAME_INVALID => format!("STATUS_OBJECT_NAME_INVALID [0x{:08X}]", status),
         STATUS_NAME_TOO_LONG => format!("STATUS_NAME_TOO_LONG [0x{:08X}]", status),
         STATUS_OBJECT_PATH_SYNTAX_BAD => {
             format!("STATUS_OBJECT_PATH_SYNTAX_BAD [0x{:08X}]", status)
-        }
+        },
         _ => format!("STATUS_UNKNOWN [0x{:08X}]", status),
     }
 }
@@ -223,7 +221,8 @@ pub fn format_named_pipe_string(process_id: usize, pipe_id: u32) -> Vec<u16> {
 ///
 /// # Safety
 /// This function allocates a buffer for the UTF-16 string and transfers ownership to the `UnicodeString`.
-/// The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must be taken to free the memory if necessary.
+/// The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must be taken to free the memory if
+/// necessary.
 pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     // Convert the Rust &str to a Vec<u16> (UTF-16 encoding)
     let utf16: Vec<u16> = source.encode_utf16().collect();
@@ -262,7 +261,8 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
 /// - A `String` containing the decoded characters. Returns an empty string if the pointer is null.
 ///
 /// # Safety
-/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a valid, null-terminated UTF-16 string.
+/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a valid,
+/// null-terminated UTF-16 string.
 pub fn ptr_to_str(ptr: *mut u16) -> String {
     if ptr.is_null() {
         return String::new();
@@ -285,6 +285,4 @@ pub fn ptr_to_str(ptr: *mut u16) -> String {
 ///
 /// # Returns
 /// `true` if the character is a path separator, `false` otherwise.
-pub fn is_path_separator(ch: u16) -> bool {
-    ch == '\\' as u16 || ch == '/' as u16
-}
+pub fn is_path_separator(ch: u16) -> bool { ch == '\\' as u16 || ch == '/' as u16 }

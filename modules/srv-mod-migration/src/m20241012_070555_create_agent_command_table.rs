@@ -1,8 +1,11 @@
-use crate::extension::postgres::Type;
-use crate::m20241012_041618_create_agents_table::{Agent, AgentFieldVariants};
-use crate::m20241012_070459_create_agent_profiles_table::AgentProfile;
-use crate::sea_orm::{EnumIter, Iterable};
 use sea_orm_migration::{prelude::*, schema::*};
+
+use crate::{
+    extension::postgres::Type,
+    m20241012_041618_create_agents_table::{Agent, AgentFieldVariants},
+    m20241012_070459_create_agent_profiles_table::AgentProfile,
+    sea_orm::{EnumIter, Iterable},
+};
 
 #[derive(DeriveIden)]
 struct CommandStatus;
@@ -26,7 +29,7 @@ impl MigrationTrait for Migration {
                 Type::create()
                     .as_enum(CommandStatus)
                     .values(CommandStatusVariants::iter())
-                    .to_owned()
+                    .to_owned(),
             )
             .await?;
 
@@ -40,7 +43,14 @@ impl MigrationTrait for Migration {
                     .col(json(AgentCommand::Command))
                     .col(text_null(AgentCommand::Output))
                     .col(integer_null(AgentCommand::ExitCode))
-                    .col(enumeration(AgentCommand::Status, Alias::new("command_status"), CommandStatusVariants::iter()).default("pending"))
+                    .col(
+                        enumeration(
+                            AgentCommand::Status,
+                            Alias::new("command_status"),
+                            CommandStatusVariants::iter(),
+                        )
+                            .default("pending"),
+                    )
                     .col(timestamp_null(AgentCommand::RetrievedAt))
                     .col(timestamp_null(AgentCommand::CompletedAt))
                     .col(timestamp_null(AgentCommand::FailedAt))
@@ -57,7 +67,7 @@ impl MigrationTrait for Migration {
                     .from(AgentCommand::Table, AgentCommand::AgentId)
                     .to(Agent::Table, Agent::Id)
                     .on_delete(ForeignKeyAction::Cascade)
-                    .to_owned()
+                    .to_owned(),
             )
             .await
     }

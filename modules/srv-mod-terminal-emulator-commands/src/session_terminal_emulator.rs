@@ -1,9 +1,10 @@
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 
-use crate::command_handler::{CommandHandler, CommandHandlerArguments};
-use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
-use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
+use crate::{
+    command_handler::{CommandHandler, CommandHandlerArguments},
+    session_terminal_emulator::{clear::TerminalSessionClearArguments, history::TerminalSessionHistoryArguments},
+};
 
 pub(crate) mod clear;
 pub(crate) mod exit;

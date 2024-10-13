@@ -1,5 +1,7 @@
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::{
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum ProtocolError {

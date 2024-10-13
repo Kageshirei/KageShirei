@@ -1,15 +1,15 @@
 use chrono::Utc;
 use clap::Args;
 use serde::Serialize;
+use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
+use srv_mod_entity::{
+    active_enums::LogLevel,
+    entities::{logs, terminal_history},
+    sea_orm::{prelude::*, sea_query::SimpleExpr, ActiveValue::Set},
+};
 use tracing::{debug, instrument};
 
 use crate::command_handler::CommandHandlerArguments;
-use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
-use srv_mod_entity::active_enums::LogLevel;
-use srv_mod_entity::entities::{logs, terminal_history};
-use srv_mod_entity::sea_orm::prelude::*;
-use srv_mod_entity::sea_orm::sea_query::SimpleExpr;
-use srv_mod_entity::sea_orm::ActiveValue::Set;
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
@@ -37,20 +37,20 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
             title: Set("Soft clean".to_string()),
             message: Set(Some("Commands have been soft cleaned.".to_string())),
             extra: Set(Some(serde_json::json!({
-				"session": config.session.hostname,
-				"ran_by": config.user.username,
-			}))),
+                "session": config.session.hostname,
+                "ran_by": config.user.username,
+            }))),
             ..Default::default()
         };
 
         let (update, log_insertion) = tokio::join!(
-			terminal_history::Entity::update_many()
-				.filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
-				.col_expr(terminal_history::Column::DeletedAt, Expr::value(Utc::now()))
-				.col_expr(terminal_history::Column::RestoredAt, Expr::value(None))
-				.exec(&db),
-			pending_log.insert(&db)
-		);
+            terminal_history::Entity::update_many()
+                .filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
+                .col_expr(terminal_history::Column::DeletedAt, Expr::value(Utc::now()))
+                .col_expr(terminal_history::Column::RestoredAt, Expr::value(None))
+                .exec(&db),
+            pending_log.insert(&db)
+        );
 
         update.map_err(|e| e.to_string())?;
         log = log_insertion.map_err(|e| e.to_string())?;
@@ -61,28 +61,31 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
             title: Set("Permanent clean".to_string()),
             message: Set(Some("Commands have been permanently cleaned.".to_string())),
             extra: Set(Some(serde_json::json!({
-				"session": config.session.hostname,
-				"ran_by": config.user.username,
-			}))),
+                "session": config.session.hostname,
+                "ran_by": config.user.username,
+            }))),
             ..Default::default()
         };
         let (delete, log_insertion) = tokio::join!(
             terminal_history::Entity::delete_many()
-				.filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
-				.exec(&db),
-			pending_log.insert(&db)
-		);
+                .filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
+                .exec(&db),
+            pending_log.insert(&db)
+        );
 
         delete.map_err(|e| e.to_string())?;
         log = log_insertion.map_err(|e| e.to_string())?;
     }
 
     // broadcast the log
-    config.broadcast_sender.send(SseEvent {
-        data: serde_json::to_string(&log).map_err(|e| e.to_string())?,
-        event: EventType::Log,
-        id: Some(log.id),
-    }).map_err(|e| e.to_string())?;
+    config
+        .broadcast_sender
+        .send(SseEvent {
+            data: serde_json::to_string(&log).map_err(|e| e.to_string())?,
+            event: EventType::Log,
+            id: Some(log.id),
+        })
+        .map_err(|e| e.to_string())?;
 
     // Signal the frontend terminal emulator to clear the terminal screen
     Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
@@ -90,14 +93,12 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-
     use rs2_srv_test_helper::tests::*;
+    use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 
-    use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
-
     use super::*;
+    use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 
     #[tokio::test]
     #[serial]
@@ -108,7 +109,9 @@ mod tests {
         let user = generate_test_user(db_pool.clone()).await;
 
         let session_id_v = "global";
-        let args = TerminalSessionClearArguments { permanent: false };
+        let args = TerminalSessionClearArguments {
+            permanent: false,
+        };
 
         let binding = db_pool.clone();
 
@@ -118,7 +121,10 @@ mod tests {
 
             // Insert a dummy command
             let inserted_command_0 = diesel::insert_into(commands)
-                .values(&CreateCommand::new(user.id.clone(), session_id_v.to_string()))
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
                 .returning(Command::as_select())
                 .get_result(&mut connection)
                 .await
@@ -128,7 +134,10 @@ mod tests {
             assert_eq!(inserted_command_0.restored_at, None);
 
             let inserted_command_1 = diesel::insert_into(commands)
-                .values(&CreateCommand::new(user.id.clone(), session_id_v.to_string()))
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
                 .returning(Command::as_select())
                 .get_result(&mut connection)
                 .await
@@ -142,11 +151,12 @@ mod tests {
         assert!(result.is_ok());
 
         let mut connection = binding.get().await.unwrap();
-        let retrieved_commands = commands.select(Command::as_select())
-                                         .filter(session_id.eq(session_id_v))
-                                         .get_results(&mut connection)
-                                         .await
-                                         .unwrap();
+        let retrieved_commands = commands
+            .select(Command::as_select())
+            .filter(session_id.eq(session_id_v))
+            .get_results(&mut connection)
+            .await
+            .unwrap();
 
         assert_eq!(retrieved_commands.len(), 2);
         assert!(retrieved_commands.iter().all(|c| c.deleted_at.is_some()));
@@ -164,7 +174,9 @@ mod tests {
         let user = generate_test_user(db_pool.clone()).await;
 
         let session_id_v = "global";
-        let args = TerminalSessionClearArguments { permanent: true };
+        let args = TerminalSessionClearArguments {
+            permanent: true,
+        };
 
         let binding = db_pool.clone();
 
@@ -174,7 +186,10 @@ mod tests {
 
             // Insert a dummy command
             let inserted_command_0 = diesel::insert_into(commands)
-                .values(&CreateCommand::new(user.id.clone(), session_id_v.to_string()))
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
                 .returning(Command::as_select())
                 .get_result(&mut connection)
                 .await
@@ -184,7 +199,10 @@ mod tests {
             assert_eq!(inserted_command_0.restored_at, None);
 
             let inserted_command_1 = diesel::insert_into(commands)
-                .values(&CreateCommand::new(user.id.clone(), session_id_v.to_string()))
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
                 .returning(Command::as_select())
                 .get_result(&mut connection)
                 .await
@@ -198,11 +216,12 @@ mod tests {
         assert!(result.is_ok());
 
         let mut connection = binding.get().await.unwrap();
-        let retrieved_commands = commands.select(Command::as_select())
-                                         .filter(session_id.eq(session_id_v))
-                                         .get_results(&mut connection)
-                                         .await
-                                         .unwrap();
+        let retrieved_commands = commands
+            .select(Command::as_select())
+            .filter(session_id.eq(session_id_v))
+            .get_results(&mut connection)
+            .await
+            .unwrap();
 
         assert_eq!(retrieved_commands.len(), 0);
 

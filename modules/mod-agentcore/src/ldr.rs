@@ -1,13 +1,22 @@
-use crate::common::dbj2_hash;
-use core::arch::asm;
-use core::ptr::null_mut;
+use core::{arch::asm, ptr::null_mut};
+
 use rs2_win32::{
     ntdef::{
-        ImageDosHeader, ImageExportDirectory, ImageNtHeaders, LoaderDataTableEntry, PebLoaderData,
-        HANDLE, IMAGE_DOS_SIGNATURE, IMAGE_NT_SIGNATURE, PEB, TEB,
+        ImageDosHeader,
+        ImageExportDirectory,
+        ImageNtHeaders,
+        LoaderDataTableEntry,
+        PebLoaderData,
+        HANDLE,
+        IMAGE_DOS_SIGNATURE,
+        IMAGE_NT_SIGNATURE,
+        PEB,
+        TEB,
     },
     utils::string_length_a,
 };
+
+use crate::common::dbj2_hash;
 
 /// Find the Thread Environment Block (TEB) of the current process on x86_64
 #[cfg(target_arch = "x86_64")]
@@ -45,22 +54,18 @@ pub fn nt_current_peb() -> *mut PEB {
 ///
 /// This function retrieves the last error code set in the Thread Environment Block (TEB).
 /// It mimics the behavior of the `NtGetLastError` macro in C.
-pub unsafe fn nt_get_last_error() -> u32 {
-    nt_current_teb().as_ref().unwrap().last_error_value
-}
+pub unsafe fn nt_get_last_error() -> u32 { nt_current_teb().as_ref().unwrap().last_error_value }
 
 /// Sets the last error value for the current thread.
 ///
 /// This function sets the last error code in the Thread Environment Block (TEB).
 /// It mimics the behavior of the `NtSetLastError` macro in C.
-pub unsafe fn nt_set_last_error(error: u32) {
-    nt_current_teb().as_mut().unwrap().last_error_value = error;
-}
+pub unsafe fn nt_set_last_error(error: u32) { nt_current_teb().as_mut().unwrap().last_error_value = error; }
 
 /// Retrieves a handle to the process heap.
 ///
-/// This function returns a handle to the heap used by the process, which is stored in the Process Environment Block (PEB).
-/// It mimics the behavior of the `NtProcessHeap` macro in C.
+/// This function returns a handle to the heap used by the process, which is stored in the Process Environment Block
+/// (PEB). It mimics the behavior of the `NtProcessHeap` macro in C.
 pub unsafe fn nt_process_heap() -> HANDLE {
     nt_current_teb()
         .as_ref()
@@ -99,8 +104,7 @@ pub unsafe fn ldr_module_peb(module_hash: u32) -> *mut u8 {
     }
 
     // Get the first module in the InLoadOrderModuleList
-    let mut module_list =
-        (*peb_ldr_data_ptr).in_load_order_module_list.flink as *mut LoaderDataTableEntry;
+    let mut module_list = (*peb_ldr_data_ptr).in_load_order_module_list.flink as *mut LoaderDataTableEntry;
 
     // Iterate through the loaded modules
     while !(*module_list).dll_base.is_null() {
@@ -220,19 +224,15 @@ pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *
 
     // Get the export directory from the NT headers
     let data_directory = &(*p_img_nt_headers).optional_header.data_directory[0]; // Assuming IMAGE_DIRECTORY_ENTRY_EXPORT is 0
-    let export_directory =
-        (module_base.offset(data_directory.virtual_address as isize)) as *mut ImageExportDirectory;
+    let export_directory = (module_base.offset(data_directory.virtual_address as isize)) as *mut ImageExportDirectory;
     if export_directory.is_null() {
         return null_mut();
     }
 
     let number_of_functions = (*export_directory).number_of_functions;
-    let array_of_names =
-        module_base.offset((*export_directory).address_of_names as isize) as *const u32;
-    let array_of_addresses =
-        module_base.offset((*export_directory).address_of_functions as isize) as *const u32;
-    let array_of_ordinals =
-        module_base.offset((*export_directory).address_of_name_ordinals as isize) as *const u16;
+    let array_of_names = module_base.offset((*export_directory).address_of_names as isize) as *const u32;
+    let array_of_addresses = module_base.offset((*export_directory).address_of_functions as isize) as *const u32;
+    let array_of_ordinals = module_base.offset((*export_directory).address_of_name_ordinals as isize) as *const u16;
 
     // Create a slice from the array of names in the export directory
     let names = core::slice::from_raw_parts(array_of_names, number_of_functions as _);

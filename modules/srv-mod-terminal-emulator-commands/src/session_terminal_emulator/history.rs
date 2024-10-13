@@ -1,14 +1,17 @@
-use crate::command_handler::CommandHandlerArguments;
-use crate::post_process_result::PostProcessResult;
-use crate::session_terminal_emulator::history::restore::TerminalSessionHistoryRestoreArguments;
 use clap::{Args, Subcommand};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use srv_mod_entity::entities::{terminal_history, user};
-use srv_mod_entity::sea_orm::prelude::*;
-use srv_mod_entity::sea_orm::sea_query::Alias;
-use srv_mod_entity::sea_orm::{Condition, IntoIdentity, IntoSimpleExpr, Order, QueryOrder};
+use srv_mod_entity::{
+    entities::{terminal_history, user},
+    sea_orm::{prelude::*, sea_query::Alias, Condition, IntoIdentity, IntoSimpleExpr, Order, QueryOrder},
+};
 use tracing::{debug, instrument};
+
+use crate::{
+    command_handler::CommandHandlerArguments,
+    post_process_result::PostProcessResult,
+    session_terminal_emulator::history::restore::TerminalSessionHistoryRestoreArguments,
+};
 
 mod restore;
 
@@ -36,15 +39,12 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 
     if let Some(subcommand) = &args.command {
         match subcommand {
-            HistorySubcommands::Restore(args) => {
-                restore::handle(config.clone(), args).await
-            }
+            HistorySubcommands::Restore(args) => restore::handle(config.clone(), args).await,
         }
     } else {
         let db = config.db_pool.clone();
 
-        let mut conditions = Condition::all()
-            .add(terminal_history::Column::SessionId.eq(&config.session.session_id));
+        let mut conditions = Condition::all().add(terminal_history::Column::SessionId.eq(&config.session.session_id));
 
         // If the full flag is not set, filter out the commands that have been deleted
         if !args.full {
@@ -58,9 +58,9 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
                             .add(terminal_history::Column::RestoredAt.is_not_null())
                             .add(
                                 Expr::col(terminal_history::Column::RestoredAt)
-                                    .gt(Expr::col(terminal_history::Column::DeletedAt))
-                            )
-                    )
+                                    .gt(Expr::col(terminal_history::Column::DeletedAt)),
+                            ),
+                    ),
             );
         }
 
@@ -72,27 +72,22 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
             .await
             .map_err(|e| e.to_string())?;
 
-        Ok(
-            serde_json::to_string(
-                &PostProcessResult {
-                    r#type: "history".to_string(),
-                    data: history,
-                }
-            ).map_err(|e| e.to_string())?
-        )
+        Ok(serde_json::to_string(&PostProcessResult {
+            r#type: "history".to_string(),
+            data: history,
+        })
+            .map_err(|e| e.to_string())?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-
     use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 
-    use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
-
     use super::*;
+    use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
 
     #[tokio::test]
     #[serial]
@@ -103,7 +98,9 @@ mod tests {
         let user = generate_test_user(db_pool.clone()).await;
 
         let session_id_v = "global";
-        let args = TerminalSessionHistoryArguments { command: None };
+        let args = TerminalSessionHistoryArguments {
+            command: None,
+        };
 
         let binding = db_pool.clone();
 

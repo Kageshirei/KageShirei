@@ -2,7 +2,6 @@
 use sea_orm::FromJsonQueryResult;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "server", derive(Debug, FromJsonQueryResult))]
 pub struct NetworkInterface {
@@ -41,10 +40,12 @@ impl NetworkInterface {
     /// A Vec of `NetworkInterface` instances created from the input data.
     pub fn from_tuples(data: Vec<(String, String, String)>) -> Vec<NetworkInterface> {
         data.into_iter()
-            .map(|(name, address, dhcp_server)| NetworkInterface {
-                name: Some(name),
-                address: Some(address),
-                dhcp_server: Some(dhcp_server),
+            .map(|(name, address, dhcp_server)| {
+                NetworkInterface {
+                    name: Some(name),
+                    address: Some(address),
+                    dhcp_server: Some(dhcp_server),
+                }
             })
             .collect()
     }

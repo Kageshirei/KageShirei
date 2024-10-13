@@ -24,15 +24,11 @@ trait IsNull {
 }
 
 impl IsNull for u8 {
-    fn is_null(&self) -> bool {
-        *self == 0
-    }
+    fn is_null(&self) -> bool { *self == 0 }
 }
 
 impl IsNull for u16 {
-    fn is_null(&self) -> bool {
-        *self == 0
-    }
+    fn is_null(&self) -> bool { *self == 0 }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
+use std::{future::Future, sync::Arc};
+
 use rs2_runtime::Runtime;
-use std::future::Future;
-use std::sync::Arc;
 use tokio::runtime::{Builder, Handle, Runtime as TokioRuntime};
 
 /// A wrapper around Tokio's runtime to implement the `Runtime` trait.
@@ -29,9 +29,7 @@ impl TokioRuntimeWrapper {
         }
     }
 
-    pub fn handle(&self) -> Handle {
-        self.runtime.handle().clone()
-    }
+    pub fn handle(&self) -> Handle { self.runtime.handle().clone() }
 }
 
 impl Runtime for TokioRuntimeWrapper {

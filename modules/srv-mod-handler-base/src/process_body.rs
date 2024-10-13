@@ -1,26 +1,30 @@
-use anyhow::{anyhow, Result};
-use axum::body::{Body, Bytes};
-use axum::http::{HeaderMap, StatusCode};
-use axum::response::{IntoResponse, Response};
-use axum::Json;
-use serde::Deserialize;
 use std::fmt::Debug;
-use tracing::{instrument, warn};
 
-use crate::callback_handlers;
-use crate::state::HandlerSharedState;
+use anyhow::{anyhow, Result};
+use axum::{
+    body::{Body, Bytes},
+    http::{HeaderMap, StatusCode},
+    response::{IntoResponse, Response},
+    Json,
+};
 use mod_protocol_json::protocol::JsonProtocol;
-use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
-use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands::Checkin;
-use rs2_communication_protocol::communication_structs::basic_agent_response::BasicAgentResponse;
-use rs2_communication_protocol::communication_structs::checkin::Checkin as CheckinStruct;
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::protocol::Protocol;
+use rs2_communication_protocol::{
+    communication_structs::{
+        agent_commands::{AgentCommands, AgentCommands::Checkin},
+        basic_agent_response::BasicAgentResponse,
+        checkin::Checkin as CheckinStruct,
+    },
+    magic_numbers,
+    protocol::Protocol,
+};
 use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use rs2_utils::duration_extension::DurationExt;
+use serde::Deserialize;
 use srv_mod_config::handlers;
-use srv_mod_database::models::agent::Agent;
-use srv_mod_database::{humantime, Pool};
+use srv_mod_database::{humantime, models::agent::Agent, Pool};
+use tracing::{instrument, warn};
+
+use crate::{callback_handlers, state::HandlerSharedState};
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
@@ -39,9 +43,7 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
 /// Match the magic numbers of the body to the appropriate protocol
 #[instrument(skip_all)]
 fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
-    if body.len() >= magic_numbers::JSON.len()
-        && body[..magic_numbers::JSON.len()] == magic_numbers::JSON
-    {
+    if body.len() >= magic_numbers::JSON.len() && body[..magic_numbers::JSON.len()] == magic_numbers::JSON {
         return Ok(handlers::Protocol::Json);
     }
 
@@ -58,36 +60,29 @@ async fn handle_command<P>(
     headers: HeaderMap,
     cmd_request_id: String,
 ) -> Result<Bytes>
-    where
-        P: Protocol<IdentEncryptor>,
+  where
+      P: Protocol<IdentEncryptor>,
 {
     // TODO: Implement the command handling
     match AgentCommands::from(basic_response.metadata.command_id) {
-        AgentCommands::Terminate => {
-            callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await
-        }
+        AgentCommands::Terminate => callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await,
         AgentCommands::Checkin => {
             let checkin = protocol.read::<CheckinStruct>(raw_body, None);
             callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool).await
-        }
+        },
         AgentCommands::INVALID => {
             // if the command is not recognized, return an empty response
             warn!("Unknown command, request refused");
             warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
             Ok(Bytes::new())
-        }
+        },
     }
 }
 
 /// Process the body by matching the protocol and handling the command
 #[instrument(skip_all)]
-pub async fn process_body(
-    db_pool: Pool,
-    body: Bytes,
-    headers: HeaderMap,
-    cmd_request_id: String,
-) -> Response<Body> {
+pub async fn process_body(db_pool: Pool, body: Bytes, headers: HeaderMap, cmd_request_id: String) -> Response<Body> {
     // ensure that the body is not empty or return a response
     let is_empty = ensure_is_not_empty(body.clone());
     if is_empty.is_some() {
@@ -95,21 +90,23 @@ pub async fn process_body(
     }
 
     match match_magic_numbers(body.clone()) {
-        Ok(protocol) => match protocol {
-            handlers::Protocol::Json => {
-                let data = process_json(body.clone()).unwrap();
-                let response = handle_command(
-                    db_pool,
-                    data,
-                    make_json_protocol_instance(),
-                    body.clone(),
-                    headers,
-                    cmd_request_id,
-                )
+        Ok(protocol) => {
+            match protocol {
+                handlers::Protocol::Json => {
+                    let data = process_json(body.clone()).unwrap();
+                    let response = handle_command(
+                        db_pool,
+                        data,
+                        make_json_protocol_instance(),
+                        body.clone(),
+                        headers,
+                        cmd_request_id,
+                    )
                     .await
                     .unwrap_or(Bytes::new());
 
-                Json(response.to_vec()).into_response()
+                    Json(response.to_vec()).into_response()
+                },
             }
         },
         Err(_) => {
@@ -119,13 +116,11 @@ pub async fn process_body(
 
             // always return OK to avoid leaking information
             (StatusCode::OK, "").into_response()
-        }
+        },
     }
 }
 
-fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> {
-    JsonProtocol::<IdentEncryptor>::new("".to_string())
-}
+fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> { JsonProtocol::<IdentEncryptor>::new("".to_string()) }
 
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
@@ -155,23 +150,25 @@ where
 mod test {
     use std::sync::Arc;
 
-    use axum::body::Bytes;
-    use axum::http::StatusCode;
+    use axum::{body::Bytes, http::StatusCode};
     use bytes::{BufMut, BytesMut};
-    use serial_test::serial;
-
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
-    use rs2_communication_protocol::magic_numbers;
-    use srv_mod_config::handlers;
-    use srv_mod_config::handlers::{
-        EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType,
+    use rs2_communication_protocol::{
+        communication_structs::checkin::{Checkin, PartialCheckin},
+        magic_numbers,
     };
-    use srv_mod_database::diesel::{Connection, PgConnection};
-    use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-    use srv_mod_database::diesel_async::AsyncPgConnection;
-    use srv_mod_database::diesel_migrations::MigrationHarness;
-    use srv_mod_database::migration::MIGRATIONS;
-    use srv_mod_database::{bb8, Pool};
+    use serial_test::serial;
+    use srv_mod_config::{
+        handlers,
+        handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType},
+    };
+    use srv_mod_database::{
+        bb8,
+        diesel::{Connection, PgConnection},
+        diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection},
+        diesel_migrations::MigrationHarness,
+        migration::MIGRATIONS,
+        Pool,
+    };
     use srv_mod_handler_base::state::HttpHandlerState;
 
     fn make_config() -> HandlerConfig {
@@ -212,9 +209,9 @@ mod test {
 
     #[test]
     fn test_ensure_is_not_empty() {
+        use axum::{body::Bytes, http::StatusCode};
+
         use crate::routes::public::checkin::process_body::ensure_is_not_empty;
-        use axum::body::Bytes;
-        use axum::http::StatusCode;
 
         let empty_body = Bytes::new();
         let response = ensure_is_not_empty(empty_body);
@@ -226,8 +223,9 @@ mod test {
 
     #[test]
     fn test_match_magic_numbers() {
-        use crate::routes::public::checkin::process_body::match_magic_numbers;
         use axum::body::Bytes;
+
+        use crate::routes::public::checkin::process_body::match_magic_numbers;
 
         let json_magic_numbers = Bytes::from(magic_numbers::JSON.to_vec());
         let result = match_magic_numbers(json_magic_numbers);
@@ -308,7 +306,10 @@ mod test {
         assert_eq!(agent.elevated, true);
         assert_ne!(agent.server_secret_key, "");
         assert_ne!(agent.secret_key, "");
-        assert_eq!(agent.signature, "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g");
+        assert_eq!(
+            agent.signature,
+            "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g"
+        );
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;

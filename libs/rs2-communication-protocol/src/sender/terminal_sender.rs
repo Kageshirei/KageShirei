@@ -3,9 +3,8 @@ use std::sync::Arc;
 use anyhow::Result;
 use bytes::Bytes;
 
-use crate::metadata::Metadata;
-
 use super::Sender;
+use crate::metadata::Metadata;
 
 pub struct TerminalSender {
     is_checkin: bool,
@@ -26,7 +25,7 @@ impl Sender for TerminalSender {
         self
     }
 
-	async fn send(&mut self, data: Bytes, _metadata: Arc<Metadata>) -> Result<Bytes> {
+    async fn send(&mut self, data: Bytes, _metadata: Arc<Metadata>) -> Result<Bytes> {
         println!("{:?}", data);
         Ok(data)
     }

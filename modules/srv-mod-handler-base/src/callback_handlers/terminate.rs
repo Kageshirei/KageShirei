@@ -1,15 +1,16 @@
 use anyhow::Result;
 use bytes::Bytes;
 use chrono::Utc;
-use srv_mod_database::bb8::PooledConnection;
-use srv_mod_database::diesel::ExpressionMethods;
-use srv_mod_database::diesel::QueryDsl;
-use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use srv_mod_database::diesel_async::{AsyncPgConnection, RunQueryDsl};
-use srv_mod_database::models::log::CreateLog;
-use srv_mod_database::schema::{agents, agents_command_requests};
-use srv_mod_database::schema_extension::AgentCommandStatus;
-use srv_mod_database::{diesel, Pool};
+use srv_mod_database::{
+    bb8::PooledConnection,
+    diesel,
+    diesel::{ExpressionMethods, QueryDsl},
+    diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl},
+    models::log::CreateLog,
+    schema::{agents, agents_command_requests},
+    schema_extension::AgentCommandStatus,
+    Pool,
+};
 use tracing::instrument;
 
 struct AgentSpecs {
@@ -29,7 +30,10 @@ async fn get_agent_specs(
         .first::<(String, String)>(conn)
         .await?;
 
-    Ok(AgentSpecs { agent_id, hostname })
+    Ok(AgentSpecs {
+        agent_id,
+        hostname,
+    })
 }
 
 /// Handle the termination of the agent

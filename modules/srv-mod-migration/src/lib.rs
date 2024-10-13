@@ -4,9 +4,7 @@ pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
-    fn migration_table_name() -> DynIden {
-        Alias::new("kageshirei_migrations").into_iden()
-    }
+    fn migration_table_name() -> DynIden { Alias::new("kageshirei_migrations").into_iden() }
 
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
         vec![
