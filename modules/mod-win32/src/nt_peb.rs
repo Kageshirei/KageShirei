@@ -1,8 +1,8 @@
 use alloc::string::{String, ToString};
 use core::slice;
 
+use kageshirei_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 use mod_agentcore::instance;
-use rs2_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 
 use crate::utils::unicodestring_to_string;
 

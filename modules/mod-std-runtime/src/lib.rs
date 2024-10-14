@@ -11,7 +11,7 @@ mod tests {
         time::Duration,
     };
 
-    use rs2_communication_protocol::{
+    use kageshirei_communication_protocol::{
         communication_structs::{
             agent_commands::AgentCommands,
             simple_agent_command::SimpleAgentCommand,
@@ -19,7 +19,7 @@ mod tests {
         },
         metadata::Metadata,
     };
-    use rs2_runtime::Runtime; // Import the Runtime trait
+    use kageshirei_runtime::Runtime; // Import the Runtime trait
 
     use crate::std_runtime::StdRuntime;
 

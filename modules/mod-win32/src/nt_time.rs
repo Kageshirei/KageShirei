@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
+use kageshirei_win32::ntdef::LargeInteger;
 use mod_agentcore::instance;
-use rs2_win32::ntdef::LargeInteger;
 
 /// Gets the current timestamp in Unix format.
 ///

@@ -1,5 +1,5 @@
 use clap::Args;
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     communication_structs::{agent_commands::AgentCommands, simple_agent_command::SimpleAgentCommand},
     metadata::Metadata,
 };
@@ -69,7 +69,7 @@ pub async fn handle(config: CommandHandlerArguments) -> Result<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use rs2_srv_test_helper::tests::*;
+    use kageshirei_srv_test_helper::tests::*;
     use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 

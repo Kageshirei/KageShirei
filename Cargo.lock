@@ -2884,6 +2884,80 @@ dependencies = [
 ]
 
 [[package]]
+name = "kageshirei-agent"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "futures",
+ "kageshirei-communication-protocol",
+ "kageshirei-crypt",
+ "kageshirei-runtime",
+ "libc-print",
+ "mod-agentcore",
+ "mod-hhtgates",
+ "mod-nostd",
+ "mod-nostd-nt-runtime",
+ "mod-nt-heapalloc",
+ "mod-nt-virtualalloc",
+ "mod-protocol-json",
+ "mod-protocol-winhttp",
+ "mod-std-runtime",
+ "mod-win32",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "spin",
+]
+
+[[package]]
+name = "kageshirei-command-and-control"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
+name = "kageshirei-communication-protocol"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "hex-literal",
+ "kageshirei-crypt",
+ "sea-orm",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "kageshirei-crypt"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "base16ct",
+ "base64ct",
+ "bytes",
+ "chacha20poly1305",
+ "hkdf",
+ "k256",
+ "rand 0.8.5",
+ "sha3",
+]
+
+[[package]]
+name = "kageshirei-indirect-syscall"
+version = "0.1.0"
+dependencies = [
+ "libc-print",
+]
+
+[[package]]
+name = "kageshirei-runtime"
+version = "0.1.0"
+
+[[package]]
 name = "kageshirei-server"
 version = "0.1.0"
 dependencies = [
@@ -2893,14 +2967,14 @@ dependencies = [
  "fern",
  "futures",
  "humantime",
+ "kageshirei-communication-protocol",
+ "kageshirei-crypt",
+ "kageshirei-utils",
  "log",
  "nix",
  "once_cell",
  "rand 0.8.5",
  "rcgen",
- "rs2-communication-protocol",
- "rs2-crypt",
- "rs2-utils",
  "serde",
  "serde_json",
  "srv-mod-config",
@@ -2912,6 +2986,24 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "kageshirei-utils"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "log",
+ "serde_json",
+ "validator",
+]
+
+[[package]]
+name = "kageshirei-win32"
+version = "0.1.0"
+dependencies = [
+ "kageshirei-indirect-syscall",
+ "spin",
 ]
 
 [[package]]
@@ -3210,9 +3302,9 @@ checksum = "c9be0862c1b3f26a88803c4a49de6889c10e608b3ee9344e6ef5b45fb37ad3d1"
 name = "mod-agentcore"
 version = "0.1.0"
 dependencies = [
+ "kageshirei-win32",
  "libc-print",
  "mod-hhtgates",
- "rs2-win32",
  "spin",
 ]
 
@@ -3237,10 +3329,10 @@ version = "0.1.0"
 name = "mod-nostd"
 version = "0.1.0"
 dependencies = [
+ "kageshirei-win32",
  "libc-print",
  "mod-agentcore",
  "mod-win32",
- "rs2-win32",
  "spin",
 ]
 
@@ -3249,11 +3341,11 @@ name = "mod-nostd-nt-runtime"
 version = "0.1.0"
 dependencies = [
  "futures",
+ "kageshirei-communication-protocol",
+ "kageshirei-runtime",
  "libc-print",
  "mod-nostd",
  "mod-win32",
- "rs2-communication-protocol",
- "rs2-runtime",
  "spin",
 ]
 
@@ -3261,12 +3353,12 @@ dependencies = [
 name = "mod-nt-heapalloc"
 version = "0.1.0"
 dependencies = [
+ "kageshirei-indirect-syscall",
+ "kageshirei-win32",
  "libc-print",
  "mod-agentcore",
  "mod-hhtgates",
  "mod-win32",
- "rs2-indirect-syscall",
- "rs2-win32",
  "spin",
 ]
 
@@ -3274,11 +3366,11 @@ dependencies = [
 name = "mod-nt-virtualalloc"
 version = "0.1.0"
 dependencies = [
+ "kageshirei-indirect-syscall",
+ "kageshirei-win32",
  "mod-agentcore",
  "mod-hhtgates",
  "mod-win32",
- "rs2-indirect-syscall",
- "rs2-win32",
  "spin",
 ]
 
@@ -3288,9 +3380,9 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bytes",
+ "kageshirei-communication-protocol",
+ "kageshirei-crypt",
  "reqwest",
- "rs2-communication-protocol",
- "rs2-crypt",
  "serde",
  "serde_json",
  "tokio",
@@ -3304,12 +3396,12 @@ dependencies = [
  "anyhow",
  "axum",
  "bytes",
+ "kageshirei-communication-protocol",
+ "kageshirei-crypt",
+ "kageshirei-win32",
  "libc-print",
  "mod-agentcore",
  "mod-win32",
- "rs2-communication-protocol",
- "rs2-crypt",
- "rs2-win32",
  "serde",
  "serde_json",
  "tokio",
@@ -3320,8 +3412,8 @@ dependencies = [
 name = "mod-std-runtime"
 version = "0.1.0"
 dependencies = [
- "rs2-communication-protocol",
- "rs2-runtime",
+ "kageshirei-communication-protocol",
+ "kageshirei-runtime",
  "serde",
 ]
 
@@ -3329,8 +3421,8 @@ dependencies = [
 name = "mod-tokio-runtime"
 version = "0.1.0"
 dependencies = [
- "rs2-communication-protocol",
- "rs2-runtime",
+ "kageshirei-communication-protocol",
+ "kageshirei-runtime",
  "tokio",
 ]
 
@@ -3339,9 +3431,9 @@ name = "mod-win32"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "kageshirei-win32",
  "libc-print",
  "mod-agentcore",
- "rs2-win32",
 ]
 
 [[package]]
@@ -4785,98 +4877,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rs2-agent"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "futures",
- "libc-print",
- "mod-agentcore",
- "mod-hhtgates",
- "mod-nostd",
- "mod-nostd-nt-runtime",
- "mod-nt-heapalloc",
- "mod-nt-virtualalloc",
- "mod-protocol-json",
- "mod-protocol-winhttp",
- "mod-std-runtime",
- "mod-win32",
- "rand 0.8.5",
- "rs2-communication-protocol",
- "rs2-crypt",
- "rs2-runtime",
- "serde",
- "serde_json",
- "spin",
-]
-
-[[package]]
-name = "rs2-command-and-control"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
-]
-
-[[package]]
-name = "rs2-communication-protocol"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "hex-literal",
- "rs2-crypt",
- "sea-orm",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "rs2-crypt"
-version = "0.1.0"
-dependencies = [
- "argon2",
- "base16ct",
- "base64ct",
- "bytes",
- "chacha20poly1305",
- "hkdf",
- "k256",
- "rand 0.8.5",
- "sha3",
-]
-
-[[package]]
-name = "rs2-indirect-syscall"
-version = "0.1.0"
-dependencies = [
- "libc-print",
-]
-
-[[package]]
-name = "rs2-runtime"
-version = "0.1.0"
-
-[[package]]
-name = "rs2-utils"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "log",
- "serde_json",
- "validator",
-]
-
-[[package]]
-name = "rs2-win32"
-version = "0.1.0"
-dependencies = [
- "rs2-indirect-syscall",
- "spin",
-]
-
-[[package]]
 name = "rsa"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5975,11 +5975,11 @@ dependencies = [
 name = "srv-mod-config"
 version = "0.1.0"
 dependencies = [
+ "kageshirei-utils",
  "log",
  "nix",
  "once_cell",
  "regex",
- "rs2-utils",
  "serde",
  "serde_json",
  "tokio",
@@ -5993,10 +5993,11 @@ version = "0.1.0"
 dependencies = [
  "cuid2",
  "humantime",
+ "kageshirei-communication-protocol",
  "once_cell",
- "rs2-communication-protocol",
  "sea-orm",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -6007,10 +6008,10 @@ dependencies = [
  "bytes",
  "chrono",
  "humantime",
+ "kageshirei-communication-protocol",
+ "kageshirei-crypt",
+ "kageshirei-utils",
  "mod-protocol-json",
- "rs2-communication-protocol",
- "rs2-crypt",
- "rs2-utils",
  "serde",
  "serde_json",
  "serial_test",
@@ -6029,10 +6030,10 @@ dependencies = [
  "axum-server",
  "bytes",
  "humantime",
+ "kageshirei-communication-protocol",
+ "kageshirei-crypt",
+ "kageshirei-utils",
  "mod-protocol-json",
- "rs2-communication-protocol",
- "rs2-crypt",
- "rs2-utils",
  "serde",
  "serde_json",
  "serial_test",
@@ -6052,6 +6053,7 @@ name = "srv-mod-migration"
 version = "0.1.0"
 dependencies = [
  "async-std",
+ "sea-orm",
  "sea-orm-migration",
  "srv-mod-entity",
 ]
@@ -6068,9 +6070,9 @@ dependencies = [
  "futures-util",
  "humantime",
  "jsonwebtoken",
+ "kageshirei-crypt",
+ "kageshirei-utils",
  "once_cell",
- "rs2-crypt",
- "rs2-utils",
  "serde",
  "serde_json",
  "srv-mod-config",
@@ -6092,7 +6094,7 @@ dependencies = [
  "chrono",
  "clap",
  "futures",
- "rs2-communication-protocol",
+ "kageshirei-communication-protocol",
  "serde",
  "serde_json",
  "serial_test",

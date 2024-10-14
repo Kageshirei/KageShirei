@@ -13,7 +13,7 @@ chrono = { version = "0.4.38", features = ["serde"] }
 futures = "0.3.30"
 tokio = { version = "1.40.0", features = ["full"] }
 srv-mod-config = { path = "../srv-mod-config" }
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 srv-mod-entity = { path = "../srv-mod-entity" }
 
 [dev-dependencies]

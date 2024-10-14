@@ -3,8 +3,8 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use bytes::Bytes;
-use rs2_crypt::encoder::{base32::Base32Encoder, base64::Base64Encoder, hex::HexEncoder, Encoder as _};
-use rs2_utils::bytes_to_string::bytes_to_string;
+use kageshirei_crypt::encoder::{base32::Base32Encoder, base64::Base64Encoder, hex::HexEncoder, Encoder as _};
+use kageshirei_utils::bytes_to_string::bytes_to_string;
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
 use tracing::warn;
 

@@ -59,7 +59,7 @@ export const NATIVE_COMMANDS: { [x in NativeHandler]: CommandDefinition } = {
             // the global terminal by accident. The global terminal is the terminal that is always open and is used to
             // run global commands. Even if the global terminal cannot be closed dropping it will break the line input,
             // this is the reason why the global terminal is not closed.
-            if (hostname === "RS2") {
+            if (hostname === "KageShirei") {
                 // if the terminal is the global terminal, do not exit and show an error message
                 set_terminal_fragments(old => [
                     ...old,

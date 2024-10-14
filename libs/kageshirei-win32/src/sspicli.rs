@@ -46,40 +46,40 @@ pub type CtxtHandle = SecHandle;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct SecBuffer {
-    pub cb_buffer: u32,
+    pub cb_buffer:   u32,
     pub buffer_type: u32,
-    pub pv_buffer: *mut c_void,
+    pub pv_buffer:   *mut c_void,
 }
 
 #[repr(C)]
 pub struct SecBufferDesc {
     pub ul_version: u32,
-    pub c_buffers: u32,
-    pub p_buffers: *mut SecBuffer,
+    pub c_buffers:  u32,
+    pub p_buffers:  *mut SecBuffer,
 }
 
 #[repr(C)]
 pub struct TimeStamp {
-    pub dw_low_date_time: u32,
+    pub dw_low_date_time:  u32,
     pub dw_high_date_time: u32,
 }
 
 #[repr(C)]
 pub struct SchannelCred {
-    pub dw_version: c_ulong,
-    pub c_creds: c_ulong,
-    pub pa_cred: *const *const c_void,
-    pub h_root_store: *const c_void,
-    pub c_mappers: c_ulong,
-    pub aph_mappers: *const *const c_void,
-    pub c_supported_algs: c_ulong,
-    pub palg_supported_algs: *const c_ulong,
-    pub grbit_enabled_protocols: c_ulong,
+    pub dw_version:                 c_ulong,
+    pub c_creds:                    c_ulong,
+    pub pa_cred:                    *const *const c_void,
+    pub h_root_store:               *const c_void,
+    pub c_mappers:                  c_ulong,
+    pub aph_mappers:                *const *const c_void,
+    pub c_supported_algs:           c_ulong,
+    pub palg_supported_algs:        *const c_ulong,
+    pub grbit_enabled_protocols:    c_ulong,
     pub dw_minimum_cipher_strength: c_ulong,
     pub dw_maximum_cipher_strength: c_ulong,
-    pub dw_session_lifespan: c_ulong,
-    pub dw_flags: c_ulong,
-    pub reserved: c_ulong,
+    pub dw_session_lifespan:        c_ulong,
+    pub dw_flags:                   c_ulong,
+    pub reserved:                   c_ulong,
 }
 
 // Costanti per gli attributi del pacchetto di sicurezza
@@ -89,11 +89,11 @@ pub const SECPKG_ATTR_STREAM_SIZES: u32 = 0;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct SecPkgContextStreamSizes {
-    pub cb_header: u32,
-    pub cb_trailer: u32,
+    pub cb_header:          u32,
+    pub cb_trailer:         u32,
     pub cb_maximum_message: u32,
-    pub c_buffers: u32,
-    pub cb_block_size: u32,
+    pub c_buffers:          u32,
+    pub cb_block_size:      u32,
 }
 
 pub type AcquireCredentialsHandleWFunc = unsafe extern "system" fn(
@@ -156,60 +156,37 @@ pub type DeleteSecurityContextFunc = unsafe extern "system" fn(phContext: *mut S
 pub type FreeCredentialHandleFunc = unsafe extern "system" fn(phCredential: *mut SecHandle) -> i32;
 
 // Firma della funzione QueryContextAttributesW
-pub type QueryContextAttributesWFunc = unsafe extern "system" fn(
-    phContext: *mut CtxtHandle,
-    ulAttribute: u32,
-    pBuffer: *mut c_void,
-) -> u32;
+pub type QueryContextAttributesWFunc =
+    unsafe extern "system" fn(phContext: *mut CtxtHandle, ulAttribute: u32, pBuffer: *mut c_void) -> u32;
 
 pub type FreeContextBufferFunc = unsafe extern "system" fn(pvContextBuffer: *mut c_void) -> i32;
 
 pub struct Sspicli {
-    pub acquire_credentials_handle_w: AcquireCredentialsHandleWFunc,
-    pub acquire_credentials_handle_a: AcquireCredentialsHandleAFunc,
+    pub acquire_credentials_handle_w:  AcquireCredentialsHandleWFunc,
+    pub acquire_credentials_handle_a:  AcquireCredentialsHandleAFunc,
     pub initialize_security_context_w: InitializeSecurityContextWFunc,
-    pub encrypt_message: EncryptMessageFunc,
-    pub decrypt_message: DecryptMessageFunc,
-    pub complete_auth_token: CompleteAuthTokenFunc,
-    pub delete_security_context: DeleteSecurityContextFunc,
-    pub free_credential_handle: FreeCredentialHandleFunc,
-    pub query_context_attributes_w: QueryContextAttributesWFunc,
-    pub free_context_buffer: FreeContextBufferFunc,
+    pub encrypt_message:               EncryptMessageFunc,
+    pub decrypt_message:               DecryptMessageFunc,
+    pub complete_auth_token:           CompleteAuthTokenFunc,
+    pub delete_security_context:       DeleteSecurityContextFunc,
+    pub free_credential_handle:        FreeCredentialHandleFunc,
+    pub query_context_attributes_w:    QueryContextAttributesWFunc,
+    pub free_context_buffer:           FreeContextBufferFunc,
 }
 
 impl Sspicli {
     pub fn new() -> Self {
         Sspicli {
-            acquire_credentials_handle_w: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            acquire_credentials_handle_a: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            initialize_security_context_w: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            encrypt_message: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            decrypt_message: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            complete_auth_token: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            delete_security_context: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            free_credential_handle: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            query_context_attributes_w: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            free_context_buffer: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
+            acquire_credentials_handle_w:  unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            acquire_credentials_handle_a:  unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            initialize_security_context_w: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            encrypt_message:               unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            decrypt_message:               unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            complete_auth_token:           unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            delete_security_context:       unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            free_credential_handle:        unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            query_context_attributes_w:    unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            free_context_buffer:           unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
         }
     }
 }

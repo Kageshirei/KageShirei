@@ -94,7 +94,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
 
 #[cfg(test)]
 mod tests {
-    use rs2_srv_test_helper::tests::*;
+    use kageshirei_srv_test_helper::tests::*;
     use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 

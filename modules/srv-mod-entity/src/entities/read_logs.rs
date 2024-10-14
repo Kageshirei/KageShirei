@@ -8,6 +8,9 @@ use crate::helpers::CUID2;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "read_logs")]
 pub struct Model {
+    #[sea_orm(primary_key, auto_increment = false)]
+    #[serde(skip_deserializing)]
+    pub id:      String,
     pub log_id:  String,
     pub read_by: String,
     pub read_at: DateTime,
@@ -41,4 +44,25 @@ impl Related<super::user::Entity> for Entity {
     fn to() -> RelationDef { Relation::User.def() }
 }
 
-impl ActiveModelBehavior for ActiveModel {}
+#[async_trait::async_trait]
+impl ActiveModelBehavior for ActiveModel {
+    fn new() -> Self {
+        Self {
+            // Generate a new unique ID
+            id: Set(CUID2.create_id()),
+            ..ActiveModelTrait::default()
+        }
+    }
+
+    async fn before_save<C>(self, _db: &C, _insert: bool) -> Result<Self, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        // Clone the model to avoid moving it
+        let mut model = self;
+
+        // Update the `updated_at` field with the current time
+        model.read_at = Set(Utc::now().naive_utc());
+        Ok(model)
+    }
+}

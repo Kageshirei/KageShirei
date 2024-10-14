@@ -1,4 +1,4 @@
-use rs2_win32::ntdef::HANDLE;
+use kageshirei_win32::ntdef::HANDLE;
 
 pub const NTDLL_HASH: u32 = 0x1edab0ed;
 

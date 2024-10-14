@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use chrono::{DateTime, NaiveTime, Timelike};
-use rs2_communication_protocol::communication_structs::checkin::CheckinResponse;
+use kageshirei_communication_protocol::communication_structs::checkin::CheckinResponse;
 use srv_mod_entity::{
     active_enums::{FilterOperation, LogicalOperator},
     entities::{agent, agent_profile, filter},
@@ -18,40 +18,28 @@ struct GroupEvaluationResult {
 fn evaluate_filter(agent: &agent::Model, filter: &filter::Model) -> bool {
     match filter.filter_op {
         FilterOperation::Equals => {
-            let v = agent
-                .get_field_value(&filter.agent_field)
-                .unwrap_or(String::new());
-            v.as_str() == filter.value.as_str()
+            let v: String = agent.get(filter.agent_field.clone().into()).unwrap();
+            v.as_str().eq(filter.value.as_str().unwrap_or_default())
         },
         FilterOperation::NotEquals => {
-            let v = agent
-                .get_field_value(&filter.agent_field)
-                .unwrap_or(String::new());
-            v.as_str() != filter.value.as_str()
+            let v: String = agent.get(filter.agent_field.clone().into()).unwrap();
+            v.as_str().ne(filter.value.as_str().unwrap_or_default())
         },
         FilterOperation::Contains => {
-            let v = agent
-                .get_field_value(&filter.agent_field)
-                .unwrap_or(String::new());
-            v.contains(filter.value.as_str())
+            let v: String = agent.get(filter.agent_field.clone().into()).unwrap();
+            v.contains(filter.value.as_str().unwrap_or_default())
         },
         FilterOperation::NotContains => {
-            let v = agent
-                .get_field_value(&filter.agent_field)
-                .unwrap_or(String::new());
-            !v.contains(filter.value.as_str())
+            let v: String = agent.get(filter.agent_field.clone().into()).unwrap();
+            !v.contains(filter.value.as_str().unwrap_or_default())
         },
         FilterOperation::StartsWith => {
-            let v = agent
-                .get_field_value(&filter.agent_field)
-                .unwrap_or(String::new());
-            v.starts_with(filter.value.as_str())
+            let v: String = agent.get(filter.agent_field.clone().into()).unwrap();
+            v.starts_with(filter.value.as_str().unwrap_or_default())
         },
         FilterOperation::EndsWith => {
-            let v = agent
-                .get_field_value(&filter.agent_field)
-                .unwrap_or(String::new());
-            v.ends_with(filter.value.as_str())
+            let v: String = agent.get(filter.agent_field.clone().into()).unwrap();
+            v.ends_with(filter.value.as_str().unwrap_or_default())
         },
     }
 }
@@ -191,10 +179,9 @@ pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) ->
                         .map(|v| Some(seconds_since_midnight(v)))
                         .collect::<Vec<_>>()
                 }),
-                kill_date:        profile
-                    .kill_date
-                    .as_ref()
-                    .map(|v| DateTime::from_naive_utc_and_offset(*v, chrono::offset::Utc).timestamp()),
+                kill_date:        profile.kill_date.as_ref().map(|v| {
+                    DateTime::<chrono::offset::Utc>::from_naive_utc_and_offset(*v, chrono::offset::Utc).timestamp()
+                }),
                 polling_jitter:   profile
                     .get_polling_jitter()
                     .unwrap_or(Duration::from_secs(10))
@@ -301,7 +288,7 @@ mod tests {
         };
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -375,7 +362,7 @@ mod tests {
         };
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -431,7 +418,7 @@ mod tests {
     #[serial]
     async fn test_apply_filters_one_level_complex_check() {
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -626,7 +613,7 @@ mod tests {
     #[serial]
     async fn test_apply_filters_nesting_complex_check() {
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;

@@ -4,8 +4,8 @@ extern crate alloc;
 
 use alloc::{format, string::String, vec::Vec};
 
+use kageshirei_win32::ntdef::KeyBasicInformation;
 use mod_agentcore::instance;
-use rs2_win32::ntdef::KeyBasicInformation;
 
 use crate::nt_reg_api::{nt_open_key, nt_query_value_key};
 

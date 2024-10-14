@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 srv-mod-operator-api = { path = "../srv-mod-operator-api" }
 srv-mod-config = { path = "../srv-mod-config" }
-rs2-utils = { path = "../../libs/rs2-utils" }
+kageshirei-utils = { path = "../../libs/kageshirei-utils" }
 serde = { version = "1.0.210", features = ["derive"] }
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 tracing = "0.1.40"
 axum = { version = "0.7.7", features = ["http2", "multipart", "macros"] }
 axum-extra = { version = "0.9.4", features = ["typed-header"] }
@@ -26,7 +26,7 @@ tower-http = { version = "0.6.1", features = [
 tokio = { version = "1.40.0", features = ["full", "tracing", "test-util"] }
 tokio-util = { version = "0.7.12", features = ["full"] }
 mod-protocol-json = { path = "../mod-protocol-json" }
-rs2-crypt = { path = "../../libs/rs2-crypt", features = [
+kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = [
     "sha3",
     "hex-encoding",
     "base32-encoding",

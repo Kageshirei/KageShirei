@@ -1,5 +1,5 @@
 [package]
-name = "rs2-indirect-syscall"
+name = "kageshirei-indirect-syscall"
 version = "0.1.0"
 edition = "2021"
 

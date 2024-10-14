@@ -5,12 +5,7 @@ use core::{
     ptr::{null, null_mut},
 };
 
-use libc_print::libc_println;
-use mod_agentcore::{
-    instance,
-    ldr::{nt_current_teb, nt_get_last_error},
-};
-use rs2_win32::{
+use kageshirei_win32::{
     ntapi::nt_current_process,
     ntdef::{
         AccessMask,
@@ -67,6 +62,11 @@ use rs2_win32::{
         STATUS_INFO_LENGTH_MISMATCH,
         STATUS_PENDING,
     },
+};
+use libc_print::libc_println;
+use mod_agentcore::{
+    instance,
+    ldr::{nt_current_teb, nt_get_last_error},
 };
 
 use crate::{

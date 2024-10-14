@@ -6,8 +6,7 @@ use alloc::{
 };
 use core::{ptr::null_mut, slice};
 
-use mod_agentcore::instance;
-use rs2_win32::{
+use kageshirei_win32::{
     ntdef::{
         KeyBasicInformation,
         KeyValuePartialInformation,
@@ -20,6 +19,7 @@ use rs2_win32::{
     },
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL, STATUS_OBJECT_NAME_NOT_FOUND},
 };
+use mod_agentcore::instance;
 
 /// Opens a registry key and returns the handle.
 ///
@@ -222,8 +222,8 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
 
 #[cfg(test)]
 mod tests {
+    use kageshirei_win32::ntstatus::NT_SUCCESS;
     use libc_print::libc_println;
-    use rs2_win32::ntstatus::NT_SUCCESS;
 
     use super::*;
     use crate::utils::NT_STATUS;

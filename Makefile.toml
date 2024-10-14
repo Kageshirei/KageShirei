@@ -93,8 +93,8 @@ clear = true
 description = "Build the server from linux, for linux"
 script_runner = "@shell"
 script = '''
-echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server"
-cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin rs2-server
+echo "\$ cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin kageshirei-server"
+cargo +nightly build ${BUILD_MODE} --target x86_64-unknown-linux-gnu --bin kageshirei-server
 '''
 
 # Define the tasks responsible for building the server (linux and windows)

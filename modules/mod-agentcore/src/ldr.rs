@@ -1,6 +1,6 @@
 use core::{arch::asm, ptr::null_mut};
 
-use rs2_win32::{
+use kageshirei_win32::{
     ntdef::{
         ImageDosHeader,
         ImageExportDirectory,

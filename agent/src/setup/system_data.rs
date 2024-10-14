@@ -1,5 +1,10 @@
 use core::ffi::c_void;
 
+use kageshirei_communication_protocol::{
+    communication_structs::checkin::{Checkin, PartialCheckin},
+    metadata::Metadata,
+    network_interface::NetworkInterface,
+};
 use libc_print::libc_println;
 use mod_agentcore::instance_mut;
 use mod_win32::{
@@ -7,11 +12,6 @@ use mod_win32::{
     nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
     nt_peb::{get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain, get_username},
     nt_ps_api::{get_pid_and_ppid, get_process_integrity},
-};
-use rs2_communication_protocol::{
-    communication_structs::checkin::{Checkin, PartialCheckin},
-    metadata::Metadata,
-    network_interface::NetworkInterface,
 };
 
 use crate::common::utils::generate_request_id;

@@ -26,8 +26,8 @@ tower-http = { version = "0.6.1", features = [
 ] }
 tracing = "0.1.40"
 jsonwebtoken = "9.3.0"
-rs2-utils = { path = "../../libs/rs2-utils" }
-rs2-crypt = { path = "../../libs/rs2-crypt", features = ["argon2"] }
+kageshirei-utils = { path = "../../libs/kageshirei-utils" }
+kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = ["argon2"] }
 chrono = "0.4.38"
 srv-mod-config = { path = "../srv-mod-config" }
 humantime = "2.1.0"

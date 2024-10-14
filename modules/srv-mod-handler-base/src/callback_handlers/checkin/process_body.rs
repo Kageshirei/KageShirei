@@ -4,14 +4,14 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use mod_protocol_json::protocol::JsonProtocol;
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     communication_structs::{basic_agent_response::BasicAgentResponse, checkin::Checkin},
     magic_numbers,
     protocol::Protocol,
 };
-use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use rs2_utils::duration_extension::DurationExt;
+use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+use kageshirei_utils::duration_extension::DurationExt;
+use mod_protocol_json::protocol::JsonProtocol;
 use srv_mod_config::handlers;
 use srv_mod_entity::{entities::agent as agent_entity, sea_orm::DatabaseConnection};
 use tracing::{instrument, warn};
@@ -88,7 +88,7 @@ mod test {
 
     use axum::{body::Bytes, http::StatusCode};
     use bytes::{BufMut, BytesMut};
-    use rs2_communication_protocol::{
+    use kageshirei_communication_protocol::{
         communication_structs::checkin::{Checkin, PartialCheckin},
         magic_numbers,
     };
@@ -218,7 +218,7 @@ mod test {
         });
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -276,7 +276,7 @@ mod test {
         }
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -318,7 +318,7 @@ mod test {
         }
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;

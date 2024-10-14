@@ -12,6 +12,7 @@ use core::{
     sync::atomic::{AtomicBool, AtomicIsize, Ordering},
 };
 
+use kageshirei_win32::ntdef::{HANDLE, HEAP_GROWABLE, HEAP_ZERO_MEMORY};
 use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
 use nt_heapalloc_def::{
     RtlAllocateHeap,
@@ -26,7 +27,6 @@ use nt_heapalloc_def::{
     RTL_FREE_HEAP_H,
     RTL_REALLOCATE_HEAP_H,
 };
-use rs2_win32::ntdef::{HANDLE, HEAP_GROWABLE, HEAP_ZERO_MEMORY};
 use spin::Mutex;
 
 /// Atomic flag to ensure that the initialization of function pointers happens only once.

@@ -1,6 +1,6 @@
 #![no_std]
 
-use rs2_win32::ntdef::HANDLE;
+use kageshirei_win32::ntdef::HANDLE;
 
 pub mod nt_get_adapters_info;
 pub mod nt_get_computer_name_ex;

@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use bytes::{BufMut, Bytes, BytesMut};
-use reqwest::{Client, ClientBuilder};
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     magic_numbers,
     metadata::{Metadata, WithMetadata},
     protocol::Protocol,
     sender::Sender,
 };
-use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
+use kageshirei_crypt::encryption_algorithm::EncryptionAlgorithm;
+use reqwest::{Client, ClientBuilder};
 use serde::{de::DeserializeOwned, Serialize};
 
 /// Define the JSON protocol for sending and receiving data.
@@ -164,7 +164,7 @@ where
             return Err("Invalid magic number".to_string());
         }
 
-        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.into())
+        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.to_string())
     }
 
     async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes, String>
@@ -206,7 +206,7 @@ where
 #[cfg(test)]
 mod tests {
     use axum::{http::HeaderMap, routing::get, Router};
-    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+    use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;

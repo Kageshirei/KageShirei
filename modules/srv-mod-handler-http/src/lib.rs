@@ -10,7 +10,7 @@ use axum::{
     Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
-use rs2_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
+use kageshirei_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
 use srv_mod_config::handlers::HandlerConfig;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use srv_mod_handler_base::{state, state::HandlerSharedState};

@@ -25,7 +25,7 @@
         "secret": "TlwDBT0AKR+eRhG0s8nWCWZqggT3/ZNyFXZsOJBISH4u+t6Vs9wof7nAGzerhRmtm51u02rQ4yd3uIRDLxvwzw=="
     },
     "database":   {
-        "url":       "postgresql://rs2:rs2@localhost/rs2",
+        "url":       "postgresql://kageshirei:kageshirei@localhost/kageshirei",
         "pool_size": 10
     },
     "handlers":   [

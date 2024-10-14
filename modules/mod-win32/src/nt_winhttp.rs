@@ -6,11 +6,7 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use mod_agentcore::{
-    instance,
-    ldr::{ldr_function_addr, nt_get_last_error},
-};
-use rs2_win32::{
+use kageshirei_win32::{
     ntdef::UnicodeString,
     winhttp::{
         WinHttp,
@@ -21,6 +17,10 @@ use rs2_win32::{
         WINHTTP_FLAG_SECURE,
         WINHTTP_QUERY_FLAG_NUMBER,
     },
+};
+use mod_agentcore::{
+    instance,
+    ldr::{ldr_function_addr, nt_get_last_error},
 };
 
 use crate::utils::{parse_url, to_pcwstr};

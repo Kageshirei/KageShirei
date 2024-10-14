@@ -1,6 +1,6 @@
 use axum::http::StatusCode;
-use rs2_communication_protocol::communication_structs::checkin::Checkin;
-use rs2_crypt::{
+use kageshirei_communication_protocol::communication_structs::checkin::Checkin;
+use kageshirei_crypt::{
     encoder::{base64::Base64Encoder, Encoder},
     encryption_algorithm::{asymmetric_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
 };
@@ -65,7 +65,7 @@ pub fn prepare(data: Checkin) -> agent::ActiveModel {
     }
 }
 
-pub async fn create_or_update(agent: agent::ActiveModel, connection: &mut DatabaseConnection) -> agent::Model {
+pub async fn create_or_update(agent: agent::ActiveModel, connection: &DatabaseConnection) -> agent::Model {
     // check if the agent already exists
     let agent_exists = agent::Entity::find()
         .filter(agent::Column::Signature.eq(&agent.signature))
@@ -78,7 +78,7 @@ pub async fn create_or_update(agent: agent::ActiveModel, connection: &mut Databa
         let agent = agent::Entity::update_many()
             .filter(agent::Column::Signature.eq(&agent.signature))
             .set(agent)
-            .exec_with_returning(&connection)
+            .exec_with_returning(connection)
             .await
             .unwrap();
 
@@ -92,7 +92,7 @@ pub async fn create_or_update(agent: agent::ActiveModel, connection: &mut Databa
     else {
         info!("New agent detected, inserting ...");
 
-        let agent = agent.insert(&connection).await.unwrap();
+        let agent = agent.insert(connection).await.unwrap();
 
         info!("New agent recorded (id: {})", agent.id);
 
@@ -106,7 +106,7 @@ mod tests {
     use std::sync::Arc;
 
     use anyhow::anyhow;
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
+    use kageshirei_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
     use srv_mod_database::{
         bb8,
         diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl},
@@ -203,7 +203,7 @@ mod tests {
             elevated:          true,
         });
 
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;

@@ -7,16 +7,16 @@ use core::{
 
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
-use mod_agentcore::ldr::nt_get_last_error;
-use mod_win32::nt_winhttp::get_winhttp;
-use rs2_communication_protocol::metadata::Metadata;
-use rs2_win32::winhttp::{
+use kageshirei_communication_protocol::metadata::Metadata;
+use kageshirei_win32::winhttp::{
     WinHttpError,
     HTTP_QUERY_STATUS_CODE,
     WINHTTP_FLAG_BYPASS_PROXY_CACHE,
     WINHTTP_FLAG_SECURE,
     WINHTTP_QUERY_FLAG_NUMBER,
 };
+use mod_agentcore::ldr::nt_get_last_error;
+use mod_win32::nt_winhttp::get_winhttp;
 
 use crate::utils::{parse_url, to_pcwstr, ParseUrlResult};
 
@@ -64,8 +64,8 @@ impl WinHttpClient {
     /// * `url` - The URL to connect to.
     /// * `port` - The port number to use for the connection.
     pub fn init_connection(&self, url: &str, port: u16) {
-        // Initialize the session with the default user agent "rs2-agent".
-        self.init_session("rs2-agent");
+        // Initialize the session with the default user agent "kageshirei-agent".
+        self.init_session("kageshirei-agent");
 
         if self.connection_handle.load(Ordering::Acquire).is_null() {
             unsafe {

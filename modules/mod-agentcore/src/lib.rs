@@ -13,13 +13,13 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};
-use mod_hhtgates::get_syscall_number;
-use rs2_win32::{
+use kageshirei_win32::{
     kernel32::Kernel32,
     ntapi::NtDll,
     ntdef::{KUserSharedData, TEB},
 };
+use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};
+use mod_hhtgates::get_syscall_number;
 use spin::Mutex;
 
 /// Represents a session containing connection information.

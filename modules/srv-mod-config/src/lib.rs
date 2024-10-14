@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
+use kageshirei_utils::{print_validation_error, unrecoverable_error::unrecoverable_error};
 use log::error;
-use rs2_utils::{print_validation_error, unrecoverable_error::unrecoverable_error};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use validator::{Validate, ValidationErrors};
@@ -61,7 +61,7 @@ pub struct RootConfig {
 
 impl RootConfig {
     /// Load the configuration from a file
-    pub fn load(path: &PathBuf) -> anyhow::Result<SharedConfig> {
+    pub fn load(path: &PathBuf) -> Result<SharedConfig, String> {
         let path = std::env::current_dir().unwrap().join(path);
         if !path.exists() {
             error!("Failed to load configuration");
@@ -72,8 +72,8 @@ impl RootConfig {
             unrecoverable_error()?; // Exit with error state
         }
 
-        let file = std::fs::File::open(path)?;
-        let config: Self = serde_json::from_reader(file)?;
+        let file = std::fs::File::open(path).map_err(|e| e.to_string())?;
+        let config: Self = serde_json::from_reader(file).map_err(|e| e.to_string())?;
 
         Self::handle_loading_errors(config.validate())?;
 
@@ -81,7 +81,7 @@ impl RootConfig {
     }
 
     /// handle the loading errors if any, exiting if errors are found
-    fn handle_loading_errors(result: Result<(), ValidationErrors>) -> anyhow::Result<()> {
+    fn handle_loading_errors(result: Result<(), ValidationErrors>) -> Result<(), String> {
         if let Err(e) = result {
             error!("Failed to load configuration");
             print_validation_error::print_validation_error(e)?;

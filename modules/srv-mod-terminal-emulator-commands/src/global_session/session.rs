@@ -39,6 +39,16 @@ impl From<agent::Model> for SessionOpeningRecord {
     }
 }
 
+fn make_hostname_condition_from_ids(ids: Vec<String>) -> Condition {
+    let mut condition = Condition::any();
+
+    for id in ids.iter() {
+        condition = condition.add(agent::Column::Hostname.eq(id));
+    }
+
+    condition
+}
+
 /// Handle the sessions command
 ///
 /// This command lists all the terminal sessions in the database
@@ -63,9 +73,7 @@ pub async fn handle(
     // If the ids are provided, return the terminal emulator internal handle open sessions command
     if args.ids.is_some() {
         let agents = agent::Entity::find()
-            .filter(args.ids.iter().fold(Condition::any(), |acc, id| {
-                acc.add(agent::Column::Hostname.eq(id))
-            }))
+            .filter(make_hostname_condition_from_ids(args.ids.clone().unwrap()))
             .all(&connection)
             .await
             .map_err(|e| e.to_string())?;
@@ -97,8 +105,8 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
-    use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use kageshirei_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
+    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
     use serial_test::serial;
     use srv_mod_database::models::agent::CreateAgent;
 

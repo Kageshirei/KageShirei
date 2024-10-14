@@ -5,7 +5,7 @@ use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_entity::{
     active_enums::LogLevel,
     entities::{logs, terminal_history},
-    sea_orm::prelude::*,
+    sea_orm::{prelude::*, ActiveValue::Set, Condition},
 };
 use tracing::{debug, instrument};
 
@@ -16,6 +16,16 @@ use crate::command_handler::CommandHandlerArguments;
 pub struct TerminalSessionHistoryRestoreArguments {
     /// The list of command ids to restore
     pub command_ids: Vec<i64>,
+}
+
+fn make_sequence_counter_condition(ids: Vec<i64>) -> Condition {
+    let mut condition = Condition::any();
+
+    for id in ids.iter() {
+        condition = condition.add(terminal_history::Column::SequenceCounter.eq(Expr::val(id)));
+    }
+
+    condition
 }
 
 /// Handle the clear command
@@ -31,7 +41,7 @@ pub async fn handle(
     // clear commands marking them as deleted (soft delete)
     let result = terminal_history::Entity::update_many()
         .filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
-        .filter(terminal_history::Column::SequenceCounter.eq_any(&args.command_ids))
+        .filter(make_sequence_counter_condition(args.command_ids.clone()))
         .col_expr(
             terminal_history::Column::RestoredAt,
             Expr::value(chrono::Utc::now()),
@@ -44,13 +54,13 @@ pub async fn handle(
 
     // create a log entry and save it
     let log = logs::ActiveModel {
-        level: LogLevel::Info,
-        title: "Command(s) restored".to_string(),
-        message: Some(message.clone()),
-        extra: Some(json!({
+        level: Set(LogLevel::Info),
+        title: Set("Command(s) restored".to_string()),
+        message: Set(Some(message.clone())),
+        extra: Set(Some(json!({
             "session": config.session.hostname,
             "ran_by": config.user.username,
-        })),
+        }))),
         ..Default::default()
     }
     .insert(&db)
@@ -58,11 +68,14 @@ pub async fn handle(
     .map_err(|e| e.to_string())?;
 
     // broadcast the log
-    config.broadcast_sender.send(SseEvent {
-        data:  serde_json::to_string(&log)?,
-        event: EventType::Log,
-        id:    Some(log.id),
-    })?;
+    config
+        .broadcast_sender
+        .send(SseEvent {
+            data:  serde_json::to_string(&log).map_err(|e| e.to_string())?,
+            event: EventType::Log,
+            id:    Some(log.id),
+        })
+        .map_err(|e| e.to_string())?;
 
     // Signal the frontend terminal emulator to clear the terminal screen
     Ok(message)
@@ -71,7 +84,7 @@ pub async fn handle(
 #[cfg(test)]
 mod tests {
     use chrono::SubsecRound;
-    use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
     use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 

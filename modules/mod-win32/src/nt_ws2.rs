@@ -6,13 +6,13 @@ use core::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
+use kageshirei_win32::{
+    ntdef::UnicodeString,
+    ws2_32::{AddrInfo, SockAddr, SockAddrIn, Winsock, WsaData, SOCKET},
+};
 use mod_agentcore::{
     instance,
     ldr::{ldr_function_addr, nt_get_last_error},
-};
-use rs2_win32::{
-    ntdef::UnicodeString,
-    ws2_32::{AddrInfo, SockAddr, SockAddrIn, Winsock, WsaData, SOCKET},
 };
 
 // Global variable to store Winsock functions

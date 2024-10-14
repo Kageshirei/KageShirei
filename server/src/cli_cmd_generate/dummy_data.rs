@@ -1,5 +1,5 @@
+use kageshirei_communication_protocol::network_interface::NetworkInterface;
 use log::{error, info};
-use rs2_communication_protocol::network_interface::NetworkInterface;
 use srv_mod_config::SharedConfig;
 use srv_mod_entity::{
     active_enums::{AgentField, AgentIntegrity, FilterOperation},
@@ -20,7 +20,7 @@ pub async fn make_dummy_data(config: SharedConfig) -> Result<(), String> {
     // Insert the operator into the database
     let new_user = user::ActiveModel {
         username: Set("test".to_string()),
-        password: Set(rs2_crypt::argon::Argon2::hash_password("test")?),
+        password: Set(kageshirei_crypt::argon::Argon2::hash_password("test")?),
         ..Default::default()
     };
 

@@ -100,7 +100,7 @@ export default function Page() {
                 return {
                     ...terminals,
                     global: (position) => (
-                        <Terminal hostname={"RS2"}
+                        <Terminal hostname={"KageShirei"}
                                   username={username}
                                   cwd={`/home/${username}`}
                                   style={{

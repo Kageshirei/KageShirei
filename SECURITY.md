@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-There is no currently supported version of RS2 due to its instability and the fact that is not production ready yet.
+There is no currently supported version of KageShirei due to its instability and the fact that is not production ready yet.
 
 | Version | Supported          |
 | ------- | ------------------ |

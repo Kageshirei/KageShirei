@@ -3,7 +3,21 @@ use sea_orm_migration::{
     schema::*,
 };
 
-use crate::sea_orm::{ActiveEnum, DbBackend, EnumIter, Iterable, Schema};
+use crate::sea_orm::{DbBackend, EnumIter, Iterable, Schema};
+
+#[derive(DeriveIden)]
+struct AgentIntegrity;
+
+#[derive(DeriveIden, EnumIter)]
+enum AgentIntegrityVariants {
+    Untrusted,
+    Low,
+    Medium,
+    High,
+    System,
+    ProtectedProcess,
+    INVALID,
+}
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -11,6 +25,15 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .create_type(
+                Type::create()
+                    .as_enum(AgentIntegrity)
+                    .values(AgentIntegrityVariants::iter())
+                    .to_owned(),
+            )
+            .await?;
+
         manager
             .create_table(
                 Table::create()
@@ -25,7 +48,14 @@ impl MigrationTrait for Migration {
                     .col(big_integer(Agent::PID).not_null().default(0i64))
                     .col(big_integer(Agent::PPID).not_null().default(0i64))
                     .col(string(Agent::ProcessName).not_null())
-                    .col(small_integer(Agent::Integrity).not_null())
+                    .col(
+                        enumeration(
+                            Agent::Integrity,
+                            Alias::new("agent_integrity"),
+                            AgentIntegrityVariants::iter(),
+                        )
+                        .not_null(),
+                    )
                     .col(string(Agent::CurrentWorkingDirectory).not_null())
                     .col(string(Agent::ServerSecret).not_null())
                     .col(string(Agent::Secret).not_null())

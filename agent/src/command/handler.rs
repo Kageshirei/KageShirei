@@ -4,11 +4,7 @@ use std::sync::mpsc;
 #[cfg(feature = "std-runtime")]
 use std::thread::{self, JoinHandle};
 
-use mod_agentcore::instance;
-#[cfg(feature = "nostd-nt-runtime")]
-use mod_nostd::{nostd_mpsc, nostd_thread};
-use mod_win32::nt_time::{check_kill_date, is_working_hours};
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     communication_structs::{
         agent_commands::AgentCommands,
         simple_agent_command::SimpleAgentCommand,
@@ -17,7 +13,11 @@ use rs2_communication_protocol::{
     metadata::Metadata,
     protocol::Protocol,
 };
-use rs2_runtime::Runtime;
+use kageshirei_runtime::Runtime;
+use mod_agentcore::instance;
+#[cfg(feature = "nostd-nt-runtime")]
+use mod_nostd::{nostd_mpsc, nostd_thread};
+use mod_win32::nt_time::{check_kill_date, is_working_hours};
 
 use super::system::command_exit;
 use crate::{

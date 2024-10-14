@@ -4,12 +4,12 @@ extern crate alloc;
 
 use alloc::{vec, vec::Vec};
 
-use libc_print::libc_println;
-use mod_agentcore::instance;
-use rs2_win32::{
+use kageshirei_win32::{
     ntdef::{KeyValuePartialInformation, UnicodeString, REG_SZ, ULONG},
     ntstatus::{STATUS_BUFFER_OVERFLOW, STATUS_BUFFER_TOO_SMALL},
 };
+use libc_print::libc_println;
+use mod_agentcore::instance;
 
 use crate::{nt_reg_api::nt_open_key, utils::NT_STATUS};
 

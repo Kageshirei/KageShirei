@@ -1,6 +1,6 @@
 use bytes::Bytes;
-use rs2_communication_protocol::communication_structs::checkin::Checkin;
-use rs2_crypt::{
+use kageshirei_communication_protocol::communication_structs::checkin::Checkin;
+use kageshirei_crypt::{
     encoder::{base64::Base64Encoder, Encoder},
     sha3::{Digest, Sha3_512},
 };
@@ -32,7 +32,7 @@ pub fn make_signature(checkin: &Checkin) -> String {
 
 #[cfg(test)]
 mod test {
-    use rs2_communication_protocol::communication_structs::checkin::PartialCheckin;
+    use kageshirei_communication_protocol::communication_structs::checkin::PartialCheckin;
 
     use super::*;
 

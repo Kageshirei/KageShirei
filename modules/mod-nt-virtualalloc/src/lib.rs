@@ -8,10 +8,10 @@ use core::{
     sync::atomic::{AtomicBool, AtomicIsize, Ordering},
 };
 
+use kageshirei_indirect_syscall::run_syscall;
+use kageshirei_win32::ntapi::NtSyscall;
 use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
 use mod_hhtgates::get_syscall_number;
-use rs2_indirect_syscall::run_syscall;
-use rs2_win32::ntapi::NtSyscall;
 use spin::Mutex;
 
 // Atomic flag contains the last status of an NT syscall.

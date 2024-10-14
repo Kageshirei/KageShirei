@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
-rs2-runtime = { path = "../../libs/rs2-runtime" }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
+kageshirei-runtime = { path = "../../libs/kageshirei-runtime" }
 serde = { version = "1.0", features = ["derive", "rc"] }

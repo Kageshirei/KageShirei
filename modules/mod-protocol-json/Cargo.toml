@@ -19,8 +19,8 @@ incremental = false
 [dependencies]
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.128" }
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
-rs2-crypt = { path = "../../libs/rs2-crypt" }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
+kageshirei-crypt = { path = "../../libs/kageshirei-crypt" }
 reqwest = { version = "0.12.8", features = ["rustls-tls", "stream"] }
 bytes = "1.7.2"
 

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 tracing = "0.1.40"
 serde = { version = "1.0.210", features = ["derive"] }
-rs2-crypt = { path = "../../libs/rs2-crypt", features = [
+kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = [
     "sha3",
     "hex-encoding",
     "base32-encoding",
@@ -15,9 +15,9 @@ rs2-crypt = { path = "../../libs/rs2-crypt", features = [
 ] }
 bytes = "1.7.2"
 srv-mod-config = { path = "../srv-mod-config" }
-rs2-utils = { path = "../../libs/rs2-utils", features = ["bytes"] }
+kageshirei-utils = { path = "../../libs/kageshirei-utils", features = ["bytes"] }
 axum = "0.7.7"
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 mod-protocol-json = { path = "../mod-protocol-json" }
 chrono = "0.4.38"
 tokio = { version = "1.40.0", features = ["full"] }

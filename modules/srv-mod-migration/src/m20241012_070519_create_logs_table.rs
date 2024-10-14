@@ -39,7 +39,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(Logs::Table)
                     .if_not_exists()
-                    .col(ColumnDef::new(Logs::Id).string_len(32).primary_key())
+                    .col(string_len(Logs::Id, 32).primary_key())
                     .col(
                         enumeration(
                             Logs::Level,
@@ -62,21 +62,10 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(ReadLogs::Table)
                     .if_not_exists()
+                    .col(string_len(ReadLogs::Id, 32).primary_key())
                     .col(string_len(ReadLogs::LogId, 32))
                     .col(string_len(ReadLogs::ReadBy, 32))
                     .col(timestamp(ReadLogs::ReadAt).not_null())
-                    .to_owned(),
-            )
-            .await?;
-
-        manager
-            .create_index(
-                Index::create()
-                    .table(ReadLogs::Table)
-                    .name("pk_read_logs")
-                    .col(ReadLogs::LogId)
-                    .col(ReadLogs::ReadBy)
-                    .unique()
                     .to_owned(),
             )
             .await?;
@@ -136,6 +125,7 @@ enum Logs {
 #[derive(DeriveIden)]
 enum ReadLogs {
     Table,
+    Id,
     #[sea_orm(ident = "log_id")]
     LogId,
     #[sea_orm(ident = "read_by")]

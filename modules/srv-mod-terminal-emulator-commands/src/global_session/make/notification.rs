@@ -50,7 +50,7 @@ pub async fn handle(
         .broadcast_sender
         .send(SseEvent {
             event: EventType::Log,
-            id:    Some(notification.id),
+            id:    Some(notification.id.clone()),
             data:  serde_json::to_string(&notification).map_err(|e| e.to_string())?,
         })
         .map_err(|e| e.to_string())?;
@@ -60,7 +60,7 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
     use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 

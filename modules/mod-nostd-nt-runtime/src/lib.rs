@@ -11,10 +11,7 @@ extern crate alloc;
 mod tests {
     use alloc::{format, string::ToString, sync::Arc};
 
-    use libc_print::libc_println;
-    use mod_nostd::{nostd_mpsc, nostd_thread};
-    use mod_win32::nt_time::delay;
-    use rs2_communication_protocol::{
+    use kageshirei_communication_protocol::{
         communication_structs::{
             agent_commands::AgentCommands,
             simple_agent_command::SimpleAgentCommand,
@@ -22,7 +19,10 @@ mod tests {
         },
         metadata::Metadata,
     };
-    use rs2_runtime::Runtime;
+    use kageshirei_runtime::Runtime;
+    use libc_print::libc_println;
+    use mod_nostd::{nostd_mpsc, nostd_thread};
+    use mod_win32::nt_time::delay;
 
     use crate::nostd_nt_runtime::NoStdNtRuntime; // Import the Runtime trait
 

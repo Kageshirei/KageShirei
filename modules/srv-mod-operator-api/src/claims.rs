@@ -34,7 +34,7 @@ impl JwtClaims {
         Self {
             exp: (now + lifetime).timestamp() as u64,
             iat: now.timestamp() as u64,
-            iss: "rs2-api-server".to_string(),
+            iss: "kageshirei-api-server".to_string(),
             nbf: now.timestamp() as u64,
             sub,
         }
@@ -64,7 +64,7 @@ where
         }
 
         let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS512);
-        validation.set_issuer(&["rs2-api-server"]);
+        validation.set_issuer(&["kageshirei-api-server"]);
         validation.set_required_spec_claims(&["exp", "sub"]);
         validation.leeway = 30; // 30 seconds leeway for clock skew
 

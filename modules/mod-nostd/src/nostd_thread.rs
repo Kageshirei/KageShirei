@@ -1,13 +1,13 @@
 use alloc::boxed::Box;
 use core::{ffi::c_void, mem::size_of, ptr::null_mut};
 
-use mod_agentcore::instance;
-use mod_win32::utils::NT_STATUS;
-use rs2_win32::{
+use kageshirei_win32::{
     ntapi::nt_current_process,
     ntdef::{ObjectAttributes, HANDLE, OBJ_CASE_INSENSITIVE, THREAD_ALL_ACCESS},
     ntstatus::NT_SUCCESS,
 };
+use mod_agentcore::instance;
+use mod_win32::utils::NT_STATUS;
 
 /// A Rust abstraction over the Windows native threading API, specifically using
 /// functions from `ntdll.dll` to create and manage threads without using the standard library.

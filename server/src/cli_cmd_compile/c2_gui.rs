@@ -297,11 +297,11 @@ fn build_command_and_control() -> Result<(), String> {
     info!(
         r"Find the compiled clients at:
 {}
-    - target/release/rs2-command-and-control
-    - target/release/bundle/deb/rs2-command-and-control_<version>_<arch>.deb
-    - target/release/bundle/appimage/rs2-command-and-control_<version>_<arch>.AppImage
+    - target/release/kageshirei-command-and-control
+    - target/release/bundle/deb/kageshirei-command-and-control_<version>_<arch>.deb
+    - target/release/bundle/appimage/kageshirei-command-and-control_<version>_<arch>.AppImage
 {}
-    - target/x86_64-pc-windows-msvc/release/rs2-command-and-control.exe
+    - target/x86_64-pc-windows-msvc/release/kageshirei-command-and-control.exe
 ",
         "Linux".bold(),
         "Windows".bold()

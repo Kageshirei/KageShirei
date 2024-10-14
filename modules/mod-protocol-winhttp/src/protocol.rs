@@ -2,13 +2,13 @@ use alloc::{string::String, sync::Arc};
 
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     magic_numbers,
     metadata::{Metadata, WithMetadata},
     protocol::Protocol,
     sender::Sender,
 };
-use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
+use kageshirei_crypt::encryption_algorithm::EncryptionAlgorithm;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::client::WinHttpClient;
@@ -168,7 +168,7 @@ mod tests {
     use alloc::string::ToString;
 
     use axum::{http::HeaderMap, routing::get, Router};
-    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+    use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;

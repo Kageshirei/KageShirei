@@ -28,7 +28,7 @@ pub async fn generate_operator(args: &GenerateOperatorArguments, config: SharedC
     // Insert the operator into the database
     let new_user = user::ActiveModel {
         username: Set(args.username.clone()),
-        password: Set(rs2_crypt::argon::Argon2::hash_password(
+        password: Set(kageshirei_crypt::argon::Argon2::hash_password(
             args.password.as_str(),
         )?),
         ..Default::default()

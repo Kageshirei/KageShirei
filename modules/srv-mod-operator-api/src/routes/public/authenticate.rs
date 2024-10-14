@@ -51,7 +51,7 @@ async fn post_handler(
         .ok_or(ApiServerError::WrongCredentials)?;
 
     // Verify the password
-    if !rs2_crypt::argon::Argon2::verify_password(&payload.password, &usr.password) {
+    if !kageshirei_crypt::argon::Argon2::verify_password(&payload.password, &usr.password) {
         return Err(ApiServerError::WrongCredentials);
     }
 
@@ -123,7 +123,7 @@ mod tests {
     fn make_shared_config() -> SharedConfig {
         let config = RootConfig {
             database: DatabaseConfig {
-                url: "postgresql://rs2:rs2@localhost/rs2".to_string(),
+                url: "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string(),
                 ..DatabaseConfig::default()
             },
             ..RootConfig::default()

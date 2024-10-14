@@ -3,7 +3,7 @@ use core::{
     ptr::null_mut,
 };
 
-use rs2_indirect_syscall::run_syscall;
+use kageshirei_indirect_syscall::run_syscall;
 
 use crate::ntdef::{
     AccessMask,

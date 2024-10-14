@@ -40,10 +40,10 @@
       }
     }
   },
-  "productName": "rs2-command-and-control",
-  "mainBinaryName": "rs2-command-and-control",
+  "productName": "kageshirei-command-and-control",
+  "mainBinaryName": "kageshirei-command-and-control",
   "version": "0.1.0",
-  "identifier": "com.rs2.command-and-control",
+  "identifier": "com.kageshirei.command-and-control",
   "plugins": {},
   "app": {
     "windows": [
@@ -51,7 +51,7 @@
         "fullscreen": false,
         "height": 1080,
         "resizable": true,
-        "title": "RS2 Command & Control",
+        "title": "KageShirei Command & Control",
         "width": 1920
       }
     ],

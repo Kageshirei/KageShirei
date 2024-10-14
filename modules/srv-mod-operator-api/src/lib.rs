@@ -12,7 +12,7 @@ use axum::{
 };
 use axum_server::tls_rustls::RustlsConfig;
 use jwt_keys::{Keys, API_SERVER_JWT_KEYS};
-use rs2_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
+use kageshirei_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
 use srv_mod_config::SharedConfig;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use state::ApiServerSharedState;

@@ -5,7 +5,7 @@ use alloc::{
 };
 use core::str;
 
-use rs2_win32::{ntdef::UnicodeString, ntstatus::*};
+use kageshirei_win32::{ntdef::UnicodeString, ntstatus::*};
 
 /// Converts a Rust string slice to a wide string (Vec<u16>) with a null terminator.
 ///

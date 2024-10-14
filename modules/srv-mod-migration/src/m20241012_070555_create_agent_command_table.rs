@@ -2,8 +2,7 @@ use sea_orm_migration::{prelude::*, schema::*};
 
 use crate::{
     extension::postgres::Type,
-    m20241012_041618_create_agents_table::{Agent, AgentFieldVariants},
-    m20241012_070459_create_agent_profiles_table::AgentProfile,
+    m20241012_041618_create_agents_table::Agent,
     sea_orm::{EnumIter, Iterable},
 };
 

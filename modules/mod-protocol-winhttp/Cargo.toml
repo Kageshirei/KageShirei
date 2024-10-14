@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
-rs2-crypt = { path = "../../libs/rs2-crypt" }
-rs2-win32 = {path = "../../libs/rs2-win32"}
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
+kageshirei-crypt = { path = "../../libs/kageshirei-crypt" }
+kageshirei-win32 = {path = "../../libs/kageshirei-win32"}
 mod-win32 = {path = "../../modules/mod-win32"}
 mod-agentcore = {path = "../../modules/mod-agentcore"}
 serde = { version = "1.0.202", features = ["derive"] }

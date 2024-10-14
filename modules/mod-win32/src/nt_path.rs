@@ -1,9 +1,7 @@
 use alloc::{format, vec::Vec};
 use core::ptr::null_mut;
 
-use libc_print::libc_println;
-use mod_agentcore::instance;
-use rs2_win32::{
+use kageshirei_win32::{
     ntdef::{
         IoStatusBlock,
         ObjectAttributes,
@@ -27,6 +25,8 @@ use rs2_win32::{
     },
     ntstatus::{NT_SUCCESS, STATUS_NAME_TOO_LONG, STATUS_NO_MEMORY, STATUS_OBJECT_NAME_INVALID, STATUS_SUCCESS},
 };
+use libc_print::libc_println;
+use mod_agentcore::instance;
 
 use crate::{
     nt_peb::get_current_directory,

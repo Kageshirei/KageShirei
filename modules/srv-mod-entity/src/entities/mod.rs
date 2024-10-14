@@ -8,5 +8,6 @@ pub mod agent_profile;
 pub mod filter;
 pub mod logs;
 pub mod read_logs;
+pub mod sea_orm_active_enums;
 pub mod terminal_history;
 pub mod user;

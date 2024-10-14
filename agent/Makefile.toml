@@ -54,7 +54,7 @@ env = { "RUSTFLAGS" = "-C panic=abort -C link-arg=/SUBSYSTEM:console -C link-arg
 [tasks.strip.linux]
 clear = true
 script_runner = "@shell"
-script = "strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/rs2-agent.exe"
+script = "strip -s ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/x86_64-pc-windows-gnu/release/kageshirei-agent.exe"
 dependencies = ["build"]
 
 [tasks.strip.windows]

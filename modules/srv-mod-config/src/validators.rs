@@ -27,7 +27,6 @@ pub fn validate_port(port: u16) -> Result<(), ValidationError> {
             use winapi::{
                 shared::minwindef::DWORD,
                 um::{
-                    handleapi::CloseHandle,
                     processthreadsapi::OpenProcessToken,
                     securitybaseapi::GetTokenInformation,
                     winnt::{TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},

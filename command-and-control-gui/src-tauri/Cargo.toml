@@ -1,9 +1,9 @@
 [package]
-name = "rs2-command-and-control"
+name = "kageshirei-command-and-control"
 version = "0.1.0"
-description = "The command and control client for the RS2 project."
+description = "The command and control client for the KageShirei project."
 repository = ""
-default-run = "rs2-command-and-control"
+default-run = "kageshirei-command-and-control"
 
 [profile.release]
 strip = true

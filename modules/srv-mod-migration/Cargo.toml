@@ -8,17 +8,13 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies]
+sea-orm = { version = "1.0.1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono", "with-json"] }
 async-std = { version = "1", features = ["attributes", "tokio1"] }
 srv-mod-entity = { path = "../srv-mod-entity" }
 
 [dependencies.sea-orm-migration]
-version = "1.0.0"
+version = "1.0.1"
 features = [
-  # Enable at least one `ASYNC_RUNTIME` and `DATABASE_DRIVER` feature if you want to run migration via CLI.
-  # View the list of supported features at https://www.sea-ql.org/SeaORM/docs/install-and-config/database-and-async-runtime.
-  # e.g.
-  # "runtime-tokio-rustls",  # `ASYNC_RUNTIME` feature
-  # "sqlx-postgres",         # `DATABASE_DRIVER` feature
     "sqlx-postgres",
     "runtime-tokio-rustls"
 ]

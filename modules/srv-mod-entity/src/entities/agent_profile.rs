@@ -96,7 +96,7 @@ impl Model {
     pub fn set_polling_interval(&mut self, interval: Duration) -> &Self {
         self.polling_interval = humantime::format_duration(interval).to_string();
 
-        &Self
+        self
     }
 
     /// Set the polling jitter
@@ -111,7 +111,7 @@ impl Model {
     pub fn set_polling_jitter(&mut self, jitter: Duration) -> &Self {
         self.polling_jitter = humantime::format_duration(jitter).to_string();
 
-        &Self
+        self
     }
 }
 
@@ -228,7 +228,7 @@ impl ActiveModel {
     pub fn set_polling_interval(&mut self, interval: Duration) -> &Self {
         self.polling_interval = Set(humantime::format_duration(interval).to_string());
 
-        &Self
+        self
     }
 
     /// Set the polling jitter
@@ -243,6 +243,6 @@ impl ActiveModel {
     pub fn set_polling_jitter(&mut self, jitter: Duration) -> &Self {
         self.polling_jitter = Set(humantime::format_duration(jitter).to_string());
 
-        &Self
+        self
     }
 }

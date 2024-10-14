@@ -115,7 +115,7 @@ mod tests {
             parent_process_id:  5678,
             process_name:       "agent.exe".to_string(),
             integrity_level:    0,
-            cwd:                "C:\\Users\\Public\\rs2-agent.exe".to_string(),
+            cwd:                "C:\\Users\\Public\\kageshirei-agent.exe".to_string(),
         });
 
         let metadata = Metadata {

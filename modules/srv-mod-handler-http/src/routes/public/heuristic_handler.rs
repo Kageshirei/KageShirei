@@ -6,7 +6,12 @@ use axum::{
     routing::post,
     Router,
 };
-use rs2_crypt::encoder::{base32::Base32Encoder, base64::Base64Encoder, hex::HexEncoder, Encoder as CryptEncoder};
+use kageshirei_crypt::encoder::{
+    base32::Base32Encoder,
+    base64::Base64Encoder,
+    hex::HexEncoder,
+    Encoder as CryptEncoder,
+};
 use srv_mod_config::handlers::{Encoder, EncryptionScheme};
 use srv_mod_handler_base::{handle_command_result, state::HandlerSharedState};
 use tracing::{instrument, warn};
@@ -148,7 +153,7 @@ mod tests {
 
     use axum::http::Request;
     use bytes::{BufMut, BytesMut};
-    use rs2_communication_protocol::{
+    use kageshirei_communication_protocol::{
         communication_structs::checkin::{Checkin, PartialCheckin},
         magic_numbers,
     };
@@ -211,7 +216,7 @@ mod tests {
     #[serial]
     async fn test_post_handler_plain_no_encoding() {
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -269,7 +274,7 @@ mod tests {
     async fn test_post_handler_plain_hex() {
         let mut shared_config = make_config();
         shared_config.security.encoder = Some(Encoder::Hex);
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -329,7 +334,7 @@ mod tests {
     async fn test_post_handler_plain_base32() {
         let mut shared_config = make_config();
         shared_config.security.encoder = Some(Encoder::Base32);
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -389,7 +394,7 @@ mod tests {
     async fn test_post_handler_plain_base64() {
         let mut shared_config = make_config();
         shared_config.security.encoder = Some(Encoder::Base64);
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;

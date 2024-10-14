@@ -6,8 +6,8 @@ use core::{
 };
 
 use futures::Future;
+use kageshirei_runtime::Runtime;
 use mod_nostd::nostd_mpsc;
-use rs2_runtime::Runtime;
 use spin::Mutex;
 
 use crate::nostd_nt_threadpool::NoStdThreadPool;

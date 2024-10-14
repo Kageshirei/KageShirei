@@ -5,7 +5,7 @@ use std::{
     task::{Context, Poll, Waker},
 };
 
-use rs2_runtime::Runtime;
+use kageshirei_runtime::Runtime;
 
 use crate::std_threadpool::ThreadPool;
 

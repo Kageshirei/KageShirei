@@ -83,7 +83,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 
 #[cfg(test)]
 mod tests {
-    use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
     use serial_test::serial;
     use srv_mod_database::models::command::CreateCommand;
 
