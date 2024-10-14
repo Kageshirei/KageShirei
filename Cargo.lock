@@ -4788,7 +4788,6 @@ dependencies = [
 name = "rs2-agent"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "futures",
  "libc-print",

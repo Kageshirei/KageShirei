@@ -29,12 +29,11 @@ mod-std-runtime = {path = "../modules/mod-std-runtime", optional = true}
 mod-nostd-nt-runtime = {path = "../modules/mod-nostd-nt-runtime", optional = true}
 libc-print = "0.1.23"
 spin = "0.9"
-serde = { version = "1.0.202", features = ["derive"] }
-serde_json = { version = "1.0.117" }
-anyhow = "1.0.86"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = { version = "1.0.128" }
 rand = "0.8.5"
-chrono = "0.4"
-futures = "0.3.30"
+chrono = "0.4.38"
+futures = "0.3.31"
 
 [features]
 default = ["protocol-winhttp", "nt-virtualalloc", "nostd-nt-runtime"]
