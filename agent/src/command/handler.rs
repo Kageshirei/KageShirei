@@ -92,7 +92,7 @@ where
 
             if result.is_ok() {
                 // Read the list of commands from the protocol
-                let tasks_response: Result<Vec<SimpleAgentCommand>, anyhow::Error> =
+                let tasks_response: Result<Vec<SimpleAgentCommand>, String> =
                     protocol.read(result.unwrap(), Some(encryptor.clone()));
 
                 match tasks_response {

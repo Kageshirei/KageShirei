@@ -3394,7 +3394,6 @@ dependencies = [
 name = "mod-protocol-winhttp"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "bytes",
  "kageshirei-communication-protocol",

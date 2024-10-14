@@ -12,7 +12,6 @@ mod-agentcore = {path = "../../modules/mod-agentcore"}
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = { version = "1.0.117" }
 bytes = "1.6.0"
-anyhow = "1.0.86"
 
 [dev-dependencies]
 tokio = { version = "1.37.0", features = ["full"] }

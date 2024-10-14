@@ -118,7 +118,7 @@ where
                 });
 
                 if result.is_ok() {
-                    let checkin_response: Result<CheckinResponse, anyhow::Error> =
+                    let checkin_response: Result<CheckinResponse, String> =
                         protocol_read.read(result.unwrap(), Some(encryptor.clone()));
 
                     if checkin_response.is_ok() {

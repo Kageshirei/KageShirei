@@ -1,6 +1,8 @@
-use alloc::{string::String, sync::Arc};
+use alloc::{
+    string::{String, ToString},
+    sync::Arc,
+};
 
-use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
 use kageshirei_communication_protocol::{
     magic_numbers,
@@ -68,7 +70,7 @@ where
         self
     }
 
-    async fn send(&mut self, data: Bytes, metadata: Arc<Metadata>) -> Result<Bytes> {
+    async fn send(&mut self, data: Bytes, metadata: Arc<Metadata>) -> Result<Bytes, String> {
         let mut url = self.base_url.clone();
 
         // Ensure the URL ends with a slash.
@@ -100,7 +102,7 @@ impl<E> Protocol<E> for WinHttpProtocol<E>
 where
     E: EncryptionAlgorithm + Send,
 {
-    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S>
+    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, String>
     where
         S: DeserializeOwned,
     {
@@ -116,24 +118,24 @@ where
         };
 
         if data.len() < magic_numbers::JSON.len() {
-            return Err(anyhow::anyhow!("Invalid data length"));
+            return Err(String::from("Invalid data length"));
         }
 
         // Check if the magic number is correct.
         if data[.. magic_numbers::JSON.len()] != magic_numbers::JSON {
-            return Err(anyhow::anyhow!("Invalid magic number"));
+            return Err(String::from("Invalid magic number"));
         }
 
-        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.into())
+        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.to_string())
     }
 
-    async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>
+    async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes, String>
     where
         D: Serialize + WithMetadata + Send,
     {
         let metadata = data.get_metadata();
 
-        let serialized = serde_json::to_string(&data)?;
+        let serialized = serde_json::to_string(&data).map_err(|e| e.to_string())?;
         let data_length = serialized.len() + magic_numbers::JSON.len();
         let mut data = BytesMut::with_capacity(data_length);
 

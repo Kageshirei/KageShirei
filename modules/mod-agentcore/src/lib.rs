@@ -70,9 +70,9 @@ pub struct Config {
     /// The working hours for the current day (unix timestamp), if any.
     pub working_hours:    Option<Vec<Option<i64>>>,
     /// The agent polling interval in milliseconds.
-    pub polling_interval: i64,
+    pub polling_interval: u128,
     /// The agent polling jitter in milliseconds.
-    pub polling_jitter:   i64,
+    pub polling_jitter:   u128,
 }
 
 impl Config {
