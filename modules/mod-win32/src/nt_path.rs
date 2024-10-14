@@ -1,20 +1,32 @@
+use alloc::{format, vec::Vec};
 use core::ptr::null_mut;
 
-use alloc::{format, vec::Vec};
+use kageshirei_win32::{
+    ntdef::{
+        IoStatusBlock,
+        ObjectAttributes,
+        RtlPathType,
+        RtlRelativeNameU,
+        RtlUserProcessParameters,
+        UnicodeString,
+        CURDIR,
+        FILE_DIRECTORY_FILE,
+        FILE_SHARE_READ,
+        FILE_SHARE_WRITE,
+        FILE_SYNCHRONOUS_IO_NONALERT,
+        FILE_TRAVERSE,
+        HANDLE,
+        NTSTATUS,
+        OBJ_CASE_INSENSITIVE,
+        OBJ_INHERIT,
+        PWSTR,
+        SYNCHRONIZE,
+        UNICODE_STRING_MAX_BYTES,
+    },
+    ntstatus::{NT_SUCCESS, STATUS_NAME_TOO_LONG, STATUS_NO_MEMORY, STATUS_OBJECT_NAME_INVALID, STATUS_SUCCESS},
+};
 use libc_print::libc_println;
 use mod_agentcore::instance;
-use rs2_win32::{
-    ntdef::{
-        IoStatusBlock, ObjectAttributes, RtlPathType, RtlRelativeNameU, RtlUserProcessParameters,
-        UnicodeString, CURDIR, FILE_DIRECTORY_FILE, FILE_SHARE_READ, FILE_SHARE_WRITE,
-        FILE_SYNCHRONOUS_IO_NONALERT, FILE_TRAVERSE, HANDLE, NTSTATUS, OBJ_CASE_INSENSITIVE,
-        OBJ_INHERIT, PWSTR, SYNCHRONIZE, UNICODE_STRING_MAX_BYTES,
-    },
-    ntstatus::{
-        NT_SUCCESS, STATUS_NAME_TOO_LONG, STATUS_NO_MEMORY, STATUS_OBJECT_NAME_INVALID,
-        STATUS_SUCCESS,
-    },
-};
 
 use crate::{
     nt_peb::get_current_directory,
@@ -66,9 +78,9 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
 
         // Initialize a UnicodeString structure to hold the full path
         let mut full_path = UnicodeString {
-            length: 0,
+            length:         0,
             maximum_length: (buffer.capacity() * 2) as u16, // Length in bytes
-            buffer: buffer.as_mut_ptr(),
+            buffer:         buffer.as_mut_ptr(),
         };
 
         // Retrieve the full path name using the custom function
@@ -97,9 +109,9 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
 
         // Convert the DOS path to an NT path
         let mut nt_name = UnicodeString {
-            length: 0,
+            length:         0,
             maximum_length: full_path.maximum_length,
-            buffer: full_path.buffer,
+            buffer:         full_path.buffer,
         };
 
         if rtlp_win32_nt_name_to_nt_path_name_u(&full_path, &mut nt_name, None, None) != 0 {
@@ -124,10 +136,10 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
         // Open the directory
         let status = instance().ntdll.nt_open_file.run(
             &mut cur_dir_handle,
-            SYNCHRONIZE | FILE_TRAVERSE,        // Desired access
-            &mut object_attributes,             // Object attributes
-            &mut status_block,                  // I/O status block
-            FILE_SHARE_READ | FILE_SHARE_WRITE, // Sharing options
+            SYNCHRONIZE | FILE_TRAVERSE,                        // Desired access
+            &mut object_attributes,                             // Object attributes
+            &mut status_block,                                  // I/O status block
+            FILE_SHARE_READ | FILE_SHARE_WRITE,                 // Sharing options
             FILE_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT, // File options
         );
 
@@ -137,10 +149,10 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
             return status; // Return the error code
         }
 
-        /* Save the new directory handle */
+        // Save the new directory handle
         (*cur_dir).handle = cur_dir_handle;
 
-        /* Copy the full path into the current directory's DOS path buffer */
+        // Copy the full path into the current directory's DOS path buffer
         core::ptr::copy_nonoverlapping(
             full_path.buffer,
             (*cur_dir).dos_path.buffer,
@@ -202,7 +214,7 @@ pub unsafe fn rtl_get_full_path_name_ustr(
             prefix_length = 3 * 2; // "C:\"
             source = file_name_buffer.add(3);
             source_length -= 3 * 2;
-        }
+        },
         RtlPathType::RtlPathTypeRelative | RtlPathType::RtlPathTypeRooted => {
             let mut cur_dir: *mut CURDIR = null_mut();
 
@@ -214,7 +226,7 @@ pub unsafe fn rtl_get_full_path_name_ustr(
 
             prefix = (*cur_dir).dos_path.buffer;
             prefix_length = (*cur_dir).dos_path.length as usize;
-        }
+        },
         _ => return 0,
     }
 
@@ -250,7 +262,8 @@ pub unsafe fn rtl_get_full_path_name_ustr(
 /// - `dos_file_name`: A reference to a `UnicodeString` containing the DOS path to be converted.
 /// - `nt_file_name`: A mutable reference to a `UnicodeString` that will be filled with the NT path.
 /// - `part_name`: An optional mutable reference to a pointer that will be set to the "file part" of the path (if any).
-/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be filled with the relative name (if applicable).
+/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be filled with the
+///   relative name (if applicable).
 ///
 /// # Returns
 /// - `NTSTATUS`: Returns `STATUS_SUCCESS` on success, or an appropriate NTSTATUS error code if the operation fails.
@@ -258,11 +271,13 @@ pub unsafe fn rtl_get_full_path_name_ustr(
 ///   - `STATUS_NO_MEMORY` if memory allocation fails.
 ///
 /// # Safety
-/// This function is marked as unsafe because it operates directly on raw pointers and interacts with low-level NT API functions that can lead to undefined behavior if not used correctly. The caller must ensure that all pointers passed to the function are valid.
+/// This function is marked as unsafe because it operates directly on raw pointers and interacts with low-level NT API
+/// functions that can lead to undefined behavior if not used correctly. The caller must ensure that all pointers passed
+/// to the function are valid.
 pub fn rtl_dos_path_name_to_nt_path_name(
-    dos_file_name: &UnicodeString, // Reference to the DOS path to convert
-    nt_file_name: &mut UnicodeString, // Output: NT path
-    part_name: Option<&mut *mut u16>, // Output: Pointer to the file part
+    dos_file_name: &UnicodeString,                // Reference to the DOS path to convert
+    nt_file_name: &mut UnicodeString,             // Output: NT path
+    part_name: Option<&mut *mut u16>,             // Output: Pointer to the file part
     relative_name: Option<&mut RtlRelativeNameU>, // Output: Relative name structure
 ) -> NTSTATUS {
     unsafe {
@@ -270,11 +285,11 @@ pub fn rtl_dos_path_name_to_nt_path_name(
         let nt_prefix = str_to_unicode_string("\\??\\");
 
         // Verifica la presenza del prefisso NT nel percorso
-        let prefix_present = dos_file_name.length > nt_prefix.length as u16
-            && *dos_file_name.buffer.offset(0) == *nt_prefix.buffer.offset(0)
-            && *dos_file_name.buffer.offset(1) == *nt_prefix.buffer.offset(1)
-            && *dos_file_name.buffer.offset(2) == *nt_prefix.buffer.offset(2)
-            && *dos_file_name.buffer.offset(3) == *nt_prefix.buffer.offset(3);
+        let prefix_present = dos_file_name.length > nt_prefix.length as u16 &&
+            *dos_file_name.buffer.offset(0) == *nt_prefix.buffer.offset(0) &&
+            *dos_file_name.buffer.offset(1) == *nt_prefix.buffer.offset(1) &&
+            *dos_file_name.buffer.offset(2) == *nt_prefix.buffer.offset(2) &&
+            *dos_file_name.buffer.offset(3) == *nt_prefix.buffer.offset(3);
 
         if !prefix_present {
             // Se il prefisso NT non è presente, analizza il tipo di percorso
@@ -284,12 +299,12 @@ pub fn rtl_dos_path_name_to_nt_path_name(
                 RtlPathType::RtlPathTypeUncAbsolute => {
                     let unc_prefix = str_to_unicode_string("\\??\\UNC\\");
                     (unc_prefix.length, unc_prefix.buffer, 2)
-                }
+                },
                 RtlPathType::RtlPathTypeLocalDevice => (nt_prefix.length, nt_prefix.buffer, 4),
-                RtlPathType::RtlPathTypeDriveAbsolute
-                | RtlPathType::RtlPathTypeDriveRelative
-                | RtlPathType::RtlPathTypeRooted
-                | RtlPathType::RtlPathTypeRelative => (nt_prefix.length, nt_prefix.buffer, 0),
+                RtlPathType::RtlPathTypeDriveAbsolute |
+                RtlPathType::RtlPathTypeDriveRelative |
+                RtlPathType::RtlPathTypeRooted |
+                RtlPathType::RtlPathTypeRelative => (nt_prefix.length, nt_prefix.buffer, 0),
                 _ => return STATUS_OBJECT_NAME_INVALID,
             };
 
@@ -319,20 +334,18 @@ pub fn rtl_dos_path_name_to_nt_path_name(
             // NULL-terminate il percorso
             *new_buffer
                 .as_mut_ptr()
-                .add(prefix_length as usize / 2 + dos_file_name.length as usize / 2 - prefix_cut) =
-                0;
+                .add(prefix_length as usize / 2 + dos_file_name.length as usize / 2 - prefix_cut) = 0;
 
             // Imposta il percorso NT
             nt_file_name.buffer = new_buffer.as_mut_ptr();
-            nt_file_name.length =
-                (prefix_length as usize + dos_file_name.length as usize - (prefix_cut * 2)) as u16;
+            nt_file_name.length = (prefix_length as usize + dos_file_name.length as usize - (prefix_cut * 2)) as u16;
             nt_file_name.maximum_length = max_length as u16;
 
             // Gestisci part_name se necessario
             if let Some(part_name) = part_name {
-                let mut p = new_buffer.as_mut_ptr().add(
-                    prefix_length as usize / 2 + dos_file_name.length as usize / 2 - prefix_cut,
-                );
+                let mut p = new_buffer
+                    .as_mut_ptr()
+                    .add(prefix_length as usize / 2 + dos_file_name.length as usize / 2 - prefix_cut);
 
                 // Trova l'ultimo separatore di percorso
                 while p > new_buffer.as_mut_ptr() {
@@ -345,7 +358,8 @@ pub fn rtl_dos_path_name_to_nt_path_name(
 
                 if p > new_buffer.as_mut_ptr() && *p != 0 {
                     *part_name = p;
-                } else {
+                }
+                else {
                     *part_name = null_mut();
                 }
             }
@@ -355,28 +369,23 @@ pub fn rtl_dos_path_name_to_nt_path_name(
                 let relative_start = new_buffer.as_mut_ptr().add(prefix_length as usize / 2);
 
                 relative_name.relative_name.buffer = relative_start;
-                relative_name.relative_name.length =
-                    (dos_file_name.length as isize - prefix_length as isize) as u16;
+                relative_name.relative_name.length = (dos_file_name.length as isize - prefix_length as isize) as u16;
                 relative_name.relative_name.maximum_length = relative_name.relative_name.length;
                 relative_name.containing_directory = null_mut();
                 relative_name.cur_dir_ref = null_mut();
             }
 
             STATUS_SUCCESS
-        } else {
+        }
+        else {
             // Se il prefisso NT è presente, usa direttamente la funzione di supporto
-            let status = rtlp_win32_nt_name_to_nt_path_name_u(
-                dos_file_name,
-                nt_file_name,
-                part_name,
-                relative_name,
-            );
+            let status = rtlp_win32_nt_name_to_nt_path_name_u(dos_file_name, nt_file_name, part_name, relative_name);
             status
         }
     }
 }
 
-//RtlpWin32NTNameToNtPathName_U
+// RtlpWin32NTNameToNtPathName_U
 /// Implementation of the `RtlpWin32NTNameToNtPathName_U` function from the Windows NT API.
 ///
 /// This function converts a DOS-style path (`dos_path`) into its equivalent NT path (`nt_path`) by
@@ -386,8 +395,10 @@ pub fn rtl_dos_path_name_to_nt_path_name(
 /// # Parameters
 /// - `dos_path`: A reference to a `UnicodeString` containing the DOS-style path to be converted.
 /// - `nt_path`: A mutable reference to a `UnicodeString` where the resulting NT path will be stored.
-/// - `part_name`: An optional mutable reference to a pointer that will be set to the last component of the path (the "file part").
-/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be populated with the relative name, if applicable.
+/// - `part_name`: An optional mutable reference to a pointer that will be set to the last component of the path (the
+///   "file part").
+/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be populated with the
+///   relative name, if applicable.
 ///
 /// # Returns
 /// - `i32`: Returns `STATUS_SUCCESS` on successful conversion, or an NTSTATUS error code if the operation fails.
@@ -415,18 +426,17 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
         }
 
         // Determine if the DOS path already starts with the NT prefix
-        let nt_prefix_present = dos_length >= rtlp_dos_devices_prefix.length as usize
-            && core::slice::from_raw_parts(
-                dos_path.buffer,
-                rtlp_dos_devices_prefix.length as usize / 2,
-            ) == core::slice::from_raw_parts(
-                rtlp_dos_devices_prefix.buffer,
-                rtlp_dos_devices_prefix.length as usize / 2,
-            );
+        let nt_prefix_present = dos_length >= rtlp_dos_devices_prefix.length as usize &&
+            core::slice::from_raw_parts(dos_path.buffer, rtlp_dos_devices_prefix.length as usize / 2) ==
+                core::slice::from_raw_parts(
+                    rtlp_dos_devices_prefix.buffer,
+                    rtlp_dos_devices_prefix.length as usize / 2,
+                );
 
         let new_size = if nt_prefix_present {
             dos_length + 2 // Just add space for the null terminator
-        } else {
+        }
+        else {
             dos_length + rtlp_dos_devices_prefix.length as usize + 2 // Add space for NT prefix and null terminator
         };
 
@@ -439,12 +449,9 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
 
         if nt_prefix_present {
             // Copy the existing NT-prefixed DOS path into the buffer
-            core::ptr::copy_nonoverlapping(
-                dos_path.buffer,
-                new_buffer.as_mut_ptr(),
-                dos_length / 2,
-            );
-        } else {
+            core::ptr::copy_nonoverlapping(dos_path.buffer, new_buffer.as_mut_ptr(), dos_length / 2);
+        }
+        else {
             // Copy the NT prefix and the DOS path into the new buffer
             core::ptr::copy_nonoverlapping(
                 rtlp_dos_devices_prefix.buffer,
@@ -468,16 +475,18 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
         if let Some(relative_name) = relative_name {
             let relative_name_start = if nt_prefix_present {
                 new_buffer.as_mut_ptr()
-            } else {
+            }
+            else {
                 new_buffer
                     .as_mut_ptr()
                     .add(rtlp_dos_devices_prefix.length as usize / 2)
             };
 
-            let relative_length = dos_length as isize
-                - if nt_prefix_present {
+            let relative_length = dos_length as isize -
+                if nt_prefix_present {
                     0
-                } else {
+                }
+                else {
                     rtlp_dos_devices_prefix.length as isize
                 };
 
@@ -495,10 +504,11 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
         // Handle PartName if provided
         if let Some(part_name) = part_name {
             let mut p = new_buffer.as_mut_ptr().add(
-                (dos_length / 2)
-                    + if nt_prefix_present {
+                (dos_length / 2) +
+                    if nt_prefix_present {
                         0
-                    } else {
+                    }
+                    else {
                         rtlp_dos_devices_prefix.length as usize / 2
                     },
             );
@@ -514,7 +524,8 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
 
             if p > new_buffer.as_mut_ptr() && *p != 0 {
                 *part_name = p;
-            } else {
+            }
+            else {
                 *part_name = null_mut();
             }
         }
@@ -523,7 +534,8 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
         nt_path.buffer = new_buffer.as_mut_ptr();
         nt_path.length = if nt_prefix_present {
             dos_length as u16
-        } else {
+        }
+        else {
             (dos_length + rtlp_dos_devices_prefix.length as usize) as u16
         };
         nt_path.maximum_length = new_size as u16;
@@ -561,9 +573,7 @@ pub fn rtl_determine_dos_path_name_type_ustr(path_string: &UnicodeString) -> Rtl
         if chars < 2 || !is_path_separator(unsafe { *path.add(1) }) {
             return RtlPathType::RtlPathTypeRooted; // \x
         }
-        if chars < 3
-            || (unsafe { *path.add(2) } != '.' as u16 && unsafe { *path.add(2) } != '?' as u16)
-        {
+        if chars < 3 || (unsafe { *path.add(2) } != '.' as u16 && unsafe { *path.add(2) } != '?' as u16) {
             return RtlPathType::RtlPathTypeUncAbsolute; // \\x
         }
         if chars >= 4 && is_path_separator(unsafe { *path.add(3) }) {
@@ -573,7 +583,8 @@ pub fn rtl_determine_dos_path_name_type_ustr(path_string: &UnicodeString) -> Rtl
             return RtlPathType::RtlPathTypeRootLocalDevice; // \\. or \\?
         }
         return RtlPathType::RtlPathTypeUncAbsolute; // \\.x or \\?x
-    } else {
+    }
+    else {
         if chars < 2 || unsafe { *path.add(1) } != ':' as u16 {
             return RtlPathType::RtlPathTypeRelative; // x
         }
@@ -606,10 +617,8 @@ pub fn change_to_parent_directory() -> i32 {
         return -1;
     }
     // Find the position of the last path separator
-    if let Some(parent_end) =
-        current_directory_str.rfind(char::from_u32(OBJ_NAME_PATH_SEPARATOR as u32).unwrap())
-    {
-        let mut parent_directory = &current_directory_str[..parent_end];
+    if let Some(parent_end) = current_directory_str.rfind(char::from_u32(OBJ_NAME_PATH_SEPARATOR as u32).unwrap()) {
+        let mut parent_directory = &current_directory_str[.. parent_end];
 
         // Handle case where the parent directory is the root of the drive (e.g., "C:")
         let formatted_directory;
@@ -635,19 +644,19 @@ pub fn change_to_parent_directory() -> i32 {
 /// which interfaces with the underlying NT API.
 ///
 /// # Parameters
-/// - `path`: A string slice representing the directory path to change to. This can include
-///   multiple `".."` components to move up multiple levels in the directory hierarchy.
+/// - `path`: A string slice representing the directory path to change to. This can include multiple `".."` components
+///   to move up multiple levels in the directory hierarchy.
 ///
 /// # Returns
 /// - `i32`: Returns `STATUS_SUCCESS` on success, or an NTSTATUS error code if the operation fails.
 ///
 /// # Details
-/// - If the path contains `".."`, the function will handle each `".."` sequentially, moving up
-///   one directory level for each occurrence.
-/// - For simple absolute or relative paths without `".."`, the function directly uses
-///   `rtl_set_current_directory` to change the directory.
-/// - This function is useful in low-level environments where direct manipulation of the
-///   process's current directory is required.
+/// - If the path contains `".."`, the function will handle each `".."` sequentially, moving up one directory level for
+///   each occurrence.
+/// - For simple absolute or relative paths without `".."`, the function directly uses `rtl_set_current_directory` to
+///   change the directory.
+/// - This function is useful in low-level environments where direct manipulation of the process's current directory is
+///   required.
 pub fn change_directory(path: &str) -> i32 {
     if path.contains("..") {
         // Split the path into components
@@ -661,7 +670,8 @@ pub fn change_directory(path: &str) -> i32 {
                 if current_status != STATUS_SUCCESS {
                     return current_status; // Return error if any part fails
                 }
-            } else if !part.is_empty() && part != "." {
+            }
+            else if !part.is_empty() && part != "." {
                 // Attempt to change to the specified directory part
                 current_status = rtl_set_current_directory(part);
                 if current_status != STATUS_SUCCESS {
@@ -679,15 +689,16 @@ pub fn change_directory(path: &str) -> i32 {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
+    use core::ptr::null_mut;
+
+    use libc_print::libc_println;
 
     use super::*;
     use crate::{
         nt_peb::get_current_directory,
         utils::{ptr_to_str, unicodestring_to_string},
     };
-    use alloc::vec::Vec;
-    use core::ptr::null_mut;
-    use libc_print::libc_println;
 
     #[test]
     fn test_rtl_dos_path_name_to_nt_path_name() {
@@ -788,7 +799,8 @@ mod tests {
                     !part_name_str.is_empty(),
                     "PartName was expected but is empty"
                 );
-            } else {
+            }
+            else {
                 libc_println!("Part Name is null");
             }
 
@@ -857,8 +869,7 @@ mod tests {
         let dos_path = str_to_unicode_string("C:\\Windows\\System32");
         let mut nt_path = UnicodeString::new();
         let mut part_name: *mut u16 = null_mut();
-        let status =
-            rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name), None);
+        let status = rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name), None);
 
         assert_eq!(status, STATUS_SUCCESS);
         let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
@@ -869,7 +880,8 @@ mod tests {
             let part_name_str = ptr_to_str(part_name);
             libc_println!("Part Name: {}", part_name_str);
             assert_eq!(part_name_str, "System32");
-        } else {
+        }
+        else {
             assert!(false, "PartName was expected but is null");
         }
     }
@@ -880,8 +892,7 @@ mod tests {
         let dos_path = str_to_unicode_string("C:\\Windows\\System32\\");
         let mut nt_path = UnicodeString::new();
         let mut part_name: *mut u16 = null_mut();
-        let status =
-            rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name), None);
+        let status = rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name), None);
 
         assert_eq!(status, STATUS_SUCCESS);
         let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
@@ -918,7 +929,8 @@ mod tests {
             let part_name_str = ptr_to_str(part_name);
             libc_println!("Part Name: {}", part_name_str);
             assert_eq!(part_name_str, "file.txt");
-        } else {
+        }
+        else {
             assert!(false, "PartName was expected but is null");
         }
     }
@@ -931,9 +943,9 @@ mod tests {
             let mut buffer: Vec<u16> = Vec::with_capacity(512);
             buffer.set_len(512);
             let mut full_path = UnicodeString {
-                length: 0,
+                length:         0,
                 maximum_length: (buffer.capacity() * 2) as u16,
-                buffer: buffer.as_mut_ptr(),
+                buffer:         buffer.as_mut_ptr(),
             };
 
             let full_path_length = rtl_get_full_path_name_ustr(
@@ -955,7 +967,8 @@ mod tests {
                     "Full Path: {}",
                     unicodestring_to_string(&full_path).unwrap()
                 );
-            } else {
+            }
+            else {
                 libc_println!("Failed to get the full path");
             }
 
@@ -964,9 +977,9 @@ mod tests {
             let mut buffer: Vec<u16> = Vec::with_capacity(512);
             buffer.set_len(512);
             let mut full_path = UnicodeString {
-                length: 0,
+                length:         0,
                 maximum_length: (buffer.capacity() * 2) as u16,
-                buffer: buffer.as_mut_ptr(),
+                buffer:         buffer.as_mut_ptr(),
             };
 
             let full_path_length = rtl_get_full_path_name_ustr(
@@ -988,7 +1001,8 @@ mod tests {
                     "Full Path: {}",
                     unicodestring_to_string(&full_path).unwrap()
                 );
-            } else {
+            }
+            else {
                 libc_println!("Failed to get the full path");
             }
 
@@ -997,9 +1011,9 @@ mod tests {
             let mut buffer: Vec<u16> = Vec::with_capacity(512);
             buffer.set_len(512);
             let mut full_path = UnicodeString {
-                length: 0,
+                length:         0,
                 maximum_length: (buffer.capacity() * 2) as u16,
-                buffer: buffer.as_mut_ptr(),
+                buffer:         buffer.as_mut_ptr(),
             };
 
             let full_path_length = rtl_get_full_path_name_ustr(
@@ -1021,7 +1035,8 @@ mod tests {
                     "Full Path: {}",
                     unicodestring_to_string(&full_path).unwrap()
                 );
-            } else {
+            }
+            else {
                 libc_println!("Failed to get the full path");
             }
 
@@ -1030,9 +1045,9 @@ mod tests {
             let mut buffer: Vec<u16> = Vec::with_capacity(512);
             buffer.set_len(512);
             let mut full_path = UnicodeString {
-                length: 0,
+                length:         0,
                 maximum_length: (buffer.capacity() * 2) as u16,
-                buffer: buffer.as_mut_ptr(),
+                buffer:         buffer.as_mut_ptr(),
             };
 
             let full_path_length = rtl_get_full_path_name_ustr(
@@ -1050,7 +1065,8 @@ mod tests {
                     "Full Path: {}",
                     unicodestring_to_string(&full_path).unwrap()
                 );
-            } else {
+            }
+            else {
                 libc_println!("Failed to get the full path");
             }
         }
@@ -1078,7 +1094,8 @@ mod tests {
                 let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
                 let cur_dir = &mut process_parameters.as_mut().unwrap().current_directory;
                 unicodestring_to_string(&(*cur_dir).dos_path)
-            } else {
+            }
+            else {
                 None
             }
         };
@@ -1093,10 +1110,10 @@ mod tests {
                     target_directory,
                     current_dir
                 );
-            }
+            },
             None => {
                 panic!("Failed to retrieve the current directory after setting it.");
-            }
+            },
         }
     }
 

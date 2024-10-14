@@ -1,0 +1,8 @@
+[package]
+name = "kageshirei-win32"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+kageshirei-indirect-syscall = { path = "../kageshirei-indirect-syscall"}
+spin = "0.9"

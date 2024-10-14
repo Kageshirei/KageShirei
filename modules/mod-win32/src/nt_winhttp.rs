@@ -1,17 +1,26 @@
-use alloc::format;
-use alloc::string::String;
-use alloc::vec::Vec;
-use core::ffi::c_void;
-use core::mem::transmute;
-use core::ptr::{null, null_mut};
-use core::sync::atomic::{AtomicBool, Ordering};
+use alloc::{format, string::String, vec::Vec};
+use core::{
+    ffi::c_void,
+    mem::transmute,
+    ptr::{null, null_mut},
+    sync::atomic::{AtomicBool, Ordering},
+};
 
-use mod_agentcore::instance;
-use mod_agentcore::ldr::{ldr_function_addr, nt_get_last_error};
-use rs2_win32::ntdef::UnicodeString;
-use rs2_win32::winhttp::{
-    WinHttp, WinHttpError, HTTP_QUERY_STATUS_CODE, WINHTTP_ACCESS_TYPE_NO_PROXY,
-    WINHTTP_FLAG_BYPASS_PROXY_CACHE, WINHTTP_FLAG_SECURE, WINHTTP_QUERY_FLAG_NUMBER,
+use kageshirei_win32::{
+    ntdef::UnicodeString,
+    winhttp::{
+        WinHttp,
+        WinHttpError,
+        HTTP_QUERY_STATUS_CODE,
+        WINHTTP_ACCESS_TYPE_NO_PROXY,
+        WINHTTP_FLAG_BYPASS_PROXY_CACHE,
+        WINHTTP_FLAG_SECURE,
+        WINHTTP_QUERY_FLAG_NUMBER,
+    },
+};
+use mod_agentcore::{
+    instance,
+    ldr::{ldr_function_addr, nt_get_last_error},
 };
 
 use crate::utils::{parse_url, to_pcwstr};
@@ -73,17 +82,13 @@ fn init_winhttp_funcs() {
             let win_http_set_option_addr = ldr_function_addr(h_module, WINHTTP_SET_OPTION_DBJ2);
             let win_http_close_handle_addr = ldr_function_addr(h_module, WINHTTP_CLOSE_HANDLE_DBJ2);
             let win_http_send_request_addr = ldr_function_addr(h_module, WINHTTP_SEND_REQUEST_DBJ2);
-            let win_http_add_request_headers_addr =
-                ldr_function_addr(h_module, WINHTTP_ADD_REQUEST_HEADERS_DBJ2);
-            let win_http_receive_response_addr =
-                ldr_function_addr(h_module, WINHTTP_RECEIVE_RESPONSE_DBJ2);
+            let win_http_add_request_headers_addr = ldr_function_addr(h_module, WINHTTP_ADD_REQUEST_HEADERS_DBJ2);
+            let win_http_receive_response_addr = ldr_function_addr(h_module, WINHTTP_RECEIVE_RESPONSE_DBJ2);
             let win_http_read_data_addr = ldr_function_addr(h_module, WINHTTP_READ_DATA_DBJ2);
-            let win_http_query_headers_addr =
-                ldr_function_addr(h_module, WINHTTP_QUERY_HEADERS_DBJ2);
+            let win_http_query_headers_addr = ldr_function_addr(h_module, WINHTTP_QUERY_HEADERS_DBJ2);
             let win_http_get_ie_proxy_config_addr =
                 ldr_function_addr(h_module, WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2);
-            let win_http_get_proxy_for_url_addr =
-                ldr_function_addr(h_module, WINHTTP_GET_PROXY_FOR_URL_DBJ2);
+            let win_http_get_proxy_for_url_addr = ldr_function_addr(h_module, WINHTTP_GET_PROXY_FOR_URL_DBJ2);
 
             let mut winhttp_functions = WinHttp::new();
 
@@ -94,15 +99,13 @@ fn init_winhttp_funcs() {
             winhttp_functions.win_http_set_option = transmute(win_http_set_option_addr);
             winhttp_functions.win_http_close_handle = transmute(win_http_close_handle_addr);
             winhttp_functions.win_http_send_request = transmute(win_http_send_request_addr);
-            winhttp_functions.win_http_add_request_headers =
-                transmute(win_http_add_request_headers_addr);
+            winhttp_functions.win_http_add_request_headers = transmute(win_http_add_request_headers_addr);
             winhttp_functions.win_http_receive_response = transmute(win_http_receive_response_addr);
             winhttp_functions.win_http_read_data = transmute(win_http_read_data_addr);
             winhttp_functions.win_http_query_headers = transmute(win_http_query_headers_addr);
             winhttp_functions.win_http_get_ie_proxy_config_for_current_user =
                 transmute(win_http_get_ie_proxy_config_addr);
-            winhttp_functions.win_http_get_proxy_for_url =
-                transmute(win_http_get_proxy_for_url_addr);
+            winhttp_functions.win_http_get_proxy_for_url = transmute(win_http_get_proxy_for_url_addr);
 
             // Store the functions in the global variable
             WINHTTP_FUNCS = Some(winhttp_functions);
@@ -130,7 +133,7 @@ pub struct Response {
     /// The status code of the HTTP response.
     pub status_code: u32,
     /// The body of the HTTP response as a string.
-    pub body: String,
+    pub body:        String,
 }
 
 /// Reads the response from an HTTP request.
@@ -176,7 +179,7 @@ pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> 
         if b_result == 0 || bytes_read == 0 {
             break;
         }
-        response_body.push_str(&String::from_utf8_lossy(&buffer[..bytes_read as usize]));
+        response_body.push_str(&String::from_utf8_lossy(&buffer[.. bytes_read as usize]));
     }
 
     Ok(Response {
@@ -219,7 +222,8 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
 
         let secure_flag = if parsed_url.scheme == 0x02 {
             WINHTTP_FLAG_SECURE
-        } else {
+        }
+        else {
             0
         };
 
@@ -258,8 +262,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
             ));
         }
 
-        let b_request_sent =
-            (get_winhttp().win_http_send_request)(h_request, null(), 0, null(), 0, 0, 0);
+        let b_request_sent = (get_winhttp().win_http_send_request)(h_request, null(), 0, null(), 0, 0, 0);
         if b_request_sent == 0 {
             let error = nt_get_last_error();
             (get_winhttp().win_http_close_handle)(h_request);
@@ -329,7 +332,8 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
 
         let secure_flag = if parsed_url.scheme == 0x02 {
             WINHTTP_FLAG_SECURE
-        } else {
+        }
+        else {
             0
         };
 
@@ -424,7 +428,7 @@ mod tests {
                 libc_println!("HTTP GET request successful!");
                 libc_println!("Status Code: {}", response.status_code);
                 libc_println!("Response Body: {}", response.body);
-            }
+            },
             Err(e) => libc_println!("HTTP GET request failed: {}", e),
         }
 
@@ -434,7 +438,7 @@ mod tests {
                 libc_println!("HTTPS GET request successful!");
                 libc_println!("Status Code: {}", response.status_code);
                 libc_println!("Response Body: {}", response.body);
-            }
+            },
             Err(e) => libc_println!("HTTPS GET request failed: {}", e),
         }
     }
@@ -447,7 +451,7 @@ mod tests {
                 libc_println!("HTTP POST request successful!");
                 libc_println!("Status Code: {}", response.status_code);
                 libc_println!("Response Body: {}", response.body);
-            }
+            },
             Err(e) => libc_println!("HTTP POST request failed: {}", e),
         }
 
@@ -457,7 +461,7 @@ mod tests {
                 libc_println!("HTTPS POST request successful!");
                 libc_println!("Status Code: {}", response.status_code);
                 libc_println!("Response Body: {}", response.body);
-            }
+            },
             Err(e) => libc_println!("HTTPS POST request failed: {}", e),
         }
     }

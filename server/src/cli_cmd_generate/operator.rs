@@ -1,57 +1,44 @@
 use log::{error, info};
-
 use srv_mod_config::SharedConfig;
-use srv_mod_database::diesel;
-use srv_mod_database::models::user::CreateUser;
+use srv_mod_entity::{
+    entities::user,
+    sea_orm::{prelude::*, ActiveValue::Set},
+};
 
-use crate::cli::generate::operator::GenerateOperatorArguments;
+use crate::{auto_migrate, cli::generate::operator::GenerateOperatorArguments};
 
-pub async fn generate_operator(
-	args: &GenerateOperatorArguments,
-	config: SharedConfig,
-) -> anyhow::Result<()> {
-	use srv_mod_database::schema::users::dsl::*;
-	use srv_mod_database::diesel::prelude::*;
+pub async fn generate_operator(args: &GenerateOperatorArguments, config: SharedConfig) -> Result<(), String> {
+    let readonly_config = config.read().await;
+    let db = auto_migrate::run(&readonly_config.database.url, &readonly_config).await?;
 
-	let readonly_config = config.read().await;
+    let user = user::Entity::find()
+        .filter(user::Column::Username.eq(&args.username))
+        .one(&db)
+        .await
+        .map_err(|e| {
+            error!("Failed to check if operator exists: {}", e);
+            "Failed to check if operator exists".to_string()
+        })?;
 
-	// run the migrations on server startup as we need to ensure the database is up-to-date before we can insert the
-	// operator.
-	// It is safe here to unpack and the option in an unique statement as if the migration fails, the program will exit
-	let Some(mut connection) =
-		srv_mod_database::migration::run_pending(readonly_config.database.url.as_str(), true)?
-		else {
-			unreachable!()
-		};
+    if user.is_some() {
+        error!("Operator with username '{}' already exists", args.username);
+        return Err("User already exists".to_string());
+    }
 
-	let user_exists = diesel::select(diesel::dsl::exists(
-		users.filter(username.eq(&args.username)),
-	))
-		.get_result::<bool>(&mut connection)?;
+    // Insert the operator into the database
+    let new_user = user::ActiveModel {
+        username: Set(args.username.clone()),
+        password: Set(kageshirei_crypt::argon::Argon2::hash_password(
+            args.password.as_str(),
+        )?),
+        ..Default::default()
+    };
 
-	if user_exists {
-		error!("Operator with username '{}' already exists", args.username);
-		return Err(anyhow::anyhow!("User already exists"));
-	}
+    let user = new_user.insert(&db).await.map_err(|e| {
+        error!("Failed to create operator: {}", e);
+        "Failed to create operator".to_string()
+    })?;
 
-	// Insert the operator into the database
-	let user_id = diesel::insert_into(users)
-		.values(CreateUser::new(
-			args.username.clone(),
-			args.password.clone(),
-		))
-		.returning(id)
-		.get_result::<String>(&mut connection);
-
-	// If the user_id is an error, log the error and exit
-	if let Err(e) = user_id {
-		error!("Something went wrong, {}", e);
-
-		return Err(anyhow::anyhow!("Failed to create operator"));
-	}
-
-	let user_id = user_id.unwrap();
-
-	info!("Created operator with id: {}", user_id);
-	Ok(())
+    info!("Created operator with id: {}", user.id);
+    Ok(())
 }

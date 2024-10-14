@@ -3,7 +3,7 @@ export function Logo() {
         <div className="glitch-container-logo">
             <p className="glitch-logo">
                 <span aria-hidden="true">RSI</span>
-                RS2
+                KageShirei
                 <span aria-hidden="true">RS1</span>
             </p>
         </div>

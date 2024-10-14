@@ -1,6 +1,7 @@
 use alloc::vec::Vec;
+
+use kageshirei_win32::ntdef::LargeInteger;
 use mod_agentcore::instance;
-use rs2_win32::ntdef::LargeInteger;
 
 /// Gets the current timestamp in Unix format.
 ///
@@ -124,15 +125,14 @@ pub fn timestamp_to_datetime(timestamp: i64) -> (i64, u8, u8, u8, u8, u8) {
 }
 
 /// Helper function to determine if a year is a leap year.
-fn is_leap_year(year: i64) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
-}
+fn is_leap_year(year: i64) -> bool { (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) }
 
 /// Helper function to return the number of days in a year.
 fn days_in_year(year: i64) -> i64 {
     if is_leap_year(year) {
         366
-    } else {
+    }
+    else {
         365
     }
 }
@@ -144,10 +144,11 @@ fn days_in_month(year: i64, month: usize) -> i64 {
         1 => {
             if is_leap_year(year) {
                 29
-            } else {
+            }
+            else {
                 28
             }
-        } // February
+        }, // February
         2 => 31, // March
         3 => 30, // April
         4 => 31, // May
@@ -194,8 +195,8 @@ pub fn wait_until(seconds_to_wait: i64) {
 /// to trigger a `continue` in the caller.
 ///
 /// # Arguments
-/// * `working_hours` - A reference to a vector containing the start and end times as Unix timestamps.
-///   The vector should have two elements: `Some(start)` and `Some(end)`.
+/// * `working_hours` - A reference to a vector containing the start and end times as Unix timestamps. The vector should
+///   have two elements: `Some(start)` and `Some(end)`.
 ///
 /// # Returns
 /// * `bool` - Returns `true` if the current time is within working hours, otherwise `false`.
@@ -206,9 +207,7 @@ pub fn is_working_hours(working_hours: &Option<Vec<Option<i64>>>) -> bool {
     // Check if working hours are defined
     if let Some(hours) = working_hours {
         // Ensure that both start and end are present
-        if let (Some(start), Some(end)) =
-            (hours.get(0).and_then(|&s| s), hours.get(1).and_then(|&e| e))
-        {
+        if let (Some(start), Some(end)) = (hours.get(0).and_then(|&s| s), hours.get(1).and_then(|&e| e)) {
             // Check if the current time is outside the working hours
             if current_time < start || current_time > end {
                 return false; // We are outside working hours
@@ -221,10 +220,12 @@ pub fn is_working_hours(working_hours: &Option<Vec<Option<i64>>>) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use alloc::vec;
+
     use chrono::DateTime;
     use libc_print::libc_println;
+
+    use super::*;
 
     #[test]
     fn test_current_timestamp() {

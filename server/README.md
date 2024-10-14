@@ -1,6 +1,6 @@
-# RS2 Server
+# KageShirei Server
 
-This is the server implementation for RS2.
+This is the server implementation for KageShirei.
 
 ## Running the server
 

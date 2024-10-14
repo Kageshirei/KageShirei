@@ -5,8 +5,8 @@
         "https://json-schema.org/draft/2020-12/vocab/format-annotation": true,
         "https://json-schema.org/draft/2020-12/vocab/format-assertion":  true
     },
-    "title":       "RS2 server",
-    "description": "RS2 server configuration schema",
+    "title":       "KageShirei server",
+    "description": "KageShirei server configuration schema",
     "type":        "object",
     "properties":  {
         "api_server": {

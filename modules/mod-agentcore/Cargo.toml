@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 mod-hhtgates = {path = "../../modules/mod-hhtgates"}
-rs2-win32 = {path = "../../libs/rs2-win32" }
+kageshirei-win32 = {path = "../../libs/kageshirei-win32" }
 spin = "0.9"
 
 

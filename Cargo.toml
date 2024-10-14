@@ -3,12 +3,11 @@ members = [
     "agent",
     "command-and-control-gui/src-tauri",
     "libs/coffee",
-    "libs/rs2-communication-protocol",
-    "libs/rs2-crypt",
-    "libs/rs2-indirect-syscall",
-    "libs/rs2-srv-test-helper",
-    "libs/rs2-utils",
-    "libs/rs2-win32",
+    "libs/kageshirei-communication-protocol",
+    "libs/kageshirei-crypt",
+    "libs/kageshirei-indirect-syscall",
+    "libs/kageshirei-utils",
+    "libs/kageshirei-win32",
     "modules/mod-agentcore",
     "modules/mod-hhtgates",
     "modules/mod-loader-coffee-core",
@@ -22,12 +21,13 @@ members = [
     "modules/mod-tokio-runtime",
     "modules/mod-win32",
     "modules/srv-mod-config",
-    "modules/srv-mod-database",
+    "modules/srv-mod-entity",
     "modules/srv-mod-handler-base",
     "modules/srv-mod-handler-http",
+    "modules/srv-mod-migration",
     "modules/srv-mod-operator-api",
     "modules/srv-mod-terminal-emulator-commands",
     "server",
 ]
 resolver = "2"
-package = { authors = ["ebalo55 <me@ebalo.xyz>"], edition = "2021", version = "0.1.0" }
+package = { authors = ["ebalo <me@ebalo.xyz>", "Safe"], edition = "2021", version = "0.1.0" }

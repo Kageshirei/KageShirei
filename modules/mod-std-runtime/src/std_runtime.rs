@@ -1,11 +1,13 @@
-use crate::std_threadpool::ThreadPool;
-use rs2_runtime::Runtime;
 use std::{
     future::Future,
     pin::Pin,
     sync::{mpsc, Arc, Mutex},
     task::{Context, Poll, Waker},
 };
+
+use kageshirei_runtime::Runtime;
+
+use crate::std_threadpool::ThreadPool;
 
 /// The `CustomRuntime` struct wraps a custom thread pool to implement the `Runtime` trait.
 #[derive(Debug, Clone)]
@@ -71,7 +73,7 @@ impl Runtime for StdRuntime {
                 Poll::Pending => {
                     // Wait for the signal to be sent
                     let _ = rx.recv();
-                }
+                },
             }
         }
     }

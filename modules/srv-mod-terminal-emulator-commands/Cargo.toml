@@ -4,20 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.6", features = ["derive"] }
+clap = { version = "4.5.20", features = ["derive"] }
 shellwords = "1.1.0"
-anyhow = "1.0.86"
 tracing = "0.1.40"
-serde = { version = "1.0.203", features = ["derive"] }
-srv-mod-database = { path = "../srv-mod-database" }
+serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.117" }
 chrono = { version = "0.4.38", features = ["serde"] }
 futures = "0.3.30"
-tokio = { version = "1.37.0", features = ["full"] }
+tokio = { version = "1.40.0", features = ["full"] }
 srv-mod-config = { path = "../srv-mod-config" }
-rs2-communication-protocol = { path = "../../libs/rs2-communication-protocol" }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
+srv-mod-entity = { path = "../srv-mod-entity" }
 
 [dev-dependencies]
-tokio = "1.37.0"
 serial_test = "3.1.1"
-rs2-srv-test-helper = { path = "../../libs/rs2-srv-test-helper" }

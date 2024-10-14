@@ -1,15 +1,15 @@
-use alloc::string::String;
-use alloc::sync::Arc;
+use alloc::{string::String, sync::Arc};
+
 use anyhow::Result;
 use bytes::{BufMut, Bytes, BytesMut};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::metadata::{Metadata, WithMetadata};
-use rs2_communication_protocol::protocol::Protocol;
-use rs2_communication_protocol::sender::Sender;
-use rs2_crypt::encryption_algorithm::EncryptionAlgorithm;
+use kageshirei_communication_protocol::{
+    magic_numbers,
+    metadata::{Metadata, WithMetadata},
+    protocol::Protocol,
+    sender::Sender,
+};
+use kageshirei_crypt::encryption_algorithm::EncryptionAlgorithm;
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::client::WinHttpClient;
 
@@ -20,13 +20,13 @@ where
 {
     /// The WinHTTP client used to send requests.
     /// This client maintains session and connection handles for efficient reuse across requests.
-    client: WinHttpClient,
+    client:           WinHttpClient,
     /// A flag indicating whether the protocol is used for checkin.
     /// This is used to determine whether the checkin endpoint should be appended to the URL.
     /// It's automatically reset to false after each request.
-    is_checkin: bool,
+    is_checkin:       bool,
     /// The base URL for the protocol. This is the URL to which requests are sent.
-    base_url: String,
+    base_url:         String,
     /// The global encryptor used to encrypt and decrypt data.
     /// This is used only if an encryptor is not provided when sending or receiving data.
     /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as a fallback;
@@ -56,9 +56,7 @@ where
 
     /// Get the encryptor to use for encryption or decryption, falling back to the global encryptor
     /// if necessary.
-    fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> {
-        encryptor.or(self.global_encryptor.clone())
-    }
+    fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> { encryptor.or(self.global_encryptor.clone()) }
 }
 
 impl<E> Sender for WinHttpProtocol<E>
@@ -112,7 +110,8 @@ where
         // Decrypt the data if an encryptor is provided.
         let data = if let Some(encryptor) = encryptor {
             encryptor.decrypt(Bytes::from(data), None)?
-        } else {
+        }
+        else {
             data
         };
 
@@ -121,11 +120,11 @@ where
         }
 
         // Check if the magic number is correct.
-        if data[..magic_numbers::JSON.len()] != magic_numbers::JSON {
+        if data[.. magic_numbers::JSON.len()] != magic_numbers::JSON {
             return Err(anyhow::anyhow!("Invalid magic number"));
         }
 
-        serde_json::from_slice(data.get(magic_numbers::JSON.len()..).unwrap()).map_err(|e| e.into())
+        serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.into())
     }
 
     async fn write<D>(&mut self, data: D, encryptor: Option<E>) -> Result<Bytes>
@@ -152,7 +151,8 @@ where
             // Encrypt the data if an encryptor is provided.
             let data = if let Some(encryptor) = encryptor.as_mut() {
                 encryptor.encrypt(data)?
-            } else {
+            }
+            else {
                 data
             };
 
@@ -166,15 +166,14 @@ where
 #[cfg(test)]
 mod tests {
     use alloc::string::ToString;
-    use axum::http::HeaderMap;
-    use axum::routing::get;
-    use axum::Router;
+
+    use axum::{http::HeaderMap, routing::get, Router};
+    use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
     use serde::Deserialize;
     use tokio::select;
     use tokio_util::sync::CancellationToken;
 
     use super::*;
-    use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 
     async fn make_dummy_server(cancellation_token: CancellationToken, router: Router<()>) {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:8080")
@@ -201,8 +200,8 @@ mod tests {
             Arc::new(Metadata {
                 request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
                 command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-                agent_id: "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-                path: None,
+                agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
+                path:       None,
             })
         }
     }
@@ -229,27 +228,29 @@ mod tests {
     #[tokio::test]
     async fn test_write() {
         let cancellation_token = CancellationToken::new();
-        let handler = |headers: HeaderMap, body: Bytes| async move {
-            assert_eq!(headers.get("content-type").unwrap(), "text/plain");
-            assert_eq!(
-                headers.get("cf-ray").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
-            );
-            assert_eq!(
-                headers.get("cf-worker").unwrap(),
-                "an3a8hlnrr4638d30yef0oz5sncjdx5w"
-            );
+        let handler = |headers: HeaderMap, body: Bytes| {
+            async move {
+                assert_eq!(headers.get("content-type").unwrap(), "text/plain");
+                assert_eq!(
+                    headers.get("cf-ray").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
+                );
+                assert_eq!(
+                    headers.get("cf-worker").unwrap(),
+                    "an3a8hlnrr4638d30yef0oz5sncjdx5w"
+                );
 
-            let mut check = BytesMut::new();
-            for i in magic_numbers::JSON.iter() {
-                check.put_u8(*i);
-            }
-            for i in "{\"foo\":\"bar\"}".as_bytes() {
-                check.put_u8(*i);
-            }
+                let mut check = BytesMut::new();
+                for i in magic_numbers::JSON.iter() {
+                    check.put_u8(*i);
+                }
+                for i in "{\"foo\":\"bar\"}".as_bytes() {
+                    check.put_u8(*i);
+                }
 
-            assert_eq!(body, check.freeze());
-            "Ok"
+                assert_eq!(body, check.freeze());
+                "Ok"
+            }
         };
         let router = Router::new().route("/", get(handler).post(handler));
 

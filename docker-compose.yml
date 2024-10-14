@@ -1,8 +1,8 @@
 services:
   server-dedicated-machine:
     image: debian:latest
-    container_name: rs2-server-dedicated-machine
-    entrypoint: /app/target/debug/rs2-server
+    container_name: kageshirei-server-dedicated-machine
+    entrypoint: /app/target/debug/kageshirei-server
     command:
       - run
       - -c
@@ -13,12 +13,12 @@ services:
   # Development/testing database
   postgres:
     image: postgres:latest
-    container_name: rs2-postgres
+    container_name: kageshirei-postgres
     restart: always
     environment:
       # Change these to your liking
-      POSTGRES_PASSWORD: rs2
-      POSTGRES_DB: rs2
-      POSTGRES_USER: rs2
+      POSTGRES_PASSWORD: kageshirei
+      POSTGRES_DB: kageshirei
+      POSTGRES_USER: kageshirei
     ports:
       - "5432:5432"

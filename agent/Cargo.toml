@@ -1,5 +1,5 @@
 [package]
-name = "rs2-agent"
+name = "kageshirei-agent"
 version = "0.1.0"
 edition = "2021"
 
@@ -14,9 +14,9 @@ panic = "abort"
 incremental = false
 
 [dependencies]
-rs2-communication-protocol = {path = "../libs/rs2-communication-protocol"}
-rs2-crypt = {path = "../libs/rs2-crypt"}
-rs2-runtime = {path = "../libs/rs2-runtime"}
+kageshirei-communication-protocol = {path = "../libs/kageshirei-communication-protocol"}
+kageshirei-crypt = {path = "../libs/kageshirei-crypt"}
+kageshirei-runtime = {path = "../libs/kageshirei-runtime"}
 mod-agentcore = {path = "../modules/mod-agentcore" }
 mod-hhtgates = {path = "../modules/mod-hhtgates"}
 mod-win32 = {path = "../modules/mod-win32" }
@@ -29,12 +29,11 @@ mod-std-runtime = {path = "../modules/mod-std-runtime", optional = true}
 mod-nostd-nt-runtime = {path = "../modules/mod-nostd-nt-runtime", optional = true}
 libc-print = "0.1.23"
 spin = "0.9"
-serde = { version = "1.0.202", features = ["derive"] }
-serde_json = { version = "1.0.117" }
-anyhow = "1.0.86"
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = { version = "1.0.128" }
 rand = "0.8.5"
-chrono = "0.4"
-futures = "0.3.30"
+chrono = "0.4.38"
+futures = "0.3.31"
 
 [features]
 default = ["protocol-winhttp", "nt-virtualalloc", "nostd-nt-runtime"]

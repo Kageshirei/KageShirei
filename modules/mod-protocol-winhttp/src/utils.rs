@@ -23,10 +23,10 @@ pub fn to_pcwstr(s: &str) -> Vec<u16> {
 
 pub struct ParseUrlResult {
     // 0x01 = http or 0x02 = https
-    pub scheme: u16,
+    pub scheme:   u16,
     pub hostname: String,
-    pub port: u16,
-    pub path: String,
+    pub port:     u16,
+    pub path:     String,
 }
 
 impl ParseUrlResult {
@@ -57,9 +57,11 @@ impl ParseUrlResult {
 pub fn parse_url(url: &str) -> ParseUrlResult {
     let (scheme, rest) = if url.starts_with("http://") {
         (0x01, url.trim_start_matches("http://"))
-    } else if url.starts_with("https://") {
+    }
+    else if url.starts_with("https://") {
         (0x02, url.trim_start_matches("https://"))
-    } else {
+    }
+    else {
         (0x01, url)
     };
 
@@ -72,14 +74,16 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
             .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
         let path = parts.next().unwrap_or("");
         (host.to_string(), port, format!("/{}", path))
-    } else if let Some(pos) = rest.find('/') {
+    }
+    else if let Some(pos) = rest.find('/') {
         let (host, path) = rest.split_at(pos);
         (
             host.to_string(),
             if scheme == 0x01 { 80 } else { 443 },
             path.to_string(),
         )
-    } else {
+    }
+    else {
         (
             rest.to_string(),
             if scheme == 0x01 { 80 } else { 443 },

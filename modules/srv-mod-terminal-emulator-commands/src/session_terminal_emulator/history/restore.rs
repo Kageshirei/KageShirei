@@ -1,179 +1,196 @@
 use clap::Args;
 use serde::Serialize;
 use serde_json::json;
-use tracing::{debug, instrument};
-
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
-use srv_mod_database::{diesel, Pool};
-use srv_mod_database::diesel::{ExpressionMethods, SelectableHelper};
-use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
-use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::command::Command;
-use srv_mod_database::models::log::CreateLog;
-use srv_mod_database::schema::commands;
-use srv_mod_database::schema_extension::LogLevel;
+use srv_mod_entity::{
+    active_enums::LogLevel,
+    entities::{logs, terminal_history},
+    sea_orm::{prelude::*, ActiveValue::Set, Condition},
+};
+use tracing::{debug, instrument};
 
 use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
 #[derive(Args, Debug, PartialEq, Serialize)]
 pub struct TerminalSessionHistoryRestoreArguments {
-	/// The list of command ids to restore
-	pub command_ids: Vec<i64>,
+    /// The list of command ids to restore
+    pub command_ids: Vec<i64>,
+}
+
+fn make_sequence_counter_condition(ids: Vec<i64>) -> Condition {
+    let mut condition = Condition::any();
+
+    for id in ids.iter() {
+        condition = condition.add(terminal_history::Column::SequenceCounter.eq(*id));
+    }
+
+    condition
 }
 
 /// Handle the clear command
 #[instrument]
-pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHistoryRestoreArguments) -> anyhow::Result<String> {
-	debug!("Terminal command received");
+pub async fn handle(
+    config: CommandHandlerArguments,
+    args: &TerminalSessionHistoryRestoreArguments,
+) -> Result<String, String> {
+    debug!("Terminal command received");
 
-	let mut connection = config.db_pool
-	                           .get()
-	                           .await
-	                           .map_err(|_| anyhow::anyhow!("Failed to get a connection from the pool"))?;
+    let db = config.db_pool.clone();
 
-	// clear commands marking them as deleted (soft delete)
-	let result = diesel::update(commands::table)
-		.filter(commands::session_id.eq(&config.session.session_id))
-		.filter(commands::sequence_counter.eq_any(&args.command_ids))
-		.set((
-			commands::restored_at.eq(chrono::Utc::now()),
-		))
-		.execute(&mut connection)
-		.await
-		.map_err(|e| anyhow::anyhow!(e))?;
+    // clear commands marking them as deleted (soft delete)
+    let result = terminal_history::Entity::update_many()
+        .filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
+        .filter(make_sequence_counter_condition(args.command_ids.clone()))
+        .col_expr(
+            terminal_history::Column::RestoredAt,
+            Expr::value(chrono::Utc::now()),
+        )
+        .exec(&db)
+        .await
+        .map_err(|e| e.to_string())?;
 
-	let message = format!("Restored {} command(s)", result);
+    let message = format!("Restored {} command(s)", result.rows_affected);
 
-	// create a log entry and save it
-	let log = CreateLog::new(LogLevel::INFO)
-		.with_message(message.clone())
-		.with_extra_value(json!({
-			"session": config.session.hostname,
-			"ran_by": config.user.username,
-		}))
-		.save(&mut connection)
-		.await
-		.map_err(|e| anyhow::anyhow!(e))?;
+    // create a log entry and save it
+    let log = logs::ActiveModel {
+        level: Set(LogLevel::Info),
+        title: Set("Command(s) restored".to_string()),
+        message: Set(Some(message.clone())),
+        extra: Set(Some(json!({
+            "session": config.session.hostname,
+            "ran_by": config.user.username,
+        }))),
+        ..Default::default()
+    }
+    .insert(&db)
+    .await
+    .map_err(|e| e.to_string())?;
 
-	// broadcast the log
-	let log_id = log.id.clone();
-	config.broadcast_sender.send(SseEvent {
-		data: serde_json::to_string(&log)?,
-		event: EventType::Log,
-		id: Some(log_id),
-	})?;
+    // broadcast the log
+    config
+        .broadcast_sender
+        .send(SseEvent {
+            data:  serde_json::to_string(&log).map_err(|e| e.to_string())?,
+            event: EventType::Log,
+            id:    Some(log.id),
+        })
+        .map_err(|e| e.to_string())?;
 
-	// Signal the frontend terminal emulator to clear the terminal screen
-	Ok(message)
+    // Signal the frontend terminal emulator to clear the terminal screen
+    Ok(message)
 }
 
 #[cfg(test)]
 mod tests {
-	use chrono::SubsecRound;
-	use serial_test::serial;
+    use chrono::SubsecRound;
+    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
+    use serial_test::serial;
+    use srv_mod_database::models::command::CreateCommand;
 
-	use rs2_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
-	use srv_mod_database::models::command::CreateCommand;
+    use super::*;
+    use crate::session_terminal_emulator::history::{HistoryRecord, TerminalSessionHistoryArguments};
 
-	use crate::session_terminal_emulator::history::{HistoryRecord, TerminalSessionHistoryArguments};
+    #[tokio::test]
+    #[serial]
+    async fn test_handle_history_display() {
+        drop_database().await;
+        let db_pool = make_pool().await;
 
-	use super::*;
+        let user = generate_test_user(db_pool.clone()).await;
 
-	#[tokio::test]
-	#[serial]
-	async fn test_handle_history_display() {
-		drop_database().await;
-		let db_pool = make_pool().await;
+        let session_id_v = "global";
+        let args = TerminalSessionHistoryArguments {
+            command: None,
+        };
 
-		let user = generate_test_user(db_pool.clone()).await;
+        let binding = db_pool.clone();
 
-		let session_id_v = "global";
-		let args = TerminalSessionHistoryArguments { command: None };
+        let mut to_restore = vec![];
 
-		let binding = db_pool.clone();
+        // open a scope to automatically drop the connection once exited
+        {
+            let mut connection = binding.get().await.unwrap();
 
-		let mut to_restore = vec![];
+            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
+            cmd.command = "ls".to_string();
+            cmd.deleted_at = Some(chrono::Utc::now().trunc_subsecs(6));
+            to_restore.push(cmd.id.clone());
 
-		// open a scope to automatically drop the connection once exited
-		{
-			let mut connection = binding.get().await.unwrap();
+            // Insert a dummy command
+            let inserted_command_0 = diesel::insert_into(commands::table)
+                .values(&cmd)
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
 
-			let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-			cmd.command = "ls".to_string();
-			cmd.deleted_at = Some(chrono::Utc::now().trunc_subsecs(6));
-			to_restore.push(cmd.id.clone());
+            assert_eq!(inserted_command_0.deleted_at, cmd.deleted_at);
+            assert_eq!(inserted_command_0.restored_at, None);
 
-			// Insert a dummy command
-			let inserted_command_0 = diesel::insert_into(commands::table)
-				.values(&cmd)
-				.returning(Command::as_select())
-				.get_result(&mut connection)
-				.await
-				.unwrap();
+            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
+            cmd.command = "pwd".to_string();
+            cmd.deleted_at = Some(chrono::Utc::now().trunc_subsecs(6));
+            to_restore.push(cmd.id.clone());
 
-			assert_eq!(inserted_command_0.deleted_at, cmd.deleted_at);
-			assert_eq!(inserted_command_0.restored_at, None);
+            let inserted_command_1 = diesel::insert_into(commands::table)
+                .values(&cmd)
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
 
-			let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-			cmd.command = "pwd".to_string();
-			cmd.deleted_at = Some(chrono::Utc::now().trunc_subsecs(6));
-			to_restore.push(cmd.id.clone());
+            assert_eq!(inserted_command_1.deleted_at, cmd.deleted_at);
+            assert_eq!(inserted_command_1.restored_at, None);
 
-			let inserted_command_1 = diesel::insert_into(commands::table)
-				.values(&cmd)
-				.returning(Command::as_select())
-				.get_result(&mut connection)
-				.await
-				.unwrap();
+            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
+            cmd.command = "cd ..".to_string();
 
-			assert_eq!(inserted_command_1.deleted_at, cmd.deleted_at);
-			assert_eq!(inserted_command_1.restored_at, None);
+            let inserted_command_2 = diesel::insert_into(commands::table)
+                .values(&cmd)
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
 
-			let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-			cmd.command = "cd ..".to_string();
+            assert_eq!(inserted_command_2.deleted_at, None);
+            assert_eq!(inserted_command_2.restored_at, None);
+        }
 
-			let inserted_command_2 = diesel::insert_into(commands::table)
-				.values(&cmd)
-				.returning(Command::as_select())
-				.get_result(&mut connection)
-				.await
-				.unwrap();
+        assert_eq!(to_restore.len(), 2);
 
-			assert_eq!(inserted_command_2.deleted_at, None);
-			assert_eq!(inserted_command_2.restored_at, None);
-		}
+        let result = crate::session_terminal_emulator::history::handle(session_id_v, db_pool.clone(), &args).await;
 
-		assert_eq!(to_restore.len(), 2);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
 
-		let result = crate::session_terminal_emulator::history::handle(session_id_v, db_pool.clone(), &args).await;
+        assert_eq!(deserialized.len(), 1);
+        assert_eq!(deserialized[0].command, "cd ..");
 
-		assert!(result.is_ok());
-		let result = result.unwrap();
-		let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
+        let args = TerminalSessionHistoryRestoreArguments {
+            command_ids: to_restore,
+        };
+        let restored = handle(session_id_v, db_pool.clone(), &args).await;
 
-		assert_eq!(deserialized.len(), 1);
-		assert_eq!(deserialized[0].command, "cd ..");
+        assert!(restored.is_ok());
+        let restored = restored.unwrap();
+        assert_eq!(restored, "Restored 2 commands");
 
-		let args = TerminalSessionHistoryRestoreArguments { command_ids: to_restore };
-		let restored = handle(session_id_v, db_pool.clone(), &args).await;
+        let args = TerminalSessionHistoryArguments {
+            command: None,
+        };
+        let result = crate::session_terminal_emulator::history::handle(session_id_v, db_pool.clone(), &args).await;
 
-		assert!(restored.is_ok());
-		let restored = restored.unwrap();
-		assert_eq!(restored, "Restored 2 commands");
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
 
-		let args = TerminalSessionHistoryArguments { command: None };
-		let result = crate::session_terminal_emulator::history::handle(session_id_v, db_pool.clone(), &args).await;
+        assert_eq!(deserialized.len(), 3);
+        assert_eq!(deserialized[0].command, "ls");
+        assert_eq!(deserialized[1].command, "pwd");
+        assert_eq!(deserialized[2].command, "cd ..");
 
-		assert!(result.is_ok());
-		let result = result.unwrap();
-		let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
-
-		assert_eq!(deserialized.len(), 3);
-		assert_eq!(deserialized[0].command, "ls");
-		assert_eq!(deserialized[1].command, "pwd");
-		assert_eq!(deserialized[2].command, "cd ..");
-
-		drop_database().await;
-	}
+        drop_database().await;
+    }
 }

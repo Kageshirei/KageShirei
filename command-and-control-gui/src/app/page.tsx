@@ -107,7 +107,7 @@ export default function Home() {
                         <Title order={ 1 }
                                fz={ "h2" }
                         >
-                            Login to RS2 instance
+                            Login to KageShirei instance
                         </Title>
                         <TextInput label={ "Host" }
                                    placeholder={ "127.0.0.1:8080" }

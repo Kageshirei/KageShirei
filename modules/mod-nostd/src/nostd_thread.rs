@@ -1,13 +1,13 @@
-use core::ffi::c_void;
-use core::mem::size_of;
-use core::ptr::null_mut;
-
 use alloc::boxed::Box;
+use core::{ffi::c_void, mem::size_of, ptr::null_mut};
+
+use kageshirei_win32::{
+    ntapi::nt_current_process,
+    ntdef::{ObjectAttributes, HANDLE, OBJ_CASE_INSENSITIVE, THREAD_ALL_ACCESS},
+    ntstatus::NT_SUCCESS,
+};
 use mod_agentcore::instance;
 use mod_win32::utils::NT_STATUS;
-use rs2_win32::ntapi::nt_current_process;
-use rs2_win32::ntdef::{ObjectAttributes, HANDLE, OBJ_CASE_INSENSITIVE, THREAD_ALL_ACCESS};
-use rs2_win32::ntstatus::NT_SUCCESS;
 
 /// A Rust abstraction over the Windows native threading API, specifically using
 /// functions from `ntdll.dll` to create and manage threads without using the standard library.
@@ -33,9 +33,8 @@ impl NoStdThread {
     /// `ntdll.dll`. The thread will execute the closure provided by the caller.
     ///
     /// # Parameters
-    /// - `start_routine`: A closure that will be executed by the new thread. The closure must
-    ///   implement `FnOnce() + Send + 'static` because it is executed once and must be safely
-    ///   transferable across threads.
+    /// - `start_routine`: A closure that will be executed by the new thread. The closure must implement `FnOnce() +
+    ///   Send + 'static` because it is executed once and must be safely transferable across threads.
     ///
     /// # Returns
     /// - `NoStdThread`: An instance of `NoStdThread` containing the handle to the newly created thread.
@@ -100,7 +99,9 @@ impl NoStdThread {
         }
 
         // Return the NoStdThread instance with the created thread's handle.
-        NoStdThread { thread_handle }
+        NoStdThread {
+            thread_handle,
+        }
     }
 
     /// Waits for the thread to complete execution using the `NtWaitForSingleObject` function from
@@ -127,7 +128,8 @@ impl NoStdThread {
         // Return Ok(()) if the wait was successful, or the error code otherwise.
         if status == 0 {
             Ok(())
-        } else {
+        }
+        else {
             Err(status)
         }
     }

@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rs2-indirect-syscall = {path = "../../libs/rs2-indirect-syscall" }
-rs2-win32 = {path = "../../libs/rs2-win32" }
+kageshirei-indirect-syscall = {path = "../../libs/kageshirei-indirect-syscall" }
+kageshirei-win32 = {path = "../../libs/kageshirei-win32" }
 mod-win32 = {path = "../mod-win32" }
 mod-hhtgates = {path = "../mod-hhtgates" }
 mod-agentcore = {path = "../mod-agentcore" }

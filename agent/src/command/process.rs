@@ -1,7 +1,5 @@
+use kageshirei_communication_protocol::{communication_structs::task_output::TaskOutput, metadata::Metadata};
 use mod_win32::{nt_ps_api::nt_create_process_w_piped, nt_time::current_timestamp};
-use rs2_communication_protocol::{
-    communication_structs::task_output::TaskOutput, metadata::Metadata,
-};
 
 /// Executes a command in a new process using `cmd.exe`.
 ///
@@ -12,8 +10,8 @@ use rs2_communication_protocol::{
 ///
 /// # Parameters
 /// - `cmdline`: A string slice representing the command to be executed.
-/// - `metadata`: Metadata that includes additional information to be recorded as part of
-///   the command execution (e.g., timestamps, system details).
+/// - `metadata`: Metadata that includes additional information to be recorded as part of the command execution (e.g.,
+///   timestamps, system details).
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing details of the command execution, including:
@@ -23,9 +21,8 @@ use rs2_communication_protocol::{
 ///   - Additional metadata captured during the execution.
 ///
 /// # Safety
-/// - This function is marked `unsafe` because it interacts with the NT API through
-///   `nt_create_process_w_piped`, which involves low-level process creation and direct
-///   interaction with the system's process environment.
+/// - This function is marked `unsafe` because it interacts with the NT API through `nt_create_process_w_piped`, which
+///   involves low-level process creation and direct interaction with the system's process environment.
 pub fn command_shell(cmdline: &str, metadata: Metadata) -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
@@ -64,17 +61,18 @@ pub fn command_shell(cmdline: &str, metadata: Metadata) -> TaskOutput {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     use libc_print::libc_println;
     use mod_win32::nt_time::timestamp_to_datetime;
+
+    use super::*;
 
     #[test]
     fn test_shell() {
         let metadata = Metadata {
             request_id: format!("req-{}", 1),
             command_id: format!("cmd-{}", 1),
-            agent_id: "agent-1234".to_string(),
-            path: None,
+            agent_id:   "agent-1234".to_string(),
+            path:       None,
         };
 
         // Test executing a simple command

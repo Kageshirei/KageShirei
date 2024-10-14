@@ -1,6 +1,6 @@
-# RS2
+# KageShirei
 
-RS2 is a modern, highly-customizable, command and control framework for red teams.
+KageShirei is a modern, highly-customizable, command and control framework for red teams.
 
 ## Project structure
 
@@ -73,7 +73,7 @@ Compilation must be done before running it (no precompiled binaries). To compile
 repository and run the following commands:
 
 ```bash
-cd rs2
+cd kageshirei
 cargo --version
 ```
 
@@ -81,10 +81,10 @@ If you don't have `cargo` installed, you can install it using [rustup](https://r
 commands:
 
 ```bash
-cargo build --release --bin rs2-server
+cargo build --release --bin kageshirei-server
 ```
 
-This will compile the server in release mode, you can find the binary in `./target/release/rs2-server`.
+This will compile the server in release mode, you can find the binary in `./target/release/kageshirei-server`.
 Note that the compilation process may take a while, especially if you're compiling the project for the first time.
 Additionally, the executable will be quite large, as it will contain all the dependencies statically linked and will be
 optimized for performances (instead of size such as the agent and the control panel).
@@ -99,7 +99,7 @@ overcome some common issues.
 
 ### The server component superpowers
 
-The server component apart from being the main component of the RS2 framework, it also has some superpowers that makes
+The server component apart from being the main component of the KageShirei framework, it also has some superpowers that makes
 it a very versatile tool.
 
 - **Agent compilation on demand**: The server can compile the agent on demand, this means that you can compile the agent
@@ -126,7 +126,7 @@ It will download all the dependencies, compile them and create the final executa
 To let the server do the job for you, you can run the following command:
 
 ```bash
-./rs2-server compile gui
+./kageshirei-server compile gui
 ```
 
 If for some reason you want to build the control panel manually, you can refer to the

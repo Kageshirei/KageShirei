@@ -4,19 +4,29 @@ extern crate alloc;
 
 pub mod nt_heapalloc_def;
 
-use core::alloc::{GlobalAlloc, Layout};
-use core::arch::asm;
-use core::cell::UnsafeCell;
-use core::ptr::null_mut;
-use core::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
+use core::{
+    alloc::{GlobalAlloc, Layout},
+    arch::asm,
+    cell::UnsafeCell,
+    ptr::null_mut,
+    sync::atomic::{AtomicBool, AtomicIsize, Ordering},
+};
 
+use kageshirei_win32::ntdef::{HANDLE, HEAP_GROWABLE, HEAP_ZERO_MEMORY};
 use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
 use nt_heapalloc_def::{
-    RtlAllocateHeap, RtlCreateHeap, RtlDestroyHeap, RtlFreeHeap, RtlReAllocateHeap, NTDLL_HASH,
-    RTL_ALLOCATE_HEAP_H, RTL_CREATE_HEAP_H, RTL_DESTROY_HEAP_H, RTL_FREE_HEAP_H,
+    RtlAllocateHeap,
+    RtlCreateHeap,
+    RtlDestroyHeap,
+    RtlFreeHeap,
+    RtlReAllocateHeap,
+    NTDLL_HASH,
+    RTL_ALLOCATE_HEAP_H,
+    RTL_CREATE_HEAP_H,
+    RTL_DESTROY_HEAP_H,
+    RTL_FREE_HEAP_H,
     RTL_REALLOCATE_HEAP_H,
 };
-use rs2_win32::ntdef::{HANDLE, HEAP_GROWABLE, HEAP_ZERO_MEMORY};
 use spin::Mutex;
 
 /// Atomic flag to ensure that the initialization of function pointers happens only once.
@@ -24,16 +34,11 @@ static INIT_NT_HEAPALLOC: AtomicBool = AtomicBool::new(false);
 
 /// Static variables to hold the pointers to the heap-related functions in ntdll.dll.
 /// These are wrapped in `Mutex` and `UnsafeCell` for thread-safe, interior mutable access.
-static mut RTL_CREATE_HEAP: Mutex<UnsafeCell<Option<RtlCreateHeap>>> =
-    Mutex::new(UnsafeCell::new(None));
-static mut RTL_ALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlAllocateHeap>>> =
-    Mutex::new(UnsafeCell::new(None));
-static mut RTL_FREE_HEAP: Mutex<UnsafeCell<Option<RtlFreeHeap>>> =
-    Mutex::new(UnsafeCell::new(None));
-static mut RTL_REALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlReAllocateHeap>>> =
-    Mutex::new(UnsafeCell::new(None));
-static mut RTL_DESTROY_HEAP: Mutex<UnsafeCell<Option<RtlDestroyHeap>>> =
-    Mutex::new(UnsafeCell::new(None));
+static mut RTL_CREATE_HEAP: Mutex<UnsafeCell<Option<RtlCreateHeap>>> = Mutex::new(UnsafeCell::new(None));
+static mut RTL_ALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlAllocateHeap>>> = Mutex::new(UnsafeCell::new(None));
+static mut RTL_FREE_HEAP: Mutex<UnsafeCell<Option<RtlFreeHeap>>> = Mutex::new(UnsafeCell::new(None));
+static mut RTL_REALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlReAllocateHeap>>> = Mutex::new(UnsafeCell::new(None));
+static mut RTL_DESTROY_HEAP: Mutex<UnsafeCell<Option<RtlDestroyHeap>>> = Mutex::new(UnsafeCell::new(None));
 
 /// Ensures that the heap-related function pointers are initialized.
 /// If they have not been initialized, this function will call `initialize_nt_heapalloc_funcs` to resolve them.
@@ -169,30 +174,22 @@ unsafe fn rust_oom() -> ! {
 
 impl NtHeapAlloc {
     /// Creates a new, uninitialized `NtHeapAlloc`.
-    pub const fn new_uninitialized() -> NtHeapAlloc {
-        NtHeapAlloc(AtomicIsize::new(0))
-    }
+    pub const fn new_uninitialized() -> NtHeapAlloc { NtHeapAlloc(AtomicIsize::new(0)) }
 
     /// Retrieves the raw handle to the heap managed by this allocator.
     #[inline]
-    fn raw_handle(&self) -> HANDLE {
-        self.0.load(Ordering::Relaxed) as _
-    }
+    fn raw_handle(&self) -> HANDLE { self.0.load(Ordering::Relaxed) as _ }
 
     /// Initializes the heap by calling `RtlCreateHeap` and storing the resulting handle.
     #[inline]
     pub fn initialize(&self) {
-        let hh = unsafe {
-            get_rtl_create_heap()(HEAP_GROWABLE, null_mut(), 0, 0, null_mut(), null_mut())
-        };
+        let hh = unsafe { get_rtl_create_heap()(HEAP_GROWABLE, null_mut(), 0, 0, null_mut(), null_mut()) };
         self.0.store(hh as _, Ordering::SeqCst);
     }
 
     /// Checks if the allocator has been initialized.
     #[inline]
-    pub fn is_initialized(&self) -> bool {
-        self.0.load(Ordering::Relaxed) != 0
-    }
+    pub fn is_initialized(&self) -> bool { self.0.load(Ordering::Relaxed) != 0 }
 
     /// Initializes the allocator if it has not been initialized yet.
     pub unsafe fn init_if_required(&self) {
@@ -238,7 +235,8 @@ unsafe impl GlobalAlloc for NtHeapAlloc {
     /// * `layout` - A `Layout` object that specifies the size and alignment of the desired memory block.
     ///
     /// # Returns
-    /// * A pointer to the allocated memory block, which is initialized to zero. Returns `null_mut()` if the allocation fails.
+    /// * A pointer to the allocated memory block, which is initialized to zero. Returns `null_mut()` if the allocation
+    ///   fails.
     ///
     /// # Safety
     /// This function is marked as `unsafe` because it directly interacts with low-level memory management,
@@ -269,7 +267,8 @@ unsafe impl GlobalAlloc for NtHeapAlloc {
     ///
     /// # Arguments
     /// * `ptr` - A pointer to the memory block to be reallocated.
-    /// * `_layout` - The current layout of the memory block. Although it's passed in, it's not used directly in this function.
+    /// * `_layout` - The current layout of the memory block. Although it's passed in, it's not used directly in this
+    ///   function.
     /// * `new_size` - The new size for the memory block.
     ///
     /// # Returns
@@ -289,10 +288,11 @@ unsafe impl GlobalAlloc for NtHeapAlloc {
 #[cfg(test)]
 mod tests {
     use alloc::{boxed::Box, string::String, vec::Vec};
+    use core::{ptr::null_mut, slice};
+
     use libc_print::libc_println;
 
     use super::*;
-    use core::{ptr::null_mut, slice};
 
     /// Test to check memory allocation and deallocation using `alloc` and `dealloc`.
     #[test]
@@ -367,7 +367,7 @@ mod tests {
     fn test_vec_allocation() {
         // Test Vec allocation and deallocation
         let mut vec: Vec<i32> = Vec::new();
-        for i in 0..10 {
+        for i in 0 .. 10 {
             vec.push(i);
         }
 

@@ -6,15 +6,14 @@ extern crate alloc;
 use alloc::sync::Arc;
 
 use command::handler::command_handler;
-use setup::{
-    communication::initialize_protocol, runtime_manager::initialize_runtime,
-    system_data::initialize_system_data,
-};
-
+use kageshirei_runtime::Runtime;
 use mod_agentcore::instance;
 use mod_win32::nt_time::wait_until;
-
-use rs2_runtime::Runtime;
+use setup::{
+    communication::initialize_protocol,
+    runtime_manager::initialize_runtime,
+    system_data::initialize_system_data,
+};
 
 fn main() {
     let rt = initialize_runtime();

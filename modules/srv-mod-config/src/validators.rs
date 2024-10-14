@@ -16,18 +16,22 @@ pub fn validate_port(port: u16) -> Result<(), ValidationError> {
             if !nix::unistd::Uid::effective().is_root() {
                 return Err(ValidationError::new("__internal__").with_message(Cow::from(
                     "Ports below 1024 require root privileges to bind",
-                )))
+                )));
             }
         }
         #[cfg(windows)]
         {
             // On Windows, check if the process has administrative privileges
             use std::ptr;
-            use winapi::shared::minwindef::DWORD;
-            use winapi::um::handleapi::CloseHandle;
-            use winapi::um::processthreadsapi::OpenProcessToken;
-            use winapi::um::securitybaseapi::GetTokenInformation;
-            use winapi::um::winnt::{TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+
+            use winapi::{
+                shared::minwindef::DWORD,
+                um::{
+                    processthreadsapi::OpenProcessToken,
+                    securitybaseapi::GetTokenInformation,
+                    winnt::{TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},
+                },
+            };
 
             unsafe {
                 let mut token_handle = ptr::null_mut();
@@ -57,7 +61,7 @@ pub fn validate_port(port: u16) -> Result<(), ValidationError> {
                 // If the process is not elevated, return an error
                 return Err(ValidationError::new("__internal__").with_message(Cow::from(
                     "Ports below 1024 require administrative privileges on Windows",
-                )))
+                )));
             }
         }
     }

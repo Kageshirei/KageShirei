@@ -1,8 +1,7 @@
+use alloc::string::{String, ToString};
 use core::slice;
 
-use alloc::string::{String, ToString};
-use rs2_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
-
+use kageshirei_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 use mod_agentcore::instance;
 
 use crate::utils::unicodestring_to_string;
@@ -28,10 +27,8 @@ pub unsafe fn get_process_name() -> String {
             let image_path_name = &(*process_parameters).image_path_name;
             if !image_path_name.buffer.is_null() {
                 // Convert the UTF-16 buffer to a Rust slice
-                let image_path_slice = slice::from_raw_parts(
-                    image_path_name.buffer,
-                    image_path_name.length as usize / 2,
-                );
+                let image_path_slice =
+                    slice::from_raw_parts(image_path_name.buffer, image_path_name.length as usize / 2);
                 // Convert the UTF-16 slice to a Rust string
                 let full_path = String::from_utf16_lossy(image_path_slice);
                 // Extract the process name from the full path
@@ -51,8 +48,8 @@ pub unsafe fn get_process_name() -> String {
 /// of accessing these pointers.
 ///
 /// # Parameters
-/// * `lp_version_information`: A mutable reference to an `OSVersionInfo` struct that will
-///   be filled with the version information of the operating system.
+/// * `lp_version_information`: A mutable reference to an `OSVersionInfo` struct that will be filled with the version
+///   information of the operating system.
 ///
 /// # Returns
 /// A status code indicating success or failure. If the provided structure size is invalid,
@@ -61,9 +58,7 @@ pub unsafe fn nt_rtl_get_version(lp_version_information: &mut OSVersionInfo) -> 
     // Get the pointer to the PEB
     let peb = instance().teb.as_ref().unwrap().process_environment_block;
 
-    if lp_version_information.dw_os_version_info_size
-        != core::mem::size_of::<OSVersionInfo>() as u32
-    {
+    if lp_version_information.dw_os_version_info_size != core::mem::size_of::<OSVersionInfo>() as u32 {
         return -1;
     }
 
@@ -176,9 +171,7 @@ pub unsafe fn print_all_environment_variables() {
 /// # Returns
 /// A `String` containing the username of the current process. If the username cannot be
 /// determined, an empty string is returned.
-pub unsafe fn get_username() -> String {
-    get_environment_variable("USERNAME=")
-}
+pub unsafe fn get_username() -> String { get_environment_variable("USERNAME=") }
 
 /// Retrieves the OS of the current process by accessing the PEB (Process Environment Block).
 ///
@@ -190,9 +183,7 @@ pub unsafe fn get_username() -> String {
 /// # Returns
 /// A `String` containing the OS of the current process. If the OS cannot be
 /// determined, an empty string is returned.
-pub unsafe fn get_os() -> String {
-    get_environment_variable("OS=")
-}
+pub unsafe fn get_os() -> String { get_environment_variable("OS=") }
 
 /// Retrieves the computer name of the current process by accessing the PEB (Process Environment Block).
 ///
@@ -204,9 +195,7 @@ pub unsafe fn get_os() -> String {
 /// # Returns
 /// A `String` containing the computer name of the current process. If the computer name cannot be
 /// determined, an empty string is returned.
-pub unsafe fn get_computer_name() -> String {
-    get_environment_variable("COMPUTERNAME=")
-}
+pub unsafe fn get_computer_name() -> String { get_environment_variable("COMPUTERNAME=") }
 
 /// Retrieves the user domain of the current process by accessing the PEB (Process Environment Block).
 ///
@@ -218,9 +207,7 @@ pub unsafe fn get_computer_name() -> String {
 /// # Returns
 /// A `String` containing the user domain of the current process. If the user domain cannot be
 /// determined, an empty string is returned.
-pub unsafe fn get_user_domain() -> String {
-    get_environment_variable("USERDOMAIN=")
-}
+pub unsafe fn get_user_domain() -> String { get_environment_variable("USERDOMAIN=") }
 
 /// Combines OS name and version information into a single string.
 ///
@@ -309,9 +296,9 @@ pub fn get_current_directory() -> String {
 
 #[cfg(test)]
 mod tests {
+    use libc_print::libc_println;
 
     use super::*;
-    use libc_print::libc_println;
 
     #[test]
     fn test_get_process_name() {

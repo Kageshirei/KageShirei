@@ -1,23 +1,22 @@
-use anyhow::{anyhow, Result};
-use axum::body::{Body, Bytes};
-use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
-use axum::Json;
+use axum::{
+    body::{Body, Bytes},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use kageshirei_communication_protocol::{
+    communication_structs::{basic_agent_response::BasicAgentResponse, checkin::Checkin},
+    magic_numbers,
+    protocol::Protocol,
+};
+use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+use kageshirei_utils::duration_extension::DurationExt;
+use mod_protocol_json::protocol::JsonProtocol;
+use srv_mod_config::handlers;
+use srv_mod_entity::{entities::agent as agent_entity, sea_orm::DatabaseConnection};
 use tracing::{instrument, warn};
 
-use mod_protocol_json::protocol::JsonProtocol;
-use rs2_communication_protocol::communication_structs::basic_agent_response::BasicAgentResponse;
-use rs2_communication_protocol::communication_structs::checkin::Checkin;
-use rs2_communication_protocol::magic_numbers;
-use rs2_communication_protocol::protocol::Protocol;
-use rs2_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use rs2_utils::duration_extension::DurationExt;
-use srv_mod_config::handlers;
-use srv_mod_database::models::agent::Agent;
-use srv_mod_database::{humantime, Pool};
-
-use super::agent;
-use super::agent_profiles::apply_filters;
+use super::{agent, agent_profiles::apply_filters};
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
@@ -33,30 +32,18 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
     None
 }
 
-/// Match the magic numbers of the body to the appropriate protocol
-#[instrument(skip_all)]
-fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol> {
-    if body.len() >= magic_numbers::JSON.len()
-        && body[..magic_numbers::JSON.len()] == magic_numbers::JSON
-    {
-        return Ok(handlers::Protocol::Json);
-    }
-
-    Err(anyhow!("Unknown protocol"))
-}
-
 /// Persist the checkin data into the database as an agent
-async fn persist(data: Result<Checkin>, db_pool: Pool) -> Agent {
+async fn persist(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> agent_entity::Model {
     let create_agent_instance = agent::prepare(data.unwrap());
 
-    let mut connection = db_pool.get().await.unwrap();
-    let agent = agent::create_or_update(create_agent_instance, &mut connection).await;
+    let db = db_pool.clone();
+    let agent = agent::create_or_update(create_agent_instance, &db).await;
 
     agent
 }
 
 #[instrument]
-pub async fn handle_checkin(data: Result<Checkin>, db_pool: Pool) -> Result<Bytes> {
+pub async fn handle_checkin(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> Result<Bytes, String> {
     let data = agent::ensure_checkin_is_valid(data);
 
     // if the data is not a checkin struct, drop the request
@@ -69,12 +56,14 @@ pub async fn handle_checkin(data: Result<Checkin>, db_pool: Pool) -> Result<Byte
     // apply filters to the agent
     let config = apply_filters(&agent, db_pool.clone()).await;
 
-    Ok(Bytes::from(serde_json::to_vec(&config)?))
+    Ok(Bytes::from(
+        serde_json::to_vec(&config).map_err(|e| e.to_string())?,
+    ))
 }
 
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json(body: Bytes) -> Result<Checkin> {
+fn process_json(body: Bytes) -> Result<Checkin, String> {
     let now = std::time::Instant::now();
 
     // initialize the protocol implementation
@@ -97,37 +86,39 @@ fn process_json(body: Bytes) -> Result<Checkin> {
 mod test {
     use std::sync::Arc;
 
-    use axum::body::Bytes;
-    use axum::http::StatusCode;
+    use axum::{body::Bytes, http::StatusCode};
     use bytes::{BufMut, BytesMut};
-    use serial_test::serial;
-
-    use rs2_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
-    use rs2_communication_protocol::magic_numbers;
-    use srv_mod_config::handlers;
-    use srv_mod_config::handlers::{
-        EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType,
+    use kageshirei_communication_protocol::{
+        communication_structs::checkin::{Checkin, PartialCheckin},
+        magic_numbers,
     };
-    use srv_mod_database::diesel::{Connection, PgConnection};
-    use srv_mod_database::diesel_async::pooled_connection::AsyncDieselConnectionManager;
-    use srv_mod_database::diesel_async::AsyncPgConnection;
-    use srv_mod_database::diesel_migrations::MigrationHarness;
-    use srv_mod_database::migration::MIGRATIONS;
-    use srv_mod_database::{bb8, Pool};
+    use serial_test::serial;
+    use srv_mod_config::{
+        handlers,
+        handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType},
+    };
+    use srv_mod_database::{
+        bb8,
+        diesel::{Connection, PgConnection},
+        diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection},
+        diesel_migrations::MigrationHarness,
+        migration::MIGRATIONS,
+        Pool,
+    };
     use srv_mod_handler_base::state::HttpHandlerState;
 
     fn make_config() -> HandlerConfig {
         let config = HandlerConfig {
-            enabled: true,
-            r#type: HandlerType::Http,
+            enabled:   true,
+            r#type:    HandlerType::Http,
             protocols: vec![handlers::Protocol::Json],
-            port: 8081,
-            host: "127.0.0.1".to_string(),
-            tls: None,
-            security: HandlerSecurityConfig {
+            port:      8081,
+            host:      "127.0.0.1".to_string(),
+            tls:       None,
+            security:  HandlerSecurityConfig {
                 encryption_scheme: EncryptionScheme::Plain,
-                algorithm: None,
-                encoder: None,
+                algorithm:         None,
+                encoder:           None,
             },
         };
 
@@ -154,9 +145,9 @@ mod test {
 
     #[test]
     fn test_ensure_is_not_empty() {
+        use axum::{body::Bytes, http::StatusCode};
+
         use crate::routes::public::checkin::process_body::ensure_is_not_empty;
-        use axum::body::Bytes;
-        use axum::http::StatusCode;
 
         let empty_body = Bytes::new();
         let response = ensure_is_not_empty(empty_body);
@@ -168,8 +159,9 @@ mod test {
 
     #[test]
     fn test_match_magic_numbers() {
-        use crate::routes::public::checkin::process_body::match_magic_numbers;
         use axum::body::Bytes;
+
+        use crate::routes::public::checkin::process_body::match_magic_numbers;
 
         let json_magic_numbers = Bytes::from(magic_numbers::JSON.to_vec());
         let result = match_magic_numbers(json_magic_numbers);
@@ -184,15 +176,15 @@ mod test {
     #[test]
     fn test_process_json() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -214,26 +206,26 @@ mod test {
     #[serial]
     async fn test_persist() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
@@ -250,7 +242,10 @@ mod test {
         assert_eq!(agent.elevated, true);
         assert_ne!(agent.server_secret_key, "");
         assert_ne!(agent.secret_key, "");
-        assert_eq!(agent.signature, "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g");
+        assert_eq!(
+            agent.signature,
+            "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g"
+        );
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
@@ -260,15 +255,15 @@ mod test {
     #[serial]
     async fn test_process_body() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -281,14 +276,14 @@ mod test {
         }
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 
@@ -305,15 +300,15 @@ mod test {
     #[serial]
     async fn test_process_body_with_invalid_magic_numbers() {
         let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system: "Windows".to_string(),
-            hostname: "DESKTOP-PC".to_string(),
-            domain: "WORKGROUP".to_string(),
-            username: "user".to_string(),
-            ip: "10.2.123.45".to_string(),
-            process_id: 1234,
+            operative_system:  "Windows".to_string(),
+            hostname:          "DESKTOP-PC".to_string(),
+            domain:            "WORKGROUP".to_string(),
+            username:          "user".to_string(),
+            ip:                "10.2.123.45".to_string(),
+            process_id:        1234,
             parent_process_id: 5678,
-            process_name: "agent.exe".to_string(),
-            elevated: true,
+            process_name:      "agent.exe".to_string(),
+            elevated:          true,
         });
         let checkin = serde_json::to_string(&obj_checkin).unwrap();
 
@@ -323,14 +318,14 @@ mod test {
         }
 
         let shared_config = make_config();
-        let connection_string = "postgresql://rs2:rs2@localhost/rs2".to_string();
+        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
 
         // Ensure the database is clean
         drop_database(connection_string.clone()).await;
         let pool = make_pool(connection_string.clone()).await;
 
         let route_state = Arc::new(HttpHandlerState {
-            config: Arc::new(shared_config),
+            config:  Arc::new(shared_config),
             db_pool: pool,
         });
 

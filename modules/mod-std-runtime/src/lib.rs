@@ -5,15 +5,23 @@ pub use std_runtime::StdRuntime;
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        sync::{mpsc, Arc},
+        thread,
+        time::Duration,
+    };
+
+    use kageshirei_communication_protocol::{
+        communication_structs::{
+            agent_commands::AgentCommands,
+            simple_agent_command::SimpleAgentCommand,
+            task_output::TaskOutput,
+        },
+        metadata::Metadata,
+    };
+    use kageshirei_runtime::Runtime; // Import the Runtime trait
+
     use crate::std_runtime::StdRuntime;
-    use rs2_communication_protocol::communication_structs::agent_commands::AgentCommands;
-    use rs2_communication_protocol::communication_structs::simple_agent_command::SimpleAgentCommand;
-    use rs2_communication_protocol::communication_structs::task_output::TaskOutput;
-    use rs2_communication_protocol::metadata::Metadata;
-    use rs2_runtime::Runtime; // Import the Runtime trait
-    use std::sync::{mpsc, Arc};
-    use std::thread;
-    use std::time::Duration;
 
     #[test]
     fn custom_runtime_test() {
@@ -33,13 +41,13 @@ mod tests {
         });
 
         // Spawn 100 tasks using the CustomRuntime.
-        for i in 0..100 {
+        for i in 0 .. 100 {
             // Generate metadata for each task
             let metadata = Metadata {
                 request_id: format!("req-{}", i),
                 command_id: format!("cmd-{}", i),
-                agent_id: "agent-1234".to_string(),
-                path: None,
+                agent_id:   "agent-1234".to_string(),
+                path:       None,
             };
 
             let command = if i % 2 == 0 {
@@ -47,7 +55,8 @@ mod tests {
                     op: AgentCommands::INVALID,
                     metadata,
                 }
-            } else {
+            }
+            else {
                 SimpleAgentCommand {
                     op: AgentCommands::Checkin,
                     metadata,

@@ -2,7 +2,7 @@
 
 ## What is this?
 
-This is the graphical user interface for the RS2 framework, it is a hybrid application that allows you to interact with
+This is the graphical user interface for the KageShirei framework, it is a hybrid application that allows you to interact with
 the agents, manage the server, and visualize the data collected by the agents.
 
 ## Installation - quick method
@@ -13,7 +13,7 @@ If you haven't built the server yet, you can follow the instructions [here](../R
 Once you have the server built, you can use it to build the GUI as well.
 
 ```bash
-rs2-server compile gui
+kageshirei-server compile gui
 ```
 
 This will download all the dependencies, compile them and create the final executable for you, you just have to run it.
@@ -54,10 +54,10 @@ pnpm run tauri:build
 This will compile the GUI and the bundles (`.appimage`/`.deb` for linux, `.msi`/`*-installer.exe` for windows), you will
 find the binary in the root `target` folder under:
 
-- `target/release/rs2-command-and-control` (linux)
-- `target/release/bundle/deb/rs2-command-and-control_<version>_<arch>.deb` (linux)
-- `target/release/bundle/appimage/rs2-command-and-control_<version>_<arch>.AppImage` (linux)
-- `target/x86_64-pc-windows-msvc/release/rs2-command-and-control.exe` (windows)
+- `target/release/kageshirei-command-and-control` (linux)
+- `target/release/bundle/deb/kageshirei-command-and-control_<version>_<arch>.deb` (linux)
+- `target/release/bundle/appimage/kageshirei-command-and-control_<version>_<arch>.AppImage` (linux)
+- `target/x86_64-pc-windows-msvc/release/kageshirei-command-and-control.exe` (windows)
 
 ### Cross-compiling the GUI
 

@@ -1,17 +1,19 @@
-use alloc::ffi::CString;
-use alloc::format;
-use alloc::string::String;
-use alloc::vec::Vec;
-use mod_agentcore::instance;
-use mod_agentcore::ldr::{ldr_function_addr, nt_get_last_error};
-use rs2_win32::ntdef::UnicodeString;
+use alloc::{ffi::CString, format, string::String, vec::Vec};
+use core::{
+    ffi::c_void,
+    mem::{transmute, zeroed},
+    ptr::{null, null_mut},
+    sync::atomic::{AtomicBool, Ordering},
+};
 
-use core::ffi::c_void;
-use core::mem::{transmute, zeroed};
-use core::ptr::{null, null_mut};
-use core::sync::atomic::{AtomicBool, Ordering};
-
-use rs2_win32::ws2_32::{AddrInfo, SockAddr, SockAddrIn, Winsock, WsaData, SOCKET};
+use kageshirei_win32::{
+    ntdef::UnicodeString,
+    ws2_32::{AddrInfo, SockAddr, SockAddrIn, Winsock, WsaData, SOCKET},
+};
+use mod_agentcore::{
+    instance,
+    ldr::{ldr_function_addr, nt_get_last_error},
+};
 
 // Global variable to store Winsock functions
 static mut WINSOCK_FUNCS: Option<Winsock> = None;
@@ -228,7 +230,8 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
     unsafe {
         let addr = if addr == "localhost" {
             "127.0.0.1"
-        } else {
+        }
+        else {
             addr
         };
 
@@ -239,8 +242,7 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
         sockaddr_in.sin_addr.s_addr = resolve_addr;
 
         let sockaddr = &sockaddr_in as *const _ as *const SockAddr;
-        let result =
-            (get_winsock().connect)(sock, sockaddr, core::mem::size_of::<SockAddrIn>() as i32);
+        let result = (get_winsock().connect)(sock, sockaddr, core::mem::size_of::<SockAddrIn>() as i32);
         if result != 0 {
             return (get_winsock().wsa_get_last_error)();
         }
@@ -250,7 +252,8 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
 
 /// Sends data through a socket.
 ///
-/// This function sends a request (byte array) through the specified socket. It returns the result of the send operation.
+/// This function sends a request (byte array) through the specified socket. It returns the result of the send
+/// operation.
 ///
 /// # Arguments
 /// * `sock` - The socket descriptor through which the data will be sent.
@@ -261,8 +264,7 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
 /// * A non-zero error code if there was an error during the send operation, retrieved via `wsa_get_last_error`.
 pub fn send_request(sock: SOCKET, request: &[u8]) -> i32 {
     unsafe {
-        let result =
-            (get_winsock().send)(sock, request.as_ptr() as *const i8, request.len() as i32, 0);
+        let result = (get_winsock().send)(sock, request.as_ptr() as *const i8, request.len() as i32, 0);
         if result != 0 {
             return (get_winsock().wsa_get_last_error)();
         }
@@ -286,18 +288,21 @@ pub fn receive_response(sock: SOCKET) -> Result<String, String> {
         let mut buffer = [0u8; 4096];
         let mut response = String::new();
         loop {
-            let bytes_received =
-                (get_winsock().recv)(sock, buffer.as_mut_ptr() as *mut i8, buffer.len() as i32, 0);
+            let bytes_received = (get_winsock().recv)(sock, buffer.as_mut_ptr() as *mut i8, buffer.len() as i32, 0);
             if bytes_received == -1 {
                 let error_code = nt_get_last_error();
                 return Err(format!(
                     "Receive response failed with error code: {}",
                     error_code
                 ));
-            } else if bytes_received == 0 {
+            }
+            else if bytes_received == 0 {
                 break;
-            } else {
-                response.push_str(&String::from_utf8_lossy(&buffer[..bytes_received as usize]));
+            }
+            else {
+                response.push_str(&String::from_utf8_lossy(
+                    &buffer[.. bytes_received as usize],
+                ));
             }
         }
         Ok(response)
@@ -354,8 +359,12 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<String, String> {
     connect_socket(sock, url, 80);
 
     let request = format!(
-        "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Length: {}\r\nContent-Type: application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n{}",
-        path, url, data.len(), data
+        "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Length: {}\r\nContent-Type: \
+         application/x-www-form-urlencoded\r\nConnection: close\r\n\r\n{}",
+        path,
+        url,
+        data.len(),
+        data
     );
     send_request(sock, &request.as_bytes());
 
@@ -379,7 +388,7 @@ mod tests {
             Ok(response) => {
                 libc_println!("GET request successful!");
                 libc_println!("Response: {}", response);
-            }
+            },
             Err(e) => libc_println!("GET request failed: {}", e),
         }
     }
@@ -390,7 +399,7 @@ mod tests {
             Ok(response) => {
                 libc_println!("POST request successful!");
                 libc_println!("Response: {}", response);
-            }
+            },
             Err(e) => libc_println!("POST request failed: {}", e),
         }
     }

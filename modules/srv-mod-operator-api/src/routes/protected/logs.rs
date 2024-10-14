@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 
-use axum::{debug_handler, Json, Router};
-use axum::extract::{Query, State};
-use axum::routing::get;
+use axum::{
+    debug_handler,
+    extract::{Query, State},
+    routing::get,
+    Json,
+    Router,
+};
+use srv_mod_entity::{
+    entities::logs,
+    sea_orm::{prelude::*, QueryOrder},
+};
 use tracing::{error, info, instrument};
 
-use srv_mod_database::diesel::{QueryDsl, SelectableHelper};
-use srv_mod_database::diesel::ExpressionMethods;
-use srv_mod_database::diesel_async::RunQueryDsl;
-use srv_mod_database::models::log::Log;
-use srv_mod_database::schema::logs;
-
-use crate::claims::JwtClaims;
-use crate::errors::ApiServerError;
-use crate::state::ApiServerSharedState;
+use crate::{claims::JwtClaims, errors::ApiServerError, state::ApiServerSharedState};
 
 /// The handler for the logs route
 ///
@@ -28,34 +28,32 @@ async fn get_handler(
     State(state): State<ApiServerSharedState>,
     jwt_claims: JwtClaims,
     Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<Vec<Log>>, ApiServerError> {
-    let mut connection = state
-        .db_pool
-        .get()
-        .await
-        .map_err(|_| ApiServerError::InternalServerError)?;
+) -> Result<Json<Vec<logs::Model>>, ApiServerError> {
+    let db = state.db_pool.clone();
 
-    let page = params.get("page").and_then(|page| page.parse::<u32>().ok()).unwrap_or(1);
+    let mut page = params
+        .get("page")
+        .and_then(|page| page.parse::<u64>().ok())
+        .unwrap_or(1);
+    // Ensure the page is at least 1
+    if page <= 0 {
+        page = 1;
+    }
+
     let page_size = 500;
 
     // Fetch the user from the database
-    let mut logs = logs::table.order_by(logs::created_at.desc())
-        .offset(((page - 1) * page_size) as i64)
-        .limit(page_size as i64)
-        .select(Log::as_select())
-        .get_results::<Log>(&mut connection)
+    let retrieved_logs = logs::Entity::find()
+        .order_by_asc(logs::Column::CreatedAt)
+        .paginate(&db, page_size)
+        .fetch_page(page - 1)
         .await
         .map_err(|e| {
             error!("Failed to fetch logs: {}", e.to_string());
             ApiServerError::InternalServerError
         })?;
 
-    // Reverse the logs so the newest logs are at the bottom, this is required as the ordering of
-    // elements must have most recent logs on top in order to split the logs into pages and
-    // display them in the correct order
-    logs.reverse();
-
-    Ok(Json(logs))
+    Ok(Json(retrieved_logs))
 }
 
 /// Creates the public authentication routes

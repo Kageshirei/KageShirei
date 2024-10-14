@@ -1,14 +1,17 @@
-use std::sync::{mpsc, Arc, Mutex};
-use std::thread;
+use std::{
+    sync::{mpsc, Arc, Mutex},
+    thread,
+};
 
 /// The `ThreadPool` struct manages a pool of worker threads that execute jobs.
 #[derive(Debug)]
 pub struct ThreadPool {
-    workers: Vec<Worker>, // Vector of workers (threads) in the pool.
-    sender: Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
+    workers: Vec<Worker>,                           // Vector of workers (threads) in the pool.
+    sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
 }
 
-/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and must be `Send` and `'static`.
+/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and must be `Send` and
+/// `'static`.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -31,7 +34,7 @@ impl ThreadPool {
         let receiver = Arc::new(Mutex::new(receiver)); // Arc and Mutex protect the receiver so it can be safely shared among multiple threads.
 
         let mut workers = Vec::with_capacity(size); // Create a vector with the capacity to hold all workers.
-        for _ in 0..size {
+        for _ in 0 .. size {
             workers.push(Worker::new(Arc::clone(&receiver))); // Create and push each worker to the workers vector.
         }
 
@@ -88,16 +91,19 @@ impl Worker {
     ///
     /// * A `Worker` instance wrapping the thread handle.
     fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        let handle = thread::spawn(move || loop {
-            // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the worker.
-            let job = receiver.lock().unwrap().recv();
+        let handle = thread::spawn(move || {
+            loop {
+                // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the
+                // worker.
+                let job = receiver.lock().unwrap().recv();
 
-            match job {
-                Ok(job) => {
-                    job(); // Execute the received job.
-                }
-                Err(_) => {
-                    break; // Exit the loop if the channel is closed (no more jobs to process).
+                match job {
+                    Ok(job) => {
+                        job(); // Execute the received job.
+                    },
+                    Err(_) => {
+                        break; // Exit the loop if the channel is closed (no more jobs to process).
+                    },
                 }
             }
         });

@@ -1,0 +1,20 @@
+[package]
+name = "srv-mod-migration"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+sea-orm = { version = "1.0.1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono", "with-json"] }
+async-std = { version = "1", features = ["attributes", "tokio1"] }
+srv-mod-entity = { path = "../srv-mod-entity" }
+
+[dependencies.sea-orm-migration]
+version = "1.0.1"
+features = [
+    "sqlx-postgres",
+    "runtime-tokio-rustls"
+]

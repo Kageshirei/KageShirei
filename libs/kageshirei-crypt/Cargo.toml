@@ -1,0 +1,27 @@
+[package]
+name = "kageshirei-crypt"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = { version = "0.8.5" }
+bytes = "1.7.2"
+argon2 = { version = "0.5.3", optional = true }
+k256 = { version = "0.13.4", features = ["ecdh", "pkcs8"], optional = true }
+sha3 = { version = "0.10.8", optional = true }
+hkdf = { version = "0.12.4", optional = true }
+base16ct = { version = "0.2.0", features = ["alloc"], optional = true }
+base64ct = { version = "1.6.0", features = ["alloc"], optional = true }
+chacha20poly1305 = { version = "0.10.1", optional = true }
+
+[features]
+default = ["argon2", "hkdf", "asymmetric-encryption", "hex-encoding", "base32-encoding", "base64-encoding", "symmetric-encryption"]
+argon2 = ["dep:argon2"]
+hkdf = ["dep:hkdf"]
+asymmetric-encryption = ["dep:k256", "dep:sha3", "hkdf", "symmetric-encryption"]
+hex-encoding = ["dep:base16ct"]
+base32-encoding = []
+base64-encoding = ["dep:base64ct"]
+symmetric-encryption = ["xchacha20poly1305"]
+xchacha20poly1305 = ["dep:chacha20poly1305"]
+sha3 = ["dep:sha3"]
