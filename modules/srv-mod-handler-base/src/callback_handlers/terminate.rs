@@ -19,12 +19,17 @@ async fn get_agent_specs(cmd_request_id: &str, conn: &DatabaseConnection) -> Res
         .filter(agent_command::Column::Id.eq(cmd_request_id))
         .one(conn)
         .await
-        .map_err(|e| format!("Failed to get agent specs: {}", e))?
-        .ok_or(Err("Agent not found".to_string()))?;
+        .map_err(|e| format!("Failed to get agent specs: {}", e))?;
+    if command_with_agent.is_none() {
+        return Err("Command not found".to_string());
+    }
+    let command_with_agent = command_with_agent.unwrap();
 
-    let agent = command_with_agent
-        .1
-        .ok_or(Err("Agent not found".to_string()))?;
+    let agent = command_with_agent.1;
+    if agent.is_none() {
+        return Err("Agent not found".to_string());
+    }
+    let agent = agent.unwrap();
 
     Ok(AgentSpecs {
         agent_id: agent.id,

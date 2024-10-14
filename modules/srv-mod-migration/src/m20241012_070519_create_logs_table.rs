@@ -109,7 +109,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum Logs {
+pub enum Logs {
     Table,
     Id,
     Level,
@@ -123,7 +123,7 @@ enum Logs {
 }
 
 #[derive(DeriveIden)]
-enum ReadLogs {
+pub enum ReadLogs {
     Table,
     Id,
     #[sea_orm(ident = "log_id")]

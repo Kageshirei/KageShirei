@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use clap::{ArgAction::Append, Args};
 use once_cell::sync::Lazy;
-use srv_mod_database::diesel::internal::derives::multiconnection::chrono;
 
 static NOT_BEFORE: Lazy<String> = Lazy::new(|| -> String {
     let duration = chrono::Utc::now().format("%Y-%m-%d").to_string();

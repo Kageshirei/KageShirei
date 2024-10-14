@@ -8,7 +8,8 @@ use axum::{
     Router,
 };
 use srv_mod_entity::{
-    entities::{agent, agent::FullSessionRecord},
+    entities::agent,
+    partial_models::agent::full_session_record::FullSessionRecord,
     sea_orm::{prelude::*, QueryOrder},
 };
 use tracing::{error, info, instrument};

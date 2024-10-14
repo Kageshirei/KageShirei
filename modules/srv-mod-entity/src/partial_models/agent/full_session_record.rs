@@ -1,9 +1,10 @@
 use kageshirei_communication_protocol::network_interface::NetworkInterface;
 use sea_orm::{prelude::DateTime, DerivePartialModel, FromQueryResult};
+use serde::{Deserialize, Serialize};
 
 use crate::{active_enums::AgentIntegrity, entities::prelude::Agent};
 
-#[derive(DerivePartialModel, FromQueryResult)]
+#[derive(DerivePartialModel, FromQueryResult, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[sea_orm(entity = "Agent")]
 pub struct FullSessionRecord {
     /// The unique identifier for the agent (cuid2)

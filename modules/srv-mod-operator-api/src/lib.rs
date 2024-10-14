@@ -138,7 +138,9 @@ pub async fn start(
             cancellation_token.clone(),
         ));
 
-        let rustls_config = RustlsConfig::from_pem_file(tls_config.cert, tls_config.key).await?;
+        let rustls_config = RustlsConfig::from_pem_file(tls_config.cert, tls_config.key)
+            .await
+            .map_err(|e| e.to_string())?;
 
         let listener = tokio::net::TcpListener::bind(format!(
             "{}:{}",
@@ -161,7 +163,7 @@ pub async fn start(
         info!(address = %listener.local_addr().unwrap(), "HTTPS api server listening");
 
         select! {
-            _ = axum_server::from_tcp_rustls(listener.into_std()?, rustls_config).serve(app.into_make_service()) => {},
+            _ = axum_server::from_tcp_rustls(listener.into_std().map_err(|e| e.to_string())?, rustls_config).serve(app.into_make_service()) => {},
             _ = handle_graceful_shutdown("HTTPS", cancellation_token) => {},
         }
 
@@ -186,7 +188,8 @@ pub async fn start(
     // start serving requests
     axum::serve(listener, app)
         .with_graceful_shutdown(handle_graceful_shutdown("HTTP", cancellation_token))
-        .await?;
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

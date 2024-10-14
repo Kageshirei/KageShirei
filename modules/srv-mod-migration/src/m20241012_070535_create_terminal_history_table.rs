@@ -140,7 +140,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum TerminalHistory {
+pub enum TerminalHistory {
     Table,
     Id,
     #[sea_orm(iden = "ran_by")]

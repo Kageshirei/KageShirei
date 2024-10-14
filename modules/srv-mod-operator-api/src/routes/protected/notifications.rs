@@ -50,7 +50,16 @@ async fn get_handler(
             // read_by = {user_id} AND logs.id = read_logs.log_id
             Condition::all()
                 .add(read_logs::Column::ReadBy.ne(&jwt_claims.sub))
-                .add(Expr::col(("logs", logs::Column::Id)).eq(Expr::col(("read_logs", read_logs::Column::LogId)))),
+                .add(
+                    Expr::col((
+                        srv_mod_migration::m20241012_070519_create_logs_table::Logs::Table,
+                        logs::Column::Id,
+                    ))
+                    .eq(Expr::col((
+                        srv_mod_migration::m20241012_070519_create_logs_table::ReadLogs::Table,
+                        read_logs::Column::LogId,
+                    ))),
+                ),
         )
         .order_by_asc(logs::Column::CreatedAt)
         .paginate(&db, page_size)

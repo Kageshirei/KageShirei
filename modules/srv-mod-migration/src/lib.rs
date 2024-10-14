@@ -18,10 +18,10 @@ impl MigratorTrait for Migrator {
         ]
     }
 }
-pub(crate) mod m20241012_035559_create_users_table;
-pub(crate) mod m20241012_041618_create_agents_table;
-mod m20241012_070459_create_agent_profiles_table;
-mod m20241012_070513_create_filters_table;
-mod m20241012_070519_create_logs_table;
-mod m20241012_070535_create_terminal_history_table;
-mod m20241012_070555_create_agent_command_table;
+pub mod m20241012_035559_create_users_table;
+pub mod m20241012_041618_create_agents_table;
+pub mod m20241012_070459_create_agent_profiles_table;
+pub mod m20241012_070513_create_filters_table;
+pub mod m20241012_070519_create_logs_table;
+pub mod m20241012_070535_create_terminal_history_table;
+pub mod m20241012_070555_create_agent_command_table;

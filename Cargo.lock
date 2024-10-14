@@ -2962,6 +2962,7 @@ name = "kageshirei-server"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "chrono",
  "clap",
  "colored 2.1.0",
  "fern",
@@ -6077,6 +6078,7 @@ dependencies = [
  "serde_json",
  "srv-mod-config",
  "srv-mod-entity",
+ "srv-mod-migration",
  "srv-mod-terminal-emulator-commands",
  "tokio",
  "tokio-stream",

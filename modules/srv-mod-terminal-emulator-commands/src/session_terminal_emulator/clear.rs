@@ -47,7 +47,10 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
             terminal_history::Entity::update_many()
                 .filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
                 .col_expr(terminal_history::Column::DeletedAt, Expr::value(Utc::now()))
-                .col_expr(terminal_history::Column::RestoredAt, Expr::value(None))
+                .col_expr(
+                    terminal_history::Column::RestoredAt,
+                    Expr::value(None::<DateTime>)
+                )
                 .exec(&db),
             pending_log.insert(&db)
         );

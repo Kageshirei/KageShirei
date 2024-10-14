@@ -76,7 +76,7 @@ async fn post_handler(
     }
     .insert(&db)
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| ApiServerError::InternalServerError)?;
 
     Ok(Json(AuthenticatePostResponse {
         access_token: "bearer".to_string(),

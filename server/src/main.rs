@@ -68,7 +68,7 @@ fn setup_logging(debug_level: u8) -> Result<(), String> {
         _ => base_config.level(log::LevelFilter::Trace),
     };
 
-    base_config.apply()?;
+    base_config.apply().map_err(|e| e.to_string())?;
     Ok(())
 }
 

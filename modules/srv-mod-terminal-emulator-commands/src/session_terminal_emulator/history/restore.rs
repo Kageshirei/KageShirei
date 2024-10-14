@@ -22,7 +22,7 @@ fn make_sequence_counter_condition(ids: Vec<i64>) -> Condition {
     let mut condition = Condition::any();
 
     for id in ids.iter() {
-        condition = condition.add(terminal_history::Column::SequenceCounter.eq(Expr::val(id)));
+        condition = condition.add(terminal_history::Column::SequenceCounter.eq(*id));
     }
 
     condition

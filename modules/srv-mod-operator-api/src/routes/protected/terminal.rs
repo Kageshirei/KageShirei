@@ -10,7 +10,8 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
-    entities::{agent, terminal_history, terminal_history::FullHistoryRecord, user},
+    entities::{agent, terminal_history, user},
+    partial_models::terminal_history::full_history_record::FullHistoryRecord,
     sea_orm::{prelude::*, ActiveValue::Set, Condition, QueryOrder, QuerySelect},
 };
 use srv_mod_terminal_emulator_commands::{
@@ -103,20 +104,29 @@ fn update_command_state(
 ///
 /// The username of the current user
 async fn get_current_username(
-    db: &DatabaseConnection,
+    db: DatabaseConnection,
     user_id: &str,
     session_id: &str,
     command: &str,
 ) -> Result<String, Response> {
-    user::Entity::find()
+    let user = user::Entity::find()
         .select_only()
         .column(user::Column::Username)
         .filter(user::Column::Id.eq(user_id))
-        .one(db)
+        .one(&db)
         .await
-        .map_err(|e| ApiServerError::make_terminal_emulator_error(session_id, command, e.to_string().as_str()))?
-        .ok_or(|e| ApiServerError::make_terminal_emulator_error(session_id, command, e.to_string().as_str()))
-        .map(|user| user.username)
+        .map_err(|e| ApiServerError::make_terminal_emulator_error(session_id, command, e.to_string().as_str()))?;
+
+    if user.is_none() {
+        return Err(ApiServerError::make_terminal_emulator_error(
+            session_id,
+            command,
+            "User not found",
+        ));
+    }
+
+    let user = user.unwrap();
+    Ok(user.username)
 }
 
 /// Get the hostname of the current session
@@ -130,21 +140,30 @@ async fn get_current_username(
 /// # Returns
 ///
 /// The hostname of the current session
-async fn get_hostname(db: &DatabaseConnection, session_id: &str, command: &str) -> Result<String, Response> {
+async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -> Result<String, Response> {
     if session_id == "global" {
-        "kageshirei".to_string()
+        Ok("kageshirei".to_string())
     }
     else {
-        agent::Entity::find()
+        let agent = agent::Entity::find()
             .select_only()
             .column(agent::Column::Hostname)
             .filter(agent::Column::Id.eq(session_id))
-            .one(db)
+            .one(&db)
             .await
-            .map_err(|e| ApiServerError::make_terminal_emulator_error(session_id, command, e.to_string().as_str()))?
-            .ok_or(|e| ApiServerError::make_terminal_emulator_error(session_id, command, e.to_string().as_str()))
-            .map(|agent| agent.hostname)
-    };
+            .map_err(|e| ApiServerError::make_terminal_emulator_error(session_id, command, e.to_string().as_str()))?;
+
+        if agent.is_none() {
+            return Err(ApiServerError::make_terminal_emulator_error(
+                session_id,
+                command,
+                "Agent not found",
+            ));
+        }
+
+        let agent = agent.unwrap();
+        Ok(agent.hostname)
+    }
 }
 
 /// The handler for the public authentication route
@@ -224,12 +243,12 @@ async fn post_handler(
     // Get the hostname and username
     let (hostname, username) = tokio::join!(
         get_hostname(
-            &state.db_pool.clone(),
+            state.db_pool.clone(),
             session_id.as_str(),
             body.command.as_str()
         ),
         get_current_username(
-            &state.db_pool.clone(),
+            state.db_pool.clone(),
             jwt_claims.sub.as_str(),
             session_id.as_str(),
             body.command.as_str(),
@@ -349,8 +368,18 @@ async fn get_handler(
                             Condition::all()
                                 .add(terminal_history::Column::RestoredAt.is_not_null())
                                 .add(
-                                    terminal_history::Column::RestoredAt
-                                        .gt(Expr::col(terminal_history::Column::DeletedAt)),
+                                    Expr::col(
+                                        (
+                                            srv_mod_migration::m20241012_070535_create_terminal_history_table::TerminalHistory::Table,
+                                         terminal_history::Column::RestoredAt
+                                        ),
+                                    ).gt(
+                                        Expr::col(
+                                        (
+                                            srv_mod_migration::m20241012_070535_create_terminal_history_table::TerminalHistory::Table,
+                                         terminal_history::Column::DeletedAt
+                                        ),
+                                    )),
                                 ),
                         ),
                 ),

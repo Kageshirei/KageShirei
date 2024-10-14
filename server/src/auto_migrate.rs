@@ -12,7 +12,7 @@ use tracing::error;
 ///
 /// # Returns
 /// The database connection.
-pub async fn run(database_url: &str, readonly_config: &ReadOnlyConfig) -> Result<DatabaseConnection, String> {
+pub async fn run(database_url: &str, readonly_config: &ReadOnlyConfig<'_>) -> Result<DatabaseConnection, String> {
     let mut connect_options = ConnectOptions::new(database_url);
     connect_options.max_connections(readonly_config.database.pool_size as u32);
 

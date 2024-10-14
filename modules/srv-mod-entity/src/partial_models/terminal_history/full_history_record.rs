@@ -1,9 +1,10 @@
 use sea_orm::{prelude::DateTime, DerivePartialModel, FromQueryResult};
+use serde::{Deserialize, Serialize};
 
 use crate::entities::prelude::TerminalHistory;
 
 /// A restore-able command represented with its full output
-#[derive(DerivePartialModel, FromQueryResult)]
+#[derive(DerivePartialModel, FromQueryResult, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[sea_orm(entity = "TerminalHistory")]
 pub struct FullHistoryRecord {
     sequence_counter: i64,

@@ -68,7 +68,7 @@ pub fn prepare(data: Checkin) -> agent::ActiveModel {
 pub async fn create_or_update(agent: agent::ActiveModel, connection: &DatabaseConnection) -> agent::Model {
     // check if the agent already exists
     let agent_exists = agent::Entity::find()
-        .filter(agent::Column::Signature.eq(&agent.signature))
+        .filter(agent::Column::Signature.eq(agent.signature.clone().unwrap()))
         .one(connection)
         .await;
 
@@ -76,7 +76,7 @@ pub async fn create_or_update(agent: agent::ActiveModel, connection: &DatabaseCo
         info!("Existing agent detected, updating ...");
 
         let agent = agent::Entity::update_many()
-            .filter(agent::Column::Signature.eq(&agent.signature))
+            .filter(agent::Column::Signature.eq(agent.signature.clone().unwrap()))
             .set(agent)
             .exec_with_returning(connection)
             .await
