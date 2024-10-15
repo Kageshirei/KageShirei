@@ -3,7 +3,7 @@ use core::{
     ptr::null_mut,
 };
 
-use kageshirei_indirect_syscall::run_syscall;
+use kageshirei_indirect_syscall::run;
 
 use crate::ntdef::{
     AccessMask,
@@ -98,7 +98,7 @@ impl NtClose {
     /// * `true` if the operation was successful, `false` otherwise. The function returns an NTSTATUS code; however, in
     ///   this wrapper, the result is simplified to a boolean.
     pub fn run(&self, handle: *mut c_void) -> i32 {
-        run_syscall!(self.syscall.number, self.syscall.address as usize, handle)
+        run!(self.syscall.number, self.syscall.address as usize, handle)
     }
 }
 
@@ -150,7 +150,7 @@ impl NtAllocateVirtualMemory {
         allocation_type: ULONG,
         protect: ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             handle,
@@ -205,7 +205,7 @@ impl NtWriteVirtualMemory {
         buffer_size: usize,
         number_of_bytes_written: &mut usize,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -261,7 +261,7 @@ impl NtFreeVirtualMemory {
         mut region_size: usize,
         free_type: ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -310,7 +310,7 @@ impl NtOpenKey {
         desired_access: AccessMask,
         object_attributes: &mut ObjectAttributes,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             p_key_handle,
@@ -360,7 +360,7 @@ impl NtQueryValueKey {
         length: u32,
         result_length: &mut u32,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             key_handle,
@@ -413,7 +413,7 @@ impl NtEnumerateKey {
         length: ULONG,
         result_length: &mut ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             key_handle,
@@ -463,7 +463,7 @@ impl NtQuerySystemInformation {
         system_information_length: u32,
         return_length: *mut u32,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             system_information_class,
@@ -513,7 +513,7 @@ impl NtQueryInformationProcess {
         process_information_length: ULONG,
         return_length: *mut ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -561,7 +561,7 @@ impl NtOpenProcess {
         object_attributes: &mut ObjectAttributes,
         client_id: *mut c_void,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -601,7 +601,7 @@ impl NtOpenProcessToken {
     ///
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, process_handle: HANDLE, desired_access: AccessMask, token_handle: &mut HANDLE) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -647,7 +647,7 @@ impl NtOpenProcessTokenEx {
         handle_attributes: ULONG,
         token_handle: &mut HANDLE,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -697,7 +697,7 @@ impl NtQueryInformationToken {
         token_information_length: ULONG,
         return_length: *mut ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             token_handle,
@@ -749,7 +749,7 @@ impl NtAdjustPrivilegesToken {
         previous_state: *mut TokenPrivileges,
         return_length: *mut ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             token_handle,
@@ -791,7 +791,7 @@ impl NtWaitForSingleObject {
     ///
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, handle: HANDLE, alertable: bool, timeout: *mut c_void) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             handle,
@@ -841,7 +841,7 @@ impl NtOpenFile {
         share_access: ULONG,
         open_options: ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             file_handle,
@@ -896,7 +896,7 @@ impl NtCreateEvent {
             Some(attrs) => attrs as *mut _ as *mut c_void,
             None => null_mut(),
         };
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             event_handle,
@@ -960,7 +960,7 @@ impl NtWriteFile {
         byte_offset: *mut u64,
         key: *mut ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             file_handle,
@@ -1032,7 +1032,7 @@ impl NtCreateFile {
         ea_buffer: *mut c_void,
         ea_length: u32,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             file_handle,
@@ -1102,7 +1102,7 @@ impl NtReadFile {
         byte_offset: *mut u64,
         key: *mut ULONG,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             file_handle,
@@ -1164,7 +1164,7 @@ impl NtCreateProcessEx {
         exception_port: HANDLE,
         in_job: u32,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -1225,7 +1225,7 @@ impl NtCreateThread {
         initial_teb: *mut InitialTeb,
         create_suspended: bool,
     ) -> NTSTATUS {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             thread_handle,
@@ -1290,7 +1290,7 @@ impl NtCreateThreadEx {
         maximum_stack_size: SIZE_T,
         attribute_list: *mut c_void,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             thread_handle,
@@ -1359,7 +1359,7 @@ impl ZwCreateThreadEx {
         maximum_stack_size: SIZE_T,
         attribute_list: *mut c_void,
     ) -> NTSTATUS {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             thread_handle,
@@ -1427,7 +1427,7 @@ impl NtCreateUserProcess {
         create_info: *mut PsCreateInfo,
         attribute_list: *mut PsAttributeList,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -1475,7 +1475,7 @@ impl NtResumeThread {
     ///
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, thread_handle: HANDLE, suspend_count: &mut u32) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             thread_handle,
@@ -1514,7 +1514,7 @@ impl NtTerminateProcess {
     ///
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, process_handle: HANDLE, exit_status: i32) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -1553,7 +1553,7 @@ impl NtTerminateThread {
     ///
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, thread_handle: HANDLE, exit_status: i32) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             thread_handle,
@@ -1592,7 +1592,7 @@ impl NtDelayExecution {
     ///
     /// * `i32` - The NTSTATUS code of the operation.
     pub fn run(&self, alertable: bool, delay_interval: *const i64) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             alertable as u32,
@@ -1662,7 +1662,7 @@ impl NtCreateNamedPipeFile {
         outbound_quota: ULONG,
         default_timeout: *const LargeInteger,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             file_handle,
@@ -1725,7 +1725,7 @@ impl NtReadVirtualMemory {
         buffer_size: usize,
         number_of_bytes_read: *mut usize,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -1789,7 +1789,7 @@ impl NtCreateProcess {
         debug_port: HANDLE,
         exception_port: HANDLE,
     ) -> NTSTATUS {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,
@@ -1847,7 +1847,7 @@ impl NtQueryVirtualMemory {
         memory_information_length: usize,
         return_length: *mut usize,
     ) -> i32 {
-        run_syscall!(
+        run!(
             self.syscall.number,
             self.syscall.address as usize,
             process_handle,

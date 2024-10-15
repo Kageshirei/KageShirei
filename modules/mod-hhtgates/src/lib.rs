@@ -1,4 +1,7 @@
 #![no_std]
+/// A crate for detecting syscall numbers by scanning memory for specific assembly patterns.
+/// Supports Hell's Gate, Halo's Gate, and Tartarus' Gate techniques for identifying syscalls.
+/// Works in `no_std` environments with raw pointer manipulation for high-performance use cases.
 
 /// The offset to move up in memory.
 const UP: isize = -32;
@@ -42,7 +45,7 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
 
     // Halo's Gate Patch
     if address.read() == 0xe9 {
-        for idx in 1_usize..500 {
+        for idx in 1usize..500 {
             let down_offset = idx.wrapping_mul(DOWN);
             let up_offset = (idx as isize).wrapping_mul(UP);
 

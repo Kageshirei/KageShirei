@@ -8,7 +8,7 @@ use core::{
     sync::atomic::{AtomicBool, AtomicIsize, Ordering},
 };
 
-use kageshirei_indirect_syscall::run_syscall;
+use kageshirei_indirect_syscall::run;
 use kageshirei_win32::ntapi::NtSyscall;
 use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
 use mod_hhtgates::get_syscall_number;
@@ -138,7 +138,7 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         let alloc_syscall = get_nt_allocate_virtual_memory_syscall();
 
         // Perform the system call to allocate virtual memory.
-        let ntstatus = run_syscall!(
+        let ntstatus = run!(
             alloc_syscall.number,
             alloc_syscall.address as usize,
             h_process,
@@ -179,7 +179,7 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         let free_syscall = get_nt_free_virtual_memory_syscall();
 
         // Perform the system call to free virtual memory.
-        let ntstatus = run_syscall!(
+        let ntstatus = run!(
             free_syscall.number,
             free_syscall.address as usize,
             h_process,
