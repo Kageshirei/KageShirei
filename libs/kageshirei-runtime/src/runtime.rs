@@ -23,7 +23,7 @@ pub trait Runtime: Send + Sync + 'static {
     /// * `f` - The future to block on.
     ///
     /// This function is used to block the current thread until the future is resolved.
-    fn block_on<F: Future>(&self, f: F) -> F::Output
+    fn block_on<F>(&self, f: F) -> F::Output
     where
-        F: Send + 'static;
+        F: Future + Send + 'static;
 }

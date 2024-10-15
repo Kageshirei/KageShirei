@@ -1,11 +1,11 @@
-use bytes::Bytes;
-
 #[cfg(feature = "base32-encoding")]
 pub mod base32;
 #[cfg(feature = "base64-encoding")]
 pub mod base64;
 #[cfg(feature = "hex-encoding")]
 pub mod hex;
+
+use bytes::Bytes;
 
 pub trait Encoder {
     /// Encode the given data
