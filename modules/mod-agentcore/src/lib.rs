@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(lint_reasons)]
 
 pub mod common;
 pub mod ldr;
