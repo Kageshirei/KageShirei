@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{BufMut as _, Bytes, BytesMut};
 use kageshirei_communication_protocol::{
     magic_numbers,
     metadata::{Metadata, WithMetadata},
@@ -46,7 +46,7 @@ where
 {
     /// Create a new JSON protocol.
     pub fn new(base_url: String) -> Self {
-        JsonProtocol {
+        Self {
             client: ClientBuilder::new()
                 .danger_accept_invalid_certs(true)
                 .pool_max_idle_per_host(2)
@@ -70,12 +70,7 @@ where
     /// Get the encryptor to use for encryption or decryption, falling back to the global encryptor
     /// if necessary.
     fn encryptor_or_global(&self, encryptor: Option<E>) -> Option<E> {
-        encryptor.or(if let Some(encryptor) = self.global_encryptor.clone() {
-            Some(encryptor)
-        }
-        else {
-            None
-        })
+        encryptor.or(self.global_encryptor.clone().map(|encryptor| encryptor))
     }
 }
 
@@ -104,7 +99,7 @@ where
 
         // Append the path to the URL if it is provided.
         if let Some(ref path) = metadata.path {
-            url.push_str(&path);
+            url.push_str(path);
         }
 
         // Reset the checkin flag after each request, here the request has not been sent yet but
@@ -121,8 +116,8 @@ where
                 "X-Request-ID",
                 format!(
                     "{}.{}",
-                    metadata.request_id.to_string(),
-                    metadata.agent_id.to_string()
+                    metadata.request_id,
+                    metadata.agent_id
                 ),
             )
             // Add the command ID to the headers.
@@ -130,7 +125,7 @@ where
             .send()
             .await.map_err(|e| e.to_string())?;
 
-        Ok(response.bytes().await.map_err(|e| e.to_string())?)
+        response.bytes().await.map_err(|e| e.to_string())
     }
 }
 
@@ -147,21 +142,19 @@ where
 
         // Decrypt the data if an encryptor is provided.
         let data = if let Some(encryptor) = encryptor {
-            encryptor
-                .decrypt(Bytes::from(data), None)
-                .map_err(|e| e.to_string())?
+            encryptor.decrypt(data, None).map_err(|e| e)?
         }
         else {
             data
         };
 
         if data.len() < magic_numbers::JSON.len() {
-            return Err("Invalid data length".to_string());
+            return Err("Invalid data length".to_owned());
         }
 
         // Check if the magic number is correct.
         if data[.. magic_numbers::JSON.len()] != magic_numbers::JSON {
-            return Err("Invalid magic number".to_string());
+            return Err("Invalid magic number".to_owned());
         }
 
         serde_json::from_slice(data.get(magic_numbers::JSON.len() ..).unwrap()).map_err(|e| e.to_string())
@@ -190,7 +183,7 @@ where
 
             // Encrypt the data if an encryptor is provided.
             let data = if let Some(encryptor) = encryptor.as_mut() {
-                encryptor.encrypt(data).map_err(|e| e.to_string())?
+                encryptor.encrypt(data).map_err(|e| e)?
             }
             else {
                 data

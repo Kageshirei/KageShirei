@@ -40,10 +40,14 @@ pub struct Session {
     pub protocol_ptr:  *mut c_void,
 }
 
+impl Default for Session {
+    fn default() -> Self { Self::new() }
+}
+
 impl Session {
     /// Creates a new, disconnected session with default values.
-    pub fn new() -> Self {
-        Session {
+    pub const fn new() -> Self {
+        Self {
             connected:     false,
             id:            String::new(),
             pid:           0,
@@ -75,10 +79,14 @@ pub struct Config {
     pub polling_jitter:   u128,
 }
 
+impl Default for Config {
+    fn default() -> Self { Self::new() }
+}
+
 impl Config {
     /// Creates a new configuration with default values.
-    pub fn new() -> Self {
-        Config {
+    pub const fn new() -> Self {
+        Self {
             id:               String::new(),
             kill_date:        None,
             polling_interval: 0,
@@ -105,10 +113,14 @@ pub struct Instance {
     pub kernel32:     Kernel32,
 }
 
+impl Default for Instance {
+    fn default() -> Self { Self::new() }
+}
+
 impl Instance {
     /// Creates a new instance with default values.
     pub fn new() -> Self {
-        Instance {
+        Self {
             teb:          null_mut(),
             kdata:        null_mut(),
             ntdll:        NtDll::new(),
@@ -135,10 +147,10 @@ pub static mut INSTANCE: Mutex<UnsafeCell<Option<Instance>>> = Mutex::new(Unsafe
 ///
 /// This function is unsafe because it involves mutable static data.
 /// The caller must ensure no data races occur when accessing the global instance.
-#[allow(static_mut_refs)]
+#[expect(static_mut_refs)]
 pub unsafe fn instance() -> &'static Instance {
     ensure_initialized();
-    return INSTANCE.lock().get().as_ref().unwrap().as_ref().unwrap();
+    INSTANCE.lock().get().as_ref().unwrap().as_ref().unwrap()
 }
 
 /// Retrieves a mutable reference to the global instance of the agent.
@@ -147,7 +159,7 @@ pub unsafe fn instance() -> &'static Instance {
 ///
 /// This function is unsafe because it involves mutable static data.
 /// The caller must ensure no data races occur when accessing the global instance.
-#[allow(static_mut_refs)]
+#[expect(static_mut_refs)]
 pub unsafe fn instance_mut() -> &'static mut Instance {
     ensure_initialized();
     INSTANCE.lock().get().as_mut().unwrap().as_mut().unwrap()

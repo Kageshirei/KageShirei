@@ -15,7 +15,7 @@ pub type ULONG = c_ulong;
 pub type PVOID = *mut c_void;
 pub type AccessMask = ULONG;
 pub type USHORT = c_ushort;
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 pub type SIZE_T = usize;
 pub type ULONGLONG = u64;
 pub type LONGLONG = i64;
@@ -33,10 +33,10 @@ pub type BSTR = *const u16;
 
 pub type LPCWSTR = *const u16;
 pub type LPWSTR = *mut u16;
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 pub type LPSECURITY_ATTRIBUTES = *mut SecurityAttributes;
 
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 pub type ULONG_PTR = usize;
 
 pub type DWORD64 = u64;
@@ -205,9 +205,13 @@ pub struct UnicodeString {
     pub buffer:         *mut u16,
 }
 
+impl Default for UnicodeString {
+    fn default() -> Self { Self::new() }
+}
+
 impl UnicodeString {
-    pub fn new() -> Self {
-        UnicodeString {
+    pub const fn new() -> Self {
+        Self {
             length:         0,
             maximum_length: 0,
             buffer:         ptr::null_mut(),
@@ -215,7 +219,7 @@ impl UnicodeString {
     }
 
     pub fn from_str(source_string: *const u16) -> Self {
-        let mut unicode_string = UnicodeString::new();
+        let mut unicode_string = Self::new();
         unicode_string.init(source_string);
         unicode_string
     }
@@ -242,9 +246,13 @@ pub struct ClientId {
     pub unique_thread:  HANDLE,
 }
 
+impl Default for ClientId {
+    fn default() -> Self { Self::new() }
+}
+
 impl ClientId {
-    pub fn new() -> Self {
-        ClientId {
+    pub const fn new() -> Self {
+        Self {
             unique_process: ptr::null_mut(),
             unique_thread:  ptr::null_mut(),
         }
@@ -365,9 +373,13 @@ pub struct CURDIR {
     pub handle:   HANDLE,
 }
 
+impl Default for CURDIR {
+    fn default() -> Self { Self::new() }
+}
+
 impl CURDIR {
-    pub fn new() -> Self {
-        CURDIR {
+    pub const fn new() -> Self {
+        Self {
             dos_path: UnicodeString::new(),
             handle:   null_mut(),
         }
@@ -413,9 +425,13 @@ pub struct RtlUserProcessParameters {
     pub loader_threads:          u32,
 }
 
+impl Default for RtlUserProcessParameters {
+    fn default() -> Self { Self::new() }
+}
+
 impl RtlUserProcessParameters {
     pub fn new() -> Self {
-        RtlUserProcessParameters {
+        Self {
             maximum_length:          0,
             length:                  0,
             flags:                   0,
@@ -569,9 +585,13 @@ pub struct ObjectAttributes {
     pub security_quality_of_service: PVOID,
 }
 
+impl Default for ObjectAttributes {
+    fn default() -> Self { Self::new() }
+}
+
 impl ObjectAttributes {
-    pub fn new() -> Self {
-        ObjectAttributes {
+    pub const fn new() -> Self {
+        Self {
             length: 0,
             root_directory: ptr::null_mut(),
             object_name: ptr::null_mut(),
@@ -582,8 +602,8 @@ impl ObjectAttributes {
     }
 
     // InitializeObjectAttributes
-    pub fn initialize(p: &mut ObjectAttributes, n: *mut UnicodeString, a: ULONG, r: HANDLE, s: PVOID) {
-        p.length = core::mem::size_of::<ObjectAttributes>() as ULONG;
+    pub fn initialize(p: &mut Self, n: *mut UnicodeString, a: ULONG, r: HANDLE, s: PVOID) {
+        p.length = core::mem::size_of::<Self>() as ULONG;
         p.root_directory = r;
         p.attributes = a;
         p.object_name = n;
@@ -624,16 +644,20 @@ pub struct OSVersionInfo {
     pub dw_platform_id_2:          u32,
 }
 
+impl Default for OSVersionInfo {
+    fn default() -> Self { Self::new() }
+}
+
 impl OSVersionInfo {
-    pub fn new() -> Self {
-        OSVersionInfo {
-            dw_os_version_info_size:   core::mem::size_of::<OSVersionInfo>() as u32,
+    pub const fn new() -> Self {
+        Self {
+            dw_os_version_info_size:   core::mem::size_of::<Self>() as u32,
             dw_major_version:          0,
             dw_minor_version:          0,
             dw_build_number:           0,
             dw_platform_id:            0,
             sz_csd_version:            [0; 128],
-            dw_os_version_info_size_2: core::mem::size_of::<OSVersionInfo>() as u32,
+            dw_os_version_info_size_2: core::mem::size_of::<Self>() as u32,
             dw_major_version_2:        0,
             dw_minor_version_2:        0,
             dw_build_number_2:         0,
@@ -721,10 +745,14 @@ pub struct StartupInfoA {
     pub h_std_error:       *mut c_void,
 }
 
+impl Default for StartupInfoA {
+    fn default() -> Self { Self::new() }
+}
+
 impl StartupInfoA {
-    pub fn new() -> Self {
-        StartupInfoA {
-            cb:                core::mem::size_of::<StartupInfoA>() as u32,
+    pub const fn new() -> Self {
+        Self {
+            cb:                core::mem::size_of::<Self>() as u32,
             lp_reserved:       ptr::null_mut(),
             lp_desktop:        ptr::null_mut(),
             lp_title:          ptr::null_mut(),
@@ -768,10 +796,14 @@ pub struct StartupInfoW {
     pub h_std_error:       *mut c_void,
 }
 
+impl Default for StartupInfoW {
+    fn default() -> Self { Self::new() }
+}
+
 impl StartupInfoW {
-    pub fn new() -> Self {
-        StartupInfoW {
-            cb:                core::mem::size_of::<StartupInfoW>() as u32,
+    pub const fn new() -> Self {
+        Self {
+            cb:                core::mem::size_of::<Self>() as u32,
             lp_reserved:       ptr::null_mut(),
             lp_desktop:        ptr::null_mut(),
             lp_title:          ptr::null_mut(),
@@ -801,9 +833,13 @@ pub struct ProcessInformation {
     pub dw_thread_id:  u32,
 }
 
+impl Default for ProcessInformation {
+    fn default() -> Self { Self::new() }
+}
+
 impl ProcessInformation {
-    pub fn new() -> Self {
-        ProcessInformation {
+    pub const fn new() -> Self {
+        Self {
             h_process:     ptr::null_mut(),
             h_thread:      ptr::null_mut(),
             dw_process_id: 0,
@@ -911,14 +947,18 @@ pub struct IoStatusBlock {
     pub information: ULONG,
 }
 
+impl Default for IoStatusBlock {
+    fn default() -> Self { Self::new() }
+}
+
 impl IoStatusBlock {
     /// Creates a new `IoStatusBlock` with default values.
     ///
     /// # Returns
     ///
     /// A new instance of `IoStatusBlock` with default initialization.
-    pub fn new() -> Self {
-        IoStatusBlock {
+    pub const fn new() -> Self {
+        Self {
             u:           IO_STATUS_BLOCK_u {
                 status: 0,
             },
@@ -1090,9 +1130,13 @@ pub struct LargeInteger {
     pub high_part: i32,
 }
 
+impl Default for LargeInteger {
+    fn default() -> Self { Self::new() }
+}
+
 impl LargeInteger {
-    pub fn new() -> Self {
-        LargeInteger {
+    pub const fn new() -> Self {
+        Self {
             high_part: 0,
             low_part:  0,
         }
@@ -1251,8 +1295,12 @@ pub struct PsCreateInitialFlagBits {
     pub bits: ULONG, // Rappresenta tutti i bit in un singolo campo da 32 bit
 }
 
+impl Default for PsCreateInitialFlagBits {
+    fn default() -> Self { Self::new() }
+}
+
 impl PsCreateInitialFlagBits {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         let mut bits: ULONG = 0;
         bits |= 1 << 0; // WriteOutputOnExit : 1;
         bits |= 1 << 1; // DetectManifest : 1;
@@ -1262,7 +1310,7 @@ impl PsCreateInitialFlagBits {
         bits |= 8 << 8; // SpareBits2 : 8;
         bits |= 16 << 16; // ProhibitedImageCharacteristics : 16;
 
-        PsCreateInitialFlagBits {
+        Self {
             bits,
         }
     }
@@ -1289,8 +1337,12 @@ pub struct PsCreateSuccessFlagBits {
     pub bits: ULONG, // Rappresenta tutti i bit in un singolo campo da 32 bit
 }
 
+impl Default for PsCreateSuccessFlagBits {
+    fn default() -> Self { Self::new() }
+}
+
 impl PsCreateSuccessFlagBits {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         let mut bits: ULONG = 0;
         bits |= 1 << 0; // ProtectedProcess : 1;
         bits |= 1 << 1; // AddressSpaceOverride : 1;
@@ -1301,7 +1353,7 @@ impl PsCreateSuccessFlagBits {
         bits |= 8 << 8; // SpareBits2 : 8;
         bits |= 16 << 16; // SpareBits3 : 16;
 
-        PsCreateSuccessFlagBits {
+        Self {
             bits,
         }
     }
@@ -1352,7 +1404,7 @@ pub struct PsAttributeList {
 
 impl PsAttribute {
     pub const fn new(attribute: usize, size: usize, value: usize, return_length: *mut usize) -> Self {
-        PsAttribute {
+        Self {
             attribute,
             size,
             value: PsAttributeValueUnion {
@@ -1363,7 +1415,7 @@ impl PsAttribute {
     }
 
     pub const fn new_ptr(attribute: usize, size: usize, value_ptr: PVOID, return_length: *mut usize) -> Self {
-        PsAttribute {
+        Self {
             attribute,
             size,
             value: PsAttributeValueUnion {
@@ -1757,14 +1809,14 @@ pub struct SystemProcessInformation2 {
 }
 
 #[repr(C)]
-#[allow(non_snake_case)]
+#[expect(non_snake_case)]
 pub struct M128A {
     pub Low:  ULONGLONG,
     pub High: LONGLONG,
 }
 
 #[repr(C)]
-#[allow(non_snake_case)]
+#[expect(non_snake_case)]
 pub struct CONTEXT {
     pub P1Home:               DWORD64,
     pub P2Home:               DWORD64,
@@ -1883,14 +1935,18 @@ pub struct RtlRelativeNameU {
     pub cur_dir_ref:          *mut RtlpCurdirRef,
 }
 
+impl Default for RtlRelativeNameU {
+    fn default() -> Self { Self::new() }
+}
+
 impl RtlRelativeNameU {
     /// Creates a new `RtlRelativeNameU` with default values.
     ///
     /// # Returns
     /// A new instance of `RtlRelativeNameU` with an empty `UnicodeString`, a null `HANDLE`,
     /// and a null pointer for `cur_dir_ref`.
-    pub fn new() -> Self {
-        RtlRelativeNameU {
+    pub const fn new() -> Self {
+        Self {
             relative_name:        UnicodeString::new(), // Initialize with an empty UnicodeString
             containing_directory: null_mut(),           // Set HANDLE to null
             cur_dir_ref:          null_mut(),           // Set pointer to null

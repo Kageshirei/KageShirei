@@ -132,19 +132,19 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         // Size of the memory to allocate.
         let region_size = layout.size();
         // Handle to the current process (-1).
-        let h_process: *mut u8 = -1isize as _;
+        let h_process: *mut u8 = -1isize as *mut u8;
 
         // Retrieve the syscall information.
         let alloc_syscall = get_nt_allocate_virtual_memory_syscall();
 
         // Perform the system call to allocate virtual memory.
         let ntstatus = run_syscall!(
-            (*alloc_syscall).number,
-            (*alloc_syscall).address as usize,
+            alloc_syscall.number,
+            alloc_syscall.address as usize,
             h_process,
             &mut p_address,
             0,
-            &mut (region_size as usize) as *mut usize,
+            &mut { region_size } as *mut usize,
             0x3000, // MEM_COMMIT | MEM_RESERVE
             0x04    // PAGE_READWRITE
         );
@@ -173,15 +173,15 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         // Size of the memory to deallocate.
         let mut region_size = layout.size();
         // Handle to the current process (-1).
-        let h_process: *mut u8 = -1isize as _;
+        let h_process: *mut u8 = -1isize as *mut u8;
 
         // Retrieve the syscall information.
         let free_syscall = get_nt_free_virtual_memory_syscall();
 
         // Perform the system call to free virtual memory.
         let ntstatus = run_syscall!(
-            (*free_syscall).number,
-            (*free_syscall).address as usize,
+            free_syscall.number,
+            free_syscall.address as usize,
             h_process,
             &mut (ptr as *mut c_void),
             &mut region_size,

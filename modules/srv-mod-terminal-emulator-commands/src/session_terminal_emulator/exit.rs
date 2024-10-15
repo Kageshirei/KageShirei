@@ -8,5 +8,5 @@ pub async fn handle(_config: CommandHandlerArguments) -> Result<String, String> 
     debug!("Terminal command received");
 
     // Signal the frontend terminal emulator to exit the terminal session
-    Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_string())
+    Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_EXIT__".to_owned())
 }

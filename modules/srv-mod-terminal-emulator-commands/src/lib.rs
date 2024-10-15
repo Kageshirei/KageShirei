@@ -57,7 +57,7 @@ impl Command {
 
     /// Parse the command from the raw string
     pub fn from_raw(session_id: &str, value: &str) -> Result<Box<Self>, StyledStr> {
-        return match session_id {
+        match session_id {
             // if the session_id is "global", parse the command as a GlobalSessionTerminalEmulatorCommands
             "global" => {
                 let cmd = Self::internal_parse::<GlobalSessionTerminalEmulatorCommands>(value);
@@ -68,15 +68,15 @@ impl Command {
                 let cmd = Self::internal_parse::<SessionTerminalEmulatorCommands>(value);
                 make_result_from_cmd!(cmd, Command::SessionTerminalEmulatorCommands)
             },
-        };
+        }
     }
 }
 
 impl CommandHandler for Command {
     async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
         match self {
-            Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
-            Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
+            Self::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
+            Self::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
         }
     }
 }

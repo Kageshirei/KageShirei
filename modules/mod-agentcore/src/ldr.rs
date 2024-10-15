@@ -44,11 +44,7 @@ pub fn nt_current_teb() -> *const TEB {
     teb_ptr
 }
 
-pub fn nt_current_peb() -> *mut PEB {
-    unsafe {
-        return nt_current_teb().as_ref().unwrap().process_environment_block;
-    }
-}
+pub fn nt_current_peb() -> *mut PEB { unsafe { nt_current_teb().as_ref().unwrap().process_environment_block } }
 
 /// Gets the last error value for the current thread.
 ///
@@ -117,7 +113,7 @@ pub unsafe fn ldr_module_peb(module_hash: u32) -> *mut u8 {
         // Check if the hash of the DLL name matches the given hash
         if module_hash == dbj2_hash(dll_name_slice) {
             // Return the base address of the DLL
-            return (*module_list).dll_base as _;
+            return (*module_list).dll_base as *mut u8;
         }
 
         // Move to the next module in the list
@@ -156,7 +152,7 @@ pub unsafe fn get_nt_headers(base_addr: *mut u8) -> *mut ImageNtHeaders {
     let nt_headers = (base_addr as isize + (*dos_header).e_lfanew as isize) as *mut ImageNtHeaders;
 
     // Check NT signature (PE\0\0)
-    if (*nt_headers).signature != IMAGE_NT_SIGNATURE as _ {
+    if (*nt_headers).signature != IMAGE_NT_SIGNATURE {
         return null_mut();
     }
 
@@ -235,22 +231,22 @@ pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *
     let array_of_ordinals = module_base.offset((*export_directory).address_of_name_ordinals as isize) as *const u16;
 
     // Create a slice from the array of names in the export directory
-    let names = core::slice::from_raw_parts(array_of_names, number_of_functions as _);
+    let names = core::slice::from_raw_parts(array_of_names, number_of_functions as usize);
 
     // Create a slice from the array of addresses in the export directory
-    let functions = core::slice::from_raw_parts(array_of_addresses, number_of_functions as _);
+    let functions = core::slice::from_raw_parts(array_of_addresses, number_of_functions as usize);
 
     // Create a slice from the array of ordinals in the export directory
-    let ordinals = core::slice::from_raw_parts(array_of_ordinals, number_of_functions as _);
+    let ordinals = core::slice::from_raw_parts(array_of_ordinals, number_of_functions as usize);
 
     // Iterate over the names to find the function with the matching hash
     for i in 0 .. number_of_functions {
         // Get the address of the current export name
         let name_addr = module_base.offset(names[i as usize] as isize) as *const i8;
         // Get the length of the C string
-        let name_len = string_length_a(name_addr as _);
+        let name_len = string_length_a(name_addr as *const u8);
         // Create a slice for the name
-        let name_slice: &[u8] = core::slice::from_raw_parts(name_addr as _, name_len);
+        let name_slice: &[u8] = core::slice::from_raw_parts(name_addr as *const u8, name_len);
 
         // Check if the hash of the name matches the given hash
         if function_hash as u32 == dbj2_hash(name_slice) {
@@ -261,5 +257,5 @@ pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *
     }
 
     // Return null pointer if function is not found
-    return null_mut();
+    null_mut()
 }

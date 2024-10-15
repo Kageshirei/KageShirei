@@ -1,7 +1,7 @@
 use axum::http::StatusCode;
 use kageshirei_communication_protocol::communication_structs::checkin::Checkin;
 use kageshirei_crypt::{
-    encoder::{base64::Base64Encoder, Encoder},
+    encoder::{base64::Base64Encoder, Encoder as _},
     encryption_algorithm::{asymmetric_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
 };
 use srv_mod_entity::{
@@ -24,7 +24,7 @@ pub fn ensure_checkin_is_valid(data: Result<Checkin, String>) -> Result<Checkin,
         warn!("Internal status code: {}", StatusCode::UNPROCESSABLE_ENTITY);
 
         // always return OK to avoid leaking information
-        return Err("Failed to parse checkin data".to_string());
+        return Err("Failed to parse checkin data".to_owned());
     }
 
     // return the checkin data
@@ -82,7 +82,7 @@ pub async fn create_or_update(agent: agent::ActiveModel, connection: &DatabaseCo
             .await
             .unwrap();
 
-        let agent = agent.get(0).unwrap().to_owned();
+        let agent = agent.first().unwrap().to_owned();
 
         info!("Agent data updated (id: {})", agent.id);
 

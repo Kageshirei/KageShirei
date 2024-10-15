@@ -19,7 +19,7 @@ mod tests {
         },
         metadata::Metadata,
     };
-    use kageshirei_runtime::Runtime; // Import the Runtime trait
+    use kageshirei_runtime::Runtime as _; // Import the Runtime trait
 
     use crate::std_runtime::StdRuntime;
 
@@ -46,7 +46,7 @@ mod tests {
             let metadata = Metadata {
                 request_id: format!("req-{}", i),
                 command_id: format!("cmd-{}", i),
-                agent_id:   "agent-1234".to_string(),
+                agent_id:   "agent-1234".to_owned(),
                 path:       None,
             };
 
@@ -110,7 +110,7 @@ mod tests {
     pub fn task_type_a(metadata: Metadata) -> TaskOutput {
         let mut output = TaskOutput::new();
         output.with_metadata(metadata);
-        output.output = Some("Result from task type A".to_string());
+        output.output = Some("Result from task type A".to_owned());
         output
     }
 
@@ -119,7 +119,7 @@ mod tests {
         thread::sleep(Duration::from_secs(3)); // Simulate some work
         let mut output = TaskOutput::new();
         output.with_metadata(metadata);
-        output.output = Some("Result from task type B".to_string());
+        output.output = Some("Result from task type B".to_owned());
         output
     }
 }

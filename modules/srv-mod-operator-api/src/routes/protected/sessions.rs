@@ -1,18 +1,10 @@
-use std::collections::HashMap;
-
-use axum::{
-    debug_handler,
-    extract::{Query, State},
-    routing::get,
-    Json,
-    Router,
-};
+use axum::{debug_handler, extract::State, routing::get, Json, Router};
 use srv_mod_entity::{
     entities::agent,
     partial_models::agent::full_session_record::FullSessionRecord,
-    sea_orm::{prelude::*, QueryOrder},
+    sea_orm::{prelude::*, QueryOrder as _},
 };
-use tracing::{error, info, instrument};
+use tracing::{error, instrument};
 
 use crate::{claims::JwtClaims, errors::ApiServerError, state::ApiServerSharedState};
 

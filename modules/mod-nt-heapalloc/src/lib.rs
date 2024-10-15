@@ -168,23 +168,21 @@ unsafe impl Sync for NtHeapAlloc {}
 
 /// Handles out-of-memory situations by triggering a crash.
 #[no_mangle]
-unsafe fn rust_oom() -> ! {
-    asm!("ud2", options(noreturn));
-}
+unsafe fn rust_oom() -> ! { asm!("ud2", options(noreturn)) }
 
 impl NtHeapAlloc {
     /// Creates a new, uninitialized `NtHeapAlloc`.
-    pub const fn new_uninitialized() -> NtHeapAlloc { NtHeapAlloc(AtomicIsize::new(0)) }
+    pub const fn new_uninitialized() -> Self { Self(AtomicIsize::new(0)) }
 
     /// Retrieves the raw handle to the heap managed by this allocator.
     #[inline]
-    fn raw_handle(&self) -> HANDLE { self.0.load(Ordering::Relaxed) as _ }
+    fn raw_handle(&self) -> HANDLE { self.0.load(Ordering::Relaxed) as *mut core::ffi::c_void }
 
     /// Initializes the heap by calling `RtlCreateHeap` and storing the resulting handle.
     #[inline]
     pub fn initialize(&self) {
         let hh = unsafe { get_rtl_create_heap()(HEAP_GROWABLE, null_mut(), 0, 0, null_mut(), null_mut()) };
-        self.0.store(hh as _, Ordering::SeqCst);
+        self.0.store(hh as isize, Ordering::SeqCst);
     }
 
     /// Checks if the allocator has been initialized.
@@ -204,7 +202,7 @@ impl NtHeapAlloc {
     #[inline]
     pub unsafe fn destroy(&self) {
         if self.is_initialized() {
-            get_rtl_destroy_heap()(self.0.swap(0, Ordering::SeqCst) as _);
+            get_rtl_destroy_heap()(self.0.swap(0, Ordering::SeqCst) as *mut core::ffi::c_void);
         }
     }
 }

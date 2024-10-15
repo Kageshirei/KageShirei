@@ -41,7 +41,7 @@ async fn post_handler(
     info!("User {} refreshed token", current_user.username);
 
     Ok(Json(AuthenticatePostResponse {
-        access_token: "bearer".to_string(),
+        access_token: "bearer".to_owned(),
         expires_in: token_lifetime.num_seconds() as u64,
         token,
     }))

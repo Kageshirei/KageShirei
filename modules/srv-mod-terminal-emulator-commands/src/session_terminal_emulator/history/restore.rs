@@ -12,7 +12,7 @@ use tracing::{debug, instrument};
 use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionHistoryRestoreArguments {
     /// The list of command ids to restore
     pub command_ids: Vec<i64>,
@@ -55,7 +55,7 @@ pub async fn handle(
     // create a log entry and save it
     let log = logs::ActiveModel {
         level: Set(LogLevel::Info),
-        title: Set("Command(s) restored".to_string()),
+        title: Set("Command(s) restored".to_owned()),
         message: Set(Some(message.clone())),
         extra: Set(Some(json!({
             "session": config.session.hostname,

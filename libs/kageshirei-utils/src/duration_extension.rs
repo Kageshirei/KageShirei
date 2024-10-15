@@ -10,6 +10,6 @@ impl DurationExt for Duration {
         let millis = self.as_millis() + self.subsec_millis() as u128;
 
         // Convert the truncated nanoseconds back to a Duration
-        Duration::from_millis(millis as u64)
+        Self::from_millis(millis as u64)
     }
 }

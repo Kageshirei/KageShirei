@@ -77,7 +77,7 @@ impl RootConfig {
 
         Self::handle_loading_errors(config.validate())?;
 
-        Ok(Arc::new(RwLock::new(config.clone())))
+        Ok(Arc::new(RwLock::new(config)))
     }
 
     /// handle the loading errors if any, exiting if errors are found

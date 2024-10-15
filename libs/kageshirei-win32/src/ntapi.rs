@@ -44,9 +44,13 @@ pub struct NtSyscall {
 /// and does not perform any interior mutability, it is safe to implement Sync manually.
 unsafe impl Sync for NtSyscall {}
 
+impl Default for NtSyscall {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtSyscall {
     pub const fn new() -> Self {
-        NtSyscall {
+        Self {
             number:  0,
             address: null_mut(),
             hash:    0,
@@ -63,7 +67,7 @@ impl NtSyscall {
 /// # Returns
 ///
 /// A handle to the current process.
-pub fn nt_current_process() -> HANDLE { -1isize as HANDLE }
+pub const fn nt_current_process() -> HANDLE { -1isize as HANDLE }
 
 pub struct NtClose {
     pub syscall: NtSyscall,
@@ -71,9 +75,13 @@ pub struct NtClose {
 
 unsafe impl Sync for NtClose {}
 
+impl Default for NtClose {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtClose {
     pub const fn new() -> Self {
-        NtClose {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -100,9 +108,13 @@ pub struct NtAllocateVirtualMemory {
 
 unsafe impl Sync for NtAllocateVirtualMemory {}
 
+impl Default for NtAllocateVirtualMemory {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtAllocateVirtualMemory {
     pub const fn new() -> Self {
-        NtAllocateVirtualMemory {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -144,7 +156,7 @@ impl NtAllocateVirtualMemory {
             handle,
             base_address,
             zero_bits,
-            &mut (region_size as usize) as *mut usize,
+            &mut { region_size } as *mut usize,
             allocation_type,
             protect
         )
@@ -157,9 +169,13 @@ pub struct NtWriteVirtualMemory {
 
 unsafe impl Sync for NtWriteVirtualMemory {}
 
+impl Default for NtWriteVirtualMemory {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtWriteVirtualMemory {
     pub const fn new() -> Self {
-        NtWriteVirtualMemory {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -207,9 +223,13 @@ pub struct NtFreeVirtualMemory {
 
 unsafe impl Sync for NtFreeVirtualMemory {}
 
+impl Default for NtFreeVirtualMemory {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtFreeVirtualMemory {
     pub const fn new() -> Self {
-        NtFreeVirtualMemory {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -258,9 +278,13 @@ pub struct NtOpenKey {
 
 unsafe impl Sync for NtOpenKey {}
 
+impl Default for NtOpenKey {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtOpenKey {
     pub const fn new() -> Self {
-        NtOpenKey {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -302,9 +326,13 @@ pub struct NtQueryValueKey {
 
 unsafe impl Sync for NtQueryValueKey {}
 
+impl Default for NtQueryValueKey {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtQueryValueKey {
     pub const fn new() -> Self {
-        NtQueryValueKey {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -351,9 +379,13 @@ pub struct NtEnumerateKey {
 
 unsafe impl Sync for NtEnumerateKey {}
 
+impl Default for NtEnumerateKey {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtEnumerateKey {
     pub const fn new() -> Self {
-        NtEnumerateKey {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -400,9 +432,13 @@ pub struct NtQuerySystemInformation {
 
 unsafe impl Sync for NtQuerySystemInformation {}
 
+impl Default for NtQuerySystemInformation {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtQuerySystemInformation {
     pub const fn new() -> Self {
-        NtQuerySystemInformation {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -444,9 +480,13 @@ pub struct NtQueryInformationProcess {
 
 unsafe impl Sync for NtQueryInformationProcess {}
 
+impl Default for NtQueryInformationProcess {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtQueryInformationProcess {
     pub const fn new() -> Self {
-        NtQueryInformationProcess {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -491,9 +531,13 @@ pub struct NtOpenProcess {
 
 unsafe impl Sync for NtOpenProcess {}
 
+impl Default for NtOpenProcess {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtOpenProcess {
     pub const fn new() -> Self {
-        NtOpenProcess {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -534,9 +578,13 @@ pub struct NtOpenProcessToken {
 
 unsafe impl Sync for NtOpenProcessToken {}
 
+impl Default for NtOpenProcessToken {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtOpenProcessToken {
     pub const fn new() -> Self {
-        NtOpenProcessToken {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -569,9 +617,13 @@ pub struct NtOpenProcessTokenEx {
 
 unsafe impl Sync for NtOpenProcessTokenEx {}
 
+impl Default for NtOpenProcessTokenEx {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtOpenProcessTokenEx {
     pub const fn new() -> Self {
-        NtOpenProcessTokenEx {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -612,9 +664,13 @@ pub struct NtQueryInformationToken {
 
 unsafe impl Sync for NtQueryInformationToken {}
 
+impl Default for NtQueryInformationToken {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtQueryInformationToken {
     pub const fn new() -> Self {
-        NtQueryInformationToken {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -659,9 +715,13 @@ pub struct NtAdjustPrivilegesToken {
 
 unsafe impl Sync for NtAdjustPrivilegesToken {}
 
+impl Default for NtAdjustPrivilegesToken {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtAdjustPrivilegesToken {
     pub const fn new() -> Self {
-        NtAdjustPrivilegesToken {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -708,9 +768,13 @@ pub struct NtWaitForSingleObject {
 
 unsafe impl Sync for NtWaitForSingleObject {}
 
+impl Default for NtWaitForSingleObject {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtWaitForSingleObject {
     pub const fn new() -> Self {
-        NtWaitForSingleObject {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -743,9 +807,13 @@ pub struct NtOpenFile {
 
 unsafe impl Sync for NtOpenFile {}
 
+impl Default for NtOpenFile {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtOpenFile {
     pub const fn new() -> Self {
-        NtOpenFile {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -792,9 +860,13 @@ pub struct NtCreateEvent {
 
 unsafe impl Sync for NtCreateEvent {}
 
+impl Default for NtCreateEvent {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateEvent {
     pub const fn new() -> Self {
-        NtCreateEvent {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -842,9 +914,13 @@ pub struct NtWriteFile {
 
 unsafe impl Sync for NtWriteFile {}
 
+impl Default for NtWriteFile {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtWriteFile {
     pub const fn new() -> Self {
-        NtWriteFile {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -906,9 +982,13 @@ pub struct NtCreateFile {
 
 unsafe impl Sync for NtCreateFile {}
 
+impl Default for NtCreateFile {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateFile {
     pub const fn new() -> Self {
-        NtCreateFile {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -976,9 +1056,13 @@ pub struct NtReadFile {
 
 unsafe impl Sync for NtReadFile {}
 
+impl Default for NtReadFile {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtReadFile {
     pub const fn new() -> Self {
-        NtReadFile {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1040,9 +1124,13 @@ pub struct NtCreateProcessEx {
 
 unsafe impl Sync for NtCreateProcessEx {}
 
+impl Default for NtCreateProcessEx {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateProcessEx {
     pub const fn new() -> Self {
-        NtCreateProcessEx {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1098,9 +1186,13 @@ pub struct NtCreateThread {
 
 unsafe impl Sync for NtCreateThread {}
 
+impl Default for NtCreateThread {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateThread {
     pub const fn new() -> Self {
-        NtCreateThread {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1154,9 +1246,13 @@ pub struct NtCreateThreadEx {
 
 unsafe impl Sync for NtCreateThreadEx {}
 
+impl Default for NtCreateThreadEx {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateThreadEx {
     pub const fn new() -> Self {
-        NtCreateThreadEx {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1218,9 +1314,13 @@ pub struct ZwCreateThreadEx {
 
 unsafe impl Sync for ZwCreateThreadEx {}
 
+impl Default for ZwCreateThreadEx {
+    fn default() -> Self { Self::new() }
+}
+
 impl ZwCreateThreadEx {
     pub const fn new() -> Self {
-        ZwCreateThreadEx {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1283,9 +1383,13 @@ pub struct NtCreateUserProcess {
 
 unsafe impl Sync for NtCreateUserProcess {}
 
+impl Default for NtCreateUserProcess {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateUserProcess {
     pub const fn new() -> Self {
-        NtCreateUserProcess {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1347,9 +1451,13 @@ pub struct NtResumeThread {
 
 unsafe impl Sync for NtResumeThread {}
 
+impl Default for NtResumeThread {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtResumeThread {
     pub const fn new() -> Self {
-        NtResumeThread {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1382,9 +1490,13 @@ pub struct NtTerminateProcess {
 
 unsafe impl Sync for NtTerminateProcess {}
 
+impl Default for NtTerminateProcess {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtTerminateProcess {
     pub const fn new() -> Self {
-        NtTerminateProcess {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1417,9 +1529,13 @@ pub struct NtTerminateThread {
 
 unsafe impl Sync for NtTerminateThread {}
 
+impl Default for NtTerminateThread {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtTerminateThread {
     pub const fn new() -> Self {
-        NtTerminateThread {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1452,9 +1568,13 @@ pub struct NtDelayExecution {
 
 unsafe impl Sync for NtDelayExecution {}
 
+impl Default for NtDelayExecution {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtDelayExecution {
     pub const fn new() -> Self {
-        NtDelayExecution {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1487,9 +1607,13 @@ pub struct NtCreateNamedPipeFile {
 
 unsafe impl Sync for NtCreateNamedPipeFile {}
 
+impl Default for NtCreateNamedPipeFile {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateNamedPipeFile {
     pub const fn new() -> Self {
-        NtCreateNamedPipeFile {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1565,9 +1689,13 @@ pub struct NtReadVirtualMemory {
 
 unsafe impl Sync for NtReadVirtualMemory {}
 
+impl Default for NtReadVirtualMemory {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtReadVirtualMemory {
     pub const fn new() -> Self {
-        NtReadVirtualMemory {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1615,9 +1743,13 @@ pub struct NtCreateProcess {
 
 unsafe impl Sync for NtCreateProcess {}
 
+impl Default for NtCreateProcess {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtCreateProcess {
     pub const fn new() -> Self {
-        NtCreateProcess {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -1678,9 +1810,13 @@ pub struct NtQueryVirtualMemory {
 
 unsafe impl Sync for NtQueryVirtualMemory {}
 
+impl Default for NtQueryVirtualMemory {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtQueryVirtualMemory {
     pub const fn new() -> Self {
-        NtQueryVirtualMemory {
+        Self {
             syscall: NtSyscall::new(),
         }
     }
@@ -2016,9 +2152,13 @@ pub struct NtDll {
     pub nt_create_named_pipe_file:   NtCreateNamedPipeFile,
 }
 
+impl Default for NtDll {
+    fn default() -> Self { Self::new() }
+}
+
 impl NtDll {
     pub fn new() -> Self {
-        NtDll {
+        Self {
             module_base: null_mut(),
 
             // Direct Syscall

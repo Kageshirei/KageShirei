@@ -24,7 +24,7 @@ impl ThreadPool {
     /// # Returns
     ///
     /// * A new `ThreadPool` instance with the specified number of workers.
-    pub fn new(size: usize) -> ThreadPool {
+    pub fn new(size: usize) -> Self {
         assert!(size > 0); // Ensure the size of the pool is greater than 0.
 
         // Create a channel for sending jobs to workers. `sender` is used to send jobs,
@@ -39,7 +39,7 @@ impl ThreadPool {
         }
 
         // Return a new ThreadPool with the specified workers and sender channel.
-        ThreadPool {
+        Self {
             workers,
             sender: Some(sender),
         }
@@ -90,7 +90,7 @@ impl Worker {
     /// # Returns
     ///
     /// * A `Worker` instance wrapping the thread handle.
-    fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+    fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Self {
         let handle = thread::spawn(move || {
             loop {
                 // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the
@@ -108,7 +108,7 @@ impl Worker {
             }
         });
 
-        Worker {
+        Self {
             handle: Some(handle), // Store the thread handle for later joining.
         }
     }

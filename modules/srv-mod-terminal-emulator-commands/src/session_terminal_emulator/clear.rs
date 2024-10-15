@@ -5,14 +5,14 @@ use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_entity::{
     active_enums::LogLevel,
     entities::{logs, terminal_history},
-    sea_orm::{prelude::*, sea_query::SimpleExpr, ActiveValue::Set},
+    sea_orm::{prelude::*, ActiveValue::Set},
 };
 use tracing::{debug, instrument};
 
 use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionClearArguments {
     /// Delete the command permanently, removing it from the database.
     ///
@@ -34,8 +34,8 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         // clear commands marking them as deleted (soft delete)
         let pending_log = logs::ActiveModel {
             level: Set(LogLevel::Warning),
-            title: Set("Soft clean".to_string()),
-            message: Set(Some("Commands have been soft cleaned.".to_string())),
+            title: Set("Soft clean".to_owned()),
+            message: Set(Some("Commands have been soft cleaned.".to_owned())),
             extra: Set(Some(serde_json::json!({
                 "session": config.session.hostname,
                 "ran_by": config.user.username,
@@ -62,8 +62,8 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         // clear commands permanently
         let pending_log = logs::ActiveModel {
             level: Set(LogLevel::Warning),
-            title: Set("Permanent clean".to_string()),
-            message: Set(Some("Commands have been permanently cleaned.".to_string())),
+            title: Set("Permanent clean".to_owned()),
+            message: Set(Some("Commands have been permanently cleaned.".to_owned())),
             extra: Set(Some(serde_json::json!({
                 "session": config.session.hostname,
                 "ran_by": config.user.username,
@@ -92,7 +92,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         .map_err(|e| e.to_string())?;
 
     // Signal the frontend terminal emulator to clear the terminal screen
-    Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
+    Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_owned())
 }
 
 #[cfg(test)]

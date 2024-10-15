@@ -276,6 +276,10 @@ pub struct WinHttp {
     pub win_http_get_proxy_for_url: WinHttpGetProxyForUrlFunc,
 }
 
+impl Default for WinHttp {
+    fn default() -> Self { Self::new() }
+}
+
 impl WinHttp {
     /// Creates a new instance of `WinHttp` with all functions initialized to null.
     ///
@@ -285,7 +289,7 @@ impl WinHttp {
     /// # Returns
     /// A new `WinHttp` instance with uninitialized function pointers.
     pub fn new() -> Self {
-        WinHttp {
+        Self {
             win_http_open: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             win_http_connect: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             win_http_open_request: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
@@ -345,22 +349,22 @@ impl WinHttpError {
     ///
     /// # Returns
     /// * A `WinHttpError` corresponding to the error code.
-    pub fn from_code(code: i32) -> Self {
+    pub const fn from_code(code: i32) -> Self {
         match code {
-            12029 => WinHttpError::ErrorWinhttpCannotConnect,
-            12030 => WinHttpError::ErrorWinhttpConnectionError,
-            12019 => WinHttpError::ErrorWinhttpIncorrectHandleState,
-            12018 => WinHttpError::ErrorWinhttpIncorrectHandleType,
-            12004 => WinHttpError::ErrorWinhttpInternalError,
-            12009 => WinHttpError::ErrorWinhttpInvalidOption,
-            12011 => WinHttpError::ErrorWinhttpOptionNotSettable,
-            12012 => WinHttpError::ErrorWinhttpShutdown,
-            12002 => WinHttpError::ErrorWinhttpTimeout,
-            12006 => WinHttpError::ErrorWinhttpUnrecognizedScheme,
-            12017 => WinHttpError::ErrorWinhttpOperationCancelled,
-            12175 => WinHttpError::ErrorWinhttpSecureFailure,
-            12169 => WinHttpError::ErrorWinhttpSecureInvalidCert,
-            _ => WinHttpError::ErrorWinhttpUnknownError,
+            12029 => Self::ErrorWinhttpCannotConnect,
+            12030 => Self::ErrorWinhttpConnectionError,
+            12019 => Self::ErrorWinhttpIncorrectHandleState,
+            12018 => Self::ErrorWinhttpIncorrectHandleType,
+            12004 => Self::ErrorWinhttpInternalError,
+            12009 => Self::ErrorWinhttpInvalidOption,
+            12011 => Self::ErrorWinhttpOptionNotSettable,
+            12012 => Self::ErrorWinhttpShutdown,
+            12002 => Self::ErrorWinhttpTimeout,
+            12006 => Self::ErrorWinhttpUnrecognizedScheme,
+            12017 => Self::ErrorWinhttpOperationCancelled,
+            12175 => Self::ErrorWinhttpSecureFailure,
+            12169 => Self::ErrorWinhttpSecureInvalidCert,
+            _ => Self::ErrorWinhttpUnknownError,
         }
     }
 
@@ -368,28 +372,28 @@ impl WinHttpError {
     ///
     /// # Returns
     /// * The integer value of the error code.
-    pub fn code(&self) -> i32 { *self as i32 }
+    pub const fn code(&self) -> i32 { *self as i32 }
 }
 
 impl fmt::Display for WinHttpError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            WinHttpError::ErrorWinhttpCannotConnect => write!(f, "Cannot connect"),
-            WinHttpError::ErrorWinhttpConnectionError => write!(f, "Connection error"),
-            WinHttpError::ErrorWinhttpIncorrectHandleState => {
+            Self::ErrorWinhttpCannotConnect => write!(f, "Cannot connect"),
+            Self::ErrorWinhttpConnectionError => write!(f, "Connection error"),
+            Self::ErrorWinhttpIncorrectHandleState => {
                 write!(f, "Incorrect handle state")
             },
-            WinHttpError::ErrorWinhttpIncorrectHandleType => write!(f, "Incorrect handle type"),
-            WinHttpError::ErrorWinhttpInternalError => write!(f, "Internal error"),
-            WinHttpError::ErrorWinhttpInvalidOption => write!(f, "Invalid option"),
-            WinHttpError::ErrorWinhttpOptionNotSettable => write!(f, "Option not settable"),
-            WinHttpError::ErrorWinhttpShutdown => write!(f, "Shutdown error"),
-            WinHttpError::ErrorWinhttpTimeout => write!(f, "Operation timed out"),
-            WinHttpError::ErrorWinhttpUnrecognizedScheme => write!(f, "Unrecognized scheme"),
-            WinHttpError::ErrorWinhttpOperationCancelled => write!(f, "Operation cancelled"),
-            WinHttpError::ErrorWinhttpSecureFailure => write!(f, "Secure failure"),
-            WinHttpError::ErrorWinhttpSecureInvalidCert => write!(f, "Invalid SSL certificate"),
-            WinHttpError::ErrorWinhttpUnknownError => write!(f, "Unknown error"),
+            Self::ErrorWinhttpIncorrectHandleType => write!(f, "Incorrect handle type"),
+            Self::ErrorWinhttpInternalError => write!(f, "Internal error"),
+            Self::ErrorWinhttpInvalidOption => write!(f, "Invalid option"),
+            Self::ErrorWinhttpOptionNotSettable => write!(f, "Option not settable"),
+            Self::ErrorWinhttpShutdown => write!(f, "Shutdown error"),
+            Self::ErrorWinhttpTimeout => write!(f, "Operation timed out"),
+            Self::ErrorWinhttpUnrecognizedScheme => write!(f, "Unrecognized scheme"),
+            Self::ErrorWinhttpOperationCancelled => write!(f, "Operation cancelled"),
+            Self::ErrorWinhttpSecureFailure => write!(f, "Secure failure"),
+            Self::ErrorWinhttpSecureInvalidCert => write!(f, "Invalid SSL certificate"),
+            Self::ErrorWinhttpUnknownError => write!(f, "Unknown error"),
         }
     }
 }

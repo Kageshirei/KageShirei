@@ -3,7 +3,7 @@ use sea_orm_migration::{
     schema::*,
 };
 
-use crate::sea_orm::{DbBackend, EnumIter, Iterable, Schema};
+use crate::sea_orm::{EnumIter, Iterable as _};
 
 #[derive(DeriveIden)]
 struct AgentIntegrity;

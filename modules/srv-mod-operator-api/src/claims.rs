@@ -1,4 +1,4 @@
-use axum::{async_trait, extract::FromRequestParts, http::request::Parts, RequestPartsExt};
+use axum::{async_trait, extract::FromRequestParts, http::request::Parts, RequestPartsExt as _};
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
@@ -34,7 +34,7 @@ impl JwtClaims {
         Self {
             exp: (now + lifetime).timestamp() as u64,
             iat: now.timestamp() as u64,
-            iss: "kageshirei-api-server".to_string(),
+            iss: "kageshirei-api-server".to_owned(),
             nbf: now.timestamp() as u64,
             sub,
         }
@@ -69,7 +69,7 @@ where
         validation.leeway = 30; // 30 seconds leeway for clock skew
 
         // Decode the user data
-        let token_data = jsonwebtoken::decode::<JwtClaims>(
+        let token_data = jsonwebtoken::decode::<Self>(
             bearer.token(),
             &API_SERVER_JWT_KEYS.get().unwrap().decoding,
             &validation,

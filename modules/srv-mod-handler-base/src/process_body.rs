@@ -1,14 +1,12 @@
-use std::fmt::Debug;
-
 use axum::{
     body::{Body, Bytes},
     http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Response},
+    response::{IntoResponse as _, Response},
     Json,
 };
 use kageshirei_communication_protocol::{
     communication_structs::{
-        agent_commands::{AgentCommands, AgentCommands::Checkin},
+        agent_commands::AgentCommands,
         basic_agent_response::BasicAgentResponse,
         checkin::Checkin as CheckinStruct,
     },
@@ -16,14 +14,14 @@ use kageshirei_communication_protocol::{
     protocol::Protocol,
 };
 use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use kageshirei_utils::duration_extension::DurationExt;
+use kageshirei_utils::duration_extension::DurationExt as _;
 use mod_protocol_json::protocol::JsonProtocol;
 use serde::Deserialize;
 use srv_mod_config::handlers;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use tracing::{instrument, warn};
 
-use crate::{callback_handlers, state::HandlerSharedState};
+use crate::callback_handlers;
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
@@ -46,7 +44,7 @@ fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol, String> {
         return Ok(handlers::Protocol::Json);
     }
 
-    Err("Unknown protocol".to_string())
+    Err("Unknown protocol".to_owned())
 }
 
 /// Handle the command by executing it and returning the response if any
@@ -123,7 +121,7 @@ pub async fn process_body(
     }
 }
 
-fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> { JsonProtocol::<IdentEncryptor>::new("".to_string()) }
+fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> { JsonProtocol::<IdentEncryptor>::new("".to_owned()) }
 
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]

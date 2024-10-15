@@ -3,7 +3,7 @@ use chrono::Utc;
 use srv_mod_entity::{
     active_enums::{CommandStatus, LogLevel},
     entities::{agent, agent_command, logs},
-    sea_orm::{prelude::*, ActiveValue::Set, DatabaseConnection, QuerySelect},
+    sea_orm::{prelude::*, ActiveValue::Set, DatabaseConnection},
 };
 use tracing::instrument;
 
@@ -21,13 +21,13 @@ async fn get_agent_specs(cmd_request_id: &str, conn: &DatabaseConnection) -> Res
         .await
         .map_err(|e| format!("Failed to get agent specs: {}", e))?;
     if command_with_agent.is_none() {
-        return Err("Command not found".to_string());
+        return Err("Command not found".to_owned());
     }
     let command_with_agent = command_with_agent.unwrap();
 
     let agent = command_with_agent.1;
     if agent.is_none() {
-        return Err("Agent not found".to_string());
+        return Err("Agent not found".to_owned());
     }
     let agent = agent.unwrap();
 
@@ -45,9 +45,9 @@ pub async fn handle_terminate(db_pool: DatabaseConnection, cmd_request_id: Strin
 
     let log = logs::ActiveModel {
         level: Set(LogLevel::Warning),
-        title: Set("Agent terminated".to_string()),
+        title: Set("Agent terminated".to_owned()),
         message: Set(Some(
-            "Agent terminated in response to a `terminate` command request".to_string(),
+            "Agent terminated in response to a `terminate` command request".to_owned(),
         )),
         extra: Set(Some(serde_json::json!({
             "hostname": agent_specs.hostname,

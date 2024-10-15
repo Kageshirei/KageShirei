@@ -1,4 +1,4 @@
-use base64ct::Encoding;
+use base64ct::Encoding as _;
 use bytes::Bytes;
 
 use crate::encoder::Encoder;

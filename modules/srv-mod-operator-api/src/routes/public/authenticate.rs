@@ -1,4 +1,4 @@
-use axum::{debug_handler, extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
+use axum::{debug_handler, extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
     active_enums::LogLevel,
@@ -71,7 +71,7 @@ async fn post_handler(
     logs::ActiveModel {
         level: Set(LogLevel::Info),
         message: Set(Some(format!("User {} authenticated", usr.username))),
-        title: Set("User Authenticated".to_string()),
+        title: Set("User Authenticated".to_owned()),
         ..Default::default()
     }
     .insert(&db)
@@ -79,7 +79,7 @@ async fn post_handler(
     .map_err(|e| ApiServerError::InternalServerError)?;
 
     Ok(Json(AuthenticatePostResponse {
-        access_token: "bearer".to_string(),
+        access_token: "bearer".to_owned(),
         expires_in: token_lifetime.num_seconds() as u64,
         token,
     }))

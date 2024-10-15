@@ -1,18 +1,12 @@
 use axum::{
     body::{Body, Bytes},
     http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
+    response::{IntoResponse as _, Response},
 };
-use kageshirei_communication_protocol::{
-    communication_structs::{basic_agent_response::BasicAgentResponse, checkin::Checkin},
-    magic_numbers,
-    protocol::Protocol,
-};
+use kageshirei_communication_protocol::{communication_structs::checkin::Checkin, protocol::Protocol as _};
 use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use kageshirei_utils::duration_extension::DurationExt;
+use kageshirei_utils::duration_extension::DurationExt as _;
 use mod_protocol_json::protocol::JsonProtocol;
-use srv_mod_config::handlers;
 use srv_mod_entity::{entities::agent as agent_entity, sea_orm::DatabaseConnection};
 use tracing::{instrument, warn};
 
@@ -37,9 +31,8 @@ async fn persist(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> 
     let create_agent_instance = agent::prepare(data.unwrap());
 
     let db = db_pool.clone();
-    let agent = agent::create_or_update(create_agent_instance, &db).await;
 
-    agent
+    agent::create_or_update(create_agent_instance, &db).await
 }
 
 #[instrument]
@@ -67,7 +60,7 @@ fn process_json(body: Bytes) -> Result<Checkin, String> {
     let now = std::time::Instant::now();
 
     // initialize the protocol implementation
-    let protocol = JsonProtocol::<IdentEncryptor>::new("".to_string());
+    let protocol = JsonProtocol::<IdentEncryptor>::new("".to_owned());
 
     // try to read the body as a checkin struct
     let result = protocol.read::<Checkin>(body, None);

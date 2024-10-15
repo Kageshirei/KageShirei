@@ -26,14 +26,14 @@ pub enum ProtocolError {
 impl Display for ProtocolError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ProtocolError::DeserializationError => write!(f, "Error when trying to deserialize data."),
-            ProtocolError::SerializationError => write!(f, "Error when trying to serialize data."),
-            ProtocolError::SendingError => write!(f, "Error when trying to send data."),
-            ProtocolError::ReceivingError => write!(f, "Error when trying to receive data."),
-            ProtocolError::ConnectionError => write!(f, "Error when trying to connect to a server."),
-            ProtocolError::DisconnectionError => write!(f, "Error when trying to disconnect from a server."),
-            ProtocolError::MessageError => write!(f, "Error when trying to send a message to a server."),
-            ProtocolError::ReceiveMessageError => write!(f, "Error when trying to receive a message from a server."),
+            Self::DeserializationError => write!(f, "Error when trying to deserialize data."),
+            Self::SerializationError => write!(f, "Error when trying to serialize data."),
+            Self::SendingError => write!(f, "Error when trying to send data."),
+            Self::ReceivingError => write!(f, "Error when trying to receive data."),
+            Self::ConnectionError => write!(f, "Error when trying to connect to a server."),
+            Self::DisconnectionError => write!(f, "Error when trying to disconnect from a server."),
+            Self::MessageError => write!(f, "Error when trying to send a message to a server."),
+            Self::ReceiveMessageError => write!(f, "Error when trying to receive a message from a server."),
         }
     }
 }

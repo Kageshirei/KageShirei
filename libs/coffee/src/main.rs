@@ -117,7 +117,7 @@ fn main() -> Result<()> {
         .args
         .split(|arg| arg == "--")
         .flat_map(|args| args.iter())
-        .map(|arg| arg.clone())
+        .cloned()
         .collect();
 
     debug!("Arguments: {:?}", after_delimiter_args);

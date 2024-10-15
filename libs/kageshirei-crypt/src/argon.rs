@@ -1,4 +1,4 @@
-use argon2::{password_hash::SaltString, PasswordHash, PasswordHasher, PasswordVerifier};
+use argon2::{password_hash::SaltString, PasswordHash, PasswordHasher as _, PasswordVerifier as _};
 use bytes::Bytes;
 use rand::thread_rng;
 

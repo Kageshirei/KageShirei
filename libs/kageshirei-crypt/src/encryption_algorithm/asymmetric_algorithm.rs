@@ -4,9 +4,9 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{BufMut as _, Bytes, BytesMut};
 use hkdf::{hmac::SimpleHmac, Hkdf};
-use k256::{elliptic_curve::rand_core::RngCore, FieldBytes, PublicKey, SecretKey};
+use k256::{elliptic_curve::rand_core::RngCore as _, FieldBytes, PublicKey, SecretKey};
 use sha3::Sha3_512;
 
 use crate::{
@@ -38,6 +38,13 @@ const HKDF_SALT_SIZE: usize = 0x80;
 const KEY_ROTATION_THRESHOLD: u16 = 0x400;
 
 unsafe impl<T> Send for AsymmetricAlgorithm<T> {}
+
+impl<T> Default for AsymmetricAlgorithm<T>
+where
+    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+{
+    fn default() -> Self { Self::new() }
+}
 
 impl<T> AsymmetricAlgorithm<T>
 where
@@ -150,7 +157,7 @@ where
                 // Fill the new key with zeros
                 new_key.put_bytes(0, new_key.capacity());
                 // Copy the original key to the new key (overriding the zeros)
-                new_key.copy_from_slice(&key[..]);
+                new_key.copy_from_slice(&key);
 
                 // Freeze the new key
                 key = new_key.freeze();
@@ -163,7 +170,7 @@ where
 
         let field_bytes = FieldBytes::from_slice(key.get(..).unwrap());
 
-        let secret_key = Arc::new(SecretKey::from_bytes(&field_bytes).unwrap());
+        let secret_key = Arc::new(SecretKey::from_bytes(field_bytes).unwrap());
         let public_key = Arc::new(secret_key.public_key());
 
         Self {

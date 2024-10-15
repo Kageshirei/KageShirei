@@ -18,7 +18,7 @@ impl Encoder for HexEncoder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encoder::Encoder;
+    use crate::encoder::Encoder as _;
 
     #[test]
     fn test_encode() {

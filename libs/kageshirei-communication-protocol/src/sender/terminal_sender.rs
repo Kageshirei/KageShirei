@@ -9,9 +9,13 @@ pub struct TerminalSender {
     is_checkin: bool,
 }
 
+impl Default for TerminalSender {
+    fn default() -> Self { Self::new() }
+}
+
 impl TerminalSender {
-    pub fn new() -> Self {
-        TerminalSender {
+    pub const fn new() -> Self {
+        Self {
             is_checkin: false,
         }
     }

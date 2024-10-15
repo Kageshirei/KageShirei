@@ -50,11 +50,10 @@ pub fn validate_port(port: u16) -> Result<(), ValidationError> {
                         &mut elevation as *mut _ as *mut _,
                         length,
                         &mut length,
-                    ) != 0
+                    ) != 0 &&
+                        elevation.TokenIsElevated != 0
                     {
-                        if elevation.TokenIsElevated != 0 {
-                            return Ok(()); // User has administrative privileges
-                        }
+                        return Ok(()); // User has administrative privileges
                     }
                 }
 

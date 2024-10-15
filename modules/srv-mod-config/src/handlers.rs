@@ -93,9 +93,9 @@ pub enum Encoder {
 impl Display for Encoder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Encoder::Hex => write!(f, "hex"),
-            Encoder::Base32 => write!(f, "base32"),
-            Encoder::Base64 => write!(f, "base64"),
+            Self::Hex => write!(f, "hex"),
+            Self::Base32 => write!(f, "base32"),
+            Self::Base64 => write!(f, "base64"),
         }
     }
 }

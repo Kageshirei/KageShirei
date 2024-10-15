@@ -1,7 +1,7 @@
-use std::io::Write;
+use std::io::Write as _;
 
 // BeaconPack rust port from https://github.com/trustedsec/COFFLoader/blob/main/beacon_generate.py
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt as _};
 
 pub struct BeaconPack {
     pub buffer: Vec<u8>,
@@ -10,10 +10,14 @@ pub struct BeaconPack {
 
 /// BeaconPack is a struct that contains a buffer and size
 /// The buffer is used to store the data that will be sent to the BOF's arguments
+impl Default for BeaconPack {
+    fn default() -> Self { Self::new() }
+}
+
 impl BeaconPack {
     /// new returns a new BeaconPack
-    pub fn new() -> BeaconPack {
-        BeaconPack {
+    pub const fn new() -> Self {
+        Self {
             buffer: vec![],
             size:   0,
         }

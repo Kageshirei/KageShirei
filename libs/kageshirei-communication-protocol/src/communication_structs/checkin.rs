@@ -31,7 +31,7 @@ pub struct PartialCheckin {
 }
 
 /// The checkin struct used to check in the agent
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct Checkin {
     /// The OS name
     pub operative_system:   String,
@@ -85,7 +85,7 @@ impl WithMetadata for Checkin {
 }
 
 /// The checkin response struct
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 pub struct CheckinResponse {
     /// The unique identifier of the agent, required to poll for tasks
     pub id:               String,
@@ -106,22 +106,22 @@ mod tests {
     #[test]
     fn test_checkin() {
         let mut checkin = Checkin::new(PartialCheckin {
-            operative_system:   "Windows".to_string(),
-            hostname:           "DESKTOP-PC".to_string(),
-            domain:             "WORKGROUP".to_string(),
-            username:           "user".to_string(),
+            operative_system:   "Windows".to_owned(),
+            hostname:           "DESKTOP-PC".to_owned(),
+            domain:             "WORKGROUP".to_owned(),
+            username:           "user".to_owned(),
             network_interfaces: Vec::new(),
             process_id:         1234,
             parent_process_id:  5678,
-            process_name:       "agent.exe".to_string(),
+            process_name:       "agent.exe".to_owned(),
             integrity_level:    0,
-            cwd:                "C:\\Users\\Public\\kageshirei-agent.exe".to_string(),
+            cwd:                "C:\\Users\\Public\\kageshirei-agent.exe".to_owned(),
         });
 
         let metadata = Metadata {
-            request_id: "request_id".to_string(),
-            command_id: "command_id".to_string(),
-            agent_id:   "agent_id".to_string(),
+            request_id: "request_id".to_owned(),
+            command_id: "command_id".to_owned(),
+            agent_id:   "agent_id".to_owned(),
             path:       None,
         };
 

@@ -5,7 +5,7 @@ use axum::{
     response::{IntoResponse, Response},
     Form,
     Json,
-    RequestExt,
+    RequestExt as _,
 };
 
 /// Extracts the request body based on the content type of the request.

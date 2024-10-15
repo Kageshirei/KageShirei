@@ -1,18 +1,17 @@
-use clap::{Args, Subcommand};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use clap::Args;
+use serde::Serialize;
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_entity::{
     active_enums::LogLevel,
     entities::logs,
-    sea_orm::{ActiveModelTrait, ActiveValue::Set},
+    sea_orm::{ActiveModelTrait as _, ActiveValue::Set},
 };
 use tracing::{debug, instrument};
 
-use crate::{command_handler::CommandHandlerArguments, post_process_result::PostProcessResult};
+use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionMakeNotificationArguments {
     /// The level of the notification to send
     #[arg(short, long)]
@@ -55,7 +54,7 @@ pub async fn handle(
         })
         .map_err(|e| e.to_string())?;
 
-    Ok("Notification sent".to_string())
+    Ok("Notification sent".to_owned())
 }
 
 #[cfg(test)]

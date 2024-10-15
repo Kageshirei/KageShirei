@@ -1,9 +1,8 @@
 use clap::{Args, Subcommand};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde::Serialize;
 use srv_mod_entity::{
     entities::{terminal_history, user},
-    sea_orm::{prelude::*, sea_query::Alias, Condition, IntoIdentity, IntoSimpleExpr, Order, QueryOrder},
+    sea_orm::{prelude::*, Condition, Order, QueryOrder as _},
 };
 use tracing::{debug, instrument};
 
@@ -25,7 +24,7 @@ pub struct TerminalSessionHistoryArguments {
     pub command: Option<HistorySubcommands>,
 }
 
-#[derive(Subcommand, Debug, PartialEq, Serialize)]
+#[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
 pub enum HistorySubcommands {
     /// Restore a list of commands from the history
     #[serde(rename = "restore")]
@@ -74,7 +73,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
             .map_err(|e| e.to_string())?;
 
         Ok(serde_json::to_string(&PostProcessResult {
-            r#type: "history".to_string(),
+            r#type: "history".to_owned(),
             data:   history,
         })
         .map_err(|e| e.to_string())?)

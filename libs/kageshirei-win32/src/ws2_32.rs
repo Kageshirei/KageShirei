@@ -1,4 +1,4 @@
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 pub type SOCKET = usize;
 // Data structures for Winsock
 #[repr(C)]
@@ -43,7 +43,7 @@ pub struct AddrInfo {
     pub ai_next:      *mut AddrInfo,
 }
 
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct FD_SET {
@@ -51,7 +51,7 @@ pub struct FD_SET {
     pub fd_array: [SOCKET; 64],
 }
 
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct TIMEVAL {
@@ -105,10 +105,14 @@ pub struct Winsock {
     pub wsa_get_last_error: WSAGetLastError,
 }
 
+impl Default for Winsock {
+    fn default() -> Self { Self::new() }
+}
+
 impl Winsock {
     // Function to initialize the Winsock structure with null values
     pub fn new() -> Self {
-        Winsock {
+        Self {
             wsa_startup:        unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             wsa_cleanup:        unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
             socket:             unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },

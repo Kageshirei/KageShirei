@@ -4,7 +4,7 @@ use crate::{
     extension::postgres::Type,
     m20241012_041618_create_agents_table::AgentFieldVariants,
     m20241012_070459_create_agent_profiles_table::AgentProfile,
-    sea_orm::{EnumIter, Iterable},
+    sea_orm::{EnumIter, Iterable as _},
 };
 
 #[derive(DeriveIden)]

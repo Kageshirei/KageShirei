@@ -9,7 +9,7 @@ use alloc::vec::Vec;
 /// # Returns
 ///
 /// The hash of the buffer as a `u32`.
-pub fn dbj2_hash(buffer: &[u8]) -> u32 {
+pub const fn dbj2_hash(buffer: &[u8]) -> u32 {
     let mut hsh: u32 = 5381;
     let mut iter: usize = 0;
     let mut cur: u8;
@@ -20,7 +20,7 @@ pub fn dbj2_hash(buffer: &[u8]) -> u32 {
             iter += 1;
             continue;
         }
-        if cur >= ('a' as u8) {
+        if cur >= b'a' {
             cur -= 0x20;
         }
         hsh = ((hsh << 5).wrapping_add(hsh)) + cur as u32;

@@ -7,7 +7,7 @@ use axum::{
     routing::get,
     Router,
 };
-use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tokio_stream::{wrappers::BroadcastStream, StreamExt as _};
 use tracing::instrument;
 
 use crate::{claims::JwtClaims, state::ApiServerSharedState};

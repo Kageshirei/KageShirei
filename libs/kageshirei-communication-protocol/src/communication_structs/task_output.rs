@@ -19,10 +19,14 @@ pub struct TaskOutput {
     pub metadata:   Option<Arc<Metadata>>, // Optional metadata associated with the task
 }
 
+impl Default for TaskOutput {
+    fn default() -> Self { Self::new() }
+}
+
 impl TaskOutput {
     // Constructor for TaskOutput that initializes all fields to None.
-    pub fn new() -> Self {
-        TaskOutput {
+    pub const fn new() -> Self {
+        Self {
             output:     None,
             started_at: None,
             ended_at:   None,

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{BufMut as _, Bytes, BytesMut};
 use chacha20poly1305::{
-    aead::{Aead, Payload},
-    AeadCore,
+    aead::{Aead as _, Payload},
+    AeadCore as _,
     Key,
-    KeyInit,
+    KeyInit as _,
     XChaCha20Poly1305,
     XNonce,
 };
@@ -118,7 +118,7 @@ impl From<Bytes> for XChaCha20Poly1305Algorithm {
                 // Fill the new key with zeros
                 new_key.put_bytes(0, new_key.capacity());
                 // Copy the original key to the new key (overriding the zeros)
-                new_key.copy_from_slice(&key[..]);
+                new_key.copy_from_slice(&key);
 
                 // Freeze the new key
                 key = new_key.freeze();

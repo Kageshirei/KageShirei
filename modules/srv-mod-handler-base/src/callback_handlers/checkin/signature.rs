@@ -1,8 +1,8 @@
 use bytes::Bytes;
 use kageshirei_communication_protocol::communication_structs::checkin::Checkin;
 use kageshirei_crypt::{
-    encoder::{base64::Base64Encoder, Encoder},
-    sha3::{Digest, Sha3_512},
+    encoder::{base64::Base64Encoder, Encoder as _},
+    sha3::{Digest as _, Sha3_512},
 };
 
 /// Compute the signature of a checkin instance

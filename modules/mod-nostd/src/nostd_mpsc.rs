@@ -57,7 +57,7 @@ impl<T> Clone for Sender<T> {
     /// # Returns
     /// * `Sender<T>` - A new `Sender` instance that shares access to the same channel.
     fn clone(&self) -> Self {
-        Sender {
+        Self {
             channel: Arc::clone(&self.channel),
         }
     }
@@ -70,7 +70,7 @@ impl<T> Clone for Receiver<T> {
     /// # Returns
     /// * `Receiver<T>` - A new `Receiver` instance that shares access to the same channel.
     fn clone(&self) -> Self {
-        Receiver {
+        Self {
             channel: Arc::clone(&self.channel),
         }
     }
@@ -95,7 +95,9 @@ impl<T> Sender<T> {
                 }
             }
             // If the buffer is full, wait until space becomes available
-            while !self.channel.space_available.load(Ordering::Acquire) {}
+            while !self.channel.space_available.load(Ordering::Acquire) {
+                core::hint::spin_loop()
+            }
         }
     }
 }

@@ -60,9 +60,13 @@ pub struct Kernel32 {
     pub get_console_window: GetConsoleWindow,
 }
 
+impl Default for Kernel32 {
+    fn default() -> Self { Self::new() }
+}
+
 impl Kernel32 {
     pub fn new() -> Self {
-        Kernel32 {
+        Self {
             module_base:        null_mut(),
             create_pipe:        unsafe { core::mem::transmute(null_mut::<c_void>()) },
             write_file:         unsafe { core::mem::transmute(null_mut::<c_void>()) },

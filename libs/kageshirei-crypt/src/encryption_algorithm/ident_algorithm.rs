@@ -34,7 +34,7 @@ impl From<Bytes> for IdentEncryptor {
 }
 
 impl EncryptionAlgorithm for IdentEncryptor {
-    fn encrypt(&mut self, data: Bytes) -> Result<Bytes, String> { Ok(data.clone()) }
+    fn encrypt(&mut self, data: Bytes) -> Result<Bytes, String> { Ok(data) }
 
     fn decrypt(&self, data: Bytes, _key: Option<Bytes>) -> Result<Bytes, String> { Ok(data) }
 

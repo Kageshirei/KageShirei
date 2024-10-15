@@ -35,7 +35,7 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
     {
         let high = address.add(5).read() as u16;
         let low = address.add(4).read() as u16;
-        return ((high << 8) | low) as u16;
+        return (high << 8) | low;
         // return ((high.overflowing_shl(8).0) | low) as u16;
     }
 
@@ -112,5 +112,5 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
         }
     }
 
-    return 0;
+    0
 }

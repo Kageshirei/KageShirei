@@ -47,18 +47,18 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
             format!(
                 "Validation error in field '{}': Value '{}' out of the defined range of {}-{}",
                 field,
-                error.params.get("value").unwrap(),
+                &error.params["value"],
                 error.params.get("min").unwrap_or(
                     error
                         .params
                         .get("exclusive_min")
-                        .unwrap_or(&serde_json::Value::String("(Unspecified)".to_string()))
+                        .unwrap_or(&serde_json::Value::String("(Unspecified)".to_owned()))
                 ),
                 error.params.get("max").unwrap_or(
                     error
                         .params
                         .get("exclusive_max")
-                        .unwrap_or(&serde_json::Value::String("(Unspecified)".to_string()))
+                        .unwrap_or(&serde_json::Value::String("(Unspecified)".to_owned()))
                 ),
             )
         },
@@ -71,7 +71,7 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                     error
                         .params
                         .get("value")
-                        .unwrap_or(&serde_json::Value::String("Not found".to_string()))
+                        .unwrap_or(&serde_json::Value::String("Not found".to_owned()))
                         .as_str()
                         .unwrap(),
                 )
@@ -85,10 +85,10 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
             let mut message = String::new();
 
             if has_min && !has_max {
-                let value = error.params.get("value").unwrap();
+                let value = &error.params["value"];
                 message.push_str(&format!(
                     "A minimum length of {} is required, {} given",
-                    error.params.get("min").unwrap(),
+                    &error.params["min"],
                     if value.is_array() {
                         value.as_array().unwrap().len()
                     }
@@ -98,10 +98,10 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                 ));
             }
             else if !has_min && has_max {
-                let value = error.params.get("value").unwrap();
+                let value = &error.params["value"];
                 message.push_str(&format!(
                     "A maximum length of {} is required, {} given",
-                    error.params.get("max").unwrap(),
+                    &error.params["max"],
                     if value.is_array() {
                         value.as_array().unwrap().len()
                     }
@@ -111,10 +111,10 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                 ));
             }
             else if has_equal {
-                let value = error.params.get("value").unwrap();
+                let value = &error.params["value"];
                 message.push_str(&format!(
                     "An exact length of {} is required, {} given",
-                    error.params.get("equal").unwrap(),
+                    &error.params["equal"],
                     if value.is_array() {
                         value.as_array().unwrap().len()
                     }
@@ -124,11 +124,11 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                 ));
             }
             else {
-                let value = error.params.get("value").unwrap();
+                let value = &error.params["value"];
                 message.push_str(&format!(
                     "A length between {} and {} is required, {} given",
-                    error.params.get("min").unwrap(),
-                    error.params.get("max").unwrap(),
+                    &error.params["min"],
+                    &error.params["max"],
                     if value.is_array() {
                         value.as_array().unwrap().len()
                     }

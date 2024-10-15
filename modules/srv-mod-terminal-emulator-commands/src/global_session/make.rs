@@ -1,12 +1,10 @@
 use clap::{Args, Subcommand};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde::Serialize;
 use tracing::{debug, instrument};
 
 use crate::{
     command_handler::CommandHandlerArguments,
     global_session::make::notification::TerminalSessionMakeNotificationArguments,
-    post_process_result::PostProcessResult,
 };
 
 mod notification;
@@ -18,7 +16,7 @@ pub struct TerminalSessionMakeArguments {
     pub command: MakeSubcommands,
 }
 
-#[derive(Subcommand, Debug, PartialEq, Serialize)]
+#[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
 pub enum MakeSubcommands {
     /// Make a new notification and broadcast it to all connected clients
     #[serde(rename = "notification")]

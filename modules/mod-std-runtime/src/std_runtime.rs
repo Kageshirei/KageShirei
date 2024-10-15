@@ -26,7 +26,7 @@ impl StdRuntime {
     ///
     /// * A `CustomRuntime` instance wrapping the custom thread pool.
     pub fn new(size: usize) -> Self {
-        StdRuntime {
+        Self {
             pool: Arc::new(Mutex::new(ThreadPool::new(size))),
         }
     }

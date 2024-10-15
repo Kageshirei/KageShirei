@@ -3,7 +3,7 @@ use sea_orm_migration::{prelude::*, schema::*};
 use crate::{
     extension::postgres::Type,
     m20241012_041618_create_agents_table::Agent,
-    sea_orm::{EnumIter, Iterable},
+    sea_orm::{EnumIter, Iterable as _},
 };
 
 #[derive(DeriveIden)]

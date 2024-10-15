@@ -79,7 +79,7 @@ impl MigrationTrait for Migration {
         // sequence_counter for the session_id
 
         db.execute_unprepared(
-            r#"
+            "
             create or replace function set_terminal_history_sequence_counter()
                 returns trigger as
             $$
@@ -98,18 +98,18 @@ impl MigrationTrait for Migration {
                 return new;
             end;
             $$ language plpgsql;
-            "#,
+            ",
         )
         .await?;
 
         db.execute_unprepared(
-            r#"
+            "
             create trigger before_insert_terminal_history
                 before insert
                 on terminal_history
                 for each row
             execute function set_terminal_history_sequence_counter();
-            "#,
+            ",
         )
         .await?;
 
@@ -120,16 +120,16 @@ impl MigrationTrait for Migration {
         let db = manager.get_connection();
 
         db.execute_unprepared(
-            r#"
+            "
             drop trigger before_insert_terminal_history on terminal_history;
-            "#,
+            ",
         )
         .await?;
 
         db.execute_unprepared(
-            r#"
+            "
             drop function set_terminal_history_sequence_counter;
-            "#,
+            ",
         )
         .await?;
 

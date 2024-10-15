@@ -9,7 +9,7 @@ use tracing::{debug, instrument};
 use crate::{command_handler::CommandHandlerArguments, post_process_result::PostProcessResult};
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct GlobalSessionTerminalSessionsArguments {
     /// List of session hostnames to open terminal sessions for
     pub ids: Option<Vec<String>>,
@@ -80,7 +80,7 @@ pub async fn handle(
 
         let results = agents
             .into_iter()
-            .map(|record| SessionOpeningRecord::from(record))
+            .map(SessionOpeningRecord::from)
             .collect::<Vec<_>>();
 
         return Ok(format!(
@@ -96,11 +96,11 @@ pub async fn handle(
         .map_err(|e| e.to_string())?;
 
     // Serialize the result
-    Ok(serde_json::to_string(&PostProcessResult {
-        r#type: "sessions".to_string(),
+    serde_json::to_string(&PostProcessResult {
+        r#type: "sessions".to_owned(),
         data:   result,
     })
-    .map_err(|e| e.to_string())?)
+    .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

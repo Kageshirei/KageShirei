@@ -1,4 +1,4 @@
-use std::{error::Error, ffi::c_void, intrinsics, ops::Add};
+use std::{error::Error, ffi::c_void, intrinsics, ops::Add as _};
 
 use goblin::pe::{
     header::{COFF_MACHINE_X86, COFF_MACHINE_X86_64},
@@ -59,10 +59,10 @@ struct MappedFunctions {
 impl MappedFunctions {
     /// new returns a new MappedFunctions struct.
     fn new() -> *mut Self {
-        let function = unsafe {
+        (unsafe {
             let allocation = VirtualAlloc(
                 None,
-                core::mem::size_of::<MappedFunctions>(),
+                size_of::<Self>(),
                 MEM_COMMIT | MEM_RESERVE | VIRTUAL_ALLOCATION_TYPE(MEM_TOP_DOWN),
                 PAGE_EXECUTE_READWRITE,
             );
@@ -73,11 +73,9 @@ impl MappedFunctions {
                 panic!("Failed to allocate function");
             }
 
-            std::ptr::write_bytes(allocation, 0, core::mem::size_of::<MappedFunctions>());
-            &mut *(allocation as *mut MappedFunctions)
-        };
-
-        function
+            std::ptr::write_bytes(allocation, 0, size_of::<Self>());
+            &mut *(allocation as *mut Self)
+        }) as _
     }
 
     /// push pushes a mapped function to the list.
@@ -279,7 +277,7 @@ impl<'a> Coffee<'a> {
 
         let mapped_func_entry = MappedFunction {
             address: symbol_address,
-            name:    polished_import_name.unwrap().to_string(),
+            name:    polished_import_name.unwrap().to_owned(),
         };
 
         if unsafe { FUNCTION_MAPPING.is_none() } {
@@ -336,10 +334,12 @@ impl<'a> Coffee<'a> {
             }
 
             // Push the section base to the section mapping
-            unsafe { SECTION_MAPPING.push(section_base as usize) };
+            unsafe {
+                SECTION_MAPPING.push(section_base as usize);
+            }
 
             // Copy the sections into the allocated memory if it is initialized otherwise set the memory to 0
-            if !(section.pointer_to_raw_data == 0) {
+            if section.pointer_to_raw_data != 0 {
                 info!(
                     "Copying memory for section: {}, base: {:#x}, size: {:#x}",
                     section.name()?,
@@ -404,10 +404,7 @@ impl<'a> Coffee<'a> {
                             }
                             else if symbol.section_number == 0 {
                                 import_address_ptr = self.get_import_from_symbol(symbol)?;
-                                debug!(
-                                    "Symbol import address ptr: 0x{:X}",
-                                    import_address_ptr as usize
-                                );
+                                debug!("Symbol import address ptr: 0x{:X}", { import_address_ptr });
                             }
 
                             // Get the target section base that is the section mapping with the symbol section number -
@@ -737,7 +734,7 @@ impl<'a> Coffee<'a> {
                 entrypoint_name.as_ref().unwrap().to_string()
             }
             else {
-                "go".to_string()
+                "go".to_owned()
             };
 
             // _go for 32-bit for whatever reason?
@@ -751,8 +748,8 @@ impl<'a> Coffee<'a> {
                     std::mem::transmute::<usize, fn(*const u8, usize)>(entry_point)(
                         arguments.unwrap_or(std::ptr::null()),
                         argument_size.unwrap_or(0),
-                    )
-                };
+                    );
+                }
 
                 // Break after executing so we don't run .pdata or any other section with relocations
                 break;

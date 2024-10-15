@@ -9,9 +9,9 @@ use axum::{
 };
 use srv_mod_entity::{
     entities::logs,
-    sea_orm::{prelude::*, QueryOrder},
+    sea_orm::{prelude::*, QueryOrder as _},
 };
-use tracing::{error, info, instrument};
+use tracing::{error, instrument};
 
 use crate::{claims::JwtClaims, errors::ApiServerError, state::ApiServerSharedState};
 

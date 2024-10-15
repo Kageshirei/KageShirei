@@ -99,7 +99,7 @@ impl NoStdThread {
         }
 
         // Return the NoStdThread instance with the created thread's handle.
-        NoStdThread {
+        Self {
             thread_handle,
         }
     }

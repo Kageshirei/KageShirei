@@ -4,15 +4,15 @@ use std::{iter::once, sync::Arc, time::Duration};
 
 use axum::{
     extract::{DefaultBodyLimit, Host, MatchedPath},
-    handler::HandlerWithoutStateExt,
-    http::{header::AUTHORIZATION, Method, Request, StatusCode, Uri},
+    handler::HandlerWithoutStateExt as _,
+    http::{header::AUTHORIZATION, Request, StatusCode, Uri},
     response::{Redirect, Response},
     routing::post,
     Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
 use jwt_keys::{Keys, API_SERVER_JWT_KEYS};
-use kageshirei_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
+use kageshirei_utils::{duration_extension::DurationExt as _, unrecoverable_error::unrecoverable_error};
 use srv_mod_config::SharedConfig;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use state::ApiServerSharedState;
@@ -20,13 +20,12 @@ use tokio::select;
 use tokio_util::sync::CancellationToken;
 use tower_http::{
     catch_panic::CatchPanicLayer,
-    compression::{predicate::NotForContentType, CompressionLayer, DefaultPredicate, Predicate},
-    cors::{Any, Cors, CorsLayer},
+    compression::{predicate::NotForContentType, CompressionLayer, DefaultPredicate, Predicate as _},
+    cors::CorsLayer,
     limit::RequestBodyLimitLayer,
     normalize_path::NormalizePathLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::TraceLayer,
-    validate_request::ValidateRequestHeaderLayer,
 };
 use tracing::{debug, error, info, info_span, warn, Span};
 
@@ -71,16 +70,11 @@ pub async fn start(
             // add log tracing
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
-                    let matched_path = if let Some(path) = request
+                    let matched_path = request
                         .extensions()
                         .get::<MatchedPath>()
                         .map(MatchedPath::as_str)
-                    {
-                        path
-                    }
-                    else {
-                        "None"
-                    };
+                        .unwrap_or("None");
 
                     info_span!(
                         "http_request",

@@ -49,7 +49,7 @@ impl Encoder for Base32Encoder {
             let value = match byte {
                 b'a' ..= b'z' => byte - b'a',
                 b'2' ..= b'7' => byte - b'2' + 26,
-                _ => return Err("Invalid character in input".to_string()),
+                _ => return Err("Invalid character in input".to_owned()),
             } as u32;
 
             bits = (bits << 5) | value;
@@ -68,7 +68,7 @@ impl Encoder for Base32Encoder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encoder::Encoder;
+    use crate::encoder::Encoder as _;
 
     #[test]
     fn test_encode() {

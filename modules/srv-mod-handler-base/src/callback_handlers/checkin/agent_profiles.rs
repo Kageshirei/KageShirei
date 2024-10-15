@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use chrono::{DateTime, NaiveTime, Timelike};
+use chrono::{DateTime, NaiveTime, Timelike as _};
 use kageshirei_communication_protocol::communication_structs::checkin::CheckinResponse;
 use srv_mod_entity::{
     active_enums::{FilterOperation, LogicalOperator},
     entities::{agent, agent_profile, filter},
-    sea_orm::{prelude::*, sqlx::types::time::UtcOffset, DatabaseConnection, QueryOrder},
+    sea_orm::{prelude::*, DatabaseConnection, QueryOrder as _},
 };
 
 struct GroupEvaluationResult {
@@ -129,11 +129,11 @@ fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usiz
     }
 
     // if the group ends, return the result
-    return GroupEvaluationResult {
+    GroupEvaluationResult {
         result:   result.unwrap_or(false),
         next_hop: None,
         hops:     filters.len() - original_index,
-    };
+    }
 }
 
 fn seconds_since_midnight(time: &NaiveTime) -> i64 { (time.hour() * 3600 + time.minute() * 60 + time.second()) as i64 }
@@ -195,13 +195,13 @@ pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) ->
     }
 
     // fallback return type if none of the filters match
-    return CheckinResponse {
+    CheckinResponse {
         id:               agent.id.clone(),
         working_hours:    None,
         kill_date:        None,
         polling_jitter:   10_000, // 10 seconds of jitter (polling range from 20 to 40 seconds)
         polling_interval: 30_000, // 30 seconds of polling interval
-    };
+    }
 }
 
 #[cfg(test)]

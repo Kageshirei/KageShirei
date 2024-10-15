@@ -23,8 +23,8 @@ impl NetworkInterface {
     ///
     /// # Returns
     /// A new instance of `NetworkInterface`.
-    pub fn new(name: Option<String>, address: Option<String>, dhcp_server: Option<String>) -> Self {
-        NetworkInterface {
+    pub const fn new(name: Option<String>, address: Option<String>, dhcp_server: Option<String>) -> Self {
+        Self {
             name,
             address,
             dhcp_server,
@@ -38,10 +38,10 @@ impl NetworkInterface {
     ///
     /// # Returns
     /// A Vec of `NetworkInterface` instances created from the input data.
-    pub fn from_tuples(data: Vec<(String, String, String)>) -> Vec<NetworkInterface> {
+    pub fn from_tuples(data: Vec<(String, String, String)>) -> Vec<Self> {
         data.into_iter()
             .map(|(name, address, dhcp_server)| {
-                NetworkInterface {
+                Self {
                     name:        Some(name),
                     address:     Some(address),
                     dhcp_server: Some(dhcp_server),

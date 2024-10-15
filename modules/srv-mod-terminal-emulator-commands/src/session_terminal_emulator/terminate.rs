@@ -1,9 +1,7 @@
-use clap::Args;
 use kageshirei_communication_protocol::{
     communication_structs::{agent_commands::AgentCommands, simple_agent_command::SimpleAgentCommand},
     metadata::Metadata,
 };
-use serde::Serialize;
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_entity::{
     active_enums::LogLevel,
@@ -23,8 +21,8 @@ pub async fn handle(config: CommandHandlerArguments) -> Result<String, String> {
 
     let pending_log = logs::ActiveModel {
         level: Set(LogLevel::Warning),
-        title: Set("Terminate issued".to_string()),
-        message: Set(Some("Agent termination requested".to_string())),
+        title: Set("Terminate issued".to_owned()),
+        message: Set(Some("Agent termination requested".to_owned())),
         extra: Set(Some(serde_json::json!({
             "session": config.session.hostname,
             "ran_by": config.user.username,
@@ -64,7 +62,7 @@ pub async fn handle(config: CommandHandlerArguments) -> Result<String, String> {
         .map_err(|e| e.to_string())?;
 
     // Signal the frontend terminal emulator to clear the terminal screen
-    Ok("Command issued successfully".to_string())
+    Ok("Command issued successfully".to_owned())
 }
 
 #[cfg(test)]

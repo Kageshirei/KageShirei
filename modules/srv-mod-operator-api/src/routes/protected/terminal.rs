@@ -1,9 +1,9 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use axum::{
     debug_handler,
     extract::{Query, State},
-    response::{IntoResponse, Response},
+    response::Response,
     routing::post,
     Json,
     Router,
@@ -12,12 +12,10 @@ use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
     entities::{agent, terminal_history, user},
     partial_models::terminal_history::full_history_record::FullHistoryRecord,
-    sea_orm::{prelude::*, ActiveValue::Set, Condition, QueryOrder, QuerySelect},
+    sea_orm::{prelude::*, ActiveValue::Set, Condition, QueryOrder as _, QuerySelect as _},
 };
 use srv_mod_terminal_emulator_commands::{
-    command_handler::{CommandHandler, HandleArguments, HandleArgumentsSession, HandleArgumentsUser},
-    global_session::GlobalSessionTerminalEmulatorCommands,
-    session_terminal_emulator::SessionTerminalEmulatorCommands,
+    command_handler::{CommandHandler as _, HandleArguments, HandleArgumentsSession, HandleArgumentsUser},
     Command,
     StyledStr,
 };
@@ -28,7 +26,6 @@ use crate::{
     claims::JwtClaims,
     errors::ApiServerError,
     request_body_from_content_type::InferBody,
-    routes::public::authenticate::AuthenticatePostResponse,
     state::ApiServerSharedState,
 };
 
@@ -71,7 +68,7 @@ fn update_command_state(
             // If the update fails, sleep for 200ms before retrying.
             let result = terminal_history::Entity::update_many()
                 .set(terminal_history::ActiveModel {
-                    output: Set(Some(movable_response.to_string())),
+                    output: Set(Some(movable_response.to_owned())),
                     exit_code: Set(Some(exit_code)),
                     ..Default::default()
                 })
@@ -142,7 +139,7 @@ async fn get_current_username(
 /// The hostname of the current session
 async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -> Result<String, Response> {
     if session_id == "global" {
-        Ok("kageshirei".to_string())
+        Ok("kageshirei".to_owned())
     }
     else {
         let agent = agent::Entity::find()
@@ -172,7 +169,7 @@ async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -
 async fn post_handler(
     State(state): State<ApiServerSharedState>,
     jwt_claims: JwtClaims,
-    InferBody(mut body): InferBody<TerminalCommand>,
+    InferBody(body): InferBody<TerminalCommand>,
 ) -> Result<Json<TerminalCommandResponse>, Response> {
     info!("Received terminal command");
 
@@ -181,7 +178,7 @@ async fn post_handler(
     let state = Arc::new(state);
 
     // Ensure the session_id is not empty
-    let session_id = body.session_id.unwrap_or("global".to_string());
+    let session_id = body.session_id.unwrap_or("global".to_owned());
 
     // clone the session_id and command to be able to move them into the spawned thread
     let mut storable_command = terminal_history::ActiveModel {
@@ -341,7 +338,7 @@ async fn get_handler(
 ) -> Result<Json<Vec<FullHistoryRecord>>, ApiServerError> {
     let db = state.db_pool.clone();
 
-    let fallback_session_id = "global".to_string();
+    let fallback_session_id = "global".to_owned();
     let session_id_v = params.get("session_id").unwrap_or(&fallback_session_id);
 
     let mut page = params
