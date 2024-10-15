@@ -7,3 +7,6 @@ edition = "2021"
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 kageshirei-runtime = { path = "../../libs/kageshirei-runtime" }
 serde = { version = "1.0", features = ["derive", "rc"] }
+
+[lints]
+workspace = true

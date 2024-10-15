@@ -15,3 +15,6 @@ duration-extension = []
 unrecoverable-error = []
 unwrap-infallible = []
 print-validation-error = ["dep:log", "dep:validator", "dep:serde_json"]
+
+[lints]
+workspace = true

@@ -1,0 +1,8 @@
+msrv="1.83.0"
+absolute-paths-max-segments=3
+cargo-ignore-publish=true
+allow-dbg-in-tests=true
+allow-expect-in-tests=true
+allowed-duplicate-crates=[]
+allow-panic-in-tests=true
+allow-print-in-tests=true

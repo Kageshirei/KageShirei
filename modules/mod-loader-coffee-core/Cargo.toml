@@ -45,3 +45,6 @@ tracing = { version = "0.1.40", optional = true }
 [features]
 default = []
 tracing = ["dep:tracing"]
+
+[lints]
+workspace = true

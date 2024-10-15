@@ -18,3 +18,6 @@ srv-mod-entity = { path = "../srv-mod-entity" }
 
 [dev-dependencies]
 serial_test = "3.1.1"
+
+[lints]
+workspace = true

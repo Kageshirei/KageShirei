@@ -14,3 +14,6 @@ serde_json = { version = "1.0.128", optional = true }
 [features]
 default = []
 server = ["dep:sea-orm", "dep:serde_json"]
+
+[lints]
+workspace = true

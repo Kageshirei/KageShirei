@@ -7,3 +7,6 @@ edition = "2021"
 kageshirei-runtime = { path = "../../libs/kageshirei-runtime" }
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 tokio = { version = "1", features = ["full"] }
+
+[lints]
+workspace = true

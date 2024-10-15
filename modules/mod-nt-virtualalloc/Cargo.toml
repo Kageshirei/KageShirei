@@ -10,3 +10,6 @@ mod-win32 = {path = "../mod-win32" }
 mod-hhtgates = {path = "../mod-hhtgates" }
 mod-agentcore = {path = "../mod-agentcore" }
 spin = "0.9"
+
+[lints]
+workspace = true

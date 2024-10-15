@@ -25,3 +25,6 @@ base64-encoding = ["dep:base64ct"]
 symmetric-encryption = ["xchacha20poly1305"]
 xchacha20poly1305 = ["dep:chacha20poly1305"]
 sha3 = ["dep:sha3"]
+
+[lints]
+workspace = true
