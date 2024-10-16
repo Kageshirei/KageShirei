@@ -13,7 +13,8 @@ pub struct NoStdThreadPool {
 }
 
 /// Type alias for a job, which is represented as a boxed closure. The closure takes no arguments,
-/// returns nothing, and must implement `Send` and `'static`, allowing it to be safely sent across threads.
+/// returns nothing, and must implement `Send` and `'static`, allowing it to be safely sent across
+/// threads.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl NoStdThreadPool {
@@ -53,8 +54,8 @@ impl NoStdThreadPool {
     ///
     /// # Arguments
     ///
-    /// * `f` - A closure representing the job to be executed. The closure must implement `FnOnce`, `Send`, and
-    ///   `'static` to be safely executed across threads.
+    /// * `f` - A closure representing the job to be executed. The closure must implement `FnOnce`,
+    ///   `Send`, and `'static` to be safely executed across threads.
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
@@ -66,7 +67,8 @@ impl NoStdThreadPool {
     }
 
     /// Gracefully shuts down the thread pool by dropping the sender and joining all worker threads.
-    /// This ensures that all worker threads have completed their jobs before the pool is terminated.
+    /// This ensures that all worker threads have completed their jobs before the pool is
+    /// terminated.
     pub fn shutdown(&mut self) {
         // Drop the sender to close the channel and signal that no more jobs will be sent.
         drop(self.sender.take());
@@ -79,7 +81,8 @@ impl NoStdThreadPool {
 }
 
 /// The `Worker` struct represents a single thread in the thread pool.
-/// Each worker continuously listens for jobs on the receiver channel and executes them when available.
+/// Each worker continuously listens for jobs on the receiver channel and executes them when
+/// available.
 #[derive(Debug)]
 struct Worker {
     handle: Option<nostd_thread::NoStdThread>, // Handle to the thread, allowing it to be joined later.

@@ -11,12 +11,14 @@ mod decrypt_symmetric_or_fail;
 mod process_body;
 pub mod state;
 
-/// Handle the extraction of pending commands for a given id marking all the retrieved ones as running
+/// Handle the extraction of pending commands for a given id marking all the retrieved ones as
+/// running
 pub async fn handle_command_retrieval() {
     todo!("Retrieve commands for the provided id");
 }
 
-/// Handle the result of the execution of a given command marking it as completed or failed depending on the result
+/// Handle the result of the execution of a given command marking it as completed or failed
+/// depending on the result
 pub async fn handle_command_result(
     state: HandlerSharedState,
     mut body: Bytes,

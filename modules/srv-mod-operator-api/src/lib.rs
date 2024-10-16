@@ -50,8 +50,8 @@ pub async fn start(
         "JWT keys initialized successfully!"
     );
 
-    // create a broadcast channel for the server this is where events will be broadcasted to and retrieved by the sse
-    // endpoint
+    // create a broadcast channel for the server this is where events will be broadcasted to and
+    // retrieved by the sse endpoint
     let (broadcast_sender, _) = tokio::sync::broadcast::channel(128);
 
     // create a shared state for the server
@@ -202,7 +202,8 @@ fn unwrap_listener_or_fail(
     listener.unwrap()
 }
 
-/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to complete
+/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to
+/// complete
 async fn handle_graceful_shutdown(context: &str, cancellation_token: CancellationToken) {
     cancellation_token.cancelled().await;
     warn!("{context} api server shutting down");

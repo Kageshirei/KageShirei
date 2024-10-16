@@ -148,8 +148,8 @@ pub fn setup_logging(config: &ReadOnlyConfig) -> Result<(), String> {
     Ok(())
 }
 
-/// The main entry point for async runtime of the server this will be called by the main function and is responsible
-/// for setting up the server and running it
+/// The main entry point for async runtime of the server this will be called by the main function
+/// and is responsible for setting up the server and running it
 pub async fn async_main(config: SharedConfig) -> Result<(), String> {
     let readonly_config = config.read().await;
     setup_logging(&readonly_config)?;
@@ -194,7 +194,8 @@ pub async fn async_main(config: SharedConfig) -> Result<(), String> {
     Ok(())
 }
 
-/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to complete
+/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to
+/// complete
 async fn handle_shutdown_signals(cancellation_token: CancellationToken) {
     let ctrl_c = async {
         signal::ctrl_c()

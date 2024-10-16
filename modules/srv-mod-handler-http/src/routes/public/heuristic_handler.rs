@@ -34,7 +34,8 @@ async fn handle_request(
 /// `-----|N|0---|1-|2|3-------------------------------|4-----|5----`
 ///
 /// ### Explanation
-/// - N: id_position, defines the position of the id in the path, 3 in the example, can be any number
+/// - N: id_position, defines the position of the id in the path, 3 in the example, can be any
+///   number
 /// - 0 to 2: decoy strings, unused
 /// - 3: the actual id of the request to parse
 /// - 4+: other decoy strings, unused
@@ -55,8 +56,8 @@ async fn handle_request(
 /// - "$"
 ///
 /// ### Explanation
-/// - N: id_position, defines the position of the id in the path, 2, 3, 5 in the example, can be any number, with any of
-///   the allowed separators
+/// - N: id_position, defines the position of the id in the path, 2, 3, 5 in the example, can be any
+///   number, with any of the allowed separators
 /// - 0 and 1: decoy strings, unused
 /// - 2 and 3: fragments of the id, to be concatenated
 /// - 4: decoy string, unused
@@ -101,7 +102,8 @@ pub async fn heuristic_handler_variant_1(
     handle_request(axum::extract::State(state), headers, body, id).await
 }
 
-/// This kind of route automatically takes the first string matching the ID length (32) as the request ID
+/// This kind of route automatically takes the first string matching the ID length (32) as the
+/// request ID
 ///
 /// # Example
 /// Path: `/this/is/a/dd1g8uw209me6bin2unm9u38mhmp23ic/sample/path` <br/>
@@ -140,7 +142,8 @@ pub async fn heuristic_handler_variant_2(
 
 /// Creates the routes for the commands handlers
 pub fn route(state: HandlerSharedState) -> Router<HandlerSharedState> {
-    // TODO: Implement the command retrieval using the base handler, simple stub already present in lib.rs
+    // TODO: Implement the command retrieval using the base handler, simple stub already present in
+    // lib.rs
     Router::new()
         .route("/:id_position/*path", post(heuristic_handler_variant_1))
         .route("/*path", post(heuristic_handler_variant_2))

@@ -33,15 +33,15 @@ use crate::{
 struct TerminalCommand {
     /// The raw command written in the terminal emulator
     command:    String,
-    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent id). If empty the
-    /// "global" terminal session is used.
+    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent
+    /// id). If empty the "global" terminal session is used.
     session_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 struct TerminalCommandResponse {
-    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent id). If empty the
-    /// "global" terminal session is used.
+    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent
+    /// id). If empty the "global" terminal session is used.
     session_id: Option<String>,
     /// The raw command written in the terminal emulator
     command:    String,
@@ -63,8 +63,8 @@ fn update_command_state(
 
         loop {
             // Update the command in the database.
-            // This update is fallible as a race condition exists where the command might not exist in the database
-            // when the update is attempted.
+            // This update is fallible as a race condition exists where the command might not exist in the
+            // database when the update is attempted.
             // If the update fails, sleep for 200ms before retrying.
             let result = terminal_history::Entity::update_many()
                 .set(terminal_history::ActiveModel {

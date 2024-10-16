@@ -1,3 +1,7 @@
+//! Agent commands
+//!
+//! This module contains the agent commands that can be sent to the agent.
+
 use alloc::string::String;
 use core::fmt::{Display, Formatter};
 

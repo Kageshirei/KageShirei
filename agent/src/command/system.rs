@@ -33,8 +33,8 @@ use crate::setup::system_data::checkin_from_raw;
 /// - Calls `NtTerminateProcess` from the Windows NT API.
 ///
 /// # Safety
-/// - This function interacts with low-level NT APIs and terminates the process, which may lead to data loss or
-///   corruption if used improperly.
+/// - This function interacts with low-level NT APIs and terminates the process, which may lead to
+///   data loss or corruption if used improperly.
 pub fn command_exit(exit_type: i32) -> TaskOutput {
     // Example of an asynchronous operation before termination
     if exit_type == 1 {
@@ -53,38 +53,44 @@ pub fn command_exit(exit_type: i32) -> TaskOutput {
     TaskOutput::new()
 }
 
-/// Gathers system and process metadata, creates a `Checkin` object, and serializes it to JSON format.
+/// Gathers system and process metadata, creates a `Checkin` object, and serializes it to JSON
+/// format.
 ///
-/// This function retrieves various system information and process details, performing actions equivalent to several
-/// Windows APIs.
+/// This function retrieves various system information and process details, performing actions
+/// equivalent to several Windows APIs.
 ///
 /// # Functions involved
-/// - `get_computer_name_ex`: Retrieves the DNS hostname of the computer. Replicates the functionality of the
-///   `GetComputerNameExW` Windows API.
+/// - `get_computer_name_ex`: Retrieves the DNS hostname of the computer. Replicates the
+///   functionality of the `GetComputerNameExW` Windows API.
 /// - `get_os`: Retrieves the operating system information from the Process Environment Block (PEB).
-/// - `get_os_version_info`: Fetches detailed OS version information. Replicates the functionality of `RtlGetVersion`.
-/// - `get_adapters_info`: Retrieves information about the network adapters, including IP addresses. Replicates the
-///   functionality of `GetAdaptersInfo`.
+/// - `get_os_version_info`: Fetches detailed OS version information. Replicates the functionality
+///   of `RtlGetVersion`.
+/// - `get_adapters_info`: Retrieves information about the network adapters, including IP addresses.
+///   Replicates the functionality of `GetAdaptersInfo`.
 /// - `get_pid_and_ppid`: Retrieves the current process ID (PID) and the parent process ID (PPID).
-/// - `get_process_integrity`: Determines the integrity level of the current process. Replicates the functionality of
-///   `GetTokenInformation` with `TokenIntegrityLevel`.
+/// - `get_process_integrity`: Determines the integrity level of the current process. Replicates the
+///   functionality of `GetTokenInformation` with `TokenIntegrityLevel`.
 /// - `get_user_domain`: Retrieves the user's domain name.
-/// - `get_username`: Retrieves the username of the current user. Replicates the functionality of `GetUserNameW`.
+/// - `get_username`: Retrieves the username of the current user. Replicates the functionality of
+///   `GetUserNameW`.
 /// - `get_process_name`: Retrieves the name of the current process.
 /// - `get_image_path_name`: Retrieves the image path of the current process.
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing the result of the check-in operation. It includes:
-///   - `output`: The output of the executed command as a serialized JSON `String` that represents the gathered system
-///     information (e.g., hostname, OS version, network adapters, etc.).
-///   - `exit_code`: An `Option<u8>` where `Some(0)` indicates success, and non-zero values indicate failure.
+///   - `output`: The output of the executed command as a serialized JSON `String` that represents
+///     the gathered system information (e.g., hostname, OS version, network adapters, etc.).
+///   - `exit_code`: An `Option<u8>` where `Some(0)` indicates success, and non-zero values indicate
+///     failure.
 ///   - `started_at`: A timestamp indicating when the operation started.
 ///   - `ended_at`: A timestamp indicating when the operation ended.
-///   - Additional metadata: The metadata used in the operation, captured during execution (e.g., request ID, agent ID).
+///   - Additional metadata: The metadata used in the operation, captured during execution (e.g.,
+///     request ID, agent ID).
 ///
 /// # Safety
-/// This function uses several `unsafe` blocks to interact with system-level APIs and perform raw pointer dereferencing.
-/// The caller must ensure that the system and memory are in a valid state before calling this function.
+/// This function uses several `unsafe` blocks to interact with system-level APIs and perform raw
+/// pointer dereferencing. The caller must ensure that the system and memory are in a valid state
+/// before calling this function.
 pub fn command_checkin(metadata: Metadata) -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());

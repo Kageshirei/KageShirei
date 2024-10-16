@@ -41,7 +41,8 @@ static mut RTL_REALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlReAllocateHeap>>> = M
 static mut RTL_DESTROY_HEAP: Mutex<UnsafeCell<Option<RtlDestroyHeap>>> = Mutex::new(UnsafeCell::new(None));
 
 /// Ensures that the heap-related function pointers are initialized.
-/// If they have not been initialized, this function will call `initialize_nt_heapalloc_funcs` to resolve them.
+/// If they have not been initialized, this function will call `initialize_nt_heapalloc_funcs` to
+/// resolve them.
 fn ensure_nt_heapalloc_funcs_initialize() {
     // Check and call initialize if not already done.
     if !INIT_NT_HEAPALLOC.load(Ordering::Acquire) {
@@ -213,32 +214,35 @@ unsafe impl GlobalAlloc for NtHeapAlloc {
     /// Allocates a block of memory with the specified layout.
     ///
     /// # Arguments
-    /// * `layout` - A `Layout` object that specifies the size and alignment of the desired memory block.
+    /// * `layout` - A `Layout` object that specifies the size and alignment of the desired memory
+    ///   block.
     ///
     /// # Returns
     /// * A pointer to the allocated memory block. Returns `null_mut()` if the allocation fails.
     ///
     /// # Safety
-    /// This function is marked as `unsafe` because it directly interacts with low-level memory management,
-    /// which can lead to undefined behavior if not handled correctly.
+    /// This function is marked as `unsafe` because it directly interacts with low-level memory
+    /// management, which can lead to undefined behavior if not handled correctly.
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         // Use the `RtlAllocateHeap` function to allocate memory from the heap.
-        // The function takes the heap handle, allocation flags (set to 0 here), and the size of the memory block.
+        // The function takes the heap handle, allocation flags (set to 0 here), and the size of the memory
+        // block.
         get_rtl_allocate_heap()(self.raw_handle(), 0, layout.size())
     }
 
     /// Allocates a block of zeroed memory with the specified layout.
     ///
     /// # Arguments
-    /// * `layout` - A `Layout` object that specifies the size and alignment of the desired memory block.
+    /// * `layout` - A `Layout` object that specifies the size and alignment of the desired memory
+    ///   block.
     ///
     /// # Returns
-    /// * A pointer to the allocated memory block, which is initialized to zero. Returns `null_mut()` if the allocation
-    ///   fails.
+    /// * A pointer to the allocated memory block, which is initialized to zero. Returns
+    ///   `null_mut()` if the allocation fails.
     ///
     /// # Safety
-    /// This function is marked as `unsafe` because it directly interacts with low-level memory management,
-    /// which can lead to undefined behavior if not handled correctly.
+    /// This function is marked as `unsafe` because it directly interacts with low-level memory
+    /// management, which can lead to undefined behavior if not handled correctly.
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
         // Use the `RtlAllocateHeap` function to allocate zeroed memory from the heap.
         // The `HEAP_ZERO_MEMORY` flag ensures that the allocated memory is set to zero.
@@ -249,12 +253,14 @@ unsafe impl GlobalAlloc for NtHeapAlloc {
     ///
     /// # Arguments
     /// * `ptr` - A pointer to the memory block to be deallocated.
-    /// * `_layout` - The layout of the memory block. Although it's passed in, it's not used directly in this function.
+    /// * `_layout` - The layout of the memory block. Although it's passed in, it's not used
+    ///   directly in this function.
     ///
     /// # Safety
-    /// This function is marked as `unsafe` because it directly interacts with low-level memory management,
-    /// which can lead to undefined behavior if not handled correctly. The caller must ensure that the pointer
-    /// was previously allocated by this allocator and that it is not used after deallocation.
+    /// This function is marked as `unsafe` because it directly interacts with low-level memory
+    /// management, which can lead to undefined behavior if not handled correctly. The caller
+    /// must ensure that the pointer was previously allocated by this allocator and that it is
+    /// not used after deallocation.
     unsafe fn dealloc(&self, ptr: *mut u8, _layout: Layout) {
         // Use the `RtlFreeHeap` function to free the memory block.
         // The function takes the heap handle, flags (set to 0 here), and the pointer to the memory block.
@@ -265,20 +271,22 @@ unsafe impl GlobalAlloc for NtHeapAlloc {
     ///
     /// # Arguments
     /// * `ptr` - A pointer to the memory block to be reallocated.
-    /// * `_layout` - The current layout of the memory block. Although it's passed in, it's not used directly in this
-    ///   function.
+    /// * `_layout` - The current layout of the memory block. Although it's passed in, it's not used
+    ///   directly in this function.
     /// * `new_size` - The new size for the memory block.
     ///
     /// # Returns
     /// * A pointer to the reallocated memory block. Returns `null_mut()` if the reallocation fails.
     ///
     /// # Safety
-    /// This function is marked as `unsafe` because it directly interacts with low-level memory management,
-    /// which can lead to undefined behavior if not handled correctly. The caller must ensure that the pointer
-    /// was previously allocated by this allocator and that it is not used after reallocation.
+    /// This function is marked as `unsafe` because it directly interacts with low-level memory
+    /// management, which can lead to undefined behavior if not handled correctly. The caller
+    /// must ensure that the pointer was previously allocated by this allocator and that it is
+    /// not used after reallocation.
     unsafe fn realloc(&self, ptr: *mut u8, _layout: Layout, new_size: usize) -> *mut u8 {
         // Use the `RtlReAllocateHeap` function to reallocate the memory block.
-        // The function takes the heap handle, flags (set to 0 here), the pointer to the memory block, and the new size.
+        // The function takes the heap handle, flags (set to 0 here), the pointer to the memory block, and
+        // the new size.
         get_rtl_reallocate_heap()(self.raw_handle(), 0, ptr, new_size)
     }
 }

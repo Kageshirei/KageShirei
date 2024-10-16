@@ -170,7 +170,8 @@ fn unwrap_listener_or_fail(
     listener.unwrap()
 }
 
-/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to complete
+/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to
+/// complete
 async fn handle_graceful_shutdown(context: &str, cancellation_token: CancellationToken) {
     cancellation_token.cancelled().await;
     warn!("{context} HTTP handler shutting down");

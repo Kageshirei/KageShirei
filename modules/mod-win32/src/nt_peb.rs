@@ -48,8 +48,8 @@ pub unsafe fn get_process_name() -> String {
 /// of accessing these pointers.
 ///
 /// # Parameters
-/// * `lp_version_information`: A mutable reference to an `OSVersionInfo` struct that will be filled with the version
-///   information of the operating system.
+/// * `lp_version_information`: A mutable reference to an `OSVersionInfo` struct that will be filled
+///   with the version information of the operating system.
 ///
 /// # Returns
 /// A status code indicating success or failure. If the provided structure size is invalid,
@@ -89,7 +89,8 @@ pub unsafe fn nt_rtl_get_version(lp_version_information: &mut OSVersionInfo) -> 
     0 // STATUS_SUCCESS
 }
 
-/// Retrieves the value of a specified environment variable by accessing the PEB (Process Environment Block).
+/// Retrieves the value of a specified environment variable by accessing the PEB (Process
+/// Environment Block).
 ///
 /// # Safety
 /// This function performs unsafe operations, such as dereferencing raw pointers obtained
@@ -185,7 +186,8 @@ pub unsafe fn get_username() -> String { get_environment_variable("USERNAME=") }
 /// determined, an empty string is returned.
 pub unsafe fn get_os() -> String { get_environment_variable("OS=") }
 
-/// Retrieves the computer name of the current process by accessing the PEB (Process Environment Block).
+/// Retrieves the computer name of the current process by accessing the PEB (Process Environment
+/// Block).
 ///
 /// # Safety
 /// This function performs unsafe operations, such as dereferencing raw pointers obtained
@@ -197,7 +199,8 @@ pub unsafe fn get_os() -> String { get_environment_variable("OS=") }
 /// determined, an empty string is returned.
 pub unsafe fn get_computer_name() -> String { get_environment_variable("COMPUTERNAME=") }
 
-/// Retrieves the user domain of the current process by accessing the PEB (Process Environment Block).
+/// Retrieves the user domain of the current process by accessing the PEB (Process Environment
+/// Block).
 ///
 /// # Safety
 /// This function performs unsafe operations, such as dereferencing raw pointers obtained
@@ -233,9 +236,9 @@ pub unsafe fn get_os_version_info() -> Result<OSVersionInfo, i32> {
 
 /// Get the full path of the current executable.
 ///
-/// This function accesses the Thread Environment Block (TEB) to retrieve the Process Environment Block (PEB),
-/// and from there it obtains the process parameters which include the image path name. It converts the
-/// image path name from a UTF-16 encoded string to a Rust `String`.
+/// This function accesses the Thread Environment Block (TEB) to retrieve the Process Environment
+/// Block (PEB), and from there it obtains the process parameters which include the image path name.
+/// It converts the image path name from a UTF-16 encoded string to a Rust `String`.
 ///
 /// # Safety
 ///
@@ -274,7 +277,8 @@ pub unsafe fn get_image_path_name() -> String {
 /// and returns it. If the current directory cannot be retrieved, it returns an empty string.
 ///
 /// # Returns
-/// - `String`: The current directory path as a Rust string, or an empty string if the path cannot be retrieved.
+/// - `String`: The current directory path as a Rust string, or an empty string if the path cannot
+///   be retrieved.
 ///
 /// # Details
 /// This function is useful for debugging and for any situation where the current directory

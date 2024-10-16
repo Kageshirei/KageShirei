@@ -74,15 +74,17 @@ use crate::{
     utils::{format_named_pipe_string, unicodestring_to_string, NT_STATUS},
 };
 
-/// Retrieves the PID (Process ID) and PPID (Parent Process ID) of the current process using the NT API.
+/// Retrieves the PID (Process ID) and PPID (Parent Process ID) of the current process using the NT
+/// API.
 ///
 /// This function queries the `ProcessBasicInformation` of the current process to obtain its
 /// unique process ID and the process ID of its parent. The syscall `NtQueryInformationProcess`
 /// is used to retrieve this information.
 ///
 /// # Safety
-/// This function performs unsafe operations, such as making direct system calls to retrieve process information.
-/// Care should be taken when handling the raw pointers and interpreting the returned data.
+/// This function performs unsafe operations, such as making direct system calls to retrieve process
+/// information. Care should be taken when handling the raw pointers and interpreting the returned
+/// data.
 ///
 /// # Returns
 /// A tuple `(u32, u32)` containing the PID and PPID of the current process.
@@ -116,8 +118,9 @@ pub unsafe fn get_pid_and_ppid() -> (u32, u32) {
 /// unique process ID. The syscall `NtQueryInformationProcess` is used to retrieve this information.
 ///
 /// # Safety
-/// This function performs unsafe operations, such as making direct system calls to retrieve process information.
-/// Care should be taken when handling the raw pointers and interpreting the returned data.
+/// This function performs unsafe operations, such as making direct system calls to retrieve process
+/// information. Care should be taken when handling the raw pointers and interpreting the returned
+/// data.
 ///
 /// # Returns
 /// A `u32` containing the PID of the current process. If the operation fails, it returns `0`.
@@ -141,26 +144,31 @@ pub unsafe fn get_current_process_id() -> u32 {
     0 // Return 0 if the operation fails.
 }
 
-/// Retrieves a handle to a process with the specified PID and desired access rights using the NT API.
+/// Retrieves a handle to a process with the specified PID and desired access rights using the NT
+/// API.
 ///
-/// This function opens a handle to a target process by specifying its process ID (PID) and the desired access rights.
-/// The syscall `NtOpenProcess` is used to obtain the handle, and the function initializes the required structures
-/// (`OBJECT_ATTRIBUTES` and `CLIENT_ID`) needed to make the system call.
+/// This function opens a handle to a target process by specifying its process ID (PID) and the
+/// desired access rights. The syscall `NtOpenProcess` is used to obtain the handle, and the
+/// function initializes the required structures (`OBJECT_ATTRIBUTES` and `CLIENT_ID`) needed to
+/// make the system call.
 ///
 /// # Safety
-/// This function involves unsafe operations, including raw pointer dereferencing and direct system calls.
-/// Ensure that the parameters passed to the function are valid and the function is called in a safe context.
+/// This function involves unsafe operations, including raw pointer dereferencing and direct system
+/// calls. Ensure that the parameters passed to the function are valid and the function is called in
+/// a safe context.
 ///
 /// # Parameters
 /// - `pid`: The process ID of the target process.
-/// - `desired_access`: The desired access rights for the process handle, specified as an `AccessMask`.
+/// - `desired_access`: The desired access rights for the process handle, specified as an
+///   `AccessMask`.
 ///
 /// # Returns
 /// A handle to the process if successful, otherwise `null_mut()` if the operation fails.
 pub unsafe fn get_process_handle(pid: i32, desired_access: AccessMask) -> HANDLE {
     let mut process_handle: HANDLE = null_mut();
 
-    // Initialize object attributes for the process, setting up the basic structure with default options.
+    // Initialize object attributes for the process, setting up the basic structure with default
+    // options.
     let mut object_attributes = ObjectAttributes::new();
 
     ObjectAttributes::initialize(
@@ -186,21 +194,25 @@ pub unsafe fn get_process_handle(pid: i32, desired_access: AccessMask) -> HANDLE
     process_handle // Return the obtained process handle, or `null_mut()` if the operation fails.
 }
 
-/// Retrieves a handle to a process with the specified name and desired access rights using the NT API.
+/// Retrieves a handle to a process with the specified name and desired access rights using the NT
+/// API.
 ///
-/// This function takes a process name, searches for its process ID (PID) using the `process_snapshot` function,
-/// and then opens a handle to the process using `NtOpenProcess`.
+/// This function takes a process name, searches for its process ID (PID) using the
+/// `process_snapshot` function, and then opens a handle to the process using `NtOpenProcess`.
 ///
 /// # Safety
-/// This function involves unsafe operations, including raw pointer dereferencing, memory allocations, and direct system
-/// calls. Ensure that the parameters passed to the function are valid and the function is called in a safe context.
+/// This function involves unsafe operations, including raw pointer dereferencing, memory
+/// allocations, and direct system calls. Ensure that the parameters passed to the function are
+/// valid and the function is called in a safe context.
 ///
 /// # Parameters
 /// - `process_name`: The name of the target process as a string slice.
-/// - `desired_access`: The desired access rights for the process handle, specified as an `AccessMask`.
+/// - `desired_access`: The desired access rights for the process handle, specified as an
+///   `AccessMask`.
 ///
 /// # Returns
-/// A handle to the process if successful, otherwise `null_mut()` if the operation fails or if the process is not found.
+/// A handle to the process if successful, otherwise `null_mut()` if the operation fails or if the
+/// process is not found.
 pub unsafe fn get_process_handle_by_name(process_name: &str, desired_access: AccessMask) -> HANDLE {
     let mut snapshot: *mut SystemProcessInformation = null_mut();
     let mut size: usize = 0;
@@ -239,12 +251,13 @@ pub unsafe fn get_process_handle_by_name(process_name: &str, desired_access: Acc
 /// Opens the process token for a given process handle using the NT API.
 ///
 /// This function opens a handle to the access token associated with a specified process handle.
-/// The syscall `NtOpenProcessToken` is used to obtain the token handle, which is required for operations
-/// that need access to the security context of the process.
+/// The syscall `NtOpenProcessToken` is used to obtain the token handle, which is required for
+/// operations that need access to the security context of the process.
 ///
 /// # Safety
-/// This function involves unsafe operations, including raw pointer dereferencing and direct system calls.
-/// Ensure that the `process_handle` provided is valid and that this function is called in a safe context.
+/// This function involves unsafe operations, including raw pointer dereferencing and direct system
+/// calls. Ensure that the `process_handle` provided is valid and that this function is called in a
+/// safe context.
 ///
 /// # Parameters
 /// - `process_handle`: A handle to the process for which the token is to be opened.
@@ -268,14 +281,16 @@ pub unsafe fn nt_open_process_token(process_handle: HANDLE) -> HANDLE {
 /// The syscall `NtQueryInformationToken` is used to retrieve this information.
 ///
 /// # Safety
-/// This function involves unsafe operations, including raw pointer dereferencing and direct system calls.
-/// Ensure that the `process_handle` provided is valid and that this function is called in a safe context.
+/// This function involves unsafe operations, including raw pointer dereferencing and direct system
+/// calls. Ensure that the `process_handle` provided is valid and that this function is called in a
+/// safe context.
 ///
 /// # Parameters
 /// - `process_handle`: A handle to the process for which the integrity level is to be retrieved.
 ///
 /// # Returns
-/// The integrity level as an `i32` representing the RID if successful, otherwise `-1` if the operation fails.
+/// The integrity level as an `i32` representing the RID if successful, otherwise `-1` if the
+/// operation fails.
 pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i16 {
     // Get the process token
     let token_handle = nt_open_process_token(process_handle);
@@ -342,27 +357,33 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i16 {
 /// and current directory. This function returns the handles to the created process and thread.
 ///
 /// If a parent process handle is not provided (i.e., `null_mut()` is passed), the current process
-/// will be used as the parent, ensuring that the new process remains within the correct process tree.
+/// will be used as the parent, ensuring that the new process remains within the correct process
+/// tree.
 ///
-/// The function uses the `NtCreateUserProcess` syscall to create the process and thread, initializing
-/// the necessary structures, such as `RTL_USER_PROCESS_PARAMETERS`, `PS_ATTRIBUTE_LIST`, and `PS_CREATE_INFO`.
+/// The function uses the `NtCreateUserProcess` syscall to create the process and thread,
+/// initializing the necessary structures, such as `RTL_USER_PROCESS_PARAMETERS`,
+/// `PS_ATTRIBUTE_LIST`, and `PS_CREATE_INFO`.
 ///
 /// # Parameters
-/// - `sz_target_process`: A string slice that specifies the NT path of the process image to be created.
-/// - `sz_target_process_parameters`: A string slice that specifies the command line for the process.
+/// - `sz_target_process`: A string slice that specifies the NT path of the process image to be
+///   created.
+/// - `sz_target_process_parameters`: A string slice that specifies the command line for the
+///   process.
 /// - `sz_target_process_path`: A string slice that specifies the current directory for the process.
-/// - `h_parent_process`: A handle to the parent process. If `null_mut()`, the current process will be used as the
-///   parent.
-/// - `h_process`: A mutable reference to a `HANDLE` that will receive the process handle upon creation.
-/// - `h_thread`: A mutable reference to a `HANDLE` that will receive the thread handle upon creation.
+/// - `h_parent_process`: A handle to the parent process. If `null_mut()`, the current process will
+///   be used as the parent.
+/// - `h_process`: A mutable reference to a `HANDLE` that will receive the process handle upon
+///   creation.
+/// - `h_thread`: A mutable reference to a `HANDLE` that will receive the thread handle upon
+///   creation.
 ///
 /// # Returns
-/// - `NTSTATUS`: The status code indicating the result of the process creation. A value of `0` indicates success, while
-///   any other value represents an error.
+/// - `NTSTATUS`: The status code indicating the result of the process creation. A value of `0`
+///   indicates success, while any other value represents an error.
 ///
 /// # Safety
-/// This function uses unsafe operations to interact with low-level Windows APIs. Ensure that the inputs
-/// are valid and that the function is called in a safe context.
+/// This function uses unsafe operations to interact with low-level Windows APIs. Ensure that the
+/// inputs are valid and that the function is called in a safe context.
 pub unsafe fn nt_create_user_process(
     sz_target_process: &str,
     sz_target_process_parameters: &str,
@@ -487,29 +508,31 @@ pub unsafe fn nt_create_user_process(
 ///
 /// # Parameters
 ///
-/// - `h_read_pipe`: A mutable reference to a handle that will receive the read handle of the created pipe.
-/// - `h_write_pipe`: A mutable reference to a handle that will receive the write handle of the created pipe.
-/// - `lp_pipe_attributes`: A pointer to a `SecurityAttributes` structure that specifies the security attributes for the
-///   pipe.
+/// - `h_read_pipe`: A mutable reference to a handle that will receive the read handle of the
+///   created pipe.
+/// - `h_write_pipe`: A mutable reference to a handle that will receive the write handle of the
+///   created pipe.
+/// - `lp_pipe_attributes`: A pointer to a `SecurityAttributes` structure that specifies the
+///   security attributes for the pipe.
 /// - `n_size`: The buffer size for the pipe. If set to 0, a default size of 4096 bytes is used.
 ///
 /// # Returns
 ///
-/// Returns an `NTSTATUS` code indicating the success or failure of the operation. A value of 0 indicates success,
-/// while any other value represents an error.
+/// Returns an `NTSTATUS` code indicating the success or failure of the operation. A value of 0
+/// indicates success, while any other value represents an error.
 ///
 /// # Pipe Naming Convention
 ///
 /// The function generates a unique named pipe path using the format:
 /// `\\Device\\NamedPipe\\Win32Pipes.<process_id>.<pipe_id>`.
 ///
-/// - `<process_id>`: The ID of the process creating the pipe, ensuring that the pipe is uniquely associated with the
-///   current process.
-/// - `<pipe_id>`: A unique identifier for the pipe within the process, allowing multiple pipes to be created by the
-///   same process without name collisions.
+/// - `<process_id>`: The ID of the process creating the pipe, ensuring that the pipe is uniquely
+///   associated with the current process.
+/// - `<pipe_id>`: A unique identifier for the pipe within the process, allowing multiple pipes to
+///   be created by the same process without name collisions.
 ///
-/// This name ensures that the pipe is uniquely identifiable by the creating process and the specific instance of the
-/// pipe.
+/// This name ensures that the pipe is uniquely identifiable by the creating process and the
+/// specific instance of the pipe.
 ///
 /// # Safety
 ///
@@ -697,11 +720,13 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
 /// a visible window.
 ///
 /// # Parameters
-/// - `target_process`: A string slice containing the NT path of the process executable to be created.
+/// - `target_process`: A string slice containing the NT path of the process executable to be
+///   created.
 /// - `cmdline`: A string slice containing the command line to execute within the created process.
 ///
 /// # Returns
-/// A `Vec<u8>` containing the output of the executed command. If the execution fails, an empty vector is returned.
+/// A `Vec<u8>` containing the output of the executed command. If the execution fails, an empty
+/// vector is returned.
 ///
 /// # Details
 /// This function uses the following API functions:
@@ -716,8 +741,9 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
 /// is crucial to avoid resource leaks.
 ///
 /// # Note
-/// The function assumes that `target_process` is a valid NT path and that the command line is valid.
-/// If the paths or command lines are invalid, the function will fail and return an empty output vector.
+/// The function assumes that `target_process` is a valid NT path and that the command line is
+/// valid. If the paths or command lines are invalid, the function will fail and return an empty
+/// output vector.
 pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> Vec<u8> {
     // Constants used for process creation and pipe handling.
     const STARTF_USESTDHANDLES: u32 = 0x00000100; // Use standard handles (input, output, error).
@@ -826,11 +852,12 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
 /// Takes a snapshot of the currently running processes.
 ///
 /// This function utilizes the `NtQuerySystemInformation` function from the NT API to retrieve
-/// information about all processes currently running on the system. It first determines the necessary
-/// buffer size, then allocates memory, and finally retrieves the process information.
+/// information about all processes currently running on the system. It first determines the
+/// necessary buffer size, then allocates memory, and finally retrieves the process information.
 ///
 /// # Parameters
-/// - `snapshot`: A mutable reference to a pointer that will receive the snapshot of the process information.
+/// - `snapshot`: A mutable reference to a pointer that will receive the snapshot of the process
+///   information.
 /// - `size`: A mutable reference to a variable that will receive the size of the snapshot.
 ///
 /// # Returns
@@ -888,18 +915,18 @@ pub unsafe fn nt_process_snapshot(snapshot: &mut *mut SystemProcessInformation, 
 /// to create a new thread in the specified process with the given start routine and arguments.
 ///
 /// # Parameters
-/// - `proc_handle`: The handle to the process in which to create the thread. This is usually obtained via
-///   `get_process_handle`.
+/// - `proc_handle`: The handle to the process in which to create the thread. This is usually
+///   obtained via `get_process_handle`.
 /// - `start_routine`: A pointer to the function that the new thread will execute.
 /// - `arg_ptr`: A pointer to the arguments that will be passed to the thread's start routine.
 ///
 /// # Returns
-/// - `HANDLE`: A handle to the newly created thread if successful. The handle will be `null_mut()` if the thread
-///   creation fails.
+/// - `HANDLE`: A handle to the newly created thread if successful. The handle will be `null_mut()`
+///   if the thread creation fails.
 ///
 /// # Safety
-/// This function is unsafe because it directly interacts with low-level Windows APIs and performs raw pointer
-/// dereferencing.
+/// This function is unsafe because it directly interacts with low-level Windows APIs and performs
+/// raw pointer dereferencing.
 pub unsafe fn nt_create_thread_ex(
     proc_handle: HANDLE,
     start_routine: extern "system" fn(*mut c_void) -> u32,

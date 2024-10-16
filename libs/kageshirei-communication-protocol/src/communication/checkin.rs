@@ -1,3 +1,8 @@
+//! The checkin module contains the structs used to check in the agent and the response to the
+//! checkin.
+//!
+//! The checkin struct is used to check in the agent and contains information about the agent.
+
 use alloc::{string::String, sync::Arc, vec::Vec};
 
 use serde::{Deserialize, Serialize};

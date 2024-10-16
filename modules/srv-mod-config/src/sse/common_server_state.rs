@@ -20,7 +20,8 @@ impl Display for EventType {
     }
 }
 
-/// The SSE event type, this is the type that will be sent to the client (split into data, event and id)
+/// The SSE event type, this is the type that will be sent to the client (split into data, event and
+/// id)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SseEvent {
     pub data:  String,

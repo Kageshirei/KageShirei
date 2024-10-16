@@ -45,7 +45,8 @@ pub fn current_timestamp() -> i64 {
     }
 }
 
-/// Checks the provided kill date against the current timestamp and exits if the current time exceeds the kill date.
+/// Checks the provided kill date against the current timestamp and exits if the current time
+/// exceeds the kill date.
 ///
 /// Args:
 ///     opt_timestamp (Option<i64>): The optional Unix timestamp representing the kill date.
@@ -82,9 +83,11 @@ pub fn delay(seconds: i64) {
     }
 }
 
-/// Converts a Unix timestamp (seconds since January 1, 1970) to a human-readable date and time format.
+/// Converts a Unix timestamp (seconds since January 1, 1970) to a human-readable date and time
+/// format.
 ///
-/// The function returns a tuple representing the date and time in the format (year, month, day, hour, minute, second).
+/// The function returns a tuple representing the date and time in the format (year, month, day,
+/// hour, minute, second).
 ///
 /// # Arguments
 ///
@@ -195,8 +198,8 @@ pub fn wait_until(seconds_to_wait: i64) {
 /// to trigger a `continue` in the caller.
 ///
 /// # Arguments
-/// * `working_hours` - A reference to a vector containing the start and end times as Unix timestamps. The vector should
-///   have two elements: `Some(start)` and `Some(end)`.
+/// * `working_hours` - A reference to a vector containing the start and end times as Unix
+///   timestamps. The vector should have two elements: `Some(start)` and `Some(end)`.
 ///
 /// # Returns
 /// * `bool` - Returns `true` if the current time is within working hours, otherwise `false`.

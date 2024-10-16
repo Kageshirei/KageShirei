@@ -1,3 +1,6 @@
+//! Create a NetworkInterface struct to store information about a network
+//! interface. The struct has three fields: name, address, and dhcp_server.
+
 use alloc::{string::String, vec::Vec};
 
 #[cfg(feature = "server")]
@@ -33,10 +36,12 @@ impl NetworkInterface {
         }
     }
 
-    /// Converts a Vec of tuples (name, address, dhcp_server) into a Vec of NetworkInterface instances.
+    /// Converts a Vec of tuples (name, address, dhcp_server) into a Vec of
+    /// NetworkInterface instances.
     ///
     /// # Arguments
-    /// * `data` - A Vec of tuples where each tuple contains three strings: name, address, and dhcp_server.
+    /// * `data` - A Vec of tuples where each tuple contains three strings: name, address, and
+    ///   dhcp_server.
     ///
     /// # Returns
     /// A Vec of `NetworkInterface` instances created from the input data.

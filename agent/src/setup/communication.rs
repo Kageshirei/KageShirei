@@ -149,13 +149,15 @@ where
 }
 
 #[cfg(feature = "protocol-json")]
-/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
+/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw
+/// pointer.
 pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut JsonProtocol<IdentEncryptor> {
     &mut *(ptr as *mut JsonProtocol<IdentEncryptor>)
 }
 
 #[cfg(feature = "protocol-winhttp")]
-/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw pointer.
+/// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw
+/// pointer.
 pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut WinHttpProtocol<IdentEncryptor> {
     &mut *(ptr as *mut WinHttpProtocol<IdentEncryptor>)
 }

@@ -36,13 +36,13 @@ pub fn prepare(data: Checkin) -> agent::ActiveModel {
     let agent_signature = make_signature(&data);
 
     let encoder = Base64Encoder;
-    // the usage of the IdentEncryptor hardcoded here does not force it as it is used only to specialize the type
-    // not to encrypt anything
+    // the usage of the IdentEncryptor hardcoded here does not force it as it is used only to specialize
+    // the type not to encrypt anything
     let agent_secret_key = AsymmetricAlgorithm::<IdentEncryptor>::make_temporary_secret_key();
     let agent_secret_key = encoder.encode(agent_secret_key);
 
-    // the usage of the IdentEncryptor hardcoded here does not force it as it is used only to specialize the type
-    // not to encrypt anything
+    // the usage of the IdentEncryptor hardcoded here does not force it as it is used only to specialize
+    // the type not to encrypt anything
     let server_secret = AsymmetricAlgorithm::<IdentEncryptor>::make_temporary_secret_key();
     let server_secret = encoder.encode(server_secret);
 

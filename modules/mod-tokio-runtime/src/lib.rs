@@ -126,6 +126,7 @@ mod tests {
         }
 
         drop(result_tx); // Close the result channel, indicating no more tasks will send results.
-        result_handler.join().unwrap(); // Wait for the result handler to finish processing all results.
+        result_handler.join().unwrap(); // Wait for the result handler to finish processing all
+                                        // results.
     }
 }

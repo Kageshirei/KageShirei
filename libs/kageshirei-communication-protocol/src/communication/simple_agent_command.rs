@@ -1,3 +1,7 @@
+//! SimpleAgentCommand is a simple struct that contains an AgentCommand and its metadata.
+//!
+//! This struct is minimal and should be extended as needed for more complex commands.
+
 use serde::{Deserialize, Serialize};
 
 use crate::{communication::agent_commands::AgentCommands, metadata::Metadata};

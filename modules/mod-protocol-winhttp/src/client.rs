@@ -92,8 +92,8 @@ impl WinHttpClient {
     /// A `Result` containing the response bytes or an error message if the read operation fails.
     ///
     /// # Safety
-    /// This function is unsafe because it dereferences raw pointers and interacts with the WinHTTP API,
-    /// which requires correct usage of the API and proper management of handles.
+    /// This function is unsafe because it dereferences raw pointers and interacts with the WinHTTP
+    /// API, which requires correct usage of the API and proper management of handles.
     pub unsafe fn read_response(&self, h_request: *mut c_void) -> Result<Bytes, String> {
         let mut status_code: u32 = 0;
         let mut status_code_len: u32 = core::mem::size_of::<u32>() as u32;
@@ -141,7 +141,8 @@ impl WinHttpClient {
 
     /// Sends a POST request using WinHTTP.
     ///
-    /// This function sends a POST request to the specified URL with the provided body data and metadata.
+    /// This function sends a POST request to the specified URL with the provided body data and
+    /// metadata.
     ///
     /// # Arguments
     /// * `iurl` - The URL to send the POST request to.

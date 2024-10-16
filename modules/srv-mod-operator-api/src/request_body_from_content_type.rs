@@ -27,8 +27,8 @@ where
         let content_type_header = req.headers().get(CONTENT_TYPE);
         let content_type = content_type_header.and_then(|value| value.to_str().ok());
 
-        // check if the content type is either `application/json` or `application/x-www-form-urlencoded` and extract
-        // the payload
+        // check if the content type is either `application/json` or `application/x-www-form-urlencoded` and
+        // extract the payload
         if let Some(content_type) = content_type {
             if content_type.starts_with("application/json") {
                 let Json(payload) = req.extract().await.map_err(IntoResponse::into_response)?;

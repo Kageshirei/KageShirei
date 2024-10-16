@@ -32,7 +32,8 @@ pub struct Receiver<T> {
 /// Creates a new MPSC channel with a fixed-size buffer and returns a `Sender` and `Receiver` pair.
 ///
 /// # Returns
-/// * `(Sender<T>, Receiver<T>)` - A pair of `Sender` and `Receiver` structs that represent the ends of the channel.
+/// * `(Sender<T>, Receiver<T>)` - A pair of `Sender` and `Receiver` structs that represent the ends
+///   of the channel.
 pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
     let channel = Arc::new(NoStdChannel {
         buffer:          Mutex::new(Vec::new()),
@@ -64,8 +65,9 @@ impl<T> Clone for Sender<T> {
 }
 
 impl<T> Clone for Receiver<T> {
-    /// Clones the `Receiver`, allowing multiple consumers to receive messages from the same channel.
-    /// However, in typical usage, only one `Receiver` should be active at a time to prevent data races.
+    /// Clones the `Receiver`, allowing multiple consumers to receive messages from the same
+    /// channel. However, in typical usage, only one `Receiver` should be active at a time to
+    /// prevent data races.
     ///
     /// # Returns
     /// * `Receiver<T>` - A new `Receiver` instance that shares access to the same channel.
@@ -77,13 +79,15 @@ impl<T> Clone for Receiver<T> {
 }
 
 impl<T> Sender<T> {
-    /// Sends a value into the channel. If the buffer is full, the sender will block until space is available.
+    /// Sends a value into the channel. If the buffer is full, the sender will block until space is
+    /// available.
     ///
     /// # Arguments
     /// * `value` - The value to be sent into the channel.
     ///
     /// # Returns
-    /// * `Result<(), ()>` - Returns `Ok(())` if the value was successfully sent, or `Err(())` if the buffer is full.
+    /// * `Result<(), ()>` - Returns `Ok(())` if the value was successfully sent, or `Err(())` if
+    ///   the buffer is full.
     pub fn send(&self, value: T) -> Result<(), ()> {
         loop {
             {
@@ -103,10 +107,12 @@ impl<T> Sender<T> {
 }
 
 impl<T> Receiver<T> {
-    /// Receives a value from the channel. If the buffer is empty, the receiver will block until data is available.
+    /// Receives a value from the channel. If the buffer is empty, the receiver will block until
+    /// data is available.
     ///
     /// # Returns
-    /// * `Option<T>` - Returns `Some(T)` with the received value, or `None` if the channel is closed and empty.
+    /// * `Option<T>` - Returns `Some(T)` with the received value, or `None` if the channel is
+    ///   closed and empty.
     pub fn recv(&self) -> Option<T> {
         loop {
             {

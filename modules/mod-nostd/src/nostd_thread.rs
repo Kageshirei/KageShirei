@@ -33,20 +33,22 @@ impl NoStdThread {
     /// `ntdll.dll`. The thread will execute the closure provided by the caller.
     ///
     /// # Parameters
-    /// - `start_routine`: A closure that will be executed by the new thread. The closure must implement `FnOnce() +
-    ///   Send + 'static` because it is executed once and must be safely transferable across threads.
+    /// - `start_routine`: A closure that will be executed by the new thread. The closure must
+    ///   implement `FnOnce() + Send + 'static` because it is executed once and must be safely
+    ///   transferable across threads.
     ///
     /// # Returns
-    /// - `NoStdThread`: An instance of `NoStdThread` containing the handle to the newly created thread.
+    /// - `NoStdThread`: An instance of `NoStdThread` containing the handle to the newly created
+    ///   thread.
     ///
     /// # NtCreateThreadEx
-    /// This function is an undocumented Windows API that creates a new thread in the specified process.
-    /// It allows more control over thread creation compared to `CreateThread` and is particularly useful
-    /// in low-level system programming.
+    /// This function is an undocumented Windows API that creates a new thread in the specified
+    /// process. It allows more control over thread creation compared to `CreateThread` and is
+    /// particularly useful in low-level system programming.
     ///
     /// # Safety
-    /// This method is unsafe because it involves raw pointer operations and direct system calls that
-    /// can lead to undefined behavior if misused.
+    /// This method is unsafe because it involves raw pointer operations and direct system calls
+    /// that can lead to undefined behavior if misused.
     pub fn spawn<F>(start_routine: F) -> Self
     where
         F: FnOnce() + Send + 'static,
@@ -108,11 +110,12 @@ impl NoStdThread {
     /// `ntdll.dll`.
     ///
     /// # Returns
-    /// - `Result<(), i32>`: `Ok(())` if the thread completed successfully, or an error code otherwise.
+    /// - `Result<(), i32>`: `Ok(())` if the thread completed successfully, or an error code
+    ///   otherwise.
     ///
     /// # NtWaitForSingleObject
-    /// This function waits until the specified object is in the signaled state or the time-out interval
-    /// elapses. In this case, it waits for the thread to finish execution.
+    /// This function waits until the specified object is in the signaled state or the time-out
+    /// interval elapses. In this case, it waits for the thread to finish execution.
     ///
     /// # Safety
     /// This method is unsafe because it directly interacts with low-level Windows API, which can

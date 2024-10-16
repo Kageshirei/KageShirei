@@ -16,8 +16,8 @@ use crate::nt_reg_api::{nt_open_key, nt_query_value_key};
 ///
 /// # Returns
 ///
-/// * `Result<Vec<(String, String, String)>, i32>` - A result containing a vector of tuples with the interface name, IP
-///   address, and DHCP server.
+/// * `Result<Vec<(String, String, String)>, i32>` - A result containing a vector of tuples with the
+///   interface name, IP address, and DHCP server.
 ///
 /// # Safety
 ///

@@ -31,8 +31,8 @@ use mod_agentcore::instance;
 /// - `key`: A string slice containing the path to the registry key that needs to be opened.
 ///
 /// # Returns
-/// - `Result<HANDLE, i32>`: A result containing the handle to the opened registry key if successful, otherwise an error
-///   code (`NTSTATUS`) indicating the reason for failure.
+/// - `Result<HANDLE, i32>`: A result containing the handle to the opened registry key if
+///   successful, otherwise an error code (`NTSTATUS`) indicating the reason for failure.
 ///
 /// # Details
 /// This function uses the following NT API function:
@@ -79,20 +79,20 @@ pub unsafe fn nt_open_key(key: &str) -> Result<HANDLE, i32> {
 ///
 /// This function initializes a `UnicodeString` for the value name,
 /// and then calls the `NtQueryValueKey` syscall to retrieve the value data.
-/// If the initial buffer size is insufficient, the function reallocates the buffer based on the required length
-/// and retries the call until it either succeeds or fails with a different error.
+/// If the initial buffer size is insufficient, the function reallocates the buffer based on the
+/// required length and retries the call until it either succeeds or fails with a different error.
 ///
 /// # Parameters
 /// - `key_handle`: The handle to the open registry key from which the value will be read.
 /// - `value_name`: A string slice that specifies the name of the registry value to be read.
 ///
 /// # Returns
-/// - `Result<String, i32>`: A result containing the value content as a string if successful, or an error code
-///   (`NTSTATUS`) if the operation fails.
+/// - `Result<String, i32>`: A result containing the value content as a string if successful, or an
+///   error code (`NTSTATUS`) if the operation fails.
 ///
 /// # Safety
-/// This function is marked as unsafe because it directly interacts with raw pointers and performs low-level
-/// system calls, which can result in undefined behavior if not handled correctly.
+/// This function is marked as unsafe because it directly interacts with raw pointers and performs
+/// low-level system calls, which can result in undefined behavior if not handled correctly.
 pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result<String, i32> {
     // Convert the value name to a UTF-16 encoded string
     let value_utf16_string: Vec<u16> = value_name.encode_utf16().chain(Some(0)).collect();
@@ -161,12 +161,12 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
 /// - `key`: A string slice that specifies the path to the registry key to be enumerated.
 ///
 /// # Returns
-/// - `Result<Vec<String>, i32>`: A result containing a vector of sub-key names if successful, or an error code
-///   (`NTSTATUS`) if the operation fails.
+/// - `Result<Vec<String>, i32>`: A result containing a vector of sub-key names if successful, or an
+///   error code (`NTSTATUS`) if the operation fails.
 ///
 /// # Safety
-/// This function is marked as unsafe because it directly interacts with raw pointers and performs low-level
-/// system calls, which can result in undefined behavior if not handled correctly.
+/// This function is marked as unsafe because it directly interacts with raw pointers and performs
+/// low-level system calls, which can result in undefined behavior if not handled correctly.
 pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
     // Open the registry key
     let key_handle = nt_open_key(key)?;

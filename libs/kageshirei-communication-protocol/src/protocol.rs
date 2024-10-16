@@ -1,3 +1,5 @@
+//! Define the protocol trait responsible for sending data.
+
 use alloc::{sync::Arc, vec::Vec};
 use core::future::Future;
 

@@ -39,7 +39,8 @@ pub struct ParseUrlResult {
 impl ParseUrlResult {
     /// Creates a new `ParseUrlResult`.
     ///
-    /// This method initializes a new instance of the `ParseUrlResult` struct with the provided values.
+    /// This method initializes a new instance of the `ParseUrlResult` struct with the provided
+    /// values.
     ///
     /// # Arguments
     /// * `scheme` - The scheme of the URL (0x01 for HTTP, 0x02 for HTTPS).
@@ -224,9 +225,9 @@ pub fn format_named_pipe_string(process_id: usize, pipe_id: u32) -> Vec<u16> {
 /// - A `UnicodeString` containing the UTF-16 encoded version of the input string.
 ///
 /// # Safety
-/// This function allocates a buffer for the UTF-16 string and transfers ownership to the `UnicodeString`.
-/// The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must be taken to free the memory if
-/// necessary.
+/// This function allocates a buffer for the UTF-16 string and transfers ownership to the
+/// `UnicodeString`. The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must
+/// be taken to free the memory if necessary.
 pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     // Convert the Rust &str to a Vec<u16> (UTF-16 encoding)
     let utf16: Vec<u16> = source.encode_utf16().collect();
@@ -265,8 +266,8 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
 /// - A `String` containing the decoded characters. Returns an empty string if the pointer is null.
 ///
 /// # Safety
-/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a valid,
-/// null-terminated UTF-16 string.
+/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a
+/// valid, null-terminated UTF-16 string.
 pub fn ptr_to_str(ptr: *mut u16) -> String {
     if ptr.is_null() {
         return String::new();

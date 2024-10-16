@@ -1060,14 +1060,16 @@ pub const FILE_CREATE: u32 = 0x00000002;
 pub const FILE_OPEN_IF: u32 = 0x00000003;
 /// Disposition value specifying to overwrite an existing file or fail if it does not exist.
 pub const FILE_OVERWRITE: u32 = 0x00000004;
-/// Disposition value specifying to overwrite an existing file or create a new one if it does not exist.
+/// Disposition value specifying to overwrite an existing file or create a new one if it does not
+/// exist.
 pub const FILE_OVERWRITE_IF: u32 = 0x00000005;
 
 /// Option to indicate that the file to be created or opened is a directory.
 pub const FILE_DIRECTORY_FILE: u32 = 0x00000001;
 /// Option to ensure the file being opened is not a directory.
 pub const FILE_NON_DIRECTORY_FILE: u32 = 0x00000040;
-/// Option to ensure that all writes to the file are transferred to the file before the write operation completes.
+/// Option to ensure that all writes to the file are transferred to the file before the write
+/// operation completes.
 pub const FILE_WRITE_THROUGH: u32 = 0x00000002;
 /// Option indicating that all file accesses must be sequential.
 pub const FILE_SEQUENTIAL_ONLY: u32 = 0x00000004;
@@ -1075,13 +1077,16 @@ pub const FILE_SEQUENTIAL_ONLY: u32 = 0x00000004;
 pub const FILE_RANDOM_ACCESS: u32 = 0x00000008;
 /// Option indicating that the file cannot be cached or buffered.
 pub const FILE_NO_INTERMEDIATE_BUFFERING: u32 = 0x00000010;
-/// Option indicating that all file operations are performed synchronously and are subject to alert termination.
+/// Option indicating that all file operations are performed synchronously and are subject to alert
+/// termination.
 pub const FILE_SYNCHRONOUS_IO_ALERT: u32 = 0x00000010;
-/// Option indicating that all file operations are performed synchronously without alert termination.
+/// Option indicating that all file operations are performed synchronously without alert
+/// termination.
 pub const FILE_SYNCHRONOUS_IO_NONALERT: u32 = 0x00000020;
 /// Option to create a tree connection for the file through the network.
 pub const FILE_CREATE_TREE_CONNECTION: u32 = 0x00000080;
-/// Option to fail the operation if the file has extended attributes that the caller does not understand.
+/// Option to fail the operation if the file has extended attributes that the caller does not
+/// understand.
 pub const FILE_NO_EA_KNOWLEDGE: u32 = 0x00000200;
 /// Option to open a file with a reparse point and bypass the normal reparse point processing.
 pub const FILE_OPEN_REPARSE_POINT: u32 = 0x00200000;
@@ -1091,11 +1096,13 @@ pub const FILE_DELETE_ON_CLOSE: u32 = 0x00001000;
 pub const FILE_OPEN_BY_FILE_ID: u32 = 0x00002000;
 /// Option indicating that the file is opened for backup intent.
 pub const FILE_OPEN_FOR_BACKUP_INTENT: u32 = 0x00004000;
-/// Option to allow the application to request a filter opportunistic lock (oplock) to prevent share violations.
+/// Option to allow the application to request a filter opportunistic lock (oplock) to prevent share
+/// violations.
 pub const FILE_RESERVE_OPFILTER: u32 = 0x00100000;
 /// Option to open the file and request an opportunistic lock (oplock) as a single atomic operation.
 pub const FILE_OPEN_REQUIRING_OPLOCK: u32 = 0x00010000;
-/// Option to complete the operation immediately with a successful alternative status if the target file is oplocked.
+/// Option to complete the operation immediately with a successful alternative status if the target
+/// file is oplocked.
 pub const FILE_COMPLETE_IF_OPLOCKED: u32 = 0x00020000;
 
 /// FILE_PIPE_BYTE_STREAM_TYPE specifies that the named pipe will be of a byte stream type.
@@ -1519,8 +1526,9 @@ pub const PS_ATTRIBUTE_ADDITIVE: usize = 0x40000000;
 /// This constant enables a mitigation policy that blocks non-Microsoft binaries
 /// from loading into the process. The policy is always enforced.
 ///
-/// This constant is equivalent to `PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON`
-/// in the Windows API, defined as `0x00000001ui64 << 44`.
+/// This constant is equivalent to
+/// `PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON` in the Windows API,
+/// defined as `0x00000001ui64 << 44`.
 pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON: u64 = 0x00000001u64 << 44;
 
 #[repr(C)]
@@ -1902,7 +1910,8 @@ pub enum RtlPathType {
     /// Example: `C:\Folder\File.txt`
     RtlPathTypeDriveAbsolute,
 
-    /// Drive relative path, where the path is relative to the current directory on a specific drive.
+    /// Drive relative path, where the path is relative to the current directory on a specific
+    /// drive.
     ///
     /// Example: `C:Folder\File.txt`
     RtlPathTypeDriveRelative,

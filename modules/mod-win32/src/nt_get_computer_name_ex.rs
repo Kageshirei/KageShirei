@@ -20,7 +20,8 @@ use crate::{nt_reg_api::nt_open_key, utils::NT_STATUS};
 /// * `registry_key` - A string slice that holds the path to the registry key.
 /// * `value_name_str` - A string slice that holds the name of the value to retrieve.
 /// * `lp_buffer` - A mutable reference to a vector where the retrieved data will be stored.
-/// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved data.
+/// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved
+///   data.
 ///
 /// # Returns
 ///
@@ -151,18 +152,20 @@ pub enum ComputerNameFormat {
 ///     - `ComputerNameFormat::ComputerNameNetBIOS`: The NetBIOS name of the computer.
 ///     - `ComputerNameFormat::ComputerNameDnsDomain`: The DNS domain name of the computer.
 ///     - `ComputerNameFormat::ComputerNameDnsHostname`: The DNS hostname of the computer.
-///     - `ComputerNameFormat::ComputerNamePhysicalDnsDomain`: The physical DNS domain name of the computer.
-///     - `ComputerNameFormat::ComputerNamePhysicalDnsHostname`: The physical DNS hostname of the computer.
-/// * `lp_buffer` - A mutable reference to a vector where the retrieved name will be stored. The buffer will be resized
-///   as needed to accommodate the name.
-/// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved data. On input, it
-///   specifies the size of the buffer. On output, it receives the number of characters stored in the buffer, excluding
-///   the null terminator.
+///     - `ComputerNameFormat::ComputerNamePhysicalDnsDomain`: The physical DNS domain name of the
+///       computer.
+///     - `ComputerNameFormat::ComputerNamePhysicalDnsHostname`: The physical DNS hostname of the
+///       computer.
+/// * `lp_buffer` - A mutable reference to a vector where the retrieved name will be stored. The
+///   buffer will be resized as needed to accommodate the name.
+/// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved
+///   data. On input, it specifies the size of the buffer. On output, it receives the number of
+///   characters stored in the buffer, excluding the null terminator.
 ///
 /// # Returns
 ///
-/// * `true` if the operation was successful, `false` otherwise. If the function fails, the buffer and size are not
-///   modified.
+/// * `true` if the operation was successful, `false` otherwise. If the function fails, the buffer
+///   and size are not modified.
 pub unsafe fn get_computer_name_ex(name_type: ComputerNameFormat, lp_buffer: &mut Vec<u16>, n_size: &mut u32) -> bool {
     // Check if the buffer is empty and the requested size is greater than 0
     if lp_buffer.is_empty() && *n_size > 0 {

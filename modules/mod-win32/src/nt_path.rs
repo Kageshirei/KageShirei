@@ -177,7 +177,8 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
 /// - `file_name`: The Unicode string representing the file name.
 /// - `size`: The size of the buffer to store the full path.
 /// - `buffer`: The buffer to store the full path.
-/// - `short_name`: Optionally, the short name part of the path (e.g., file name after the last separator).
+/// - `short_name`: Optionally, the short name part of the path (e.g., file name after the last
+///   separator).
 /// - `path_type`: Optionally, the type of the path determined by the function.
 ///
 /// # Returns
@@ -251,29 +252,32 @@ pub unsafe fn rtl_get_full_path_name_ustr(
     reqsize
 }
 
-/// Implementation of the `RtlpDosPathNameToRelativeNtPathName_Ustr` function from the Windows NT API.
+/// Implementation of the `RtlpDosPathNameToRelativeNtPathName_Ustr` function from the Windows NT
+/// API.
 ///
-/// This function converts a given DOS-style path (`dos_file_name`) into its corresponding NT-style path,
-/// which is often prefixed with `\\??\\`. The function also supports UNC paths and device paths,
-/// and it can extract the "file part" (i.e., the last component of the path) and the "relative name"
-/// (i.e., the part of the path relative to the current directory).
+/// This function converts a given DOS-style path (`dos_file_name`) into its corresponding NT-style
+/// path, which is often prefixed with `\\??\\`. The function also supports UNC paths and device
+/// paths, and it can extract the "file part" (i.e., the last component of the path) and the
+/// "relative name" (i.e., the part of the path relative to the current directory).
 ///
 /// # Parameters
 /// - `dos_file_name`: A reference to a `UnicodeString` containing the DOS path to be converted.
 /// - `nt_file_name`: A mutable reference to a `UnicodeString` that will be filled with the NT path.
-/// - `part_name`: An optional mutable reference to a pointer that will be set to the "file part" of the path (if any).
-/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be filled with the
-///   relative name (if applicable).
+/// - `part_name`: An optional mutable reference to a pointer that will be set to the "file part" of
+///   the path (if any).
+/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be
+///   filled with the relative name (if applicable).
 ///
 /// # Returns
-/// - `NTSTATUS`: Returns `STATUS_SUCCESS` on success, or an appropriate NTSTATUS error code if the operation fails.
+/// - `NTSTATUS`: Returns `STATUS_SUCCESS` on success, or an appropriate NTSTATUS error code if the
+///   operation fails.
 ///   - `STATUS_OBJECT_NAME_INVALID` if the input path is invalid.
 ///   - `STATUS_NO_MEMORY` if memory allocation fails.
 ///
 /// # Safety
-/// This function is marked as unsafe because it operates directly on raw pointers and interacts with low-level NT API
-/// functions that can lead to undefined behavior if not used correctly. The caller must ensure that all pointers passed
-/// to the function are valid.
+/// This function is marked as unsafe because it operates directly on raw pointers and interacts
+/// with low-level NT API functions that can lead to undefined behavior if not used correctly. The
+/// caller must ensure that all pointers passed to the function are valid.
 pub fn rtl_dos_path_name_to_nt_path_name(
     dos_file_name: &UnicodeString,                // Reference to the DOS path to convert
     nt_file_name: &mut UnicodeString,             // Output: NT path
@@ -394,18 +398,20 @@ pub fn rtl_dos_path_name_to_nt_path_name(
 ///
 /// # Parameters
 /// - `dos_path`: A reference to a `UnicodeString` containing the DOS-style path to be converted.
-/// - `nt_path`: A mutable reference to a `UnicodeString` where the resulting NT path will be stored.
-/// - `part_name`: An optional mutable reference to a pointer that will be set to the last component of the path (the
-///   "file part").
-/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be populated with the
-///   relative name, if applicable.
+/// - `nt_path`: A mutable reference to a `UnicodeString` where the resulting NT path will be
+///   stored.
+/// - `part_name`: An optional mutable reference to a pointer that will be set to the last component
+///   of the path (the "file part").
+/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be
+///   populated with the relative name, if applicable.
 ///
 /// # Returns
-/// - `i32`: Returns `STATUS_SUCCESS` on successful conversion, or an NTSTATUS error code if the operation fails.
+/// - `i32`: Returns `STATUS_SUCCESS` on successful conversion, or an NTSTATUS error code if the
+///   operation fails.
 ///
 /// # Safety
-/// This function is marked as `unsafe` because it involves raw pointer manipulation and low-level operations
-/// that could cause undefined behavior if used incorrectly.
+/// This function is marked as `unsafe` because it involves raw pointer manipulation and low-level
+/// operations that could cause undefined behavior if used incorrectly.
 pub fn rtlp_win32_nt_name_to_nt_path_name_u(
     dos_path: &UnicodeString,
     nt_path: &mut UnicodeString,
@@ -437,7 +443,8 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
             dos_length + 2 // Just add space for the null terminator
         }
         else {
-            dos_length + rtlp_dos_devices_prefix.length as usize + 2 // Add space for NT prefix and null terminator
+            dos_length + rtlp_dos_devices_prefix.length as usize + 2 // Add space for NT prefix and
+                                                                     // null terminator
         };
 
         let mut new_buffer: Vec<u16> = Vec::with_capacity(new_size / 2);
@@ -644,19 +651,19 @@ pub fn change_to_parent_directory() -> i32 {
 /// which interfaces with the underlying NT API.
 ///
 /// # Parameters
-/// - `path`: A string slice representing the directory path to change to. This can include multiple `".."` components
-///   to move up multiple levels in the directory hierarchy.
+/// - `path`: A string slice representing the directory path to change to. This can include multiple
+///   `".."` components to move up multiple levels in the directory hierarchy.
 ///
 /// # Returns
 /// - `i32`: Returns `STATUS_SUCCESS` on success, or an NTSTATUS error code if the operation fails.
 ///
 /// # Details
-/// - If the path contains `".."`, the function will handle each `".."` sequentially, moving up one directory level for
-///   each occurrence.
-/// - For simple absolute or relative paths without `".."`, the function directly uses `rtl_set_current_directory` to
-///   change the directory.
-/// - This function is useful in low-level environments where direct manipulation of the process's current directory is
-///   required.
+/// - If the path contains `".."`, the function will handle each `".."` sequentially, moving up one
+///   directory level for each occurrence.
+/// - For simple absolute or relative paths without `".."`, the function directly uses
+///   `rtl_set_current_directory` to change the directory.
+/// - This function is useful in low-level environments where direct manipulation of the process's
+///   current directory is required.
 pub fn change_directory(path: &str) -> i32 {
     if path.contains("..") {
         // Split the path into components

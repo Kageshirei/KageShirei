@@ -14,7 +14,8 @@ use crate::nostd_nt_threadpool::NoStdThreadPool;
 
 /// The `NoStdNtRuntime` struct provides a custom implementation of the `Runtime` trait,
 /// using a thread pool to manage the execution of jobs. This runtime is designed to work
-/// in a `no_std` environment, relying on custom synchronization primitives and a custom MPSC channel.
+/// in a `no_std` environment, relying on custom synchronization primitives and a custom MPSC
+/// channel.
 #[derive(Clone)]
 pub struct NoStdNtRuntime {
     pool: Arc<Mutex<NoStdThreadPool>>, /* The thread pool is protected by a Mutex for safe concurrent access and is
@@ -47,9 +48,11 @@ impl NoStdNtRuntime {
         }
     }
 
-    /// Shuts down the thread pool, ensuring all worker threads complete their tasks before termination.
+    /// Shuts down the thread pool, ensuring all worker threads complete their tasks before
+    /// termination.
     ///
-    /// This method locks the Mutex around the thread pool to ensure safe access during the shutdown process.
+    /// This method locks the Mutex around the thread pool to ensure safe access during the shutdown
+    /// process.
     pub fn shutdown(&self) {
         let mut pool = self.pool.lock(); // Acquire a lock on the thread pool to safely shut it down.
         pool.shutdown();
@@ -63,7 +66,8 @@ impl Runtime for NoStdNtRuntime {
     ///
     /// # Arguments
     ///
-    /// * `job` - A closure that implements `FnOnce` and `Send`, representing the task to be executed.
+    /// * `job` - A closure that implements `FnOnce` and `Send`, representing the task to be
+    ///   executed.
     fn spawn<F>(&self, job: F)
     where
         F: FnOnce() + Send + 'static,
@@ -123,9 +127,11 @@ struct SimpleWaker {
 }
 
 impl alloc::task::Wake for SimpleWaker {
-    /// Sends a signal on the channel to indicate that the future has made progress and should be polled.
+    /// Sends a signal on the channel to indicate that the future has made progress and should be
+    /// polled.
     ///
-    /// This method is called when the waker is woken up, typically because the future is ready to make progress.
+    /// This method is called when the waker is woken up, typically because the future is ready to
+    /// make progress.
     fn wake(self: Arc<Self>) {
         if let Some(tx) = self.tx.lock().take() {
             let _ = tx.send(());

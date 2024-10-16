@@ -1,7 +1,7 @@
 //! Utility functions for the `kageshirei-crypt` crate
 //!
-//! This module contains utility functions that are used throughout the `kageshirei-crypt` mainly in the encoding and
-//! decoding functions.
+//! This module contains utility functions that are used throughout the `kageshirei-crypt` mainly in
+//! the encoding and decoding functions.
 
 use alloc::{borrow::ToOwned as _, vec::Vec};
 

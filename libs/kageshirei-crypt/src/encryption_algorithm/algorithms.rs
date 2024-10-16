@@ -21,7 +21,8 @@ pub trait BasicAlgorithm: Send + Any + Clone {
     /// # Arguments
     ///
     /// * `data` - A slice of bytes representing the data to be decrypted suffixed with the nonce
-    /// * `key` - An optional key to use for decryption, if not provided the instance key will be used
+    /// * `key` - An optional key to use for decryption, if not provided the instance key will be
+    ///   used
     ///
     /// # Returns
     ///

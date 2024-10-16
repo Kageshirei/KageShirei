@@ -20,7 +20,8 @@ const DOWN: usize = 32;
 ///
 /// ### Returns
 ///
-/// The syscall number as a `u16`. Returns 0 if the address is null or the syscall number cannot be determined.
+/// The syscall number as a `u16`. Returns 0 if the address is null or the syscall number cannot be
+/// determined.
 pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
     // Check if address is null
     if address.is_null() {

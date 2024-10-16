@@ -30,12 +30,14 @@ pub const HTTP_QUERY_STATUS_CODE: u32 = 19;
 ///
 /// # Parameters
 /// - `pwszUserAgent`: A string that specifies the name of the application or entity using WinHTTP.
-/// - `dwAccessType`: An unsigned integer that specifies the type of access to the Internet. Can be one of the following
-///   values: `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY` or `WINHTTP_ACCESS_TYPE_NO_PROXY`.
-/// - `pwszProxyName`: A string that specifies the proxy server to use (ignored if `dwAccessType` is not
-///   `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`).
-/// - `pwszProxyBypass`: A string that specifies an optional list of host names or IP addresses, or both, that should
-///   not be routed through the proxy when `dwAccessType` is `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`.
+/// - `dwAccessType`: An unsigned integer that specifies the type of access to the Internet. Can be
+///   one of the following values: `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY` or
+///   `WINHTTP_ACCESS_TYPE_NO_PROXY`.
+/// - `pwszProxyName`: A string that specifies the proxy server to use (ignored if `dwAccessType` is
+///   not `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`).
+/// - `pwszProxyBypass`: A string that specifies an optional list of host names or IP addresses, or
+///   both, that should not be routed through the proxy when `dwAccessType` is
+///   `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`.
 /// - `dwFlags`: An unsigned integer that can be set to 0 (reserved for future use).
 ///
 /// # Returns
@@ -55,7 +57,8 @@ pub type WinHttpOpenFunc = unsafe extern "system" fn(
 /// # Parameters
 /// - `hSession`: A handle to an HTTP session returned by `WinHttpOpen`.
 /// - `pswzServerName`: A string that specifies the host name of an HTTP server.
-/// - `nServerPort`: An unsigned short that specifies the TCP/IP port number to connect to on the server.
+/// - `nServerPort`: An unsigned short that specifies the TCP/IP port number to connect to on the
+///   server.
 /// - `dwReserved`: An unsigned integer that is reserved and must be 0.
 ///
 /// # Returns
@@ -77,10 +80,10 @@ pub type WinHttpConnectFunc = unsafe extern "system" fn(
 /// - `pwszObjectName`: A string that specifies the target object of the request.
 /// - `pwszVersion`: A string that specifies the HTTP version (can be `NULL` to use HTTP/1.1).
 /// - `pwszReferrer`: A string that specifies the referrer URL (can be `NULL`).
-/// - `ppwszAcceptTypes`: A pointer to a null-terminated array of strings that specify media types accepted by the
-///   client (can be `NULL`).
-/// - `dwFlags`: An unsigned integer that specifies the flags for the request, such as `WINHTTP_FLAG_BYPASS_PROXY_CACHE`
-///   and `WINHTTP_FLAG_SECURE`.
+/// - `ppwszAcceptTypes`: A pointer to a null-terminated array of strings that specify media types
+///   accepted by the client (can be `NULL`).
+/// - `dwFlags`: An unsigned integer that specifies the flags for the request, such as
+///   `WINHTTP_FLAG_BYPASS_PROXY_CACHE` and `WINHTTP_FLAG_SECURE`.
 ///
 /// # Returns
 /// - A handle to the HTTP request if successful, or `NULL` if the function fails.
@@ -130,14 +133,16 @@ pub type WinHttpCloseHandleFunc = unsafe extern "system" fn(hInternet: *mut c_vo
 ///
 /// # Parameters
 /// - `hRequest`: A handle to an HTTP request returned by `WinHttpOpenRequest`.
-/// - `pwszHeaders`: A string that specifies additional headers to append to the request (can be `NULL`).
-/// - `dwHeadersLength`: An unsigned integer that specifies the length of the additional headers (use `-1` to specify
-///   that the headers are null-terminated).
-/// - `lpOptional`: A pointer to an optional data buffer to send immediately after the request headers (can be `NULL`).
+/// - `pwszHeaders`: A string that specifies additional headers to append to the request (can be
+///   `NULL`).
+/// - `dwHeadersLength`: An unsigned integer that specifies the length of the additional headers
+///   (use `-1` to specify that the headers are null-terminated).
+/// - `lpOptional`: A pointer to an optional data buffer to send immediately after the request
+///   headers (can be `NULL`).
 /// - `dwOptionalLength`: An unsigned integer that specifies the length of the optional data.
 /// - `dwTotalLength`: An unsigned integer that specifies the total length of the request.
-/// - `dwContext`: An unsigned integer that specifies an application-defined value that is passed to the callback
-///   function.
+/// - `dwContext`: An unsigned integer that specifies an application-defined value that is passed to
+///   the callback function.
 ///
 /// # Returns
 /// - `TRUE` if successful, or `FALSE` if the function fails.
@@ -158,8 +163,8 @@ pub type WinHttpSendRequestFunc = unsafe extern "system" fn(
 /// # Parameters
 /// - `hRequest`: A handle to an HTTP request returned by `WinHttpOpenRequest`.
 /// - `pwszHeaders`: A string that specifies the headers to append.
-/// - `dwHeadersLength`: An integer that specifies the length of the headers (use `-1` to specify that the headers are
-///   null-terminated).
+/// - `dwHeadersLength`: An integer that specifies the length of the headers (use `-1` to specify
+///   that the headers are null-terminated).
 /// - `dwModifiers`: An unsigned integer that specifies modifiers controlling the action.
 ///
 /// # Returns
@@ -191,7 +196,8 @@ pub type WinHttpReceiveResponseFunc = unsafe extern "system" fn(hRequest: *mut c
 /// - `hRequest`: A handle to an HTTP request returned by `WinHttpOpenRequest`.
 /// - `lpBuffer`: A pointer to a buffer that receives the data.
 /// - `dwNumberOfBytesToRead`: An unsigned integer that specifies the number of bytes to read.
-/// - `lpdwNumberOfBytesRead`: A pointer to an unsigned integer that receives the number of bytes read.
+/// - `lpdwNumberOfBytesRead`: A pointer to an unsigned integer that receives the number of bytes
+///   read.
 ///
 /// # Returns
 /// - `TRUE` if successful, or `FALSE` if the function fails.
@@ -213,8 +219,8 @@ pub type WinHttpReadDataFunc = unsafe extern "system" fn(
 /// - `pwszName`: A string that specifies the header name to query (can be `NULL`).
 /// - `lpBuffer`: A pointer to a buffer that receives the header information.
 /// - `lpdwBufferLength`: A pointer to an unsigned integer that specifies the length of the buffer.
-/// - `lpdwIndex`: A pointer to an unsigned integer that specifies the header index (use `NULL` for the first
-///   occurrence).
+/// - `lpdwIndex`: A pointer to an unsigned integer that specifies the header index (use `NULL` for
+///   the first occurrence).
 ///
 /// # Returns
 /// - `TRUE` if successful, or `FALSE` if the function fails.
@@ -240,7 +246,8 @@ pub type WinHttpGetIEProxyConfigForCurrentUserFunc = unsafe extern "system" fn(p
 
 /// Type definition for the WinHttpGetProxyForUrl function.
 ///
-/// Retrieves the proxy configuration for a specified URL using the WPAD protocol or the URL provided.
+/// Retrieves the proxy configuration for a specified URL using the WPAD protocol or the URL
+/// provided.
 ///
 /// # Parameters
 /// - `hSession`: A handle to an HTTP session returned by `WinHttpOpen`.
@@ -313,7 +320,8 @@ impl WinHttp {
 pub enum WinHttpError {
     /// The requested operation requires a connection to the server.
     ErrorWinhttpCannotConnect        = 12029,
-    /// The connection with the server has been reset or terminated, or an incompatible SSL protocol was encountered.
+    /// The connection with the server has been reset or terminated, or an incompatible SSL protocol
+    /// was encountered.
     ErrorWinhttpConnectionError      = 12030,
     /// The data being supplied is of wrong type.
     ErrorWinhttpIncorrectHandleState = 12019,
@@ -325,7 +333,8 @@ pub enum WinHttpError {
     ErrorWinhttpInvalidOption        = 12009,
     /// The specified option is not supported.
     ErrorWinhttpOptionNotSettable    = 12011,
-    /// The application requested an operation that is not allowed when the current operation is asynchronous.
+    /// The application requested an operation that is not allowed when the current operation is
+    /// asynchronous.
     ErrorWinhttpShutdown             = 12012,
     /// The operation timed out.
     ErrorWinhttpTimeout              = 12002,

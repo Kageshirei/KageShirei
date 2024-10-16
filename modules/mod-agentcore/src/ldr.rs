@@ -60,8 +60,8 @@ pub unsafe fn nt_set_last_error(error: u32) { nt_current_teb().as_mut().unwrap()
 
 /// Retrieves a handle to the process heap.
 ///
-/// This function returns a handle to the heap used by the process, which is stored in the Process Environment Block
-/// (PEB). It mimics the behavior of the `NtProcessHeap` macro in C.
+/// This function returns a handle to the heap used by the process, which is stored in the Process
+/// Environment Block (PEB). It mimics the behavior of the `NtProcessHeap` macro in C.
 pub unsafe fn nt_process_heap() -> HANDLE {
     nt_current_teb()
         .as_ref()
@@ -84,7 +84,8 @@ pub unsafe fn nt_process_heap() -> HANDLE {
 ///
 /// # Returns
 ///
-/// The base address of the module as a `*mut u8`, or an `LoaderApiError` if the module is not found.
+/// The base address of the module as a `*mut u8`, or an `LoaderApiError` if the module is not
+/// found.
 pub unsafe fn ldr_module_peb(module_hash: u32) -> *mut u8 {
     // Get the PEB (Process Environment Block)
     let peb = nt_current_peb();
@@ -209,7 +210,8 @@ pub unsafe fn get_nt_headers(base_addr: *mut u8) -> *mut ImageNtHeaders {
 ///
 /// ### Returns
 ///
-/// A pointer to the address of the resolved syscall function. Returns a null pointer if the function is not found.
+/// A pointer to the address of the resolved syscall function. Returns a null pointer if the
+/// function is not found.
 pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *mut u8 {
     // Get the NT headers for the NTDLL module
     let p_img_nt_headers = get_nt_headers(module_base);

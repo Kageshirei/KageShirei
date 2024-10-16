@@ -1,3 +1,5 @@
+//! Define the format trait responsible for serializing and deserializing data.
+
 use alloc::vec::Vec;
 use core::future::Future;
 
@@ -5,7 +7,7 @@ use serde::Serialize;
 
 use crate::{error::Format as FormatError, metadata::WithMetadata};
 
-/// Define the protocol trait responsible for sending and receiving data.
+/// Define the format trait responsible for serializing and deserializing data.
 pub trait Format: Send {
     /// Receive some data as raw bytes and deserialize it into a type.
     ///

@@ -62,12 +62,14 @@ pub fn generate_random_lengths_for_request_id(len: usize) -> (usize, usize, usiz
 /// Generates a random path similar to Example 2 in the comments.
 ///
 /// This function randomly generates a path of three types:
-/// - Type 0: A single position for the request ID within a range of random strings. The index of the request ID
-///   position is included as part of the path.
-/// - Type 1: Three positions for fragments of the request ID within a range of random strings, separated by randomly
-///   chosen separators. The positions of the fragments are included in the path.
-/// - Type 2: The request ID is inserted randomly into the path without any indices or positions being included in the
-///   path. The first string of length 32 is automatically recognized as the request ID.
+/// - Type 0: A single position for the request ID within a range of random strings. The index of
+///   the request ID position is included as part of the path.
+/// - Type 1: Three positions for fragments of the request ID within a range of random strings,
+///   separated by randomly chosen separators. The positions of the fragments are included in the
+///   path.
+/// - Type 2: The request ID is inserted randomly into the path without any indices or positions
+///   being included in the path. The first string of length 32 is automatically recognized as the
+///   request ID.
 ///
 /// # Arguments
 ///
@@ -90,12 +92,13 @@ pub fn generate_random_lengths_for_request_id(len: usize) -> (usize, usize, usiz
 ///
 /// **Type 1:**
 /// Path: `/0;2-4/a/b/part1/c/part2/d/part3`
-/// - "0;2-4" indicates the positions where the request ID is split and inserted as fragments ("part1", "part2",
-///   "part3").
+/// - "0;2-4" indicates the positions where the request ID is split and inserted as fragments
+///   ("part1", "part2", "part3").
 ///
 /// **Type 2:**
 /// Path: `/a/b/request_id/c/d`
-/// - The request ID appears as a string of length 32 somewhere in the path without any numerical indices.
+/// - The request ID appears as a string of length 32 somewhere in the path without any numerical
+///   indices.
 pub fn generate_path(request_id_len: usize, start_index: usize, end_index: usize) -> (usize, String, String) {
     // Randomly choose the path type (0 or 1)
     let path_type = thread_rng().gen_range(0 .. 3);

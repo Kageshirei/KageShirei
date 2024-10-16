@@ -17,8 +17,8 @@ where
     E: BasicAlgorithm,
 {
     /// The HTTP client used to send requests. This is an instance of the reqwest crate.
-    /// It is configured to accept invalid certificates, use a maximum of 2 idle connections per host,
-    /// and have a timeout of 30 seconds.
+    /// It is configured to accept invalid certificates, use a maximum of 2 idle connections per
+    /// host, and have a timeout of 30 seconds.
     /// It's also forced to uses the rustls TLS backend.
     ///
     /// Initiating a client allows for the creation of keep-alive connections, which can be reused
@@ -33,8 +33,9 @@ where
     base_url:         String,
     /// The global encryptor used to encrypt and decrypt data.
     /// This is used only if an encryptor is not provided when sending or receiving data.
-    /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as fallback;
-    /// if the global encryptor is not set, data is sent and received without encryption.
+    /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as
+    /// fallback; if the global encryptor is not set, data is sent and received without
+    /// encryption.
     global_encryptor: Option<E>,
 }
 

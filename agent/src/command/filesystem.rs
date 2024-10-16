@@ -9,24 +9,27 @@ use mod_win32::{nt_path::change_directory, nt_peb::get_current_directory, nt_tim
 /// returns a failure status code, which is encapsulated in the `TaskOutput`.
 ///
 /// # Nt API Involved
-/// - `NtOpenFile`: Used internally to open the specified directory. If the operation is unsuccessful, the NT status
-///   code is returned and converted to a failure result.
+/// - `NtOpenFile`: Used internally to open the specified directory. If the operation is
+///   unsuccessful, the NT status code is returned and converted to a failure result.
 ///
 /// # Parameters
 /// - `path`: A string slice representing the target directory path to switch to.
-/// - `metadata`: Metadata that includes additional information to be recorded as part of the command execution (e.g.,
-///   timestamps, system details).
+/// - `metadata`: Metadata that includes additional information to be recorded as part of the
+///   command execution (e.g., timestamps, system details).
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing the details of the command execution, including:
 ///   - `output`: The new current directory as a `String` if the operation is successful.
-///   - `exit_code`: An `Option<i32>` representing the success or failure status (0 for success, non-zero for failure).
+///   - `exit_code`: An `Option<i32>` representing the success or failure status (0 for success,
+///     non-zero for failure).
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
 ///
 /// # Behavior
-/// - If the directory change fails, an error code is stored in the `exit_code`, and the operation ends.
-/// - On success, the new directory is retrieved using `get_current_directory`, and the result is stored in `output`.
+/// - If the directory change fails, an error code is stored in the `exit_code`, and the operation
+///   ends.
+/// - On success, the new directory is retrieved using `get_current_directory`, and the result is
+///   stored in `output`.
 pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
@@ -59,21 +62,24 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
 /// If the directory cannot be retrieved, an error is recorded in the `TaskOutput`.
 ///
 /// # Details
-/// - The function reads the current directory path directly from the PEB. If it fails, the function returns a failure
-///   result.
+/// - The function reads the current directory path directly from the PEB. If it fails, the function
+///   returns a failure result.
 ///
 /// # Parameters
-/// - `metadata`: Metadata that includes additional information to be recorded as part of the command execution.
+/// - `metadata`: Metadata that includes additional information to be recorded as part of the
+///   command execution.
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing the details of the command execution, including:
 ///   - `output`: The current directory as a `String` if the operation is successful.
-///   - `exit_code`: An `Option<i32>` representing the success or failure status (0 for success, non-zero for failure).
+///   - `exit_code`: An `Option<i32>` representing the success or failure status (0 for success,
+///     non-zero for failure).
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
 ///
 /// # Behavior
-/// - If the current directory cannot be retrieved or is empty, an error is indicated by setting the `exit_code`.
+/// - If the current directory cannot be retrieved or is empty, an error is indicated by setting the
+///   `exit_code`.
 /// - On success, the current directory is stored in `output`.
 pub fn command_pwd(metadata: Metadata) -> TaskOutput {
     let mut output = TaskOutput::new();

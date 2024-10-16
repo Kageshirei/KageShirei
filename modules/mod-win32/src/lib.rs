@@ -23,6 +23,6 @@ pub fn nt_current_process() -> HANDLE { (-1isize) as HANDLE }
 
 /// Returns a handle to the current thread.
 ///
-/// Similar to the process handle, `-2` is used as a special value to represent the current thread handle.
-/// This function mimics the behavior of the `NtCurrentThread` macro in C.
+/// Similar to the process handle, `-2` is used as a special value to represent the current thread
+/// handle. This function mimics the behavior of the `NtCurrentThread` macro in C.
 pub fn nt_current_thread() -> HANDLE { (-2isize) as HANDLE }

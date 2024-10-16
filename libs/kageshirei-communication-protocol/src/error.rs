@@ -6,7 +6,8 @@ use core::{
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Format {
-    /// TODO: This is a placeholder, remove once at least a format error is defined
+    /// TODO: This is a placeholder, remove once at least a format error is
+    /// defined
     _PLACEHOLDER,
 }
 

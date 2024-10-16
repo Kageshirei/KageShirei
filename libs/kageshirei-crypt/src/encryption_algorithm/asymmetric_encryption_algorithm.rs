@@ -1,7 +1,7 @@
 //! An asymmetric encryption algorithm
 //!
-//! This is a generic implementation of an asymmetric encryption algorithm that uses a symmetric encryption algorithm
-//! for encryption and decryption using a shared secret key.
+//! This is a generic implementation of an asymmetric encryption algorithm that uses a symmetric
+//! encryption algorithm for encryption and decryption using a shared secret key.
 
 use alloc::{sync::Arc, vec::Vec};
 use core::cmp::Ordering;
@@ -29,7 +29,8 @@ pub struct KeyPair {
     pub public_key: Option<Arc<PublicKey>>,
 }
 
-/// An asymmetric encryption algorithm that uses a symmetric encryption algorithm for encryption and decryption
+/// An asymmetric encryption algorithm that uses a symmetric encryption algorithm for encryption and
+/// decryption
 #[derive(Eq, PartialEq)]
 #[cfg_attr(any(feature = "server", test), derive(Debug))]
 pub struct AsymmetricAlgorithm<T> {
@@ -97,8 +98,8 @@ where
         self
     }
 
-    /// Derive a shared secret from a given public key and return a new key derivation function instance for key
-    /// generation
+    /// Derive a shared secret from a given public key and return a new key derivation function
+    /// instance for key generation
     ///
     /// # Arguments
     ///

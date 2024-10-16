@@ -31,8 +31,9 @@ where
     base_url:         String,
     /// The global encryptor used to encrypt and decrypt data.
     /// This is used only if an encryptor is not provided when sending or receiving data.
-    /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as a fallback;
-    /// if the global encryptor is not set, data is sent and received without encryption.
+    /// If no encryptor is provided, the global encryptor is used to encrypt and decrypt data as a
+    /// fallback; if the global encryptor is not set, data is sent and received without
+    /// encryption.
     global_encryptor: Option<E>,
 }
 

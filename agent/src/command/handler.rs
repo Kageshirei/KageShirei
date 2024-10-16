@@ -122,13 +122,15 @@ where
         #[cfg(feature = "std-runtime")]
         rt.block_on(async {
             drop(result_tx); // Close the result channel, indicating no more tasks will send results.
-            result_handler_handle.join().unwrap(); // Wait for the result handler to finish processing all results.
+            result_handler_handle.join().unwrap(); // Wait for the result handler to finish
+                                                   // processing all results.
         });
 
         #[cfg(feature = "nostd-nt-runtime")]
         drop(result_tx); // Close the result channel, indicating no more tasks will send results.
         #[cfg(feature = "nostd-nt-runtime")]
-        result_handler_handle.join().unwrap(); // Wait for the result handler to finish processing all results.
+        result_handler_handle.join().unwrap(); // Wait for the result handler to finish processing
+                                               // all results.
     }
 }
 

@@ -10,8 +10,8 @@ pub struct ThreadPool {
     sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
 }
 
-/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and must be `Send` and
-/// `'static`.
+/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and
+/// must be `Send` and `'static`.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -35,7 +35,8 @@ impl ThreadPool {
 
         let mut workers = Vec::with_capacity(size); // Create a vector with the capacity to hold all workers.
         for _ in 0 .. size {
-            workers.push(Worker::new(Arc::clone(&receiver))); // Create and push each worker to the workers vector.
+            workers.push(Worker::new(Arc::clone(&receiver))); // Create and push each worker to the
+                                                              // workers vector.
         }
 
         // Return a new ThreadPool with the specified workers and sender channel.
@@ -45,7 +46,8 @@ impl ThreadPool {
         }
     }
 
-    /// Method to execute a job on the thread pool. The job is sent to the worker threads via the sender channel.
+    /// Method to execute a job on the thread pool. The job is sent to the worker threads via the
+    /// sender channel.
     ///
     /// # Arguments
     ///
@@ -58,7 +60,8 @@ impl ThreadPool {
     {
         if let Some(sender) = &self.sender {
             let job = Box::new(f); // Box the job (closure) to make it a heap-allocated trait object.
-            sender.lock().unwrap().send(job).unwrap(); // Send the job to the workers via the channel.
+            sender.lock().unwrap().send(job).unwrap(); // Send the job to the workers via the
+                                                       // channel.
         }
     }
 

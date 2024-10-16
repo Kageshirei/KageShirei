@@ -171,8 +171,9 @@ pub fn create_socket() -> SOCKET {
 
 /// Resolves a hostname to an IPv4 address.
 ///
-/// This function resolves a given hostname to its corresponding IPv4 address using the getaddrinfo function.
-/// It returns a `Result` with the IPv4 address or an error message if the resolution failed.
+/// This function resolves a given hostname to its corresponding IPv4 address using the getaddrinfo
+/// function. It returns a `Result` with the IPv4 address or an error message if the resolution
+/// failed.
 ///
 /// # Arguments
 /// * `hostname` - The hostname to be resolved.
@@ -215,8 +216,8 @@ pub fn resolve_hostname(hostname: &str) -> u32 {
 
 /// Connects a socket to a specified IP address and port.
 ///
-/// This function establishes a connection from the provided socket to the specified address and port.
-/// If "localhost" is passed as the address, it resolves to "127.0.0.1".
+/// This function establishes a connection from the provided socket to the specified address and
+/// port. If "localhost" is passed as the address, it resolves to "127.0.0.1".
 ///
 /// # Arguments
 /// * `sock` - The socket descriptor to be connected.
@@ -252,8 +253,8 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
 
 /// Sends data through a socket.
 ///
-/// This function sends a request (byte array) through the specified socket. It returns the result of the send
-/// operation.
+/// This function sends a request (byte array) through the specified socket. It returns the result
+/// of the send operation.
 ///
 /// # Arguments
 /// * `sock` - The socket descriptor through which the data will be sent.
@@ -261,7 +262,8 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
 ///
 /// # Returns
 /// * `0` if the data was successfully sent.
-/// * A non-zero error code if there was an error during the send operation, retrieved via `wsa_get_last_error`.
+/// * A non-zero error code if there was an error during the send operation, retrieved via
+///   `wsa_get_last_error`.
 pub fn send_request(sock: SOCKET, request: &[u8]) -> i32 {
     unsafe {
         let result = (get_winsock().send)(sock, request.as_ptr() as *const i8, request.len() as i32, 0);
@@ -275,7 +277,8 @@ pub fn send_request(sock: SOCKET, request: &[u8]) -> i32 {
 /// Receives a response from a socket.
 ///
 /// This function receives a response from the specified socket.
-/// It returns a `Result` with the response string or an error message if the receive operation failed.
+/// It returns a `Result` with the response string or an error message if the receive operation
+/// failed.
 ///
 /// # Arguments
 /// * `sock` - The socket descriptor.

@@ -10,19 +10,21 @@ use mod_win32::{nt_ps_api::nt_create_process_w_piped, nt_time::current_timestamp
 ///
 /// # Parameters
 /// - `cmdline`: A string slice representing the command to be executed.
-/// - `metadata`: Metadata that includes additional information to be recorded as part of the command execution (e.g.,
-///   timestamps, system details).
+/// - `metadata`: Metadata that includes additional information to be recorded as part of the
+///   command execution (e.g., timestamps, system details).
 ///
 /// # Returns
 /// - `TaskOutput`: A structure containing details of the command execution, including:
 ///   - `output`: The output of the executed command as a `String`.
-///   - `exit_code`: An `Option<u8>` representing the success or failure status (0 for success, non-zero for failure).
+///   - `exit_code`: An `Option<u8>` representing the success or failure status (0 for success,
+///     non-zero for failure).
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
 ///
 /// # Safety
-/// - This function is marked `unsafe` because it interacts with the NT API through `nt_create_process_w_piped`, which
-///   involves low-level process creation and direct interaction with the system's process environment.
+/// - This function is marked `unsafe` because it interacts with the NT API through
+///   `nt_create_process_w_piped`, which involves low-level process creation and direct interaction
+///   with the system's process environment.
 pub fn command_shell(cmdline: &str, metadata: Metadata) -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());

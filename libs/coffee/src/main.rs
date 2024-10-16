@@ -28,7 +28,8 @@ struct Args {
     #[clap(default_value = "1")]
     verbosity: Option<u8>,
 
-    /// Arguments to the BOF passed after the "--" delimiter, supported types are: str, wstr, int, short
+    /// Arguments to the BOF passed after the "--" delimiter, supported types are: str, wstr, int,
+    /// short
     #[clap(last = true)]
     args: Vec<String>,
 }

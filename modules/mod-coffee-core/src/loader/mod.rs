@@ -95,7 +95,8 @@ impl Drop for MappedFunctions {
     }
 }
 
-/// CoffLoader is a struct that contains a slice of bytes representing a COFF file and a parsed COFF file.
+/// CoffLoader is a struct that contains a slice of bytes representing a COFF file and a parsed COFF
+/// file.
 pub struct Coffee<'a> {
     coff_buffer: &'a [u8],
     coff:        Coff<'a>,
@@ -197,8 +198,8 @@ impl<'a> Coffee<'a> {
     /// Gets the external or local function address from the symbol name and returns the result.
     /// When the symbol name is an internal function, it will return the address of the function
     /// in the beacon_api module.
-    /// When the symbol name is an external function, it will return the procedure address of the function
-    /// in the specified library after allocating using the mapping list.
+    /// When the symbol name is an external function, it will return the procedure address of the
+    /// function in the specified library after allocating using the mapping list.
     /// apisets can be shown in the symbol name.
     fn get_import_from_symbol(&self, symbol: Symbol) -> Result<usize> {
         let raw_symbol_name = symbol.name(&self.coff.strings)?;
@@ -768,8 +769,8 @@ impl<'a> Coffee<'a> {
         Ok(())
     }
 
-    /// Iterates through each section and frees the memory allocated for each section using VirtualFree.
-    /// This is done to prevent memory leaks.
+    /// Iterates through each section and frees the memory allocated for each section using
+    /// VirtualFree. This is done to prevent memory leaks.
     fn free_bof_memory(&self) -> Result<()> {
         // Drop mapped functions
         // Safety: FUNCTION_MAPPING is safe to call with a valid pointer.

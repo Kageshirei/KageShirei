@@ -55,12 +55,13 @@ pub struct Datap {
     size:     c_int,       // total size of the buffer
 }
 
-/// is generic output. Cobalt Strike will convert this output to UTF-16 (internally) using the target's default
-/// character set.
+/// is generic output. Cobalt Strike will convert this output to UTF-16 (internally) using the
+/// target's default character set.
 #[expect(dead_code)]
 const CALLBACK_OUTPUT: u32 = 0x0;
-/// is generic output. Cobalt Strike will convert this output to UTF-16 (internally) using the target's OEM character
-/// set. You probably won't need this, unless you're dealing with output from cmd.exe.
+/// is generic output. Cobalt Strike will convert this output to UTF-16 (internally) using the
+/// target's OEM character set. You probably won't need this, unless you're dealing with output from
+/// cmd.exe.
 #[expect(dead_code)]
 const CALLBACK_OUTPUT_OEM: u32 = 0x1e;
 /// is a generic error message.
@@ -307,8 +308,8 @@ extern "C" fn beacon_data_length(parser: *mut Datap) -> c_int {
     data_parser.length
 }
 
-/// Extract a length-prefixed binary blob. The size argument may be NULL. If an address is provided, size is populated
-/// with the number-of-bytes extracted.
+/// Extract a length-prefixed binary blob. The size argument may be NULL. If an address is provided,
+/// size is populated with the number-of-bytes extracted.
 #[no_mangle]
 extern "C" fn beacon_data_extract(parser: *mut Datap, size: *mut c_int) -> *mut c_char {
     if parser.is_null() {
@@ -461,8 +462,8 @@ unsafe extern "C" fn beacon_format_printf(format: *mut Formatp, fmt: *const c_ch
     *format = format_parser;
 }
 
-/// Extract formatted data into a single string. Populate the passed in size variable with the length of this string.
-/// These parameters are suitable for use with the BeaconOutput function.
+/// Extract formatted data into a single string. Populate the passed in size variable with the
+/// length of this string. These parameters are suitable for use with the BeaconOutput function.
 #[no_mangle]
 extern "C" fn beacon_format_to_string(format: *mut Formatp, size: *mut c_int) -> *mut c_char {
     if format.is_null() {
@@ -569,8 +570,8 @@ unsafe extern "C" fn beacon_printf(_type: c_int, fmt: *mut c_char, mut args: ...
     OUTPUT.append_string(s);
 }
 
-/// Apply the specified token as Beacon's current thread token. This will report the new token to the user too. Returns
-/// TRUE if successful. FALSE is not.
+/// Apply the specified token as Beacon's current thread token. This will report the new token to
+/// the user too. Returns TRUE if successful. FALSE is not.
 #[no_mangle]
 extern "C" fn beacon_use_token(token: HANDLE) -> BOOL {
     unsafe {
@@ -581,8 +582,8 @@ extern "C" fn beacon_use_token(token: HANDLE) -> BOOL {
     }
 }
 
-/// Drop the current thread token. Use this over direct calls to RevertToSelf. This function cleans up other state
-/// information about the token.
+/// Drop the current thread token. Use this over direct calls to RevertToSelf. This function cleans
+/// up other state information about the token.
 #[no_mangle]
 extern "C" fn beacon_revert_token() {
     if unsafe { RevertToSelf() }.is_err() {
@@ -625,14 +626,16 @@ extern "C" fn beacon_is_admin() -> BOOL {
     FALSE
 }
 
-/// Populate the specified buffer with the x86 or x64 spawnto value configured for this Beacon session.
+/// Populate the specified buffer with the x86 or x64 spawnto value configured for this Beacon
+/// session.
 #[no_mangle]
 extern "C" fn beacon_get_spawn_to(_x86: BOOL, _buffer: *const c_char, _length: c_int) {
     unimplemented!();
 }
 
-/// This function will inject the specified payload into an existing process. Use payload_offset to specify the offset
-/// within the payload to begin execution. The arg value is for arguments. arg may be NULL.
+/// This function will inject the specified payload into an existing process. Use payload_offset to
+/// specify the offset within the payload to begin execution. The arg value is for arguments. arg
+/// may be NULL.
 #[no_mangle]
 extern "C" fn beacon_inject_process(
     _hproc: HANDLE,
@@ -694,9 +697,9 @@ extern "C" fn beacon_inject_process(
     }
 }
 
-/// This function will inject the specified payload into a temporary process that your BOF opted to launch. Use
-/// payload_offset to specify the offset within the payload to begin execution. The arg value is for arguments. arg may
-/// be NULL.
+/// This function will inject the specified payload into a temporary process that your BOF opted to
+/// launch. Use payload_offset to specify the offset within the payload to begin execution. The arg
+/// value is for arguments. arg may be NULL.
 #[no_mangle]
 extern "C" fn beacon_inject_temporary_process(
     _pinfo: *const PROCESS_INFORMATION,
@@ -710,8 +713,9 @@ extern "C" fn beacon_inject_temporary_process(
     unimplemented!();
 }
 
-/// This function spawns a temporary process accounting for ppid, spawnto, and blockdlls options. Grab the handle from
-/// PROCESS_INFORMATION to inject into or manipulate this process. Returns TRUE if successful.
+/// This function spawns a temporary process accounting for ppid, spawnto, and blockdlls options.
+/// Grab the handle from PROCESS_INFORMATION to inject into or manipulate this process. Returns TRUE
+/// if successful.
 #[no_mangle]
 extern "C" fn beacon_spawn_temporary_process(
     _x86: BOOL,
@@ -722,8 +726,9 @@ extern "C" fn beacon_spawn_temporary_process(
     unimplemented!();
 }
 
-/// This function cleans up some handles that are often forgotten about. Call this when you're done interacting with the
-/// handles for a process. You don't need to wait for the process to exit or finish.
+/// This function cleans up some handles that are often forgotten about. Call this when you're done
+/// interacting with the handles for a process. You don't need to wait for the process to exit or
+/// finish.
 #[no_mangle]
 extern "C" fn beacon_cleanup_process(pinfo: *const PROCESS_INFORMATION) {
     unsafe {
@@ -732,8 +737,8 @@ extern "C" fn beacon_cleanup_process(pinfo: *const PROCESS_INFORMATION) {
     }
 }
 
-/// Convert the src string to a UTF16-LE wide-character string, using the target's default encoding. max is the size (in
-/// bytes!) of the destination buffer.
+/// Convert the src string to a UTF16-LE wide-character string, using the target's default encoding.
+/// max is the size (in bytes!) of the destination buffer.
 #[no_mangle]
 extern "C" fn to_wide_char(src: *const c_char, dst: *mut c_short, max: c_int) -> BOOL {
     if src.is_null() {

@@ -1,10 +1,19 @@
+//! TaskOutput structure to represent task-related information, including
+//! optional fields for:
+//! - output: the result of the task as an Option<String>
+//! - started_at: the timestamp when the task started as an Option<i64>
+//! - ended_at: the timestamp when the task ended as an Option<i64>
+//! - exit_code: the task's exit code as an Option<i32>
+//! - metadata: an Arc-wrapped Metadata object, allowing shared ownership and thread safety
+
 use alloc::{string::String, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
 use crate::metadata::{Metadata, WithMetadata};
 
-/// TaskOutput structure to represent task-related information, including optional fields for:
+/// TaskOutput structure to represent task-related information, including
+/// optional fields for:
 /// - output: the result of the task as an Option<String>
 /// - started_at: the timestamp when the task started as an Option<i64>
 /// - ended_at: the timestamp when the task ended as an Option<i64>
@@ -42,8 +51,8 @@ impl TaskOutput {
     }
 }
 
-/// Implementation of the WithMetadata trait for TaskOutput, which provides a method
-/// to retrieve the metadata as an Arc<Metadata>.
+/// Implementation of the WithMetadata trait for TaskOutput, which provides a
+/// method to retrieve the metadata as an Arc<Metadata>.
 impl WithMetadata for TaskOutput {
     fn get_metadata(&self) -> Option<Arc<Metadata>> { self.metadata.clone() }
 }

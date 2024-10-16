@@ -15,8 +15,8 @@ pub struct GenerateArguments {
 /// Generate/make subcommands
 #[derive(Subcommand, Debug, PartialEq)]
 pub enum GenerateSubcommands {
-    /// Generate a jwt key for the server to use for signing and verifying jwt tokens, the format is a 64 character
-    /// string valid for HS512
+    /// Generate a jwt key for the server to use for signing and verifying jwt tokens, the format is
+    /// a 64 character string valid for HS512
     Jwt,
     /// Generate a new operator (aka user) for the server
     Operator(GenerateOperatorArguments),

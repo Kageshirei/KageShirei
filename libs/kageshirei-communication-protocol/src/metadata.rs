@@ -1,8 +1,12 @@
+//! Define the metadata struct and trait responsible for holding metadata about some struct state
+//! used during the communication.
+
 use alloc::{string::String, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
-/// Define the metadata struct responsible for holding metadata about a struct used during the communication.
+/// Define the metadata struct responsible for holding metadata about a struct used during the
+/// communication.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "server", derive(Debug))]
 pub struct Metadata {

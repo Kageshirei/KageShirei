@@ -60,7 +60,8 @@ fn combine_results(result: Option<bool>, next_hop: Option<&LogicalOperator>, int
     }
 }
 
-/// Evaluate a group of filters and exits returning the result once a group end is found or the filters are exhausted
+/// Evaluate a group of filters and exits returning the result once a group end is found or the
+/// filters are exhausted
 fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usize) -> GroupEvaluationResult {
     // init the result container
     let mut result: Option<bool> = None;
@@ -108,15 +109,16 @@ fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usiz
             next_hop = pending_next_hop.clone();
         }
         else {
-            // if the filter has a next_hop_relation, set the next_hop_relation to the filter's next_hop_relation
+            // if the filter has a next_hop_relation, set the next_hop_relation to the filter's
+            // next_hop_relation
             if filter.next_hop_relation.is_some() {
                 next_hop = filter.next_hop_relation.clone();
                 pending_next_hop = filter.next_hop_relation.clone();
             }
         }
 
-        // if the group ends, return the result, group ending has precedence over the next_hop_relation, this means that
-        // (random_queries... and) equals (random_queries...)
+        // if the group ends, return the result, group ending has precedence over the next_hop_relation,
+        // this means that (random_queries... and) equals (random_queries...)
         if filter.grouping_end {
             return GroupEvaluationResult {
                 result:   result.unwrap_or(false),
@@ -443,8 +445,8 @@ mod tests {
             .await
             .unwrap();
 
-        // NOTE: the following syntax may be prone to misunderstanding as parenthesis are not used to group the filters,
-        // using parenthesis is recommended to avoid confusion.
+        // NOTE: the following syntax may be prone to misunderstanding as parenthesis are not used to group
+        // the filters, using parenthesis is recommended to avoid confusion.
         // hostname = "DESKTOP-PC" AND operative_system = "Windows" or ip = "1.1.1.1"
         // THIS IS EQUAL to (hostname = "DESKTOP-PC" AND operative_system = "Windows") or ip = "1.1.1.1"
         // THIS IS NOT EQUAL to hostname = "DESKTOP-PC" AND (operative_system = "Windows" or ip = "1.1.1.1")
@@ -640,7 +642,8 @@ mod tests {
 
         // operative_system equals "Windows" or hostname equals "DESKTOP-PC";
         //
-        // (process_name starts_with "example" and process_name ends_with ".exe") or ip not_equals "1.1.1.1";
+        // (process_name starts_with "example" and process_name ends_with ".exe") or ip not_equals
+        // "1.1.1.1";
 
         // (hostname = "DESKTOP-PC" AND operative_system = "Windows") or ip = "1.1.1.1"
         let or_id = CUID2.create_id();

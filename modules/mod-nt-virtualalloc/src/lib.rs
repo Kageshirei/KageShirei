@@ -20,14 +20,15 @@ pub static NT_ALLOCATOR_STATUS: AtomicIsize = AtomicIsize::new(0);
 // Atomic flag to ensure initialization happens only once.
 static INIT: AtomicBool = AtomicBool::new(false);
 
-// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for interior mutability.
+// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for
+// interior mutability.
 static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
 
 static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
 
 /// Unsafe function to perform the initialization of the static variables.
-/// This includes locating and storing the addresses and syscall numbers for `NtAllocateVirtualMemory` and
-/// `NtFreeVirtualMemory`.
+/// This includes locating and storing the addresses and syscall numbers for
+/// `NtAllocateVirtualMemory` and `NtFreeVirtualMemory`.
 pub unsafe fn initialize() {
     // Check if initialization has already occurred.
     if !INIT.load(Ordering::Acquire) {
@@ -73,7 +74,8 @@ fn ensure_initialized() {
     }
 }
 
-/// Function to get a reference to the NtAllocateVirtualMemory syscall, ensuring initialization first.
+/// Function to get a reference to the NtAllocateVirtualMemory syscall, ensuring initialization
+/// first.
 fn get_nt_allocate_virtual_memory_syscall() -> &'static NtSyscall {
     ensure_initialized();
     unsafe {
@@ -155,7 +157,8 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         p_address as *mut u8
     }
 
-    /// Deallocates the block of memory at the given `ptr` pointer with the given `layout` using NT system calls.
+    /// Deallocates the block of memory at the given `ptr` pointer with the given `layout` using NT
+    /// system calls.
     ///
     /// This function uses the `NtFreeVirtualMemory` system call to deallocate memory.
     ///
@@ -168,7 +171,8 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
     ///
     /// * `layout` must be the same layout that was used to allocate that block of memory.
     ///
-    /// Note: `NtFreeVirtualMemory` will deallocate memory in multiples of the page size (usually 4096 bytes).
+    /// Note: `NtFreeVirtualMemory` will deallocate memory in multiples of the page size (usually
+    /// 4096 bytes).
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         // Size of the memory to deallocate.
         let mut region_size = layout.size();
