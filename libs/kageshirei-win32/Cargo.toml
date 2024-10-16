@@ -2,6 +2,12 @@
 name = "kageshirei-win32"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "library", "terminal", "emulator"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A library for the KageShirei agent that provides Win32 functionality."
+readme = "README.md"
 
 [dependencies]
 kageshirei-indirect-syscall = { path = "../kageshirei-indirect-syscall"}

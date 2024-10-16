@@ -2,6 +2,12 @@
 name = "mod-nostd"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "runtime", "nostd"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides a nostd runtime."
+readme = "README.md"
 
 [dependencies]
 kageshirei-win32 = { path = "../../libs/kageshirei-win32" }

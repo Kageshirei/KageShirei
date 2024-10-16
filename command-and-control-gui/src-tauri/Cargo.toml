@@ -2,9 +2,13 @@
 name = "kageshirei-command-and-control"
 version = "0.1.0"
 edition = "2021"
-description = "The command and control client for the KageShirei project."
-repository = ""
 default-run = "kageshirei-command-and-control"
+categories = ["simulation"]
+keywords = ["kageshirei", "client", "operator"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "The command and control client for the KageShirei project."
+readme = "README.md"
 
 [profile.release]
 strip = true

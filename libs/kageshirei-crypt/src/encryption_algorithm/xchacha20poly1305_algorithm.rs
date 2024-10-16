@@ -158,8 +158,13 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
             return Err(CryptError::DataTooShort(data_length));
         }
 
+        let key = key.map_or_else(
+            || Key::from_slice(self.key.as_slice()),
+            |k| Key::from_slice(k),
+        );
+
         let (data, nonce) = data.split_at(data_length.saturating_sub(24));
-        let cipher = XChaCha20Poly1305::new(Key::from_slice(self.key.as_slice()));
+        let cipher = XChaCha20Poly1305::new(key);
 
         let decrypted = cipher
             .decrypt(XNonce::from_slice(nonce), Payload::from(data))

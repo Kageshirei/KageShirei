@@ -2,6 +2,12 @@
 name = "mod-protocol-winhttp"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "communication", "winhttp"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides communication to the server via WinHTTP."
+readme = "README.md"
 
 [dependencies]
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }

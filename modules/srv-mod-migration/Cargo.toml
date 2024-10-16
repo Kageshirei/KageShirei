@@ -3,6 +3,12 @@ name = "srv-mod-migration"
 version = "0.1.0"
 edition = "2021"
 publish = false
+categories = ["simulation"]
+keywords = ["kageshirei", "server", "module", "database", "migration"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei server that provides database migration."
+readme = "README.md"
 
 [lib]
 path = "src/lib.rs"

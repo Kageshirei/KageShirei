@@ -2,6 +2,12 @@
 name = "srv-mod-terminal-emulator-commands"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "server", "module", "terminal", "emulator"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei server that provides terminal emulator commands."
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4.5.20", features = ["derive"] }

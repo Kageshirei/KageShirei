@@ -2,6 +2,12 @@
 name = "kageshirei-agent"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "The KageShirei agent."
+readme = "README.md"
 
 [profile.release]
 opt-level = "z"

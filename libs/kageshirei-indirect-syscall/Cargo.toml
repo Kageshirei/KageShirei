@@ -2,6 +2,12 @@
 name = "kageshirei-indirect-syscall"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "library", "indirect-syscall"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A library for the KageShirei agent that provides indirect-syscall related structs."
+readme = "README.md"
 
 [dependencies]
 

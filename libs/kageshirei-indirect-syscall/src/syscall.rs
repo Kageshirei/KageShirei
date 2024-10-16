@@ -1,6 +1,5 @@
 /// A crate for performing indirect syscalls on x86 and x86_64 architectures.
 /// It provides macros and functions to execute syscalls with dynamic syscall numbers and addresses.
-
 use core::arch::global_asm;
 
 /// Macro to run a syscall with a given syscall number (`ssn`) and address (`addr`).

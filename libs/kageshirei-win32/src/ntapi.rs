@@ -97,9 +97,7 @@ impl NtClose {
     ///
     /// * `true` if the operation was successful, `false` otherwise. The function returns an NTSTATUS code; however, in
     ///   this wrapper, the result is simplified to a boolean.
-    pub fn run(&self, handle: *mut c_void) -> i32 {
-        run!(self.syscall.number, self.syscall.address as usize, handle)
-    }
+    pub fn run(&self, handle: *mut c_void) -> i32 { run!(self.syscall.number, self.syscall.address as usize, handle) }
 }
 
 pub struct NtAllocateVirtualMemory {

@@ -2,6 +2,12 @@
 name = "srv-mod-config"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "server", "module", "configuration"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei server that provides the shared server configurations."
+readme = "README.md"
 
 [dependencies]
 log = { version = "0.4.22" }

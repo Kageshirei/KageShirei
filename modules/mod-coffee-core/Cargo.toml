@@ -2,6 +2,12 @@
 name = "mod-coffee-core"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "coffee", "c-object-files"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides a runtime for loading COFF object files."
+readme = "README.md"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

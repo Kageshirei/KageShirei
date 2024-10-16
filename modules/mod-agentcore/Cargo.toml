@@ -2,6 +2,12 @@
 name = "mod-agentcore"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "core"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides core functionality."
+readme = "README.md"
 
 [dependencies]
 mod-hhtgates = {path = "../../modules/mod-hhtgates"}

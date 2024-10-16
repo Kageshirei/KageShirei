@@ -2,6 +2,12 @@
 name = "srv-mod-operator-api"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "server", "module", "operator", "api"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei server that provides an API for operators."
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1.0.210", features = ["derive"] }

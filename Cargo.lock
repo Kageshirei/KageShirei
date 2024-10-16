@@ -2936,8 +2936,6 @@ name = "kageshirei-crypt"
 version = "0.1.0"
 dependencies = [
  "argon2",
- "base16ct",
- "base64ct",
  "chacha20poly1305",
  "hkdf",
  "k256",

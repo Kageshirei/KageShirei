@@ -2,6 +2,12 @@
 name = "mod-protocol-json"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "communication", "json"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides JSON datatypes for communication."
+readme = "README.md"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

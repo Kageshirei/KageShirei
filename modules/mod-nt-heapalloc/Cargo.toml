@@ -2,6 +2,12 @@
 name = "mod-nt-heapalloc"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "allocator", "windows-heaps"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides NT HeapAlloc functionality."
+readme = "README.md"
 
 [dependencies]
 kageshirei-indirect-syscall = {path = "../../libs/kageshirei-indirect-syscall" }

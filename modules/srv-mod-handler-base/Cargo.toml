@@ -2,6 +2,12 @@
 name = "srv-mod-handler-base"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "server", "module", "handler", "base"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei server that provides base implementation for handlers."
+readme = "README.md"
 
 [dependencies]
 tracing = "0.1.40"

@@ -2,6 +2,12 @@
 name = "mod-win32"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "win32", "api"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides Win32 API functionality."
+readme = "README.md"
 
 [dependencies]
 kageshirei-win32 = {path = "../../libs/kageshirei-win32" }

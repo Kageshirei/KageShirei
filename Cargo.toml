@@ -10,7 +10,7 @@ members = [
     "libs/kageshirei-win32",
     "modules/mod-agentcore",
     "modules/mod-hhtgates",
-    "modules/mod-loader-coffee-core",
+    "modules/mod-coffee-core",
     "modules/mod-nostd",
     "modules/mod-nostd-nt-runtime",
     "modules/mod-nt-heapalloc",
@@ -36,6 +36,7 @@ authors = ["ebalo <me@ebalo.xyz>", "Safe"]
 edition = "2021"
 version = "0.1.0"
 rust-version = "1.83.0"
+readme = "README.md"
 
 [workspace.lints.clippy]
 alloc_instead_of_core = "deny"
@@ -232,7 +233,7 @@ manual_find = "deny"
 manual_find_map = "deny"
 manual_flatten = "deny"
 manual_hash_one = "deny"
-manual_ignore_case_cmp = "deny"
+# manual_ignore_case_cmp = "deny" Not found by clippy, deprecated?
 manual_inspect = "deny"
 manual_is_ascii_check = "deny"
 manual_is_finite = "deny"
@@ -430,7 +431,7 @@ redundant_slicing = "deny"
 redundant_static_lifetimes = "deny"
 redundant_type_annotations = "deny"
 ref_patterns="allow"
-regex_creation_in_loops="deny"
+# regex_creation_in_loops="deny" Not found by clippy, deprecated?
 renamed_function_params="allow"
 repeat_once="deny"
 repeat_vec_with_capacity="deny"

@@ -45,7 +45,7 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
 
     // Halo's Gate Patch
     if address.read() == 0xe9 {
-        for idx in 1usize..500 {
+        for idx in 1usize .. 500 {
             let down_offset = idx.wrapping_mul(DOWN);
             let up_offset = (idx as isize).wrapping_mul(UP);
 
@@ -95,7 +95,7 @@ pub unsafe fn get_syscall_number(address: *mut u8) -> u16 {
 
     // Tartarus' Gate Patch
     if address.add(3).read() == 0xe9 {
-        for idx in 1usize..500 {
+        for idx in 1usize .. 500 {
             let down_offset = idx.wrapping_mul(DOWN);
             let up_offset = (idx as isize).wrapping_mul(UP);
 
