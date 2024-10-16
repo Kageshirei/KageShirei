@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(lint_reasons)]
 
 pub mod kernel32;
 pub mod ntapi;

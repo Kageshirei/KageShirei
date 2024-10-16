@@ -430,7 +430,7 @@ impl Default for RtlUserProcessParameters {
 }
 
 impl RtlUserProcessParameters {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             maximum_length:          0,
             length:                  0,
