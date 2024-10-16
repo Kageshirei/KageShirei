@@ -15,7 +15,10 @@ pub type ULONG = c_ulong;
 pub type PVOID = *mut c_void;
 pub type AccessMask = ULONG;
 pub type USHORT = c_ushort;
-#[expect(non_camel_case_types)]
+#[expect(
+    non_camel_case_types,
+    reason = "Windows API types use screaming snake case for types, this aliases it"
+)]
 pub type SIZE_T = usize;
 pub type ULONGLONG = u64;
 pub type LONGLONG = i64;
@@ -33,10 +36,16 @@ pub type BSTR = *const u16;
 
 pub type LPCWSTR = *const u16;
 pub type LPWSTR = *mut u16;
-#[expect(non_camel_case_types)]
+#[expect(
+    non_camel_case_types,
+    reason = "Windows API types use screaming snake case for types, this aliases it"
+)]
 pub type LPSECURITY_ATTRIBUTES = *mut SecurityAttributes;
 
-#[expect(non_camel_case_types)]
+#[expect(
+    non_camel_case_types,
+    reason = "Windows API types use screaming snake case for types, this aliases it"
+)]
 pub type ULONG_PTR = usize;
 
 pub type DWORD64 = u64;
@@ -214,29 +223,37 @@ impl UnicodeString {
         Self {
             length:         0,
             maximum_length: 0,
-            buffer:         ptr::null_mut(),
+            buffer:         null_mut(),
         }
     }
 
-    pub fn from_str(source_string: *const u16) -> Self {
-        let mut unicode_string = Self::new();
-        unicode_string.init(source_string);
-        unicode_string
-    }
-
     // RtlInitUnicodeString
+    #[expect(
+        clippy::not_unsafe_ptr_arg_deref,
+        reason = "The function implementation internally handles the case in which source_string is null making it a \
+                  good candidate to become safe"
+    )]
     pub fn init(&mut self, source_string: *const u16) {
         if !source_string.is_null() {
-            let dest_size = string_length_w(source_string) * 2; // 2 bytes per u16
+            // Safety: source_string is a valid pointer to a null-terminated string
+            let dest_size = unsafe { string_length_w(source_string).saturating_mul(2) }; // 2 bytes per u16
             self.length = dest_size as u16;
-            self.maximum_length = (dest_size + 2) as u16; // 2 bytes for the null terminator
+            self.maximum_length = dest_size.saturating_add(2) as u16; // 2 bytes for the null terminator
             self.buffer = source_string as *mut u16;
         }
         else {
             self.length = 0;
             self.maximum_length = 0;
-            self.buffer = ptr::null_mut();
+            self.buffer = null_mut();
         }
+    }
+}
+
+impl From<*const u16> for UnicodeString {
+    fn from(source_string: *const u16) -> Self {
+        let mut unicode_string = Self::new();
+        unicode_string.init(source_string);
+        unicode_string
     }
 }
 
@@ -245,6 +262,11 @@ pub struct ClientId {
     pub unique_process: HANDLE,
     pub unique_thread:  HANDLE,
 }
+
+// Safety: ClientId is a pointer to itself, so it's safe to share across threads
+unsafe impl Sync for ClientId {}
+// Safety: ClientId is a pointer to itself, so it's safe to send across threads
+unsafe impl Send for ClientId {}
 
 impl Default for ClientId {
     fn default() -> Self { Self::new() }
@@ -482,6 +504,11 @@ pub struct NtTib {
     pub self_:                  *mut NtTib,
 }
 
+// Safety: NtTib is a pointer to itself, so it's safe to share across threads
+unsafe impl Sync for NtTib {}
+// Safety: NtTib is a pointer to itself, so it's safe to send across threads
+unsafe impl Send for NtTib {}
+
 #[cfg(target_arch = "x86")]
 #[repr(C)]
 pub struct TEB {
@@ -556,7 +583,9 @@ pub struct TEB {
     pub gdi_last_spare_stack_array: [u32; 0x200],
 }
 
+// Safety: TEB is a pointer to itself, so it's safe to share across threads
 unsafe impl Sync for TEB {}
+// Safety: TEB is a pointer to itself, so it's safe to send across threads
 unsafe impl Send for TEB {}
 
 #[repr(C)]
@@ -882,7 +911,7 @@ pub const THREAD_CREATE_FLAGS_INITIAL_THREAD: u32 = 0x00000080; // ?
 pub struct TokenInformationClass(pub i32);
 pub struct TokenAccessMask(pub u32);
 // pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(8u32);
-pub const TOKEN_READ: TokenAccessMask = TokenAccessMask(131080u32);
+pub const TOKEN_READ: TokenAccessMask = TokenAccessMask(0x0002_0008u32);
 // pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(0x0008);
 // pub const TOKEN_ADJUST_PRIVILEGES: TokenAccessMask = TokenAccessMask(0x0020);
 
@@ -890,11 +919,11 @@ pub const TOKEN_QUERY: AccessMask = 0x0008;
 pub const TOKEN_ADJUST_PRIVILEGES: AccessMask = 0x0020;
 pub const TOKEN_INTEGRITY_LEVEL: u32 = 25;
 
-pub const SECURITY_MANDATORY_UNTRUSTED_RID: u32 = 0x00000000;
-pub const SECURITY_MANDATORY_LOW_RID: u32 = 0x00001000;
-pub const SECURITY_MANDATORY_MEDIUM_RID: u32 = 0x00002000;
-pub const SECURITY_MANDATORY_HIGH_RID: u32 = 0x00003000;
-pub const SECURITY_MANDATORY_SYSTEM_RID: u32 = 0x00004000;
+pub const SECURITY_MANDATORY_UNTRUSTED_RID: u32 = 0x0000_0000;
+pub const SECURITY_MANDATORY_LOW_RID: u32 = 0x0000_1000;
+pub const SECURITY_MANDATORY_MEDIUM_RID: u32 = 0x0000_2000;
+pub const SECURITY_MANDATORY_HIGH_RID: u32 = 0x0000_3000;
+pub const SECURITY_MANDATORY_SYSTEM_RID: u32 = 0x0000_4000;
 
 #[repr(C)]
 pub struct Sid {
@@ -1817,14 +1846,20 @@ pub struct SystemProcessInformation2 {
 }
 
 #[repr(C)]
-#[expect(non_snake_case)]
+#[expect(
+    non_snake_case,
+    reason = "The CONTEXT structure is a Windows API structure"
+)]
 pub struct M128A {
     pub Low:  ULONGLONG,
     pub High: LONGLONG,
 }
 
 #[repr(C)]
-#[expect(non_snake_case)]
+#[expect(
+    non_snake_case,
+    reason = "The CONTEXT structure is a Windows API structure"
+)]
 pub struct CONTEXT {
     pub P1Home:               DWORD64,
     pub P2Home:               DWORD64,
@@ -1874,17 +1909,17 @@ pub struct CONTEXT {
     pub LastExceptionFromRip: DWORD64,
 }
 
-pub const HEAP_NO_SERIALIZE: DWORD = 0x00000001;
-pub const HEAP_GROWABLE: DWORD = 0x00000002;
-pub const HEAP_GENERATE_EXCEPTIONS: DWORD = 0x00000004;
-pub const HEAP_ZERO_MEMORY: DWORD = 0x00000008;
-pub const HEAP_REALLOC_IN_PLACE_ONLY: DWORD = 0x00000010;
-pub const HEAP_TAIL_CHECKING_ENABLED: DWORD = 0x00000020;
-pub const HEAP_FREE_CHECKING_ENABLED: DWORD = 0x00000040;
-pub const HEAP_DISABLE_COALESCE_ON_FREE: DWORD = 0x00000080;
-pub const HEAP_CREATE_ALIGN_16: DWORD = 0x00010000;
-pub const HEAP_CREATE_ENABLE_TRACING: DWORD = 0x00020000;
-pub const HEAP_CREATE_ENABLE_EXECUTE: DWORD = 0x00040000;
+pub const HEAP_NO_SERIALIZE: DWORD = 0x0000_0001;
+pub const HEAP_GROWABLE: DWORD = 0x0000_0002;
+pub const HEAP_GENERATE_EXCEPTIONS: DWORD = 0x0000_0004;
+pub const HEAP_ZERO_MEMORY: DWORD = 0x0000_0008;
+pub const HEAP_REALLOC_IN_PLACE_ONLY: DWORD = 0x0000_0010;
+pub const HEAP_TAIL_CHECKING_ENABLED: DWORD = 0x0000_0020;
+pub const HEAP_FREE_CHECKING_ENABLED: DWORD = 0x0000_0040;
+pub const HEAP_DISABLE_COALESCE_ON_FREE: DWORD = 0x0000_0080;
+pub const HEAP_CREATE_ALIGN_16: DWORD = 0x0001_0000;
+pub const HEAP_CREATE_ENABLE_TRACING: DWORD = 0x0002_0000;
+pub const HEAP_CREATE_ENABLE_EXECUTE: DWORD = 0x0004_0000;
 pub const HEAP_MAXIMUM_TAG: DWORD = 0x0fff;
 pub const HEAP_PSEUDO_TAG_FLAG: DWORD = 0x8000;
 pub const HEAP_TAG_SHIFT: usize = 18;
@@ -1968,7 +2003,7 @@ pub struct RtlpCurdirRef {
     pub directory_handle: HANDLE,
 }
 
-pub const UNICODE_STRING_MAX_BYTES: u32 = 65534;
+pub const UNICODE_STRING_MAX_BYTES: u32 = 0xfffe;
 
 pub enum MemoryInformationClass {
     MemoryBasicInformation,

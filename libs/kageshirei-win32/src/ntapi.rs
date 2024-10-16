@@ -38,11 +38,13 @@ pub struct NtSyscall {
     pub hash:    usize,
 }
 
-/// We implement Sync for NtSyscall to ensure that it can be safely shared
-/// across multiple threads. This is necessary because lazy_static requires
-/// the types it manages to be Sync. Since NtSyscall only contains raw pointers
-/// and does not perform any interior mutability, it is safe to implement Sync manually.
+// Safety: We implement Sync for NtSyscall to ensure that it can be safely shared
+// across multiple threads. This is necessary because lazy_static requires
+// the types it manages to be Sync. Since NtSyscall only contains raw pointers
+// and does not perform any interior mutability, it is safe to implement Sync manually.
 unsafe impl Sync for NtSyscall {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtSyscall {}
 
 impl Default for NtSyscall {
     fn default() -> Self { Self::new() }
@@ -73,7 +75,10 @@ pub struct NtClose {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtClose {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtClose {}
 
 impl Default for NtClose {
     fn default() -> Self { Self::new() }
@@ -104,7 +109,10 @@ pub struct NtAllocateVirtualMemory {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtAllocateVirtualMemory {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtAllocateVirtualMemory {}
 
 impl Default for NtAllocateVirtualMemory {
     fn default() -> Self { Self::new() }
@@ -167,7 +175,10 @@ pub struct NtWriteVirtualMemory {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtWriteVirtualMemory {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtWriteVirtualMemory {}
 
 impl Default for NtWriteVirtualMemory {
     fn default() -> Self { Self::new() }
@@ -223,7 +234,10 @@ pub struct NtFreeVirtualMemory {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtFreeVirtualMemory {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtFreeVirtualMemory {}
 
 impl Default for NtFreeVirtualMemory {
     fn default() -> Self { Self::new() }
@@ -279,7 +293,10 @@ pub struct NtOpenKey {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtOpenKey {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtOpenKey {}
 
 impl Default for NtOpenKey {
     fn default() -> Self { Self::new() }
@@ -327,7 +344,10 @@ pub struct NtQueryValueKey {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtQueryValueKey {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtQueryValueKey {}
 
 impl Default for NtQueryValueKey {
     fn default() -> Self { Self::new() }
@@ -384,7 +404,10 @@ pub struct NtEnumerateKey {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtEnumerateKey {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtEnumerateKey {}
 
 impl Default for NtEnumerateKey {
     fn default() -> Self { Self::new() }
@@ -439,7 +462,10 @@ pub struct NtQuerySystemInformation {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtQuerySystemInformation {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtQuerySystemInformation {}
 
 impl Default for NtQuerySystemInformation {
     fn default() -> Self { Self::new() }
@@ -489,7 +515,10 @@ pub struct NtQueryInformationProcess {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtQueryInformationProcess {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtQueryInformationProcess {}
 
 impl Default for NtQueryInformationProcess {
     fn default() -> Self { Self::new() }
@@ -542,7 +571,10 @@ pub struct NtOpenProcess {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtOpenProcess {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtOpenProcess {}
 
 impl Default for NtOpenProcess {
     fn default() -> Self { Self::new() }
@@ -590,7 +622,10 @@ pub struct NtOpenProcessToken {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtOpenProcessToken {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtOpenProcessToken {}
 
 impl Default for NtOpenProcessToken {
     fn default() -> Self { Self::new() }
@@ -629,7 +664,10 @@ pub struct NtOpenProcessTokenEx {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtOpenProcessTokenEx {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtOpenProcessTokenEx {}
 
 impl Default for NtOpenProcessTokenEx {
     fn default() -> Self { Self::new() }
@@ -676,7 +714,10 @@ pub struct NtQueryInformationToken {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtQueryInformationToken {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtQueryInformationToken {}
 
 impl Default for NtQueryInformationToken {
     fn default() -> Self { Self::new() }
@@ -729,7 +770,10 @@ pub struct NtAdjustPrivilegesToken {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtAdjustPrivilegesToken {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtAdjustPrivilegesToken {}
 
 impl Default for NtAdjustPrivilegesToken {
     fn default() -> Self { Self::new() }
@@ -783,7 +827,10 @@ pub struct NtWaitForSingleObject {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtWaitForSingleObject {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtWaitForSingleObject {}
 
 impl Default for NtWaitForSingleObject {
     fn default() -> Self { Self::new() }
@@ -822,7 +869,10 @@ pub struct NtOpenFile {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtOpenFile {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtOpenFile {}
 
 impl Default for NtOpenFile {
     fn default() -> Self { Self::new() }
@@ -931,7 +981,10 @@ pub struct NtWriteFile {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtWriteFile {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtWriteFile {}
 
 impl Default for NtWriteFile {
     fn default() -> Self { Self::new() }
@@ -1003,7 +1056,10 @@ pub struct NtCreateFile {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateFile {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateFile {}
 
 impl Default for NtCreateFile {
     fn default() -> Self { Self::new() }
@@ -1081,7 +1137,10 @@ pub struct NtReadFile {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtReadFile {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtReadFile {}
 
 impl Default for NtReadFile {
     fn default() -> Self { Self::new() }
@@ -1153,7 +1212,10 @@ pub struct NtCreateProcessEx {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateProcessEx {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateProcessEx {}
 
 impl Default for NtCreateProcessEx {
     fn default() -> Self { Self::new() }
@@ -1216,7 +1278,10 @@ pub struct NtCreateThread {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateThread {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateThread {}
 
 impl Default for NtCreateThread {
     fn default() -> Self { Self::new() }
@@ -1230,6 +1295,13 @@ impl NtCreateThread {
     }
 
     /// Wrapper for the NtCreateThread syscall.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `thread_handle` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
     ///
     /// # Arguments
     ///
@@ -1252,7 +1324,7 @@ impl NtCreateThread {
     /// # Returns
     ///
     /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         thread_handle: PHANDLE,
         desired_access: AccessMask,
@@ -1282,7 +1354,10 @@ pub struct NtCreateThreadEx {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateThreadEx {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateThreadEx {}
 
 impl Default for NtCreateThreadEx {
     fn default() -> Self { Self::new() }
@@ -1296,6 +1371,13 @@ impl NtCreateThreadEx {
     }
 
     /// Wrapper for the NtCreateThreadEx syscall.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `thread_handle` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
     ///
     /// # Arguments
     ///
@@ -1315,7 +1397,11 @@ impl NtCreateThreadEx {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         thread_handle: *mut HANDLE,
         desired_access: AccessMask,
@@ -1351,7 +1437,10 @@ pub struct ZwCreateThreadEx {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for ZwCreateThreadEx {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for ZwCreateThreadEx {}
 
 impl Default for ZwCreateThreadEx {
     fn default() -> Self { Self::new() }
@@ -1365,6 +1454,13 @@ impl ZwCreateThreadEx {
     }
 
     /// Wrapper for the ZwCreateThreadEx syscall.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `thread_handle` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
     ///
     /// # Arguments
     ///
@@ -1390,7 +1486,11 @@ impl ZwCreateThreadEx {
     /// # Returns
     ///
     /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         thread_handle: *mut HANDLE,
         desired_access: AccessMask,
@@ -1426,7 +1526,10 @@ pub struct NtCreateUserProcess {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateUserProcess {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateUserProcess {}
 
 impl Default for NtCreateUserProcess {
     fn default() -> Self { Self::new() }
@@ -1440,6 +1543,14 @@ impl NtCreateUserProcess {
     }
 
     /// Wrapper for the NtCreateUserProcess syscall.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` and `thread_handle`
+    /// pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
     ///
     /// # Arguments
     ///
@@ -1460,7 +1571,11 @@ impl NtCreateUserProcess {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         process_handle: PHANDLE,
         thread_handle: PHANDLE,
@@ -1496,7 +1611,10 @@ pub struct NtResumeThread {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtResumeThread {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtResumeThread {}
 
 impl Default for NtResumeThread {
     fn default() -> Self { Self::new() }
@@ -1513,6 +1631,12 @@ impl NtResumeThread {
     ///
     /// This function resumes a suspended thread. It wraps the NtResumeThread syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `thread_handle` pointer.
+    ///
+    /// Pointer validity must be ensured by the caller.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `thread_handle` A handle to the thread to be resumed.
@@ -1522,7 +1646,7 @@ impl NtResumeThread {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(&self, thread_handle: HANDLE, suspend_count: &mut u32) -> i32 {
+    pub unsafe fn run(&self, thread_handle: HANDLE, suspend_count: &mut u32) -> i32 {
         run!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -1536,8 +1660,10 @@ pub struct NtTerminateProcess {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtTerminateProcess {}
-
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtTerminateProcess {}
 impl Default for NtTerminateProcess {
     fn default() -> Self { Self::new() }
 }
@@ -1575,7 +1701,10 @@ pub struct NtTerminateThread {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtTerminateThread {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtTerminateThread {}
 
 impl Default for NtTerminateThread {
     fn default() -> Self { Self::new() }
@@ -1592,6 +1721,12 @@ impl NtTerminateThread {
     ///
     /// This function terminates a process. It wraps the NtTerminateProcess syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` pointer.
+    ///
+    /// Pointer validity must be ensured by the caller.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` A handle to the process to be terminated.
@@ -1600,7 +1735,7 @@ impl NtTerminateThread {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(&self, thread_handle: HANDLE, exit_status: i32) -> i32 {
+    pub unsafe fn run(&self, thread_handle: HANDLE, exit_status: i32) -> i32 {
         run!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -1614,7 +1749,10 @@ pub struct NtDelayExecution {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtDelayExecution {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtDelayExecution {}
 
 impl Default for NtDelayExecution {
     fn default() -> Self { Self::new() }
@@ -1631,6 +1769,12 @@ impl NtDelayExecution {
     ///
     /// This function delays the execution of the current thread for the specified interval.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `delay_interval` pointer.
+    ///
+    /// Pointer validity must be ensured by the caller.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `alertable` A boolean indicating whether the delay can be interrupted by an
@@ -1641,7 +1785,7 @@ impl NtDelayExecution {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(&self, alertable: bool, delay_interval: *const i64) -> i32 {
+    pub unsafe fn run(&self, alertable: bool, delay_interval: *const i64) -> i32 {
         run!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -1655,7 +1799,10 @@ pub struct NtCreateNamedPipeFile {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateNamedPipeFile {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateNamedPipeFile {}
 
 impl Default for NtCreateNamedPipeFile {
     fn default() -> Self { Self::new() }
@@ -1671,6 +1818,13 @@ impl NtCreateNamedPipeFile {
     /// Wrapper for the NtCreateNamedPipeFile syscall.
     ///
     /// This function creates a named pipe file and returns a handle to it.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `file_handle`, `object_attributes`, and
+    /// `io_status_block` pointers.
+    ///
+    /// Pointer validity must be ensured by the caller.
     ///
     /// # Arguments
     ///
@@ -1697,7 +1851,11 @@ impl NtCreateNamedPipeFile {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         file_handle: *mut HANDLE,
         desired_access: ULONG,
@@ -1739,7 +1897,10 @@ pub struct NtReadVirtualMemory {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtReadVirtualMemory {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtReadVirtualMemory {}
 
 impl Default for NtReadVirtualMemory {
     fn default() -> Self { Self::new() }
@@ -1756,6 +1917,13 @@ impl NtReadVirtualMemory {
     ///
     /// This function reads memory in the virtual address space of a specified process.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle`, `base_address`, and
+    /// `buffer` pointers.
+    ///
+    /// Pointer validity must be ensured by the caller.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` A handle to the process whose memory is to be read.
@@ -1770,7 +1938,7 @@ impl NtReadVirtualMemory {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: HANDLE,
         base_address: *const c_void,
@@ -1794,7 +1962,10 @@ pub struct NtCreateProcess {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateProcess {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateProcess {}
 
 impl Default for NtCreateProcess {
     fn default() -> Self { Self::new() }
@@ -1813,6 +1984,13 @@ impl NtCreateProcess {
     /// used to create a new process in the Windows NT kernel. Unlike NtCreateUserProcess, this
     /// syscall does not create a new primary thread, and additional steps are needed to fully
     /// initialize the process.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` and `object_attributes`
+    /// pointers.
+    ///
+    /// Pointer validity must be ensured by the caller.
     ///
     /// # Arguments
     ///
@@ -1834,7 +2012,11 @@ impl NtCreateProcess {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         process_handle: *mut HANDLE,
         desired_access: AccessMask,
@@ -1864,7 +2046,10 @@ pub struct NtQueryVirtualMemory {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtQueryVirtualMemory {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtQueryVirtualMemory {}
 
 impl Default for NtQueryVirtualMemory {
     fn default() -> Self { Self::new() }
@@ -1880,6 +2065,12 @@ impl NtQueryVirtualMemory {
     /// Wrapper for the NtQueryVirtualMemory syscall.
     ///
     /// This function queries information about the virtual memory of a specified process.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `base_address` and `memory_information`
+    /// pointers.
+    /// Pointer validity must be ensured by the caller.
     ///
     /// # Arguments
     ///
@@ -1898,7 +2089,7 @@ impl NtQueryVirtualMemory {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: HANDLE,
         base_address: *const c_void,
@@ -2174,18 +2365,18 @@ pub struct NtDll {
     pub module_base: *mut u8,
 
     // Direct Syscall
-    pub ldr_load_dll: LdrLoadDll,
-    pub rtl_create_process_parameters_ex: RtlCreateProcessParametersEx,
-    pub rtl_get_full_path_name_u: RtlGetFullPathNameU,
-    pub rtl_get_full_path_name_ustrex: RtlGetFullPathNameUstrEx,
-    pub rtl_dos_path_name_to_nt_path_name_u: RtlDosPathNameToNtPathNameU,
+    pub ldr_load_dll: Option<LdrLoadDll>,
+    pub rtl_create_process_parameters_ex: Option<RtlCreateProcessParametersEx>,
+    pub rtl_get_full_path_name_u: Option<RtlGetFullPathNameU>,
+    pub rtl_get_full_path_name_ustrex: Option<RtlGetFullPathNameUstrEx>,
+    pub rtl_dos_path_name_to_nt_path_name_u: Option<RtlDosPathNameToNtPathNameU>,
 
     // Heap management functions
-    pub rtl_create_heap:     RtlCreateHeap,
-    pub rtl_allocate_heap:   RtlAllocateHeap,
-    pub rtl_free_heap:       RtlFreeHeap,
-    pub rtl_reallocate_heap: RtlReAllocateHeap,
-    pub rtl_destroy_heap:    RtlDestroyHeap,
+    pub rtl_create_heap:     Option<RtlCreateHeap>,
+    pub rtl_allocate_heap:   Option<RtlAllocateHeap>,
+    pub rtl_free_heap:       Option<RtlFreeHeap>,
+    pub rtl_reallocate_heap: Option<RtlReAllocateHeap>,
+    pub rtl_destroy_heap:    Option<RtlDestroyHeap>,
 
     // Process Management functions
     pub nt_create_process:            NtCreateProcess,
@@ -2242,18 +2433,18 @@ impl NtDll {
             module_base: null_mut(),
 
             // Direct Syscall
-            ldr_load_dll: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_create_process_parameters_ex: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_get_full_path_name_u: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_get_full_path_name_ustrex: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_dos_path_name_to_nt_path_name_u: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            ldr_load_dll: None,
+            rtl_create_process_parameters_ex: None,
+            rtl_get_full_path_name_u: None,
+            rtl_get_full_path_name_ustrex: None,
+            rtl_dos_path_name_to_nt_path_name_u: None,
 
             // Heap management functions
-            rtl_create_heap:     unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_allocate_heap:   unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_free_heap:       unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_reallocate_heap: unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            rtl_destroy_heap:    unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            rtl_create_heap:     None,
+            rtl_allocate_heap:   None,
+            rtl_free_heap:       None,
+            rtl_reallocate_heap: None,
+            rtl_destroy_heap:    None,
 
             // Process Management functions
             nt_create_process:            NtCreateProcess::new(),
@@ -2302,5 +2493,7 @@ impl NtDll {
     }
 }
 
+// Safety: NtDll is a safe wrapper around the Windows NT kernel functions.
 unsafe impl Sync for NtDll {}
+// Safety: NtDll is a safe wrapper around the Windows NT kernel functions.
 unsafe impl Send for NtDll {}

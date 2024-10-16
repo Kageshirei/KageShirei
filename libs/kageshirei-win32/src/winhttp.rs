@@ -1,6 +1,6 @@
 use core::{ffi::c_void, fmt};
 
-/// WinHTTP access types and flags
+// WinHTTP access types and flags
 
 /// Indicates that no proxy should be used.
 pub const WINHTTP_ACCESS_TYPE_NO_PROXY: u32 = 1;
@@ -269,18 +269,18 @@ pub type WinHttpGetProxyForUrlFunc = unsafe extern "system" fn(
 /// This structure contains function pointers to the various WinHTTP functions. It allows dynamic
 /// loading of the functions from the WinHTTP library at runtime.
 pub struct WinHttp {
-    pub win_http_open: WinHttpOpenFunc,
-    pub win_http_connect: WinHttpConnectFunc,
-    pub win_http_open_request: WinHttpOpenRequestFunc,
-    pub win_http_set_option: WinHttpSetOptionFunc,
-    pub win_http_close_handle: WinHttpCloseHandleFunc,
-    pub win_http_send_request: WinHttpSendRequestFunc,
-    pub win_http_add_request_headers: WinHttpAddRequestHeadersFunc,
-    pub win_http_receive_response: WinHttpReceiveResponseFunc,
-    pub win_http_read_data: WinHttpReadDataFunc,
-    pub win_http_query_headers: WinHttpQueryHeadersFunc,
-    pub win_http_get_ie_proxy_config_for_current_user: WinHttpGetIEProxyConfigForCurrentUserFunc,
-    pub win_http_get_proxy_for_url: WinHttpGetProxyForUrlFunc,
+    pub win_http_open: Option<WinHttpOpenFunc>,
+    pub win_http_connect: Option<WinHttpConnectFunc>,
+    pub win_http_open_request: Option<WinHttpOpenRequestFunc>,
+    pub win_http_set_option: Option<WinHttpSetOptionFunc>,
+    pub win_http_close_handle: Option<WinHttpCloseHandleFunc>,
+    pub win_http_send_request: Option<WinHttpSendRequestFunc>,
+    pub win_http_add_request_headers: Option<WinHttpAddRequestHeadersFunc>,
+    pub win_http_receive_response: Option<WinHttpReceiveResponseFunc>,
+    pub win_http_read_data: Option<WinHttpReadDataFunc>,
+    pub win_http_query_headers: Option<WinHttpQueryHeadersFunc>,
+    pub win_http_get_ie_proxy_config_for_current_user: Option<WinHttpGetIEProxyConfigForCurrentUserFunc>,
+    pub win_http_get_proxy_for_url: Option<WinHttpGetProxyForUrlFunc>,
 }
 
 impl Default for WinHttp {
@@ -297,20 +297,18 @@ impl WinHttp {
     /// A new `WinHttp` instance with uninitialized function pointers.
     pub fn new() -> Self {
         Self {
-            win_http_open: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_connect: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_open_request: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_set_option: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_close_handle: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_send_request: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_add_request_headers: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_receive_response: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_read_data: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_query_headers: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
-            win_http_get_ie_proxy_config_for_current_user: unsafe {
-                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
-            },
-            win_http_get_proxy_for_url: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_open: None,
+            win_http_connect: None,
+            win_http_open_request: None,
+            win_http_set_option: None,
+            win_http_close_handle: None,
+            win_http_send_request: None,
+            win_http_add_request_headers: None,
+            win_http_receive_response: None,
+            win_http_read_data: None,
+            win_http_query_headers: None,
+            win_http_get_ie_proxy_config_for_current_user: None,
+            win_http_get_proxy_for_url: None,
         }
     }
 }
@@ -386,6 +384,10 @@ impl WinHttpError {
 
 impl fmt::Display for WinHttpError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
         match self {
             Self::ErrorWinhttpCannotConnect => write!(f, "Cannot connect"),
             Self::ErrorWinhttpConnectionError => write!(f, "Connection error"),
