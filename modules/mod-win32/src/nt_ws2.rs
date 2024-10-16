@@ -1,4 +1,9 @@
-use alloc::{ffi::CString, format, string::String, vec::Vec};
+use alloc::{
+    ffi::CString,
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 use core::{
     ffi::c_void,
     mem::{transmute, zeroed},
@@ -85,20 +90,20 @@ pub fn init_winsock_funcs() {
 
             // Initialize Winsock functions
             let mut winsock_functions = Winsock::new();
-            winsock_functions.wsa_startup = transmute(wsa_startup_addr);
-            winsock_functions.wsa_cleanup = transmute(wsa_cleanup_addr);
-            winsock_functions.socket = transmute(socket_addr);
-            winsock_functions.connect = transmute(connect_addr);
-            winsock_functions.send = transmute(send_addr);
-            winsock_functions.recv = transmute(recv_addr);
-            winsock_functions.closesocket = transmute(closesocket_addr);
-            winsock_functions.inet_addr = transmute(inet_addr_addr);
-            winsock_functions.htons = transmute(htons_addr);
-            winsock_functions.getaddrinfo = transmute(getaddrinfo_addr);
-            winsock_functions.freeaddrinfo = transmute(freeaddrinfo_addr);
-            winsock_functions.ioctlsocket = transmute(ioctlsocket_addr);
-            winsock_functions.select = transmute(select_addr);
-            winsock_functions.wsa_get_last_error = transmute(wsa_get_last_error_addr);
+            winsock_functions.wsa_startup = Some(transmute(wsa_startup_addr));
+            winsock_functions.wsa_cleanup = Some(transmute(wsa_cleanup_addr));
+            winsock_functions.socket = Some(transmute(socket_addr));
+            winsock_functions.connect = Some(transmute(connect_addr));
+            winsock_functions.send = Some(transmute(send_addr));
+            winsock_functions.recv = Some(transmute(recv_addr));
+            winsock_functions.closesocket = Some(transmute(closesocket_addr));
+            winsock_functions.inet_addr = Some(transmute(inet_addr_addr));
+            winsock_functions.htons = Some(transmute(htons_addr));
+            winsock_functions.getaddrinfo = Some(transmute(getaddrinfo_addr));
+            winsock_functions.freeaddrinfo = Some(transmute(freeaddrinfo_addr));
+            winsock_functions.ioctlsocket = Some(transmute(ioctlsocket_addr));
+            winsock_functions.select = Some(transmute(select_addr));
+            winsock_functions.wsa_get_last_error = Some(transmute(wsa_get_last_error_addr));
 
             // Store the functions in the global variable
             WINSOCK_FUNCS = Some(winsock_functions);
@@ -132,11 +137,19 @@ pub fn get_winsock() -> &'static Winsock {
 pub fn init_winsock() -> i32 {
     unsafe {
         let mut wsa_data: WsaData = core::mem::zeroed();
-        let result = (get_winsock().wsa_startup)(0x0202, &mut wsa_data);
-        if result != 0 {
-            return (get_winsock().wsa_get_last_error)();
+
+        if let Some(wsa_startup) = get_winsock().wsa_startup {
+            let result = wsa_startup(0x0202, &mut wsa_data);
+            if result != 0 {
+                if let Some(wsa_get_last_error) = get_winsock().wsa_get_last_error {
+                    return wsa_get_last_error();
+                }
+            }
+            result
         }
-        result
+        else {
+            return -1;
+        }
     }
 }
 
@@ -146,10 +159,15 @@ pub fn init_winsock() -> i32 {
 /// This function does not return any values.
 pub fn cleanup_winsock(sock: SOCKET) {
     unsafe {
-        (get_winsock().closesocket)(sock);
-        (get_winsock().wsa_cleanup)();
+        if let Some(closesocket) = get_winsock().closesocket {
+            closesocket(sock);
+        }
+        if let Some(wsa_cleanup) = get_winsock().wsa_cleanup {
+            wsa_cleanup();
+        }
     }
 }
+
 /// Creates a new TCP socket.
 ///
 /// This function creates a new socket using the AF_INET address family, SOCK_STREAM socket type,
@@ -160,12 +178,19 @@ pub fn cleanup_winsock(sock: SOCKET) {
 /// * The error code as `usize` if there was an error during socket creation.
 pub fn create_socket() -> SOCKET {
     unsafe {
-        let sock = (get_winsock().socket)(2, 1, 6); // AF_INET, SOCK_STREAM, IPPROTO_TCP
-        if sock == usize::MAX {
-            let error_code = (get_winsock().wsa_get_last_error)();
-            return error_code as usize;
+        if let Some(socket_func) = get_winsock().socket {
+            let sock = socket_func(2, 1, 6); // AF_INET, SOCK_STREAM, IPPROTO_TCP
+            if sock == usize::MAX {
+                if let Some(wsa_get_last_error) = get_winsock().wsa_get_last_error {
+                    let error_code = wsa_get_last_error();
+                    return error_code as usize;
+                }
+            }
+            sock
         }
-        sock
+        else {
+            usize::MAX
+        }
     }
 }
 
@@ -189,9 +214,13 @@ pub fn resolve_hostname(hostname: &str) -> u32 {
         hints.ai_socktype = 1; // SOCK_STREAM
         let mut res: *mut AddrInfo = null_mut();
 
-        let status = (get_winsock().getaddrinfo)(hostname_cstr.as_ptr(), null(), &hints, &mut res);
-        if status != 0 {
-            return (get_winsock().wsa_get_last_error)() as u32;
+        if let Some(getaddrinfo_func) = get_winsock().getaddrinfo {
+            let status = getaddrinfo_func(hostname_cstr.as_ptr(), null(), &hints, &mut res);
+            if status != 0 {
+                if let Some(wsa_get_last_error_func) = get_winsock().wsa_get_last_error {
+                    return wsa_get_last_error_func() as u32;
+                }
+            }
         }
 
         let mut ip_addr: u32 = 0;
@@ -200,7 +229,6 @@ pub fn resolve_hostname(hostname: &str) -> u32 {
         while !addr_info_ptr.is_null() {
             let addr_info = &*addr_info_ptr;
             if addr_info.ai_family == 2 {
-                // AF_INET
                 let sockaddr_in = &*(addr_info.ai_addr as *const SockAddrIn);
                 ip_addr = sockaddr_in.sin_addr.s_addr;
                 break;
@@ -208,7 +236,9 @@ pub fn resolve_hostname(hostname: &str) -> u32 {
             addr_info_ptr = addr_info.ai_next;
         }
 
-        (get_winsock().freeaddrinfo)(res);
+        if let Some(freeaddrinfo_func) = get_winsock().freeaddrinfo {
+            freeaddrinfo_func(res);
+        }
 
         ip_addr
     }
@@ -239,15 +269,26 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
         let resolve_addr = resolve_hostname(addr);
         let mut sockaddr_in: SockAddrIn = core::mem::zeroed();
         sockaddr_in.sin_family = 2; // AF_INET
-        sockaddr_in.sin_port = (get_winsock().htons)(port);
+
+        if let Some(htons_func) = get_winsock().htons {
+            sockaddr_in.sin_port = htons_func(port);
+        }
+
         sockaddr_in.sin_addr.s_addr = resolve_addr;
 
         let sockaddr = &sockaddr_in as *const _ as *const SockAddr;
-        let result = (get_winsock().connect)(sock, sockaddr, core::mem::size_of::<SockAddrIn>() as i32);
-        if result != 0 {
-            return (get_winsock().wsa_get_last_error)();
+
+        if let Some(connect_func) = get_winsock().connect {
+            let result = connect_func(sock, sockaddr, core::mem::size_of::<SockAddrIn>() as i32);
+            if result != 0 {
+                if let Some(wsa_get_last_error_func) = get_winsock().wsa_get_last_error {
+                    return wsa_get_last_error_func();
+                }
+            }
+            return result;
         }
-        result
+
+        -1
     }
 }
 
@@ -266,11 +307,16 @@ pub fn connect_socket(sock: SOCKET, addr: &str, port: u16) -> i32 {
 ///   `wsa_get_last_error`.
 pub fn send_request(sock: SOCKET, request: &[u8]) -> i32 {
     unsafe {
-        let result = (get_winsock().send)(sock, request.as_ptr() as *const i8, request.len() as i32, 0);
-        if result != 0 {
-            return (get_winsock().wsa_get_last_error)();
+        if let Some(send_func) = get_winsock().send {
+            let result = send_func(sock, request.as_ptr() as *const i8, request.len() as i32, 0);
+            if result != 0 {
+                if let Some(wsa_get_last_error_func) = get_winsock().wsa_get_last_error {
+                    return wsa_get_last_error_func();
+                }
+            }
+            return result;
         }
-        result
+        -1
     }
 }
 
@@ -290,25 +336,31 @@ pub fn receive_response(sock: SOCKET) -> Result<String, String> {
     unsafe {
         let mut buffer = [0u8; 4096];
         let mut response = String::new();
-        loop {
-            let bytes_received = (get_winsock().recv)(sock, buffer.as_mut_ptr() as *mut i8, buffer.len() as i32, 0);
-            if bytes_received == -1 {
-                let error_code = nt_get_last_error();
-                return Err(format!(
-                    "Receive response failed with error code: {}",
-                    error_code
-                ));
+
+        if let Some(recv_func) = get_winsock().recv {
+            loop {
+                let bytes_received = recv_func(sock, buffer.as_mut_ptr() as *mut i8, buffer.len() as i32, 0);
+                if bytes_received == -1 {
+                    let error_code = nt_get_last_error();
+                    return Err(format!(
+                        "Receive response failed with error code: {}",
+                        error_code
+                    ));
+                }
+                else if bytes_received == 0 {
+                    break;
+                }
+                else {
+                    response.push_str(&String::from_utf8_lossy(
+                        &buffer[.. bytes_received as usize],
+                    ));
+                }
             }
-            else if bytes_received == 0 {
-                break;
-            }
-            else {
-                response.push_str(&String::from_utf8_lossy(
-                    &buffer[.. bytes_received as usize],
-                ));
-            }
+            Ok(response)
         }
-        Ok(response)
+        else {
+            Err("recv function is not available".to_string())
+        }
     }
 }
 
@@ -337,7 +389,9 @@ pub fn http_get(url: &str, path: &str) -> Result<String, String> {
 
     let response = receive_response(sock)?;
     unsafe {
-        (get_winsock().closesocket)(sock);
+        if let Some(closesocket_func) = get_winsock().closesocket {
+            closesocket_func(sock);
+        }
     }
     cleanup_winsock(sock);
     Ok(response)
@@ -373,7 +427,9 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<String, String> {
 
     let response = receive_response(sock)?;
     unsafe {
-        (get_winsock().closesocket)(sock);
+        if let Some(closesocket_func) = get_winsock().closesocket {
+            closesocket_func(sock);
+        }
     }
     cleanup_winsock(sock);
     Ok(response)
