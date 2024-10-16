@@ -1,44 +1,25 @@
-use bytes::Bytes;
-use kageshirei_crypt::encryption_algorithm::BasicAlgorithm;
-use serde::Serialize;
+use alloc::{sync::Arc, vec::Vec};
+use core::future::Future;
 
-use crate::{metadata::WithMetadata, sender::Sender};
+use crate::{error::Protocol as ProtocolError, metadata::Metadata};
 
-/// Define the protocol trait responsible for sending and receiving data.
-pub trait Protocol<E>: Sender + Send
-where
-    E: BasicAlgorithm,
-{
-    /// Receive some data as raw bytes and deserialize it into a type.
+/// Define the sender trait responsible for sending data.
+pub trait Protocol: Send {
+    /// Send some data as raw bytes.
     ///
     /// # Arguments
     ///
-    /// * `data` - The raw bytes to deserialize.
-    /// * `encryptor` - The encryptor to use to decrypt the data.
+    /// * `data` - The raw bytes to send.
+    /// * `metadata` - The metadata to send with the data.
     ///
     /// # Returns
     ///
-    /// A result containing the deserialized data or an error.
-    fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, String>
-    where
-        S: serde::de::DeserializeOwned;
-
-    /// Serialize some data into raw bytes and send it.
-    ///
-    /// # Arguments
-    ///
-    /// * `data` - The data to serialize.
-    /// * `sender` - The sender to use to send the data.
-    /// * `encryptor` - The encryptor to use to encrypt the data.
-    ///
-    /// # Returns
-    ///
-    /// A result indicating success or failure.
-    fn write<D>(
+    /// A result indicating success or failure with the response data.
+    fn send(
         &mut self,
-        data: D,
-        encryptor: Option<E>,
-    ) -> impl std::future::Future<Output = Result<Bytes, String>> + Send
-    where
-        D: Serialize + WithMetadata + Send;
+        data: Vec<u8>,
+        metadata: Option<Arc<Metadata>>,
+    ) -> impl Future<Output = Result<Vec<u8>, ProtocolError>> + Send;
+
+    fn receive(&mut self) -> impl Future<Output = Result<Vec<u8>, ProtocolError>> + Send;
 }

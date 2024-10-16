@@ -2919,9 +2919,7 @@ dependencies = [
 name = "kageshirei-communication-protocol"
 version = "0.1.0"
 dependencies = [
- "bytes",
  "hex-literal",
- "kageshirei-crypt",
  "sea-orm",
  "serde",
  "serde_json",

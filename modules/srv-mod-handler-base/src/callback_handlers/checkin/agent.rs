@@ -1,5 +1,5 @@
 use axum::http::StatusCode;
-use kageshirei_communication_protocol::communication_structs::checkin::Checkin;
+use kageshirei_communication_protocol::communication::checkin::Checkin;
 use kageshirei_crypt::{
     encoder::{base64::Base64Encoder, Encoder as _},
     encryption_algorithm::{asymmetric_encryption_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
@@ -106,7 +106,7 @@ mod tests {
     use std::sync::Arc;
 
     use anyhow::anyhow;
-    use kageshirei_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
+    use kageshirei_communication_protocol::communication::checkin::{Checkin, PartialCheckin};
     use srv_mod_database::{
         bb8,
         diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl},

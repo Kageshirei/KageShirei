@@ -5,10 +5,10 @@ use alloc::{
 
 use bytes::{BufMut, Bytes, BytesMut};
 use kageshirei_communication_protocol::{
+    format::Protocol,
     magic_numbers,
     metadata::{Metadata, WithMetadata},
-    protocol::Protocol,
-    sender::Sender,
+    protocol::Sender,
 };
 use kageshirei_crypt::encryption_algorithm::BasicAlgorithm;
 use serde::{de::DeserializeOwned, Serialize};

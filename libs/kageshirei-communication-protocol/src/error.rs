@@ -1,14 +1,44 @@
-use std::{
-    error::Error,
+#[cfg(any(feature = "server", test))]
+use core::{
+    error::Error as ErrorTrait,
     fmt::{Debug, Display, Formatter},
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum ProtocolError {
-    /// Error when trying to deserialize data.
-    DeserializationError,
-    /// Error when trying to serialize data.
-    SerializationError,
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Format {
+    /// TODO: This is a placeholder, remove once at least a format error is defined
+    _PLACEHOLDER,
+}
+
+#[cfg(any(feature = "server", test))]
+impl Debug for Format {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        // Delegate to Display
+        write!(f, "{}", self)
+    }
+}
+
+#[cfg(any(feature = "server", test))]
+impl Display for Format {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
+        match self {
+            Self::_PLACEHOLDER => {
+                write!(f, "Placeholder error",)
+            },
+        }
+    }
+}
+
+#[cfg(any(feature = "server", test))]
+impl ErrorTrait for Format {}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Protocol {
+    // TODO: Check if the error variants are correct, probably they are not
     /// Error when trying to send data.
     SendingError,
     /// Error when trying to receive data.
@@ -23,19 +53,50 @@ pub enum ProtocolError {
     ReceiveMessageError,
 }
 
-impl Display for ProtocolError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+#[cfg(any(feature = "server", test))]
+impl Debug for Protocol {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        // Delegate to Display
+        write!(f, "{}", self)
+    }
+}
+
+#[cfg(any(feature = "server", test))]
+impl Display for Protocol {
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
         match self {
-            Self::DeserializationError => write!(f, "Error when trying to deserialize data."),
-            Self::SerializationError => write!(f, "Error when trying to serialize data."),
-            Self::SendingError => write!(f, "Error when trying to send data."),
-            Self::ReceivingError => write!(f, "Error when trying to receive data."),
-            Self::ConnectionError => write!(f, "Error when trying to connect to a server."),
-            Self::DisconnectionError => write!(f, "Error when trying to disconnect from a server."),
-            Self::MessageError => write!(f, "Error when trying to send a message to a server."),
-            Self::ReceiveMessageError => write!(f, "Error when trying to receive a message from a server."),
+            // Self::InvalidKeyLength(bytes, received) => {
+            //     write!(
+            //         f,
+            //         "Invalid key length, expected {} bytes, got {}",
+            //         bytes, received
+            //     )
+            // },
+            Protocol::SendingError => {
+                write!(f, "Error when trying to send data.")
+            },
+            Protocol::ReceivingError => {
+                write!(f, "Error when trying to receive data.")
+            },
+            Protocol::ConnectionError => {
+                write!(f, "Error when trying to connect to a server.")
+            },
+            Protocol::DisconnectionError => {
+                write!(f, "Error when trying to disconnect from a server.")
+            },
+            Protocol::MessageError => {
+                write!(f, "Error when trying to send a message to a server.")
+            },
+            Protocol::ReceiveMessageError => {
+                write!(f, "Error when trying to receive a message from a server.")
+            },
         }
     }
 }
 
-impl Error for ProtocolError {}
+#[cfg(any(feature = "server", test))]
+impl ErrorTrait for Protocol {}

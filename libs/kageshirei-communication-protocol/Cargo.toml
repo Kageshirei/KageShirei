@@ -10,11 +10,9 @@ description = "A library for the KageShirei agent that provides communication pr
 readme = "README.md"
 
 [dependencies]
-serde = { version = "1.0.210", features = ["derive", "rc"] }
-bytes = "1.7.2"
-kageshirei-crypt = { path = "../kageshirei-crypt" }
+serde = { version = "1.0.210", default-features = false, features = ["derive", "rc", "alloc"] }
 hex-literal = "0.4.1"
-sea-orm = { version = "1.0.1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono", "with-json"], optional = true }
+sea-orm = { version = "1.0.1", optional = true, features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-chrono", "with-json"] }
 serde_json = { version = "1.0.128", optional = true }
 
 [features]

@@ -38,7 +38,7 @@ mod tests {
     use axum::http::Request;
     use bytes::{BufMut, BytesMut};
     use kageshirei_communication_protocol::{
-        communication_structs::checkin::{Checkin, PartialCheckin},
+        communication::checkin::{Checkin, PartialCheckin},
         magic_numbers,
     };
     use serial_test::serial;

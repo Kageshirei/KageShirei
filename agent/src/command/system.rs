@@ -1,7 +1,7 @@
 use core::ffi::c_void;
 
 use kageshirei_communication_protocol::{
-    communication_structs::{
+    communication::{
         checkin::{Checkin, PartialCheckin},
         task_output::TaskOutput,
     },

@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{communication_structs::agent_commands::AgentCommands, metadata::Metadata};
+use crate::{communication::agent_commands::AgentCommands, metadata::Metadata};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "server", derive(Debug))]
 pub struct SimpleAgentCommand {
     /// The command to be executed
     pub op:       AgentCommands,

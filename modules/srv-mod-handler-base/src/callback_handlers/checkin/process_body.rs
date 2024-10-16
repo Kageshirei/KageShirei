@@ -3,7 +3,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse as _, Response},
 };
-use kageshirei_communication_protocol::{communication_structs::checkin::Checkin, protocol::Protocol as _};
+use kageshirei_communication_protocol::{communication::checkin::Checkin, format::Protocol as _};
 use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use kageshirei_utils::duration_extension::DurationExt as _;
 use mod_protocol_json::protocol::JsonProtocol;
@@ -82,7 +82,7 @@ mod test {
     use axum::{body::Bytes, http::StatusCode};
     use bytes::{BufMut, BytesMut};
     use kageshirei_communication_protocol::{
-        communication_structs::checkin::{Checkin, PartialCheckin},
+        communication::checkin::{Checkin, PartialCheckin},
         magic_numbers,
     };
     use serial_test::serial;

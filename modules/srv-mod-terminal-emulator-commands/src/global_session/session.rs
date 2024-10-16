@@ -105,7 +105,7 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use kageshirei_communication_protocol::communication_structs::checkin::{Checkin, PartialCheckin};
+    use kageshirei_communication_protocol::communication::checkin::{Checkin, PartialCheckin};
     use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
     use serial_test::serial;
     use srv_mod_database::models::agent::CreateAgent;

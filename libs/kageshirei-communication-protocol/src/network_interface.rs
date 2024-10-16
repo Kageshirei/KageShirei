@@ -1,9 +1,11 @@
+use alloc::{string::String, vec::Vec};
+
 #[cfg(feature = "server")]
 use sea_orm::FromJsonQueryResult;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
-#[cfg_attr(feature = "server", derive(FromJsonQueryResult))]
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(FromJsonQueryResult, Debug))]
 pub struct NetworkInterface {
     /// The name of the network interface
     pub name:        Option<String>,

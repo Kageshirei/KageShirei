@@ -1,5 +1,5 @@
 use kageshirei_communication_protocol::{
-    communication_structs::{agent_commands::AgentCommands, simple_agent_command::SimpleAgentCommand},
+    communication::{agent_commands::AgentCommands, simple_agent_command::SimpleAgentCommand},
     metadata::Metadata,
 };
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};

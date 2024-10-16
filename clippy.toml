@@ -6,5 +6,7 @@ allow-expect-in-tests=true
 allow-panic-in-tests=true
 allow-print-in-tests=true
 allowed-duplicate-crates=[
-    ""
+    "ahash",
+    "syn",
+    "hashbrown",
 ]

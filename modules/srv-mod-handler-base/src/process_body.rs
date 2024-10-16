@@ -5,13 +5,13 @@ use axum::{
     Json,
 };
 use kageshirei_communication_protocol::{
-    communication_structs::{
+    communication::{
         agent_commands::AgentCommands,
         basic_agent_response::BasicAgentResponse,
         checkin::Checkin as CheckinStruct,
     },
+    format::Protocol,
     magic_numbers,
-    protocol::Protocol,
 };
 use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use kageshirei_utils::duration_extension::DurationExt as _;
@@ -154,7 +154,7 @@ mod test {
     use axum::{body::Bytes, http::StatusCode};
     use bytes::{BufMut, BytesMut};
     use kageshirei_communication_protocol::{
-        communication_structs::checkin::{Checkin, PartialCheckin},
+        communication::checkin::{Checkin, PartialCheckin},
         magic_numbers,
     };
     use serial_test::serial;

@@ -12,7 +12,7 @@ mod tests {
     use alloc::{format, string::ToString, sync::Arc};
 
     use kageshirei_communication_protocol::{
-        communication_structs::{
+        communication::{
             agent_commands::AgentCommands,
             simple_agent_command::SimpleAgentCommand,
             task_output::TaskOutput,

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use chrono::{DateTime, NaiveTime, Timelike as _};
-use kageshirei_communication_protocol::communication_structs::checkin::CheckinResponse;
+use kageshirei_communication_protocol::communication::checkin::CheckinResponse;
 use srv_mod_entity::{
     active_enums::{FilterOperation, LogicalOperator},
     entities::{agent, agent_profile, filter},

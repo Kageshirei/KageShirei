@@ -1,4 +1,4 @@
-use kageshirei_communication_protocol::{communication_structs::task_output::TaskOutput, metadata::Metadata};
+use kageshirei_communication_protocol::{communication::task_output::TaskOutput, metadata::Metadata};
 use mod_win32::{nt_path::change_directory, nt_peb::get_current_directory, nt_time::current_timestamp};
 
 /// Changes the current working directory to the specified path.

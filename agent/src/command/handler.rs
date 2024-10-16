@@ -5,13 +5,9 @@ use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 
 use kageshirei_communication_protocol::{
-    communication_structs::{
-        agent_commands::AgentCommands,
-        simple_agent_command::SimpleAgentCommand,
-        task_output::TaskOutput,
-    },
+    communication::{agent_commands::AgentCommands, simple_agent_command::SimpleAgentCommand, task_output::TaskOutput},
+    format::Protocol,
     metadata::Metadata,
-    protocol::Protocol,
 };
 use kageshirei_runtime::Runtime;
 use mod_agentcore::instance;

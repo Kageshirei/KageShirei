@@ -1,11 +1,7 @@
 use alloc::sync::Arc;
 use core::ffi::c_void;
 
-use kageshirei_communication_protocol::{
-    communication_structs::checkin::CheckinResponse,
-    protocol::Protocol,
-    sender::Sender,
-};
+use kageshirei_communication_protocol::{communication::checkin::CheckinResponse, format::Protocol, protocol::Sender};
 use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use kageshirei_runtime::Runtime;
 use libc_print::libc_eprintln;

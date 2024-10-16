@@ -1,8 +1,10 @@
-use std::fmt::Display;
+use alloc::string::String;
+use core::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "server", derive(Debug))]
 pub enum AgentCommands {
     /// Invalid command
     INVALID,
@@ -27,7 +29,11 @@ pub enum AgentCommands {
 }
 
 impl Display for AgentCommands {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
         match self {
             Self::Terminate => write!(f, "terminate"),
             Self::Checkin => write!(f, "checkin"),

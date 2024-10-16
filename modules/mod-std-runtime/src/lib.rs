@@ -12,7 +12,7 @@ mod tests {
     };
 
     use kageshirei_communication_protocol::{
-        communication_structs::{
+        communication::{
             agent_commands::AgentCommands,
             simple_agent_command::SimpleAgentCommand,
             task_output::TaskOutput,
