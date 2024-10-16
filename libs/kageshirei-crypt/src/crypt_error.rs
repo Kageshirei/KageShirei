@@ -1,7 +1,10 @@
 use alloc::string::String;
-use core::fmt::{Display, Formatter};
 #[cfg(any(feature = "server", test))]
-use core::{error::Error as ErrorTrait, fmt::Debug};
+use core::{
+    error::Error as ErrorTrait,
+    fmt::Debug,
+    fmt::{Display, Formatter},
+};
 
 pub enum CryptError {
     /// The key length is invalid (expected, received)
@@ -53,6 +56,7 @@ impl Debug for CryptError {
     }
 }
 
+#[cfg(any(feature = "server", test))]
 impl Display for CryptError {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         #[expect(

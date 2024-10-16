@@ -1,6 +1,6 @@
 use alloc::{borrow::ToOwned as _, string::String, vec::Vec};
 
-use crate::{encoder::Encoder as EncoderTrait, CryptError};
+use crate::{encoder::Encoder as EncoderTrait, util::check_capacity, CryptError};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Encoder;
@@ -23,9 +23,7 @@ impl EncoderTrait for Encoder {
 
         // each byte becomes 2 hex chars
         let capacity = data.len().overflowing_mul(2);
-        if capacity.1 {
-            return Err(CryptError::DataTooLong(capacity.0));
-        }
+        check_capacity(capacity)?;
 
         let mut output = String::with_capacity(capacity.0);
 
@@ -58,9 +56,11 @@ impl EncoderTrait for Encoder {
             ));
         }
 
-        // constant time calculation of the capacity
-        let capacity = data.len() >> 1;
-        let mut output = Vec::with_capacity(capacity);
+        // constant time calculation of the capacity (this is the same as data.len() / 2)
+        let capacity = data.len().overflowing_div(2);
+        check_capacity(capacity)?;
+
+        let mut output = Vec::with_capacity(capacity.0);
         let mut chars = data.chars();
 
         while let (Some(high), Some(low)) = (chars.next(), chars.next()) {

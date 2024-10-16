@@ -1,6 +1,6 @@
 use alloc::{borrow::ToOwned as _, string::String, vec::Vec};
 
-use crate::{encoder::Encoder as EncoderTrait, CryptError};
+use crate::{encoder::Encoder as EncoderTrait, util::checked_push, CryptError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Encoder;
@@ -21,12 +21,8 @@ impl EncoderTrait for Encoder {
             while bit_count >= 5 {
                 let index = ((bits >> bit_count.saturating_sub(5)) & 0x1f) as usize;
 
-                if let Some(&c) = ALPHABET.get(index) {
-                    output.push(c);
-                }
-                else {
-                    return Err(CryptError::EncodingBitmaskOverflow(index));
-                }
+                checked_push(ALPHABET, &mut output, index as u32)
+                    .map_err(|| Err(CryptError::EncodingBitmaskOverflow(index)))?;
 
                 bit_count = bit_count.saturating_sub(5);
             }
@@ -35,12 +31,8 @@ impl EncoderTrait for Encoder {
         if bit_count > 0 {
             let index = ((bits << 5i32.saturating_sub(bit_count)) & 0x1f) as usize;
 
-            if let Some(&last) = ALPHABET.get(index) {
-                output.push(last);
-            }
-            else {
-                return Err(CryptError::EncodingBitmaskOverflow(index));
-            }
+            checked_push(ALPHABET, &mut output, index as u32)
+                .map_err(|| Err(CryptError::EncodingBitmaskOverflow(index)))?;
         }
 
         Ok(output.iter().map(|c| *c as char).collect::<String>())

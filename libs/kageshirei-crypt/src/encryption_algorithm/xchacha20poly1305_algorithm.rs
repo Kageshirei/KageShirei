@@ -10,9 +10,7 @@ use chacha20poly1305::{
     XNonce,
 };
 #[cfg(feature = "hkdf")]
-use hkdf::hmac::digest::OutputSizeUser;
-#[cfg(feature = "hkdf")]
-use hkdf::{Hkdf, HmacImpl};
+use hkdf::{hmac::digest::OutputSizeUser, Hkdf, HmacImpl};
 use rand::rngs::OsRng;
 
 #[cfg(feature = "hkdf")]
@@ -23,6 +21,8 @@ use crate::{
     CryptError,
 };
 
+#[derive(Eq, PartialEq)]
+#[cfg_attr(any(feature = "server", test), derive(Debug))]
 pub struct XChaCha20Poly1305Algorithm {
     /// The key used for encryption
     key:   Arc<Vec<u8>>,

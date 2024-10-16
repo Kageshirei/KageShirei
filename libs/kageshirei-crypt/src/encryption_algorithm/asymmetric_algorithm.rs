@@ -2,7 +2,7 @@ use alloc::{sync::Arc, vec::Vec};
 use core::cmp::Ordering;
 
 use hkdf::{hmac::SimpleHmac, Hkdf};
-use k256::{elliptic_curve::rand_core::RngCore as _, FieldBytes, PublicKey, SecretKey};
+use k256::{FieldBytes, PublicKey, SecretKey};
 use rand::rngs::OsRng;
 use sha3::Sha3_512;
 
@@ -12,12 +12,16 @@ use crate::{
     CryptError,
 };
 
+#[derive(Clone, Eq, PartialEq)]
+#[cfg_attr(any(feature = "server", test), derive(Debug))]
 pub struct KeyPair {
     pub secret_key: Option<Arc<SecretKey>>,
     pub public_key: Option<Arc<PublicKey>>,
 }
 
 /// An asymmetric encryption algorithm that uses a symmetric encryption algorithm for encryption and decryption
+#[derive(Eq, PartialEq)]
+#[cfg_attr(any(feature = "server", test), derive(Debug))]
 pub struct AsymmetricAlgorithm<T> {
     /// The sender keypair
     sender:             Arc<KeyPair>,
@@ -26,9 +30,6 @@ pub struct AsymmetricAlgorithm<T> {
     /// The implementation of a symmetric algorithm to use with this asymmetric algorithm
     algorithm_instance: T,
 }
-
-/// The size of the salt used for the HKDF key derivation function (128 bytes)
-const HKDF_SALT_SIZE: usize = 0x80;
 
 // Safety: AsymmetricAlgorithm is Send
 unsafe impl<T> Send for AsymmetricAlgorithm<T> where T: Send {}
@@ -122,32 +123,9 @@ where
             receiver.unwrap().public_key.clone().unwrap().as_affine(),
         );
 
-        // compute the salt
-        let mut rng = OsRng;
-        let mut salt = [0u8; HKDF_SALT_SIZE];
-        rng.fill_bytes(&mut salt);
-
-        Ok(shared_secret.extract::<Sha3_512>(None /* Some(&salt) */))
+        Ok(shared_secret.extract::<Sha3_512>(None))
     }
-}
 
-impl<T> Clone for AsymmetricAlgorithm<T>
-where
-    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
-{
-    fn clone(&self) -> Self {
-        Self {
-            sender:             self.sender.clone(),
-            receiver:           self.receiver.clone(),
-            algorithm_instance: T::new(),
-        }
-    }
-}
-
-impl<T> AsymmetricAlgorithm<T>
-where
-    T: EncryptionAlgorithm + SymmetricEncryptionAlgorithm + WithKeyDerivation,
-{
     /// Get the key from the provided key bytes
     ///
     /// if the key is less than 32 bytes, it will be padded with zeros
@@ -179,12 +157,34 @@ where
     }
 }
 
+impl<T> Clone for AsymmetricAlgorithm<T>
+where
+    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+{
+    fn clone(&self) -> Self {
+        Self {
+            sender:             self.sender.clone(),
+            receiver:           self.receiver.clone(),
+            algorithm_instance: T::new(),
+        }
+    }
+}
+
 impl<T> TryFrom<&[u8]> for AsymmetricAlgorithm<T>
 where
     T: EncryptionAlgorithm + SymmetricEncryptionAlgorithm + WithKeyDerivation,
 {
     type Error = CryptError;
 
+    /// Create a new instance from the provided secret key
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The secret key to create the instance from
+    ///
+    /// # Returns
+    ///
+    /// The new instance
     fn try_from(key: &[u8]) -> Result<Self, Self::Error> {
         let key = Self::get_key(key);
 

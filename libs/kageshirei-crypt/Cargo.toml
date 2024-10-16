@@ -9,13 +9,36 @@ license-file = "../../LICENSE"
 description = "A library for the KageShirei agent that provides cryptographic functionality."
 readme = "README.md"
 
+[lib]
+crate-type = ["rlib"]
+
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = "abort"
+incremental = true
+
+[profile.release]
+opt-level = 3
+debug = false
+debug-assertions = false
+overflow-checks = false
+lto = true
+panic = "abort"
+incremental = false
+codegen-units = 1
+strip = true
+
 [dependencies]
-rand = { version = "0.8.5", features = ["alloc", "nightly", "getrandom"], default-features = false }
-argon2 = { version = "0.5.3", optional = true }
-k256 = { version = "0.13.4", features = ["ecdh", "pkcs8"], optional = true }
-sha3 = { version = "0.10.8", optional = true }
-hkdf = { version = "0.12.4", optional = true }
-chacha20poly1305 = { version = "0.10.1", optional = true }
+rand = { version = "0.8.5", default-features = false, features = ["alloc", "nightly", "getrandom"] }
+argon2 = { version = "0.5.3", optional = true, default-features = false, features = ["alloc"] }
+k256 = { version = "0.13.4", optional = true, default-features = false, features = ["ecdh", "pkcs8", "alloc"] }
+sha3 = { version = "0.10.8", optional = true, default-features = false, features = [] }
+hkdf = { version = "0.12.4", optional = true, default-features = false, features = [] }
+chacha20poly1305 = { version = "0.10.1", optional = true, default-features = false, features = ["rand_core", "alloc"] }
 
 [dev-dependencies]
 libc = "0.2.159"

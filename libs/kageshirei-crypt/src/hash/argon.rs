@@ -9,13 +9,11 @@ use rand::rngs::OsRng;
 
 use crate::CryptError;
 
-#[expect(
-    clippy::module_name_repetitions,
-    reason = "Argon2 is the name of the hashing algorithm, cannot be aliased under differe name"
-)]
-pub struct Argon2;
+#[cfg_attr(any(feature = "server", test), derive(Debug))]
+#[derive(Clone, PartialEq, Eq)]
+pub struct Hash;
 
-impl Argon2 {
+impl Hash {
     /// Hash a password using Argon2
     ///
     /// Returns a PHC string ($argon2id$v=19$...)
@@ -27,7 +25,7 @@ impl Argon2 {
     /// # Returns
     ///
     /// The hashed password
-    pub fn hash_password(password: &str) -> Result<String, CryptError> {
+    pub fn make_password(password: &str) -> Result<String, CryptError> {
         // initialize the SRNG
         let rng = OsRng;
 
@@ -99,8 +97,8 @@ mod tests {
     #[test]
     fn test_hash_password() {
         let password = "password";
-        let hash = Argon2::hash_password(password).unwrap();
-        assert!(Argon2::verify_password(password, &hash));
+        let hash = Hash::hash_password(password).unwrap();
+        assert!(Hash::verify_password(password, &hash));
 
         // no_std_println!(
         //     "Hashed password: {} (length: {})",
@@ -117,7 +115,7 @@ mod tests {
         salt.fill(0u8);
 
         let output_length = 32;
-        let key = Argon2::derive_key(password, Some(salt.as_slice()), output_length).unwrap();
+        let key = Hash::derive_key(password, Some(salt.as_slice()), output_length).unwrap();
         assert_eq!(key.len(), output_length as usize);
 
         // no_std_println!(
