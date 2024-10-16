@@ -1,8 +1,10 @@
 use core::future::Future;
 
-/// The `Runtime` trait defines the basic operations required for a runtime environment
-/// that can execute tasks asynchronously. This trait is intended to be implemented by
-/// different runtime backends, such as Tokio or a custom thread pool.
+/// The `Runtime` trait defines the basic operations required for a runtime environment.
+///
+/// A runtime is responsible for managing the execution of tasks and futures.
+/// This trait is intended to be implemented by different runtime backends, such as Tokio or a
+/// custom thread pool.
 pub trait Runtime: Send + Sync + 'static {
     /// Spawns a new task on the runtime.
     ///
