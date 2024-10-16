@@ -21,7 +21,7 @@ kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = [
 ] }
 bytes = "1.7.2"
 srv-mod-config = { path = "../srv-mod-config" }
-kageshirei-utils = { path = "../../libs/kageshirei-utils", features = ["bytes"] }
+kageshirei-utils = { path = "../../libs/kageshirei-utils" }
 axum = "0.7.7"
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 mod-protocol-json = { path = "../mod-protocol-json" }
