@@ -661,7 +661,7 @@ extern "C" fn beacon_inject_process(
         );
 
         if remote_payload_address.is_null() {
-            CloseHandle(process_handle);
+            let _ = CloseHandle(process_handle);
             return;
         }
 
@@ -674,7 +674,7 @@ extern "C" fn beacon_inject_process(
         )
         .is_err()
         {
-            CloseHandle(process_handle);
+            let _ = CloseHandle(process_handle);
             return;
         }
 
@@ -689,8 +689,8 @@ extern "C" fn beacon_inject_process(
         )
         .unwrap();
 
-        CloseHandle(process_handle);
-        CloseHandle(thread);
+        let _ = CloseHandle(process_handle);
+        let _ = CloseHandle(thread);
     }
 }
 
@@ -727,8 +727,8 @@ extern "C" fn beacon_spawn_temporary_process(
 #[no_mangle]
 extern "C" fn beacon_cleanup_process(pinfo: *const PROCESS_INFORMATION) {
     unsafe {
-        CloseHandle((*pinfo).hProcess);
-        CloseHandle((*pinfo).hThread);
+        let _ = CloseHandle((*pinfo).hProcess);
+        let _ = CloseHandle((*pinfo).hThread);
     }
 }
 

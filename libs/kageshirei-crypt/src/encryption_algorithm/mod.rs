@@ -1,10 +1,12 @@
-use std::any::Any;
+use alloc::vec::Vec;
+use core::any::Any;
 
-use bytes::Bytes;
 #[cfg(feature = "hkdf")]
 use hkdf::hmac::digest::OutputSizeUser;
 #[cfg(feature = "hkdf")]
 use hkdf::{Hkdf, HmacImpl};
+
+use crate::CryptError;
 
 #[cfg(feature = "asymmetric-encryption")]
 pub mod asymmetric_algorithm;
@@ -13,7 +15,7 @@ pub mod ident_algorithm;
 pub mod xchacha20poly1305_algorithm;
 
 /// A trait to abstract the encryption and decryption mechanism.
-pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
+pub trait EncryptionAlgorithm: Send + Any + Clone {
     /// Encrypts a slice of bytes and returns the encrypted data.
     ///
     /// # Arguments
@@ -23,7 +25,7 @@ pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
     /// # Returns
     ///
     /// * `Result<Vec<u8>, Box<dyn Error>>` - A result containing the encrypted data or an error.
-    fn encrypt(&mut self, data: Bytes) -> Result<Bytes, String>;
+    fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, CryptError>;
 
     /// Decrypts a slice of bytes and returns the decrypted data.
     ///
@@ -35,7 +37,7 @@ pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
     /// # Returns
     ///
     /// * `Result<Vec<u8>, Box<dyn Error>>` - A result containing the decrypted data or an error.
-    fn decrypt(&self, data: Bytes, key: Option<Bytes>) -> Result<Bytes, String>;
+    fn decrypt(&self, data: &[u8], key: Option<&[u8]>) -> Result<Vec<u8>, CryptError>;
 
     /// Create a new instance
     fn new() -> Self;
@@ -45,7 +47,7 @@ pub trait EncryptionAlgorithm: Send + Any + Clone + From<Bytes> {
     /// # Returns
     ///
     /// The updated current instance
-    fn make_key(&mut self) -> Result<&mut Self, String>;
+    fn make_key(&mut self) -> Result<&mut Self, CryptError>;
 }
 
 #[cfg(feature = "hkdf")]
@@ -60,8 +62,9 @@ pub trait WithKeyDerivation {
     /// # Returns
     ///
     /// The updated current instance
-    fn derive_key<H, I>(&mut self, hkdf: Hkdf<H, I>) -> Result<&Self, String>
+    fn derive_key<H, I>(algorithm: Self, hkdf: Hkdf<H, I>) -> Result<Self, CryptError>
     where
         H: OutputSizeUser,
-        I: HmacImpl<H>;
+        I: HmacImpl<H>,
+        Self: Sized;
 }

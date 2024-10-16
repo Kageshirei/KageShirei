@@ -2938,10 +2938,10 @@ dependencies = [
  "argon2",
  "base16ct",
  "base64ct",
- "bytes",
  "chacha20poly1305",
  "hkdf",
  "k256",
+ "libc",
  "rand 0.8.5",
  "sha3",
 ]

@@ -90,7 +90,7 @@ impl Drop for MappedFunctions {
     fn drop(&mut self) {
         unsafe {
             let functions = self as *mut _ as *mut c_void;
-            VirtualFree(functions, 0, MEM_RELEASE);
+            let _ = VirtualFree(functions, 0, MEM_RELEASE);
         }
     }
 }
@@ -678,6 +678,7 @@ impl<'a> Coffee<'a> {
         Ok(())
     }
 
+    /// Executes the bof by finding the entrypoint and calling it.
     fn execute_bof(
         &self,
         arguments: Option<*const u8>,
@@ -695,6 +696,7 @@ impl<'a> Coffee<'a> {
             "BeaconDataExtract",
         ];
 
+        // Safety: FUNCTION_MAPPING is safe to call with a valid pointer.
         let mapped_functions_name = unsafe {
             FUNCTION_MAPPING
                 .as_mut()
@@ -730,8 +732,8 @@ impl<'a> Coffee<'a> {
                 symbol.storage_class
             );
 
-            let entry_name: String = if entrypoint_name.is_some() {
-                entrypoint_name.as_ref().unwrap().to_string()
+            let entry_name: String = if let Some(ep) = &entrypoint_name {
+                ep.to_owned()
             }
             else {
                 "go".to_owned()
@@ -739,11 +741,18 @@ impl<'a> Coffee<'a> {
 
             // _go for 32-bit for whatever reason?
             if name.unwrap().contains(entry_name.as_str()) {
-                let entry_point = unsafe { SECTION_MAPPING[(TEXT_SECTION_INDEX) as usize] }.add(symbol.value as usize);
+                let entry_point = unsafe { SECTION_MAPPING.get(TEXT_SECTION_INDEX as usize) };
+
+                if entry_point.is_none() || (entry_point.is_some() && *entry_point.unwrap() == 0) {
+                    warn!("Entry point is null");
+                    break;
+                }
+                let entry_point = entry_point.add(symbol.value as usize);
 
                 // Call entrypoint
                 info!("Calling entrypoint: {}:{:#x}", name.unwrap(), entry_point);
 
+                // Safety: entry_point is safe to call with a valid pointer.
                 unsafe {
                     std::mem::transmute::<usize, fn(*const u8, usize)>(entry_point)(
                         arguments.unwrap_or(std::ptr::null()),
@@ -763,19 +772,22 @@ impl<'a> Coffee<'a> {
     /// This is done to prevent memory leaks.
     fn free_bof_memory(&self) -> Result<()> {
         // Drop mapped functions
+        // Safety: FUNCTION_MAPPING is safe to call with a valid pointer.
         unsafe {
             FUNCTION_MAPPING = None;
         }
 
         for (idx, _section) in self.coff.sections.iter().enumerate() {
-            let section_base = unsafe { SECTION_MAPPING[idx] };
+            // Safety: SECTION_MAPPING is safe to call with a valid index.
+            let section_base = unsafe { SECTION_MAPPING.get(idx) };
 
-            if section_base == 0 {
+            if section_base.is_none() || (section_base.is_some() && *section_base.unwrap() == 0) {
                 continue;
             }
 
+            /// Safety: VirtualFree is safe to call with a valid pointer and size.
             unsafe {
-                VirtualFree(section_base as *mut c_void, 0, MEM_RELEASE);
+                let _ = VirtualFree(section_base as *mut c_void, 0, MEM_RELEASE);
             }
         }
 

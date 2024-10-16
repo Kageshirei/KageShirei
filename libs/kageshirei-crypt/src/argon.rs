@@ -1,6 +1,13 @@
+use alloc::{
+    string::{String, ToString},
+    vec,
+    vec::Vec,
+};
+
 use argon2::{password_hash::SaltString, PasswordHash, PasswordHasher as _, PasswordVerifier as _};
-use bytes::Bytes;
-use rand::thread_rng;
+use rand::rngs::OsRng;
+
+use crate::CryptError;
 
 pub struct Argon2;
 
@@ -16,9 +23,9 @@ impl Argon2 {
     /// # Returns
     ///
     /// The hashed password
-    pub fn hash_password(password: &str) -> Result<String, String> {
+    pub fn hash_password(password: &str) -> Result<String, CryptError> {
         // initialize the SRNG
-        let rng = thread_rng();
+        let rng = OsRng::default();
 
         // generate a random salt
         let salt = SaltString::generate(rng);
@@ -29,7 +36,7 @@ impl Argon2 {
         // Hash password to PHC string ($argon2id$v=19$...)
         let hash = config
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| e.to_string())?
+            .map_err(|e| CryptError::CannotHashArgon2(e))?
             .to_string();
 
         Ok(hash)
@@ -64,32 +71,48 @@ impl Argon2 {
     /// # Returns
     ///
     /// The derived key as a byte array
-    pub fn derive_key(password: &str, salt: Option<Vec<u8>>, output_length: u32) -> Result<Bytes, String> {
+    pub fn derive_key(password: &str, salt: Option<&[u8]>, output_length: u32) -> Result<Vec<u8>, CryptError> {
         // initialize the salt if not provided
-        let salt = salt.unwrap_or_else(|| {
-            let rng = thread_rng();
-            SaltString::generate(rng).to_string().as_bytes().to_vec()
-        });
+        let salt = if let Some(value) = salt {
+            Vec::from(value)
+        }
+        else {
+            SaltString::generate(OsRng::default())
+                .to_string()
+                .as_bytes()
+                .to_vec()
+        };
 
         let mut result = vec![0u8; output_length as usize];
         argon2::Argon2::default()
             .hash_password_into(password.as_bytes(), &salt, &mut result)
-            .map_err(|e| format!("{:?}", e))?;
+            .map_err(|e| CryptError::CannotDeriveArgon2(e))?;
 
-        Ok(Bytes::from(result))
+        Ok(result)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
+    use core::ffi::CStr;
+
+    use libc::{self, printf};
+
     use super::*;
+    use crate::no_std_println;
 
     #[test]
     fn test_hash_password() {
         let password = "password";
         let hash = Argon2::hash_password(password).unwrap();
         assert!(Argon2::verify_password(password, &hash));
-        println!("Hashed password: {}", hash)
+
+        // no_std_println!(
+        //     "Hashed password: {} (length: {})",
+        //     hash,
+        //     hash.len()
+        // );
     }
 
     #[test]
@@ -100,8 +123,13 @@ mod tests {
         salt.fill(0u8);
 
         let output_length = 32;
-        let key = Argon2::derive_key(password, Some(salt), output_length).unwrap();
+        let key = Argon2::derive_key(password, Some(salt.as_slice()), output_length).unwrap();
         assert_eq!(key.len(), output_length as usize);
-        println!("Derived key: {:?}", key)
+
+        // no_std_println!(
+        //     "Derived key: {:?} (length: {})",
+        //     key,
+        //     key.len()
+        // );
     }
 }
