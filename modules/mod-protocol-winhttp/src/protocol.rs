@@ -10,7 +10,7 @@ use kageshirei_communication_protocol::{
     protocol::Protocol,
     sender::Sender,
 };
-use kageshirei_crypt::encryption_algorithm::EncryptionAlgorithm;
+use kageshirei_crypt::encryption_algorithm::BasicAlgorithm;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::client::WinHttpClient;
@@ -18,7 +18,7 @@ use crate::client::WinHttpClient;
 /// Define the WinHTTP protocol for sending and receiving data.
 pub struct WinHttpProtocol<E>
 where
-    E: EncryptionAlgorithm,
+    E: BasicAlgorithm,
 {
     /// The WinHTTP client used to send requests.
     /// This client maintains session and connection handles for efficient reuse across requests.
@@ -38,7 +38,7 @@ where
 
 impl<E> WinHttpProtocol<E>
 where
-    E: EncryptionAlgorithm,
+    E: BasicAlgorithm,
 {
     /// Create a new WinHTTP protocol.
     pub fn new(base_url: String) -> Self {
@@ -63,7 +63,7 @@ where
 
 impl<E> Sender for WinHttpProtocol<E>
 where
-    E: EncryptionAlgorithm,
+    E: BasicAlgorithm,
 {
     fn set_is_checkin(&mut self, is_checkin: bool) -> &Self {
         self.is_checkin = is_checkin;
@@ -100,7 +100,7 @@ where
 
 impl<E> Protocol<E> for WinHttpProtocol<E>
 where
-    E: EncryptionAlgorithm + Send,
+    E: BasicAlgorithm + Send,
 {
     fn read<S>(&self, data: Bytes, encryptor: Option<E>) -> Result<S, String>
     where

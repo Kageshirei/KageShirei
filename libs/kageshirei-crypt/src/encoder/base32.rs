@@ -21,8 +21,13 @@ impl EncoderTrait for Encoder {
             while bit_count >= 5 {
                 let index = ((bits >> bit_count.saturating_sub(5)) & 0x1f) as usize;
 
+                #[expect(
+                    clippy::map_err_ignore,
+                    reason = "The default function uses a generic error, as we can use a specific one we opt into it \
+                              without changing the original implementation"
+                )]
                 checked_push(ALPHABET, &mut output, index as u32)
-                    .map_err(|| Err(CryptError::EncodingBitmaskOverflow(index)))?;
+                    .map_err(|_| CryptError::EncodingBitmaskOverflow(index))?;
 
                 bit_count = bit_count.saturating_sub(5);
             }
@@ -31,8 +36,13 @@ impl EncoderTrait for Encoder {
         if bit_count > 0 {
             let index = ((bits << 5i32.saturating_sub(bit_count)) & 0x1f) as usize;
 
+            #[expect(
+                clippy::map_err_ignore,
+                reason = "The default function uses a generic error, as we can use a specific one we opt into it \
+                          without changing the original implementation"
+            )]
             checked_push(ALPHABET, &mut output, index as u32)
-                .map_err(|| Err(CryptError::EncodingBitmaskOverflow(index)))?;
+                .map_err(|_| CryptError::EncodingBitmaskOverflow(index))?;
         }
 
         Ok(output.iter().map(|c| *c as char).collect::<String>())

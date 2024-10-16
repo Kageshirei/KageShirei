@@ -1,3 +1,6 @@
+//! Encoder trait
+//!
+//! This module contains the `Encoder` trait which is used to encode and decode data.
 use alloc::{string::String, vec::Vec};
 
 use crate::CryptError;

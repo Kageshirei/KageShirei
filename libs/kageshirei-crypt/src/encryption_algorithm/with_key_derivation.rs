@@ -1,3 +1,4 @@
+//! A trait to abstract the key derivation mechanism.
 use hkdf::{hmac::digest::OutputSizeUser, Hkdf, HmacImpl};
 
 use crate::CryptError;

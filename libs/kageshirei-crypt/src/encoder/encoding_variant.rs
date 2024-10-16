@@ -1,3 +1,7 @@
+//! Encoding variant traits
+//!
+//! This module contains the traits responsible for the definition of enconding variants.
+//! Refer to the Base64 implementation file for an example on how to use them
 pub trait EncodingVariant {
     /// Get the alphabet for the encoding variant
     ///

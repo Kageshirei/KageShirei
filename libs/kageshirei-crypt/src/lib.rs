@@ -17,6 +17,7 @@ pub mod encryption_algorithm;
 pub mod hash;
 #[cfg(test)]
 pub mod test_util;
-pub(crate) mod util;
 
 pub use crypt_error::CryptError;
+
+pub(crate) mod util;

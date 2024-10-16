@@ -2,7 +2,7 @@ use axum::http::StatusCode;
 use kageshirei_communication_protocol::communication_structs::checkin::Checkin;
 use kageshirei_crypt::{
     encoder::{base64::Base64Encoder, Encoder as _},
-    encryption_algorithm::{asymmetric_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
+    encryption_algorithm::{asymmetric_encryption_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
 };
 use srv_mod_entity::{
     active_enums::AgentIntegrity,

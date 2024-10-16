@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn test_hash_password() {
         let password = "password";
-        let hash = Hash::hash_password(password).unwrap();
+        let hash = Hash::make_password(password).unwrap();
         assert!(Hash::verify_password(password, &hash));
 
         // no_std_println!(

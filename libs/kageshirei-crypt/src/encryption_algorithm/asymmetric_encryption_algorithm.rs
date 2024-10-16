@@ -1,3 +1,8 @@
+//! An asymmetric encryption algorithm
+//!
+//! This is a generic implementation of an asymmetric encryption algorithm that uses a symmetric encryption algorithm
+//! for encryption and decryption using a shared secret key.
+
 use alloc::{sync::Arc, vec::Vec};
 use core::cmp::Ordering;
 
@@ -7,15 +12,20 @@ use rand::rngs::OsRng;
 use sha3::Sha3_512;
 
 use crate::{
-    encryption_algorithm::{EncryptionAlgorithm, WithKeyDerivation},
-    symmetric_encryption_algorithm::SymmetricEncryptionAlgorithm,
+    encryption_algorithm::{
+        algorithms::{BasicAlgorithm, SymmetricAlgorithm},
+        WithKeyDerivation,
+    },
     CryptError,
 };
 
+/// A keypair that contains a secret key and a public key
 #[derive(Clone, Eq, PartialEq)]
 #[cfg_attr(any(feature = "server", test), derive(Debug))]
 pub struct KeyPair {
+    /// The secret key of the keypair
     pub secret_key: Option<Arc<SecretKey>>,
+    /// The public key of the keypair
     pub public_key: Option<Arc<PublicKey>>,
 }
 
@@ -36,14 +46,14 @@ unsafe impl<T> Send for AsymmetricAlgorithm<T> where T: Send {}
 
 impl<T> Default for AsymmetricAlgorithm<T>
 where
-    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+    T: SymmetricAlgorithm + BasicAlgorithm + WithKeyDerivation,
 {
     fn default() -> Self { Self::new() }
 }
 
 impl<T> AsymmetricAlgorithm<T>
 where
-    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+    T: SymmetricAlgorithm + BasicAlgorithm + WithKeyDerivation,
 {
     /// Create a temporary secret key and return it as a bytes representation
     pub fn make_temporary_secret_key() -> Vec<u8> {
@@ -159,7 +169,7 @@ where
 
 impl<T> Clone for AsymmetricAlgorithm<T>
 where
-    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+    T: SymmetricAlgorithm + BasicAlgorithm + WithKeyDerivation,
 {
     fn clone(&self) -> Self {
         Self {
@@ -172,7 +182,7 @@ where
 
 impl<T> TryFrom<&[u8]> for AsymmetricAlgorithm<T>
 where
-    T: EncryptionAlgorithm + SymmetricEncryptionAlgorithm + WithKeyDerivation,
+    T: BasicAlgorithm + SymmetricAlgorithm + WithKeyDerivation,
 {
     type Error = CryptError;
 
@@ -205,9 +215,9 @@ where
     }
 }
 
-impl<T> EncryptionAlgorithm for AsymmetricAlgorithm<T>
+impl<T> BasicAlgorithm for AsymmetricAlgorithm<T>
 where
-    T: SymmetricEncryptionAlgorithm + EncryptionAlgorithm + WithKeyDerivation,
+    T: SymmetricAlgorithm + BasicAlgorithm + WithKeyDerivation,
 {
     fn encrypt(&mut self, data: &[u8]) -> Result<Vec<u8>, CryptError> {
         // proxy the encryption to the symmetric algorithm

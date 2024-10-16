@@ -1,10 +1,10 @@
-use alloc::vec::Vec;
+use alloc::{sync::Arc, vec::Vec};
 use core::any::Any;
 
 use crate::CryptError;
 
 /// A trait to abstract the encryption and decryption mechanism.
-pub trait EncryptionAlgorithm: Send + Any + Clone {
+pub trait BasicAlgorithm: Send + Any + Clone {
     /// Encrypts a slice of bytes and returns the encrypted data.
     ///
     /// # Arguments
@@ -37,4 +37,50 @@ pub trait EncryptionAlgorithm: Send + Any + Clone {
     ///
     /// The updated current instance
     fn make_key(&mut self) -> Result<&mut Self, CryptError>;
+}
+
+/// Abstract empty trait used to refer to symmetric encryption algorithms.
+pub trait SymmetricAlgorithm: BasicAlgorithm {
+    /// Set the nonce
+    ///
+    /// # Arguments
+    ///
+    /// * `nonce` - The nonce to set
+    ///
+    /// # Returns
+    ///
+    /// The updated current instance
+    fn set_nonce(&mut self, nonce: &[u8]) -> Result<&mut Self, CryptError>;
+
+    /// Set the key
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key to set
+    ///
+    /// # Returns
+    ///
+    /// The updated current instance
+    fn set_key(&mut self, key: &[u8]) -> Result<&mut Self, CryptError>;
+
+    /// Create a new nonce
+    ///
+    /// # Returns
+    ///
+    /// The updated current instance
+    fn make_nonce(&mut self) -> &mut Self;
+
+    /// Get the nonce
+    ///
+    /// # Returns
+    ///
+    /// The nonce
+    fn get_nonce(&self) -> Arc<Vec<u8>>;
+
+    /// Get the key
+    ///
+    /// # Returns
+    ///
+    /// The key
+    fn get_key(&self) -> Arc<Vec<u8>>;
 }

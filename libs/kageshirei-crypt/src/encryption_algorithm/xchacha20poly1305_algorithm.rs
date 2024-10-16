@@ -16,8 +16,7 @@ use rand::rngs::OsRng;
 #[cfg(feature = "hkdf")]
 use crate::encryption_algorithm::WithKeyDerivation;
 use crate::{
-    encryption_algorithm::EncryptionAlgorithm,
-    symmetric_encryption_algorithm::SymmetricEncryptionAlgorithm,
+    encryption_algorithm::algorithms::{BasicAlgorithm, SymmetricAlgorithm},
     CryptError,
 };
 
@@ -33,7 +32,7 @@ pub struct XChaCha20Poly1305Algorithm {
 // Safety: XChaCha20Poly1305Algorithm is Send
 unsafe impl Send for XChaCha20Poly1305Algorithm {}
 
-impl SymmetricEncryptionAlgorithm for XChaCha20Poly1305Algorithm {
+impl SymmetricAlgorithm for XChaCha20Poly1305Algorithm {
     /// Set the nonce
     ///
     /// # Arguments
@@ -104,7 +103,7 @@ impl Default for XChaCha20Poly1305Algorithm {
     }
 }
 
-impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
+impl BasicAlgorithm for XChaCha20Poly1305Algorithm {
     /// Encrypt the given data
     ///
     /// # Arguments

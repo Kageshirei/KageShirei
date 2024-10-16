@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use kageshirei_crypt::encryption_algorithm::EncryptionAlgorithm;
+use kageshirei_crypt::encryption_algorithm::BasicAlgorithm;
 use serde::Serialize;
 
 use crate::{metadata::WithMetadata, sender::Sender};
@@ -7,7 +7,7 @@ use crate::{metadata::WithMetadata, sender::Sender};
 /// Define the protocol trait responsible for sending and receiving data.
 pub trait Protocol<E>: Sender + Send
 where
-    E: EncryptionAlgorithm,
+    E: BasicAlgorithm,
 {
     /// Receive some data as raw bytes and deserialize it into a type.
     ///
