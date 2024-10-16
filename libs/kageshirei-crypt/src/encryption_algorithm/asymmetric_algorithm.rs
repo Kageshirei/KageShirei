@@ -1,9 +1,5 @@
 use alloc::{sync::Arc, vec::Vec};
-use core::{
-    cmp::Ordering,
-    error::Error,
-    fmt::{Debug, Display, Formatter},
-};
+use core::cmp::Ordering;
 
 use hkdf::{hmac::SimpleHmac, Hkdf};
 use k256::{elliptic_curve::rand_core::RngCore as _, FieldBytes, PublicKey, SecretKey};
@@ -34,7 +30,8 @@ pub struct AsymmetricAlgorithm<T> {
 /// The size of the salt used for the HKDF key derivation function (128 bytes)
 const HKDF_SALT_SIZE: usize = 0x80;
 
-unsafe impl<T> Send for AsymmetricAlgorithm<T> {}
+// Safety: AsymmetricAlgorithm is Send
+unsafe impl<T> Send for AsymmetricAlgorithm<T> where T: Send {}
 
 impl<T> Default for AsymmetricAlgorithm<T>
 where
@@ -49,7 +46,7 @@ where
 {
     /// Create a temporary secret key and return it as a bytes representation
     pub fn make_temporary_secret_key() -> Vec<u8> {
-        let mut rng = OsRng::default();
+        let mut rng = OsRng;
         let secret_key = SecretKey::random(&mut rng).to_bytes();
         secret_key.to_vec()
     }
@@ -122,17 +119,11 @@ where
         // derive the shared secret
         let shared_secret = k256::ecdh::diffie_hellman(
             &sender.secret_key.clone().unwrap().to_nonzero_scalar(),
-            receiver
-                .clone()
-                .unwrap()
-                .public_key
-                .clone()
-                .unwrap()
-                .as_affine(),
+            receiver.unwrap().public_key.clone().unwrap().as_affine(),
         );
 
         // compute the salt
-        let mut rng = OsRng::default();
+        let mut rng = OsRng;
         let mut salt = [0u8; HKDF_SALT_SIZE];
         rng.fill_bytes(&mut salt);
 
@@ -157,15 +148,25 @@ impl<T> AsymmetricAlgorithm<T>
 where
     T: EncryptionAlgorithm + SymmetricEncryptionAlgorithm + WithKeyDerivation,
 {
+    /// Get the key from the provided key bytes
+    ///
+    /// if the key is less than 32 bytes, it will be padded with zeros
+    /// if the key is more than 32 bytes, it will be truncated
+    ///
+    /// # Arguments
+    ///
+    /// * `key` - The key to get
+    ///
+    /// # Returns
+    ///
+    /// The key as a 32 bytes array
     fn get_key(key: &[u8]) -> Vec<u8> {
         let mut key = Vec::from(key);
         match key.len().cmp(&32) {
             Ordering::Less => {
                 // Pad the key with zeros to reach the required length of 32 bytes, this is not
                 // secure, but it's better than panicking
-                for _ in 0 .. (32 - key.len()) {
-                    key.push(0);
-                }
+                key.resize(32, 0);
                 key
             },
             Ordering::Equal => key,
@@ -187,7 +188,7 @@ where
     fn try_from(key: &[u8]) -> Result<Self, Self::Error> {
         let key = Self::get_key(key);
 
-        let field_bytes = FieldBytes::from_slice(key.get(..).unwrap());
+        let field_bytes = FieldBytes::from_slice(&key);
 
         let secret_key = Arc::new(SecretKey::from_bytes(field_bytes).unwrap());
         let public_key = Some(Arc::new(secret_key.public_key()));
@@ -220,7 +221,7 @@ where
 
     /// Create a new key pair
     fn new() -> Self {
-        let mut rng = OsRng::default();
+        let mut rng = OsRng;
 
         let secret_key = Arc::new(SecretKey::random(&mut rng));
         let public_key = Some(Arc::new(secret_key.public_key()));
@@ -243,7 +244,7 @@ where
 
         let derived_key = Self::derive_shared_secret(self.sender.clone(), self.receiver.clone())?;
 
-        let mut algorithm_instance = self.algorithm_instance.clone();
+        let algorithm_instance = self.algorithm_instance.clone();
         self.algorithm_instance = T::derive_key(algorithm_instance, derived_key)?;
 
         Ok(self)
@@ -252,13 +253,9 @@ where
 
 #[cfg(test)]
 mod test {
-    use alloc::{format, string::String};
-    use core::ffi::CStr;
-
-    use libc::printf;
 
     use super::*;
-    use crate::{encryption_algorithm::xchacha20poly1305_algorithm::XChaCha20Poly1305Algorithm, no_std_println};
+    use crate::encryption_algorithm::xchacha20poly1305_algorithm::XChaCha20Poly1305Algorithm;
 
     #[test]
     fn test_private_key() {

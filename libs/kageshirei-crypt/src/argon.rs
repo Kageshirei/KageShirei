@@ -1,5 +1,5 @@
 use alloc::{
-    string::{String, ToString},
+    string::{String, ToString as _},
     vec,
     vec::Vec,
 };
@@ -9,6 +9,10 @@ use rand::rngs::OsRng;
 
 use crate::CryptError;
 
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "Argon2 is the name of the hashing algorithm, cannot be aliased under differe name"
+)]
 pub struct Argon2;
 
 impl Argon2 {
@@ -25,7 +29,7 @@ impl Argon2 {
     /// The hashed password
     pub fn hash_password(password: &str) -> Result<String, CryptError> {
         // initialize the SRNG
-        let rng = OsRng::default();
+        let rng = OsRng;
 
         // generate a random salt
         let salt = SaltString::generate(rng);
@@ -36,7 +40,7 @@ impl Argon2 {
         // Hash password to PHC string ($argon2id$v=19$...)
         let hash = config
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|e| CryptError::CannotHashArgon2(e))?
+            .map_err(CryptError::CannotHashArgon2)?
             .to_string();
 
         Ok(hash)
@@ -73,20 +77,15 @@ impl Argon2 {
     /// The derived key as a byte array
     pub fn derive_key(password: &str, salt: Option<&[u8]>, output_length: u32) -> Result<Vec<u8>, CryptError> {
         // initialize the salt if not provided
-        let salt = if let Some(value) = salt {
-            Vec::from(value)
-        }
-        else {
-            SaltString::generate(OsRng::default())
-                .to_string()
-                .as_bytes()
-                .to_vec()
-        };
+        let salt = salt.map_or_else(
+            || SaltString::generate(OsRng).to_string().as_bytes().to_vec(),
+            Vec::from,
+        );
 
         let mut result = vec![0u8; output_length as usize];
         argon2::Argon2::default()
             .hash_password_into(password.as_bytes(), &salt, &mut result)
-            .map_err(|e| CryptError::CannotDeriveArgon2(e))?;
+            .map_err(CryptError::CannotDeriveArgon2)?;
 
         Ok(result)
     }
@@ -94,13 +93,8 @@ impl Argon2 {
 
 #[cfg(test)]
 mod tests {
-    use alloc::format;
-    use core::ffi::CStr;
-
-    use libc::{self, printf};
 
     use super::*;
-    use crate::no_std_println;
 
     #[test]
     fn test_hash_password() {

@@ -73,7 +73,7 @@ impl SymmetricEncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     }
 
     fn make_nonce(&mut self) -> &mut Self {
-        let mut rng = OsRng::default();
+        let mut rng = OsRng;
 
         let nonce = XChaCha20Poly1305::generate_nonce(&mut rng);
         self.nonce = Arc::new(nonce.to_vec());
@@ -119,11 +119,8 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
 
         self.make_nonce();
         let mut encrypted = cipher
-            .encrypt(
-                XNonce::from_slice(self.nonce.as_ref()),
-                Payload::from(data.as_ref()),
-            )
-            .map_err(|e| CryptError::CannotEncryptWithChaCha20Poly1305(e))?;
+            .encrypt(XNonce::from_slice(self.nonce.as_ref()), Payload::from(data))
+            .map_err(CryptError::CannotEncryptWithChaCha20Poly1305)?;
 
         let full_length = encrypted.len().overflowing_add(24);
         if full_length.1 {
@@ -166,7 +163,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
 
         let decrypted = cipher
             .decrypt(XNonce::from_slice(nonce), Payload::from(data))
-            .map_err(|e| CryptError::CannotDecryptWithChaCha20Poly1305(e))?;
+            .map_err(CryptError::CannotDecryptWithChaCha20Poly1305)?;
 
         Ok(decrypted)
     }
@@ -176,20 +173,13 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
             key:   Arc::new(Vec::new()),
             nonce: Arc::new(Vec::new()),
         };
+        let mut fallback_instance = instance.clone();
 
-        let mut instance = if let Ok(i) = instance.make_key() {
-            i
-        }
-        else {
-            &mut Self {
-                key:   Arc::new(Vec::new()),
-                nonce: Arc::new(Vec::new()),
-            }
-        };
+        let mut instance = instance.make_key().unwrap_or(&mut fallback_instance);
 
         instance = instance.make_nonce();
 
-        mem::take(&mut instance)
+        mem::take(instance)
     }
 
     /// Create a new key
@@ -198,7 +188,7 @@ impl EncryptionAlgorithm for XChaCha20Poly1305Algorithm {
     ///
     /// The updated current instance
     fn make_key(&mut self) -> Result<&mut Self, CryptError> {
-        let mut rng = OsRng::default();
+        let mut rng = OsRng;
 
         let key = XChaCha20Poly1305::generate_key(&mut rng);
         self.key = Arc::new(key.to_vec());
@@ -225,7 +215,7 @@ impl WithKeyDerivation for XChaCha20Poly1305Algorithm {
     {
         let mut key = [0u8; 32];
         hkdf.expand(&[], &mut key)
-            .map_err(|e| CryptError::CannotHashOrDerive(e))?;
+            .map_err(CryptError::CannotHashOrDerive)?;
 
         algorithm.key = Arc::new(key.to_vec());
 
@@ -235,13 +225,8 @@ impl WithKeyDerivation for XChaCha20Poly1305Algorithm {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{ffi::CString, fmt::format, format, string::String};
-    use core::ffi::CStr;
-
-    use libc::printf;
 
     use super::*;
-    use crate::no_std_println;
 
     #[test]
     fn test_xchacha20poly1305() {

@@ -1,46 +1,60 @@
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use alloc::{borrow::ToOwned as _, string::String, vec::Vec};
 
-use crate::{encoder::Encoder, CryptError};
+use crate::{encoder::Encoder as EncoderTrait, CryptError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Base32Encoder;
+pub struct Encoder;
 
-impl Encoder for Base32Encoder {
-    fn encode(&self, data: &[u8]) -> String {
+impl EncoderTrait for Encoder {
+    fn encode(&self, data: &[u8]) -> Result<String, CryptError> {
+        /// Base32 alphabet
         const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz234567";
 
         let mut bits = 0u32;
-        let mut bit_count = 0;
+        let mut bit_count: i32 = 0;
         let mut output = Vec::new();
 
-        for byte in data.to_vec() {
+        for byte in data.iter().copied() {
             bits = (bits << 8) | byte as u32;
-            bit_count += 8;
+            bit_count = bit_count.saturating_add(8);
 
             while bit_count >= 5 {
-                let index = ((bits >> (bit_count - 5)) & 0x1f) as usize;
-                output.push(ALPHABET[index]);
-                bit_count -= 5;
+                let index = ((bits >> bit_count.saturating_sub(5)) & 0x1f) as usize;
+
+                if let Some(&c) = ALPHABET.get(index) {
+                    output.push(c);
+                }
+                else {
+                    return Err(CryptError::EncodingBitmaskOverflow(index));
+                }
+
+                bit_count = bit_count.saturating_sub(5);
             }
         }
 
         if bit_count > 0 {
-            let index = ((bits << (5 - bit_count)) & 0x1f) as usize;
-            output.push(ALPHABET[index]);
+            let index = ((bits << 5i32.saturating_sub(bit_count)) & 0x1f) as usize;
+
+            if let Some(&last) = ALPHABET.get(index) {
+                output.push(last);
+            }
+            else {
+                return Err(CryptError::EncodingBitmaskOverflow(index));
+            }
         }
 
-        output.iter().map(|c| *c as char).collect::<String>()
+        Ok(output.iter().map(|c| *c as char).collect::<String>())
     }
 
     fn decode(&self, data: &str) -> Result<Vec<u8>, CryptError> {
         let mut bits = 0u32;
-        let mut bit_count = 0;
+        let mut bit_count: i32 = 0;
         let mut output = Vec::new();
 
         for byte in data.bytes() {
             let value = match byte {
-                b'a' ..= b'z' => byte - b'a',
-                b'2' ..= b'7' => byte - b'2' + 26,
+                b'a' ..= b'z' => byte.saturating_sub(b'a'),
+                b'2' ..= b'7' => byte.saturating_sub(b'2').saturating_add(26),
                 v => {
                     return Err(CryptError::InvalidEncodingCharacter(
                         "base32".to_owned(),
@@ -50,11 +64,11 @@ impl Encoder for Base32Encoder {
             } as u32;
 
             bits = (bits << 5) | value;
-            bit_count += 5;
+            bit_count = bit_count.saturating_add(5);
 
             if bit_count >= 8 {
-                output.push((bits >> (bit_count - 8)) as u8);
-                bit_count -= 8;
+                output.push((bits >> (bit_count.saturating_sub(8))) as u8);
+                bit_count = bit_count.saturating_sub(8);
             }
         }
 
@@ -70,14 +84,14 @@ mod tests {
     #[test]
     fn test_encode() {
         let data = b"Hello, World!".to_vec();
-        let encoded = Base32Encoder.encode(data.as_slice());
+        let encoded = Encoder.encode(data.as_slice()).unwrap();
         assert_eq!(encoded, "jbswy3dpfqqfo33snrscc");
     }
 
     #[test]
     fn test_decode() {
         let data = "jbswy3dpfqqfo33snrscc";
-        let decoded = Base32Encoder.decode(data).unwrap();
+        let decoded = Encoder.decode(data).unwrap();
         assert_eq!(decoded, b"Hello, World!".to_vec());
     }
 }

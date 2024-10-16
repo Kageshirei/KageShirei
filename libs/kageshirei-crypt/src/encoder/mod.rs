@@ -1,5 +1,4 @@
 use alloc::{string::String, vec::Vec};
-use core::str::FromStr;
 
 use crate::CryptError;
 
@@ -20,7 +19,7 @@ pub trait Encoder {
     /// # Returns
     ///
     /// The encoded data
-    fn encode(&self, data: &[u8]) -> String;
+    fn encode(&self, data: &[u8]) -> Result<String, CryptError>;
 
     /// Decode the given data
     ///

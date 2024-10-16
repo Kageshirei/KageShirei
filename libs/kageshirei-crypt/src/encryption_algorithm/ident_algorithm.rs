@@ -38,7 +38,7 @@ impl EncryptionAlgorithm for IdentEncryptor {
 
 #[cfg(feature = "hkdf")]
 impl WithKeyDerivation for IdentEncryptor {
-    fn derive_key<H, I>(mut algorithm: Self, _hkdf: Hkdf<H, I>) -> Result<Self, CryptError>
+    fn derive_key<H, I>(algorithm: Self, _hkdf: Hkdf<H, I>) -> Result<Self, CryptError>
     where
         H: OutputSizeUser,
         I: HmacImpl<H>,

@@ -1,13 +1,7 @@
-use alloc::{
-    boxed::Box,
-    string::{String, ToString},
-};
+use alloc::string::String;
+use core::fmt::{Display, Formatter};
 #[cfg(any(feature = "server", test))]
-use core::fmt::Debug;
-use core::{
-    error::Error as ErrorTrait,
-    fmt::{Display, Formatter},
-};
+use core::{error::Error as ErrorTrait, fmt::Debug};
 
 pub enum CryptError {
     /// The key length is invalid (expected, received)
@@ -27,6 +21,8 @@ pub enum CryptError {
     InvalidCharacterInput,
     /// Cannot decode the data
     CannotDecode,
+    /// Cannot encode the data
+    CannotEncode,
     /// The public key is missing for or invalid for the operation
     MissingOrInvalidPublicKey,
     /// The secret key is missing for or invalid for the operation
@@ -45,18 +41,24 @@ pub enum CryptError {
     InvalidEncodingCharacter(String, char),
     /// Invalid encoding length (encoding, length)
     InvalidEncodingLength(String, usize),
+    /// The internal encoding bitmask overflowed
+    EncodingBitmaskOverflow(usize),
 }
 
 #[cfg(any(feature = "server", test))]
 impl Debug for CryptError {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         // Delegate to Display
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 
 impl Display for CryptError {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
         match self {
             Self::InvalidKeyLength(bytes, received) => {
                 write!(
@@ -72,24 +74,20 @@ impl Display for CryptError {
                     bytes, received
                 )
             },
-            CryptError::CannotHashOrDerive(e) => {
-                write!(f, "Cannot hash the provided data: {}", e.to_string())
+            Self::CannotHashOrDerive(e) => {
+                write!(f, "Cannot hash the provided data: {}", e)
             },
-            CryptError::InvalidCharacterInput => {
+            Self::InvalidCharacterInput => {
                 write!(f, "Invalid character in input")
             },
-            CryptError::CannotDecode => {
+            Self::CannotDecode => {
                 write!(f, "Cannot decode the data")
             },
-            CryptError::CannotHashArgon2(e) => {
-                write!(
-                    f,
-                    "Cannot hash the provided data with Argon2: {}",
-                    e.to_string()
-                )
+            Self::CannotHashArgon2(e) => {
+                write!(f, "Cannot hash the provided data with Argon2: {}", e)
             },
-            CryptError::CannotDeriveArgon2(e) => {
-                write!(f, "Cannot derive the key with Argon2: {}", e.to_string())
+            Self::CannotDeriveArgon2(e) => {
+                write!(f, "Cannot derive the key with Argon2: {}", e)
             },
             Self::MissingOrInvalidPublicKey => {
                 write!(f, "The receiver public key is missing or invalid")
@@ -97,47 +95,53 @@ impl Display for CryptError {
             Self::MissingOrInvalidSecretKey => {
                 write!(f, "The sender secret key is missing or invalid")
             },
-            CryptError::CannotEncryptWithChaCha20Poly1305(e) => {
+            Self::CannotEncryptWithChaCha20Poly1305(e) => {
                 write!(
                     f,
                     "Cannot encrypt the provided data with ChaCha20Poly1305: {}",
-                    e.to_string()
+                    e
                 )
             },
-            CryptError::CannotDecryptWithChaCha20Poly1305(e) => {
+            Self::CannotDecryptWithChaCha20Poly1305(e) => {
                 write!(
                     f,
                     "Cannot decrypt the provided data with ChaCha20Poly1305: {}",
-                    e.to_string()
+                    e
                 )
             },
-            CryptError::DataTooLong(overflowing_size) => {
+            Self::DataTooLong(overflowing_size) => {
                 write!(
                     f,
                     "The provided data is too long, overflowing the maximum size resulting in: {}",
                     overflowing_size
                 )
             },
-            CryptError::DataTooShort(underflowing_size) => {
+            Self::DataTooShort(underflowing_size) => {
                 write!(
                     f,
                     "The provided data is too short, underflowing the minimum size resulting in: {}",
                     underflowing_size
                 )
             },
-            CryptError::InvalidEncodingCharacter(encoding, char) => {
+            Self::InvalidEncodingCharacter(encoding, char) => {
                 write!(
                     f,
                     "Invalid character in input for encoding '{}': '{}'",
                     encoding, char
                 )
             },
-            CryptError::InvalidEncodingLength(encoding, size) => {
+            Self::InvalidEncodingLength(encoding, size) => {
                 write!(
                     f,
                     "Invalid length in input for encoding '{}': '{}'",
                     encoding, size
                 )
+            },
+            Self::CannotEncode => {
+                write!(f, "Cannot encode the data")
+            },
+            Self::EncodingBitmaskOverflow(bitmask) => {
+                write!(f, "The internal encoding bitmask overflowed: {}", bitmask)
             },
         }
     }

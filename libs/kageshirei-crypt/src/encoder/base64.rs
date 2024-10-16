@@ -1,22 +1,20 @@
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
-
-use base64ct::Encoding as _;
+use alloc::{borrow::ToOwned as _, string::String, vec::Vec};
 
 use crate::{
-    encoder::{Encoder, EncodingPadding, EncodingVariant},
+    encoder::{Encoder as EncoderTrait, EncodingPadding, EncodingVariant},
     CryptError,
 };
 
-pub enum Base64Variant {
+pub enum Variant {
     UrlUnpadded,
     Url,
     Standard,
     StandardUnpadded,
 }
 
-impl EncodingVariant for Base64Variant {
+impl EncodingVariant for Variant {
     fn get_alphabet(&self) -> &'static [u8] {
-        match self {
+        match *self {
             Self::Url | Self::UrlUnpadded => b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
             Self::Standard | Self::StandardUnpadded => {
                 b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -25,9 +23,9 @@ impl EncodingVariant for Base64Variant {
     }
 }
 
-impl EncodingPadding for Base64Variant {
+impl EncodingPadding for Variant {
     fn get_padding(&self) -> Option<u8> {
-        match self {
+        match *self {
             Self::UrlUnpadded | Self::StandardUnpadded => None,
             Self::Url | Self::Standard => Some(b'='),
         }
@@ -35,56 +33,162 @@ impl EncodingPadding for Base64Variant {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct Base64Encoder<T>
+pub struct Encoder<T>
 where
     T: EncodingVariant + EncodingPadding,
 {
+    /// Which variant of base64 to use
     variant: T,
 }
 
-impl Base64Encoder<Base64Variant> {
-    pub fn new(variant: Base64Variant) -> Self {
+impl Encoder<Variant> {
+    pub const fn new(variant: Variant) -> Self {
         Self {
             variant,
         }
     }
 }
 
-impl<T> Encoder for Base64Encoder<T>
+/// Push a character to the output if it exists in the alphabet
+///
+/// # Arguments
+///
+/// * `alphabet` - The alphabet to check the character against
+/// * `output` - The output vector to push the character to
+/// * `value` - The value to check against the alphabet
+///
+/// # Returns
+///
+/// * `Ok(())` if the character was pushed successfully
+/// * `Err(CryptError::InvalidCharacterInput)` if the character is not in the alphabet
+fn checked_push(alphabet: &[u8], output: &mut Vec<u8>, value: u32) -> Result<(), CryptError> {
+    alphabet
+        .get(value as usize)
+        .map_or(Err(CryptError::InvalidCharacterInput), |value| {
+            output.push(*value);
+            Ok(())
+        })
+}
+
+/// Check if the capacity is too large
+///
+/// # Arguments
+///
+/// * `capacity` - The capacity to check
+///
+/// # Returns
+///
+/// * `Ok(())` if the capacity is not too large
+/// * `Err(CryptError::DataTooLong(capacity))` if the capacity is too large
+const fn check_capacity(capacity: (usize, bool)) -> Result<(), CryptError> {
+    if capacity.1 {
+        Err(CryptError::DataTooLong(capacity.0))
+    }
+    else {
+        Ok(())
+    }
+}
+
+/// Create an error for an invalid encoding length
+///
+/// # Arguments
+///
+/// * `length` - The length of the encoding
+///
+/// # Returns
+///
+/// A `CryptError` for an invalid encoding length
+fn make_invalid_encoding_length(length: usize) -> CryptError {
+    CryptError::InvalidEncodingLength("base64".to_owned(), length)
+}
+
+/// Create an error for an invalid number of padding bytes
+///
+/// # Arguments
+///
+/// * `length` - The length of the padding bytes
+///
+/// # Returns
+///
+/// A `CryptError` for an invalid number of padding bytes
+fn make_invalid_padding_bytes_encoding_length(length: usize) -> CryptError {
+    CryptError::InvalidEncodingLength("base64 padding bytes".to_owned(), length)
+}
+
+impl<T> EncoderTrait for Encoder<T>
 where
     T: EncodingVariant + EncodingPadding,
 {
-    fn encode(&self, data: &[u8]) -> String {
+    fn encode(&self, data: &[u8]) -> Result<String, CryptError> {
         let alphabet = self.variant.get_alphabet();
         let padding = self.variant.get_padding();
-        let mut output = Vec::with_capacity((data.len() * 4 + 2) / 3);
+
+        let capacity = data.len().overflowing_mul(4);
+        check_capacity(capacity)?;
+
+        let capacity = capacity.0.overflowing_add(2);
+        check_capacity(capacity)?;
+
+        let capacity = capacity.0.overflowing_div(3);
+        check_capacity(capacity)?;
+
+        let mut output = Vec::with_capacity(capacity.0);
 
         let mut chunks = data.chunks_exact(3);
 
         // Process each chunk of 3 bytes
         for chunk in &mut chunks {
-            let n = ((chunk[0] as u32) << 16) | ((chunk[1] as u32) << 8) | (chunk[2] as u32);
+            let n = chunk.first().map_or_else(
+                || Err(make_invalid_encoding_length(chunk.len())),
+                |first| {
+                    chunk.get(1).map_or_else(
+                        || Err(make_invalid_encoding_length(chunk.len())),
+                        |second| {
+                            chunk.get(2).map_or_else(
+                                || Err(make_invalid_encoding_length(chunk.len())),
+                                |third| Ok(((*first as u32) << 16) | ((*second as u32) << 8) | (*third as u32)),
+                            )
+                        },
+                    )
+                },
+            )?;
 
-            output.push(alphabet[((n >> 18) & 0x3f) as usize]);
-            output.push(alphabet[((n >> 12) & 0x3f) as usize]);
-            output.push(alphabet[((n >> 6) & 0x3f) as usize]);
-            output.push(alphabet[(n & 0x3f) as usize]);
+            checked_push(alphabet, &mut output, (n >> 18) & 0x3f)?;
+            checked_push(alphabet, &mut output, (n >> 12) & 0x3f)?;
+            checked_push(alphabet, &mut output, (n >> 6) & 0x3f)?;
+            checked_push(alphabet, &mut output, n & 0x3f)?;
         }
 
         // Handle remaining bytes (if any)
         let rem = chunks.remainder();
         if !rem.is_empty() {
-            let n = match rem.len() {
-                1 => (rem[0] as u32) << 16,
-                2 => ((rem[0] as u32) << 16) | ((rem[1] as u32) << 8),
-                _ => unreachable!(),
-            };
+            if rem.len() > 2 {
+                return Err(make_invalid_padding_bytes_encoding_length(rem.len()));
+            }
 
-            output.push(alphabet[((n >> 18) & 0x3f) as usize]);
-            output.push(alphabet[((n >> 12) & 0x3f) as usize]);
+            let n = if rem.len() == 1 {
+                rem.first().map_or_else(
+                    || Err(make_invalid_padding_bytes_encoding_length(rem.len())),
+                    |first| Ok((*first as u32) << 16),
+                )
+            }
+            else {
+                rem.first().map_or_else(
+                    || Err(make_invalid_padding_bytes_encoding_length(rem.len())),
+                    |first| {
+                        rem.get(1).map_or_else(
+                            || Err(make_invalid_padding_bytes_encoding_length(rem.len())),
+                            |second| Ok(((*first as u32) << 16) | ((*second as u32) << 8)),
+                        )
+                    },
+                )
+            }?;
+
+            checked_push(alphabet, &mut output, (n >> 18) & 0x3f)?;
+            checked_push(alphabet, &mut output, (n >> 12) & 0x3f)?;
 
             if rem.len() == 2 {
-                output.push(alphabet[((n >> 6) & 0x3f) as usize]);
+                checked_push(alphabet, &mut output, (n >> 6) & 0x3f)?;
             }
             else if let Some(pad) = padding {
                 output.push(pad);
@@ -95,17 +199,30 @@ where
             }
         }
 
-        String::from_utf8(output).unwrap()
+        Ok(String::from_utf8(output).unwrap())
     }
 
     fn decode(&self, data: &str) -> Result<Vec<u8>, CryptError> {
         let alphabet = self.variant.get_alphabet();
         let padding = self.variant.get_padding();
         let bytes = data.as_bytes();
-        let mut output = Vec::with_capacity((bytes.len() * 3) / 4);
+
+        let capacity = bytes.len().overflowing_mul(3);
+        if capacity.1 {
+            return Err(CryptError::DataTooLong(capacity.0));
+        }
+
+        let capacity = capacity.0.overflowing_div(4);
+        if capacity.1 {
+            return Err(CryptError::InvalidEncodingLength(
+                "base64".to_owned(),
+                bytes.len(),
+            ));
+        }
+        let mut output = Vec::with_capacity(capacity.0);
 
         let mut buffer = [0u32; 4];
-        let mut index = 0;
+        let mut index = 0u8;
 
         for &byte in bytes {
             if Some(byte) == padding || byte == b'=' {
@@ -120,8 +237,16 @@ where
                     byte as char,
                 ))? as u32;
 
-            buffer[index] = value;
-            index += 1;
+            if let Some(buffer_position) = buffer.get_mut(index as usize) {
+                *buffer_position = value;
+            }
+            else {
+                return Err(CryptError::InvalidEncodingLength(
+                    "base64".to_owned(),
+                    bytes.len(),
+                ));
+            }
+            index = index.saturating_add(1);
 
             if index == 4 {
                 let n = (buffer[0] << 18) | (buffer[1] << 12) | (buffer[2] << 6) | buffer[3];
@@ -149,21 +274,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use alloc::format;
-
     use super::*;
-    use crate::no_std_println;
 
     #[test]
     fn test_base64_encode_url_unpadded() {
         let data = b"Hello, World!".to_vec();
 
-        let encoder = Base64Encoder::new(Base64Variant::UrlUnpadded);
-        let encoded = encoder.encode(data.as_slice());
-        assert_eq!(
-            encoded,
-            base64ct::Base64UrlUnpadded::encode_string(data.as_slice())
-        );
+        let encoder = Encoder::new(Variant::UrlUnpadded);
+        let encoded = encoder.encode(data.as_slice()).unwrap();
         assert_eq!(encoded, "SGVsbG8sIFdvcmxkIQ");
 
         // no_std_println!("Base64 URL Unpadded: {}", encoded);
@@ -173,12 +291,8 @@ mod tests {
     fn test_base64_decode_url_unpadded() {
         let data = "SGVsbG8sIFdvcmxkIQ";
 
-        let encoder = Base64Encoder::new(Base64Variant::UrlUnpadded);
+        let encoder = Encoder::new(Variant::UrlUnpadded);
         let decoded = encoder.decode(data).unwrap();
-        assert_eq!(
-            decoded,
-            base64ct::Base64UrlUnpadded::decode_vec(data).unwrap()
-        );
         assert_eq!(decoded, b"Hello, World!".to_vec());
     }
 
@@ -186,9 +300,8 @@ mod tests {
     fn test_base64_encode_url() {
         let data = b"Hello, World!".to_vec();
 
-        let encoder = Base64Encoder::new(Base64Variant::Url);
-        let encoded = encoder.encode(data.as_slice());
-        assert_eq!(encoded, base64ct::Base64Url::encode_string(data.as_slice()));
+        let encoder = Encoder::new(Variant::Url);
+        let encoded = encoder.encode(data.as_slice()).unwrap();
         assert_eq!(encoded, "SGVsbG8sIFdvcmxkIQ==");
 
         // no_std_println!("Base64 URL: {}", encoded);
@@ -198,9 +311,8 @@ mod tests {
     fn test_base64_decode_url() {
         let data = "SGVsbG8sIFdvcmxkIQ==";
 
-        let encoder = Base64Encoder::new(Base64Variant::Url);
+        let encoder = Encoder::new(Variant::Url);
         let decoded = encoder.decode(data).unwrap();
-        assert_eq!(decoded, base64ct::Base64Url::decode_vec(data).unwrap());
         assert_eq!(decoded, b"Hello, World!".to_vec());
     }
 
@@ -208,12 +320,8 @@ mod tests {
     fn test_base64_encode_unpadded() {
         let data = b"Hello, World!".to_vec();
 
-        let encoder = Base64Encoder::new(Base64Variant::StandardUnpadded);
-        let encoded = encoder.encode(data.as_slice());
-        assert_eq!(
-            encoded,
-            base64ct::Base64Unpadded::encode_string(data.as_slice())
-        );
+        let encoder = Encoder::new(Variant::StandardUnpadded);
+        let encoded = encoder.encode(data.as_slice()).unwrap();
         assert_eq!(encoded, "SGVsbG8sIFdvcmxkIQ");
 
         // no_std_println!("Base64 Unpadded: {}", encoded);
@@ -223,9 +331,8 @@ mod tests {
     fn test_base64_decode_unpadded() {
         let data = "SGVsbG8sIFdvcmxkIQ";
 
-        let encoder = Base64Encoder::new(Base64Variant::StandardUnpadded);
+        let encoder = Encoder::new(Variant::StandardUnpadded);
         let decoded = encoder.decode(data).unwrap();
-        assert_eq!(decoded, base64ct::Base64Unpadded::decode_vec(data).unwrap());
         assert_eq!(decoded, b"Hello, World!".to_vec());
     }
 
@@ -233,9 +340,8 @@ mod tests {
     fn test_base64_encode() {
         let data = b"Hello, World!".to_vec();
 
-        let encoder = Base64Encoder::new(Base64Variant::Standard);
-        let encoded = encoder.encode(data.as_slice());
-        assert_eq!(encoded, base64ct::Base64::encode_string(data.as_slice()));
+        let encoder = Encoder::new(Variant::Standard);
+        let encoded = encoder.encode(data.as_slice()).unwrap();
         assert_eq!(encoded, "SGVsbG8sIFdvcmxkIQ==");
 
         // no_std_println!("Base64: {}", encoded);
@@ -245,9 +351,8 @@ mod tests {
     fn test_base64_decode() {
         let data = "SGVsbG8sIFdvcmxkIQ==";
 
-        let encoder = Base64Encoder::new(Base64Variant::Standard);
+        let encoder = Encoder::new(Variant::Standard);
         let decoded = encoder.decode(data).unwrap();
-        assert_eq!(decoded, base64ct::Base64::decode_vec(data).unwrap());
         assert_eq!(decoded, b"Hello, World!".to_vec());
     }
 }
