@@ -62,10 +62,6 @@ impl NtSyscall {
 
 /// Retrieves a handle to the current process.
 ///
-/// # Safety
-///
-/// This function involves unsafe operations.
-///
 /// # Returns
 ///
 /// A handle to the current process.
@@ -93,6 +89,12 @@ impl NtClose {
 
     /// Wrapper function for NtClose to avoid repetitive run_syscall calls.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `handle` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `handle` A handle to an object. This is a required parameter that must be valid.
@@ -102,7 +104,9 @@ impl NtClose {
     ///
     /// * `true` if the operation was successful, `false` otherwise. The function returns an
     ///   NTSTATUS code; however, in this wrapper, the result is simplified to a boolean.
-    pub fn run(&self, handle: *mut c_void) -> i32 { run!(self.syscall.number, self.syscall.address as usize, handle) }
+    pub unsafe fn run(&self, handle: *mut c_void) -> i32 {
+        run!(self.syscall.number, self.syscall.address as usize, handle)
+    }
 }
 
 pub struct NtAllocateVirtualMemory {
@@ -128,6 +132,14 @@ impl NtAllocateVirtualMemory {
     /// Wrapper function for NtAllocateVirtualMemory to allocate memory in the virtual address space
     /// of a specified process.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `handle`, `base_address`, and
+    /// `region_size` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `handle` A handle to the process in which the memory will be allocated.
@@ -149,7 +161,7 @@ impl NtAllocateVirtualMemory {
     ///
     /// * `true` if the operation was successful, `false` otherwise. The function simplifies the
     ///   NTSTATUS result into a boolean indicating success or failure.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         handle: *mut c_void,
         base_address: &mut *mut c_void,
@@ -196,6 +208,14 @@ impl NtWriteVirtualMemory {
     /// This function writes data to the virtual memory of a process. It wraps the
     /// NtWriteVirtualMemory syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle`, `base_address`,
+    /// `buffer`, and `number_of_bytes_written` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` A handle to the process whose memory is to be written to.
@@ -210,7 +230,7 @@ impl NtWriteVirtualMemory {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: HANDLE,
         base_address: *mut c_void,
@@ -255,6 +275,14 @@ impl NtFreeVirtualMemory {
     /// This function frees a region of pages within the virtual address space of a specified
     /// process. It wraps the NtFreeVirtualMemory syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle`, `base_address`, and
+    /// `region_size` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` A handle to the process whose memory is to be freed.
@@ -271,7 +299,7 @@ impl NtFreeVirtualMemory {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: *mut c_void,
         base_address: *mut u8,
@@ -362,6 +390,14 @@ impl NtQueryValueKey {
 
     /// Wrapper for the NtQueryValueKey syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `key_handle`, `value_name`,
+    /// `key_value_information`, and `result_length` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `key_handle` A handle to the key.
@@ -378,7 +414,7 @@ impl NtQueryValueKey {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         key_handle: *mut c_void,
         value_name: &UnicodeString,
@@ -422,6 +458,14 @@ impl NtEnumerateKey {
 
     /// Wrapper for the NtEnumerateKey syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `key_handle`, `index`,
+    /// `key_information`, and `result_length` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `key_handle` A handle to the key.
@@ -436,7 +480,7 @@ impl NtEnumerateKey {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         key_handle: *mut c_void,
         index: ULONG,
@@ -480,6 +524,14 @@ impl NtQuerySystemInformation {
 
     /// Wrapper for the NtQuerySystemInformation syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `system_information_class`,
+    /// `system_information`, and `return_length` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `system_information_class` The system information class to be queried.
@@ -493,7 +545,7 @@ impl NtQuerySystemInformation {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         system_information_class: u32,
         system_information: *mut c_void,
@@ -533,6 +585,14 @@ impl NtQueryInformationProcess {
 
     /// Wrapper for the NtQueryInformationProcess syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle`, `process_information`,
+    /// and `return_length` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` A handle to the process.
@@ -547,7 +607,7 @@ impl NtQueryInformationProcess {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: HANDLE,
         process_information_class: u32,
@@ -589,6 +649,14 @@ impl NtOpenProcess {
 
     /// Wrapper for the NtOpenProcess syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle`, `desired_access`, and
+    /// `object_attributes` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[out]` - `process_handle` A mutable pointer to a handle that will receive the process
@@ -600,7 +668,7 @@ impl NtOpenProcess {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: &mut HANDLE,
         desired_access: AccessMask,
@@ -640,6 +708,14 @@ impl NtOpenProcessToken {
 
     /// Wrapper for the NtOpenProcessToken syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` and `desired_access`
+    /// pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` The handle of the process whose token is to be opened.
@@ -649,7 +725,7 @@ impl NtOpenProcessToken {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(&self, process_handle: HANDLE, desired_access: AccessMask, token_handle: &mut HANDLE) -> i32 {
+    pub unsafe fn run(&self, process_handle: HANDLE, desired_access: AccessMask, token_handle: &mut HANDLE) -> i32 {
         run!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -682,6 +758,14 @@ impl NtOpenProcessTokenEx {
 
     /// Wrapper for the NtOpenProcessTokenEx syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` and `desired_access`
+    /// pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `process_handle` The handle of the process whose token is to be opened.
@@ -692,7 +776,7 @@ impl NtOpenProcessTokenEx {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         process_handle: HANDLE,
         desired_access: AccessMask,
@@ -732,6 +816,14 @@ impl NtQueryInformationToken {
 
     /// Wrapper for the NtQueryInformationToken syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `token_handle`, `token_information`, and
+    /// `return_length` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `token_handle` The handle of the token to be queried.
@@ -746,7 +838,7 @@ impl NtQueryInformationToken {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         token_handle: HANDLE,
         token_information_class: ULONG,
@@ -788,6 +880,14 @@ impl NtAdjustPrivilegesToken {
 
     /// Wrapper for the NtAdjustPrivilegesToken syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `token_handle`, `new_state`,
+    /// `previous_state`, and `return_length` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `token_handle` The handle of the token to be adjusted.
@@ -801,7 +901,7 @@ impl NtAdjustPrivilegesToken {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         token_handle: HANDLE,
         disable_all_privileges: bool,
@@ -845,6 +945,13 @@ impl NtWaitForSingleObject {
 
     /// Wrapper for the NtWaitForSingleObject syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `handle` and `timeout` pointers.
+    ///
+    /// The caller must ensure that the pointers are valid and that the memory they point to is
+    /// valid and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `handle` A handle to the object.
@@ -854,7 +961,7 @@ impl NtWaitForSingleObject {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(&self, handle: HANDLE, alertable: bool, timeout: *mut c_void) -> i32 {
+    pub unsafe fn run(&self, handle: HANDLE, alertable: bool, timeout: *mut c_void) -> i32 {
         run!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -926,7 +1033,10 @@ pub struct NtCreateEvent {
     pub syscall: NtSyscall,
 }
 
+// Safety: This type is safe to send between threads.
 unsafe impl Sync for NtCreateEvent {}
+// Safety: This type is safe to send between threads.
+unsafe impl Send for NtCreateEvent {}
 
 impl Default for NtCreateEvent {
     fn default() -> Self { Self::new() }
@@ -941,6 +1051,13 @@ impl NtCreateEvent {
 
     /// Wrapper function for NtCreateEvent to avoid repetitive run_syscall calls.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `event_handle` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[out]` - `event_handle` A mutable pointer to a handle that will receive the event handle.
@@ -953,7 +1070,7 @@ impl NtCreateEvent {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    pub unsafe fn run(
         &self,
         event_handle: &mut HANDLE,
         desired_access: AccessMask,
@@ -961,10 +1078,13 @@ impl NtCreateEvent {
         event_type: PEventType,
         initial_state: *mut c_uchar,
     ) -> i32 {
-        let obj_attr_ptr = match object_attributes {
-            Some(attrs) => attrs as *mut _ as *mut c_void,
-            None => null_mut(),
-        };
+        #[expect(
+            clippy::fn_to_numeric_cast_any,
+            reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+        )]
+        let obj_attr_ptr = object_attributes.map_or(null_mut::<()> as *mut c_void, |attrs| {
+            attrs as *mut _ as *mut c_void
+        });
         run!(
             self.syscall.number,
             self.syscall.address as usize,
@@ -1001,6 +1121,13 @@ impl NtWriteFile {
     ///
     /// This function writes data to a file or I/O device. It wraps the NtWriteFile syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `buffer` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `file_handle` A handle to the file or I/O device to be written to.
@@ -1024,7 +1151,11 @@ impl NtWriteFile {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         file_handle: HANDLE,
         event: HANDLE,
@@ -1076,6 +1207,13 @@ impl NtCreateFile {
     ///
     /// This function creates or opens a file or I/O device. It wraps the NtCreateFile syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `ea_buffer` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[out]` - `file_handle` A mutable pointer to a handle that will receive the file handle.
@@ -1101,7 +1239,11 @@ impl NtCreateFile {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         file_handle: &mut HANDLE,
         desired_access: u32,
@@ -1157,6 +1299,13 @@ impl NtReadFile {
     ///
     /// This function reads data from a file or I/O device. It wraps the NtReadFile syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `buffer` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[in]` - `file_handle` A handle to the file or I/O device to be read from.
@@ -1180,7 +1329,11 @@ impl NtReadFile {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         file_handle: HANDLE,
         event: HANDLE,
@@ -1230,6 +1383,13 @@ impl NtCreateProcessEx {
 
     /// Wrapper for the NtCreateProcessEx syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` pointer.
+    ///
+    /// The caller must ensure that the pointer is valid and that the memory it points to is valid
+    /// and has the correct size.
+    ///
     /// # Arguments
     ///
     /// * `[out]` - `process_handle` A mutable pointer to a handle that will receive the process
@@ -1246,7 +1406,11 @@ impl NtCreateProcessEx {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
+    pub unsafe fn run(
         &self,
         process_handle: &mut HANDLE,
         desired_access: AccessMask,
@@ -1324,6 +1488,10 @@ impl NtCreateThread {
     /// # Returns
     ///
     /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
+    )]
     pub unsafe fn run(
         &self,
         thread_handle: PHANDLE,
@@ -1679,6 +1847,12 @@ impl NtTerminateProcess {
     ///
     /// This function terminates a process. It wraps the NtTerminateProcess syscall.
     ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it dereferences the `process_handle` pointer.
+    ///
+    /// Pointer validity must be ensured by the caller.
+    ///
     /// # Arguments
     ///
     /// * `process_handle` - A handle to the process to be terminated.
@@ -1687,7 +1861,7 @@ impl NtTerminateProcess {
     /// # Returns
     ///
     /// * `i32` - The NTSTATUS code of the operation.
-    pub fn run(&self, process_handle: HANDLE, exit_status: i32) -> i32 {
+    pub unsafe fn run(&self, process_handle: HANDLE, exit_status: i32) -> i32 {
         run!(
             self.syscall.number,
             self.syscall.address as usize,
