@@ -1,14 +1,18 @@
+use alloc::{boxed::Box};
 #[cfg(any(feature = "server", test))]
 use core::{
-    error::Error as ErrorTrait,
     fmt::{Debug, Display, Formatter},
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+use core::error::Error as ErrorTrait;
+
 pub enum Format {
-    /// TODO: This is a placeholder, remove once at least a format error is
-    /// defined
-    _PLACEHOLDER,
+    /// No data have been provided.
+    EmptyData,
+    /// The data provided is invalid, it does not match the expected format.
+    InvalidData,
+    /// A generic error occurred.
+    Generic(Box<dyn ErrorTrait>),
 }
 
 #[cfg(any(feature = "server", test))]
@@ -27,8 +31,17 @@ impl Display for Format {
             reason = "Cannot dereference into the Display trait implementation"
         )]
         match self {
-            Self::_PLACEHOLDER => {
-                write!(f, "Placeholder error",)
+            Self::EmptyData => {
+                write!(f, "No data have been provided.")
+            },
+            Format::InvalidData => {
+                write!(
+                    f,
+                    "The data provided is invalid, it does not match the expected format."
+                )
+            },
+            Format::Generic(e) => {
+                write!(f, "A generic error occurred: {}", e)
             },
         }
     }
