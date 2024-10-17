@@ -16,11 +16,15 @@ use crate::{
 
 pub mod api_server;
 pub mod database;
+mod errors;
 pub mod handlers;
 pub mod jwt;
 pub mod logging;
+pub(crate) mod print_validation_error;
 pub mod sse;
 mod validators;
+
+pub use errors::Configuration;
 
 pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;

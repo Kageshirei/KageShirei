@@ -64,7 +64,7 @@ mod tests {
     #[test]
     fn test_string_length_a() {
         let string = b"hello\0";
-        let length = string_length_a(string.as_ptr());
+        let length = unsafe { string_length_a(string.as_ptr()) };
         assert_eq!(length, 5);
     }
 
@@ -78,7 +78,7 @@ mod tests {
             b'o' as u16,
             0,
         ];
-        let length = string_length_w(string.as_ptr());
+        let length = unsafe { string_length_w(string.as_ptr()) };
         assert_eq!(length, 5);
     }
 }
