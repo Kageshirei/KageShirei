@@ -7,6 +7,8 @@ use alloc::{
 use log::error;
 use validator::{ValidationErrors, ValidationErrorsKind};
 
+use crate::Configuration;
+
 /// Print validation errors to the SYNC log
 pub fn print_validation_error(validation_errors: ValidationErrors) -> Result<(), String> {
     for (field, errors) in validation_errors.errors() {
@@ -40,17 +42,17 @@ pub fn print_validation_error(validation_errors: ValidationErrors) -> Result<(),
 }
 
 /// Parse a field error into a human-readable string
-fn parse_field_error(field: &str, error: &validator::ValidationError) -> String {
+fn parse_field_error(field: &str, error: &validator::ValidationError) -> Result<String, Configuration> {
     match error.code.to_string().as_str() {
         "__internal__" => {
-            format!(
+            Ok(format!(
                 "Validation error in field '{}': {}",
                 field,
                 error.message.as_ref().unwrap()
-            )
+            ))
         },
         "range" => {
-            format!(
+            OK(format!(
                 "Validation error in field '{}': Value '{}' out of the defined range of {}-{}",
                 field,
                 &error.params["value"],
@@ -66,10 +68,10 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                         .get("exclusive_max")
                         .unwrap_or(&serde_json::Value::String("(Unspecified)".to_owned()))
                 ),
-            )
+            ))
         },
         "regex" => {
-            format!(
+            Ok(format!(
                 "Validation error in field '{}': {}",
                 field,
                 error.message.as_ref().unwrap().to_string().replace(
@@ -81,7 +83,7 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                         .as_str()
                         .unwrap(),
                 )
-            )
+            ))
         },
         "length" => {
             let has_min = error.params.get("min").is_some();
@@ -117,7 +119,10 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                 ));
             }
             else if has_equal {
-                let value = &error.params["value"];
+                let value = &error
+                    .params
+                    .get("value")
+                    .ok_or(Err(Configuration::MissingWrongField("value".to_owned())))?;
                 message.push_str(&format!(
                     "An exact length of {} is required, {} given",
                     &error.params["equal"],
@@ -130,11 +135,24 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                 ));
             }
             else {
-                let value = &error.params["value"];
+                let value = &error
+                    .params
+                    .get("value")
+                    .ok_or(Err(Configuration::MissingWrongField("value".to_owned())))?;
                 message.push_str(&format!(
-                    "A length between {} and {} is required, {} given",
-                    &error.params["min"],
-                    &error.params["max"],
+                    "A length between '{}' and '{}' is required, '{}' given",
+                    &error
+                        .params
+                        .get("min")
+                        .ok_or(Err(Configuration::MissingValidationLowerBound(
+                            "min".to_owned()
+                        )))?,
+                    &error
+                        .params
+                        .get("max")
+                        .ok_or(Err(Configuration::MissingValidationLowerBound(
+                            "max".to_owned()
+                        )))?,
                     if value.is_array() {
                         value.as_array().unwrap().len()
                     }
@@ -144,10 +162,16 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> String 
                 ));
             }
 
-            format!("Validation error in field '{}': {}", field, message)
+            Ok(format!(
+                "Validation error in field '{}': {}",
+                field, message
+            ))
         },
         _ => {
-            format!("Validation error in field '{}': {:?}", field, error)
+            Ok(format!(
+                "Validation error in field '{}': {:?}",
+                field, error
+            ))
         },
     }
 }
