@@ -57,13 +57,15 @@ pub fn init_winsock_funcs() {
 
             let mut ws2_win32_handle: *mut c_void = null_mut();
 
-            // Load the DLL using the Windows NT Loader
-            (instance().ntdll.ldr_load_dll)(
-                null_mut(),
-                null_mut(),
-                ws2_win32_dll_unicode,
-                &mut ws2_win32_handle as *mut _ as *mut c_void,
-            );
+            if let Some(ldr_load_dll) = instance().ntdll.ldr_load_dll {
+                // Load the DLL using the Windows NT Loader
+                ldr_load_dll(
+                    null_mut(),
+                    null_mut(),
+                    ws2_win32_dll_unicode,
+                    &mut ws2_win32_handle as *mut _ as *mut c_void,
+                );
+            }
 
             // If the handle is null, the DLL failed to load
             if ws2_win32_handle.is_null() {
@@ -443,7 +445,7 @@ mod tests {
 
     #[test]
     fn test_http_get() {
-        match http_get("localhost", "/") {
+        match http_get("example.com", "/") {
             Ok(response) => {
                 libc_println!("GET request successful!");
                 libc_println!("Response: {}", response);
