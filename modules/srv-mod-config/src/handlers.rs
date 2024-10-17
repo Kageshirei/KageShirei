@@ -6,7 +6,7 @@ use validator::Validate;
 use crate::{api_server::TlsConfig, validators};
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct HandlerConfig {
+pub struct Config {
     /// Whether the handler is enabled
     pub enabled:   bool,
     /// The type of handler
@@ -15,7 +15,7 @@ pub struct HandlerConfig {
     pub protocols: Vec<Protocol>,
     /// The port to listen on
     #[validate(
-        range(min = 1, max = 65535),
+        range(min = 1, max = 0xFFFF),
         custom(function = "validators::validate_port")
     )]
     pub port:      u16,
@@ -28,7 +28,7 @@ pub struct HandlerConfig {
     #[validate(nested)]
     pub tls:       Option<TlsConfig>,
     #[validate(nested)]
-    pub security:  HandlerSecurityConfig,
+    pub security:  SecurityConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
@@ -48,7 +48,7 @@ pub enum Protocol {
 }
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct HandlerSecurityConfig {
+pub struct SecurityConfig {
     pub encryption_scheme: EncryptionScheme,
     pub algorithm:         Option<EncryptionAlgorithm>,
     pub encoder:           Option<Encoder>,
@@ -92,6 +92,10 @@ pub enum Encoder {
 
 impl Display for Encoder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
         match self {
             Self::Hex => write!(f, "hex"),
             Self::Base32 => write!(f, "base32"),

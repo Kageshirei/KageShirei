@@ -13,6 +13,10 @@ pub enum EventType {
 
 impl Display for EventType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[expect(
+            clippy::pattern_type_mismatch,
+            reason = "Cannot dereference into the Display trait implementation"
+        )]
         match self {
             Self::Log => write!(f, "log"),
             Self::CommandOutput => write!(f, "command_output"),

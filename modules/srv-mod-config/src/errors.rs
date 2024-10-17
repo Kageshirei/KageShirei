@@ -1,9 +1,14 @@
+//! Error types for the configuration module
+
 use std::{
     error::Error,
     fmt::{Debug, Display, Formatter},
 };
 
 pub enum Configuration {
+    Generic(Box<dyn Error>),
+    /// An unrecoverable error occurred
+    Unrecoverable(String),
     /// The configuration is validating a struct or field requiring a value to be defined between a
     /// lower and upper bound, the lower one is missing
     MissingValidationLowerBound(String),
@@ -32,17 +37,23 @@ impl Display for Configuration {
             reason = "Cannot dereference into the Display trait implementation"
         )]
         match self {
-            Configuration::MissingValidationLowerBound(field) => {
+            Self::MissingValidationLowerBound(field) => {
                 write!(f, "Missing lower bound for field '{}'", field)
             },
-            Configuration::MissingValidationUpperBound(field) => {
+            Self::MissingValidationUpperBound(field) => {
                 write!(f, "Missing upper bound for field '{}'", field)
             },
-            Configuration::MissingWrongField(field) => {
+            Self::MissingWrongField(field) => {
                 write!(f, "Missing value for field '{}'", field)
             },
-            Configuration::MissingEqualField(field) => {
+            Self::MissingEqualField(field) => {
                 write!(f, "Missing equal value for field '{}'", field)
+            }
+            Self::Unrecoverable(reason) => {
+                write!(f, "Unrecoverable error: {}", reason)
+            }
+            Self::Generic(nested) => {
+                write!(f, "{}", nested)
             }
         }
     }

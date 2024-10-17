@@ -6,10 +6,10 @@ use validator::Validate;
 use crate::validators;
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct ApiServerConfig {
+pub struct Config {
     /// The port to listen on
     #[validate(
-        range(min = 1, max = 65535),
+        range(min = 1, max = 0xFFFF),
         custom(function = "validators::validate_port")
     )]
     pub port: u16,
@@ -29,7 +29,7 @@ pub struct TlsConfig {
     pub enabled: bool,
     /// The port to listen on for TLS connections
     #[validate(
-        range(min = 1, max = 65535),
+        range(min = 1, max = 0xFFFF),
         custom(function = "validators::validate_port")
     )]
     pub port:    u16,
