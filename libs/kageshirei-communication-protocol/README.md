@@ -1,0 +1,2 @@
+# Library: `kageshirei-communication-protocol`
+
