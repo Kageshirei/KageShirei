@@ -10,16 +10,12 @@ description = "A library for the KageShirei agent that provides utility function
 readme = "README.md"
 
 [dependencies]
-log = { version = "0.4.22", optional = true, default-features = false }
-validator = { version = "0.18.1", optional = true, default-features = false, features = ["derive"] }
-serde_json = { version = "1.0.128", optional = true, default-features = false, features = ["alloc"] }
 
 [features]
 default = ["duration-extension", "unrecoverable-error", "unwrap-infallible"]
 duration-extension = []
 unrecoverable-error = []
 unwrap-infallible = []
-print-validation-error = ["dep:log", "dep:validator", "dep:serde_json"]
 
 [lints]
 workspace = true
