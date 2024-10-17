@@ -12,7 +12,7 @@ readme = "README.md"
 [dependencies]
 mod-hhtgates = {path = "../../modules/mod-hhtgates"}
 kageshirei-win32 = {path = "../../libs/kageshirei-win32" }
-spin = "0.9"
+spin = "0.9.8"
 
 [dev-dependencies]
 libc-print = "0.1.23"
