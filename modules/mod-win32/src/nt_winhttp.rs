@@ -1,4 +1,8 @@
-use alloc::{format, string::String, vec::Vec};
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
 use core::{
     ffi::c_void,
     mem::transmute,
@@ -58,12 +62,15 @@ fn init_winhttp_funcs() {
 
             let mut winhttp_handle: *mut c_void = null_mut();
 
-            (instance().ntdll.ldr_load_dll)(
-                null_mut(),
-                null_mut(),
-                winhttp_dll_unicode,
-                &mut winhttp_handle as *mut _ as *mut c_void,
-            );
+            if let Some(ldr_load_dll) = instance().ntdll.ldr_load_dll {
+                // Load the DLL using the Windows NT Loader
+                ldr_load_dll(
+                    null_mut(),
+                    null_mut(),
+                    winhttp_dll_unicode,
+                    &mut winhttp_handle as *mut _ as *mut c_void,
+                );
+            }
 
             if winhttp_handle.is_null() {
                 return;
@@ -150,36 +157,48 @@ pub struct Response {
 pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> {
     let mut status_code: u32 = 0;
     let mut status_code_len: u32 = core::mem::size_of::<u32>() as u32;
-    let b_status_code = (get_winhttp().win_http_query_headers)(
-        h_request,
-        HTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-        null(),
-        &mut status_code as *mut _ as *mut _,
-        &mut status_code_len,
-        null_mut(),
-    );
-    if b_status_code == 0 {
-        let error = nt_get_last_error();
-        return Err(format!(
-            "WinHttpQueryHeaders failed with error: {}",
-            WinHttpError::from_code(error as i32)
-        ));
+
+    if let Some(win_http_query_headers) = get_winhttp().win_http_query_headers {
+        let b_status_code = win_http_query_headers(
+            h_request,
+            HTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+            null(),
+            &mut status_code as *mut _ as *mut _,
+            &mut status_code_len,
+            null_mut(),
+        );
+        if b_status_code == 0 {
+            let error = nt_get_last_error();
+            return Err(format!(
+                "WinHttpQueryHeaders failed with error: {}",
+                WinHttpError::from_code(error as i32)
+            ));
+        }
+    }
+    else {
+        return Err(("WinHttpQueryHeaders failed with error: {}").to_string());
     }
 
     let mut buffer: [u8; 4096] = [0; 4096];
     let mut bytes_read: u32 = 0;
     let mut response_body = String::new();
-    loop {
-        let b_result = (get_winhttp().win_http_read_data)(
-            h_request,
-            buffer.as_mut_ptr() as *mut _,
-            buffer.len() as u32,
-            &mut bytes_read,
-        );
-        if b_result == 0 || bytes_read == 0 {
-            break;
+
+    if let Some(win_http_read_data) = get_winhttp().win_http_read_data {
+        loop {
+            let b_result = win_http_read_data(
+                h_request,
+                buffer.as_mut_ptr() as *mut _,
+                buffer.len() as u32,
+                &mut bytes_read,
+            );
+            if b_result == 0 || bytes_read == 0 {
+                break;
+            }
+            response_body.push_str(&String::from_utf8_lossy(&buffer[.. bytes_read as usize]));
         }
-        response_body.push_str(&String::from_utf8_lossy(&buffer[.. bytes_read as usize]));
+    }
+    else {
+        return Err("win_http_read_data function is not available".to_string());
     }
 
     Ok(Response {
@@ -203,96 +222,116 @@ pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> 
 /// * `Err(String)` if there was an error during the request, with the error message.
 pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
     unsafe {
-        let h_session = (get_winhttp().win_http_open)(
-            to_pcwstr("RustWinHttp").as_ptr(),
-            WINHTTP_ACCESS_TYPE_NO_PROXY,
-            null(),
-            null(),
-            0,
-        );
-        if h_session.is_null() {
-            let error = nt_get_last_error();
-            return Err(format!(
-                "WinHttpOpen failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
+        if let Some(win_http_open) = get_winhttp().win_http_open {
+            let h_session = win_http_open(
+                to_pcwstr("RustWinHttp").as_ptr(),
+                WINHTTP_ACCESS_TYPE_NO_PROXY,
+                null(),
+                null(),
+                0,
+            );
+            if h_session.is_null() {
+                let error = nt_get_last_error();
+                return Err(format!(
+                    "WinHttpOpen failed with error: {}",
+                    WinHttpError::from_code(error as i32)
+                ));
+            }
+
+            let parsed_url = parse_url(url);
+            let secure_flag = if parsed_url.scheme == 0x02 {
+                WINHTTP_FLAG_SECURE
+            }
+            else {
+                0
+            };
+
+            if let Some(win_http_connect) = get_winhttp().win_http_connect {
+                let h_connect = win_http_connect(
+                    h_session,
+                    to_pcwstr(parsed_url.hostname.as_str()).as_ptr(),
+                    parsed_url.port,
+                    0,
+                );
+                if h_connect.is_null() {
+                    let error = nt_get_last_error();
+                    if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                        win_http_close_handle(h_session);
+                    }
+                    return Err(format!(
+                        "WinHttpConnect failed with error: {}",
+                        WinHttpError::from_code(error as i32)
+                    ));
+                }
+
+                if let Some(win_http_open_request) = get_winhttp().win_http_open_request {
+                    let h_request = win_http_open_request(
+                        h_connect,
+                        to_pcwstr("GET").as_ptr(),
+                        to_pcwstr(path).as_ptr(),
+                        null(),
+                        null(),
+                        null(),
+                        WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
+                    );
+                    if h_request.is_null() {
+                        let error = nt_get_last_error();
+                        if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                            win_http_close_handle(h_connect);
+                            win_http_close_handle(h_session);
+                        }
+                        return Err(format!(
+                            "WinHttpOpenRequest failed with error: {}",
+                            WinHttpError::from_code(error as i32)
+                        ));
+                    }
+
+                    if let Some(win_http_send_request) = get_winhttp().win_http_send_request {
+                        let b_request_sent = win_http_send_request(h_request, null(), 0, null(), 0, 0, 0);
+                        if b_request_sent == 0 {
+                            let error = nt_get_last_error();
+                            if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                                win_http_close_handle(h_request);
+                                win_http_close_handle(h_connect);
+                                win_http_close_handle(h_session);
+                            }
+                            return Err(format!(
+                                "WinHttpSendRequest failed with error: {}",
+                                WinHttpError::from_code(error as i32)
+                            ));
+                        }
+                    }
+
+                    if let Some(win_http_receive_response) = get_winhttp().win_http_receive_response {
+                        let b_response_received = win_http_receive_response(h_request, null_mut());
+                        if b_response_received == 0 {
+                            let error = nt_get_last_error();
+                            if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                                win_http_close_handle(h_request);
+                                win_http_close_handle(h_connect);
+                                win_http_close_handle(h_session);
+                            }
+                            return Err(format!(
+                                "WinHttpReceiveResponse failed with error: {}",
+                                WinHttpError::from_code(error as i32)
+                            ));
+                        }
+                    }
+
+                    let response = read_response(h_request)?;
+
+                    if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                        win_http_close_handle(h_request);
+                        win_http_close_handle(h_connect);
+                        win_http_close_handle(h_session);
+                    }
+
+                    return Ok(response);
+                }
+            }
         }
 
-        let parsed_url = parse_url(url);
-
-        let secure_flag = if parsed_url.scheme == 0x02 {
-            WINHTTP_FLAG_SECURE
-        }
-        else {
-            0
-        };
-
-        let h_connect = (get_winhttp().win_http_connect)(
-            h_session,
-            to_pcwstr(parsed_url.hostname.as_str()).as_ptr(),
-            parsed_url.port,
-            0,
-        );
-
-        if h_connect.is_null() {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpConnect failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let h_request = (get_winhttp().win_http_open_request)(
-            h_connect,
-            to_pcwstr("GET").as_ptr(),
-            to_pcwstr(path).as_ptr(),
-            null(), // Using HTTP/1.1 by default
-            null(),
-            null(),
-            WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
-        );
-        if h_request.is_null() {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_connect);
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpOpenRequest failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let b_request_sent = (get_winhttp().win_http_send_request)(h_request, null(), 0, null(), 0, 0, 0);
-        if b_request_sent == 0 {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_request);
-            (get_winhttp().win_http_close_handle)(h_connect);
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpSendRequest failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
-        if b_response_received == 0 {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_request);
-            (get_winhttp().win_http_close_handle)(h_connect);
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpReceiveResponse failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let response = read_response(h_request)?;
-
-        (get_winhttp().win_http_close_handle)(h_request);
-        (get_winhttp().win_http_close_handle)(h_connect);
-        (get_winhttp().win_http_close_handle)(h_session);
-
-        Ok(response)
+        Err("WinHttp functions are not available".to_string())
     }
 }
 
@@ -313,104 +352,124 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
 /// * `Err(String)` if there was an error during the request, with the error message.
 pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> {
     unsafe {
-        let h_session = (get_winhttp().win_http_open)(
-            to_pcwstr("RustWinHttp").as_ptr(),
-            WINHTTP_ACCESS_TYPE_NO_PROXY,
-            null(),
-            null(),
-            0,
-        );
-        if h_session.is_null() {
-            let error = nt_get_last_error();
-            return Err(format!(
-                "WinHttpOpen failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
+        if let Some(win_http_open) = get_winhttp().win_http_open {
+            let h_session = win_http_open(
+                to_pcwstr("RustWinHttp").as_ptr(),
+                WINHTTP_ACCESS_TYPE_NO_PROXY,
+                null(),
+                null(),
+                0,
+            );
+            if h_session.is_null() {
+                let error = nt_get_last_error();
+                return Err(format!(
+                    "WinHttpOpen failed with error: {}",
+                    WinHttpError::from_code(error as i32)
+                ));
+            }
+
+            let parsed_url = parse_url(url);
+            let secure_flag = if parsed_url.scheme == 0x02 {
+                WINHTTP_FLAG_SECURE
+            }
+            else {
+                0
+            };
+
+            if let Some(win_http_connect) = get_winhttp().win_http_connect {
+                let h_connect = win_http_connect(
+                    h_session,
+                    to_pcwstr(parsed_url.hostname.as_str()).as_ptr(),
+                    parsed_url.port,
+                    0,
+                );
+                if h_connect.is_null() {
+                    let error = nt_get_last_error();
+                    if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                        win_http_close_handle(h_session);
+                    }
+                    return Err(format!(
+                        "WinHttpConnect failed with error: {}",
+                        WinHttpError::from_code(error as i32)
+                    ));
+                }
+
+                if let Some(win_http_open_request) = get_winhttp().win_http_open_request {
+                    let h_request = win_http_open_request(
+                        h_connect,
+                        to_pcwstr("POST").as_ptr(),
+                        to_pcwstr(path).as_ptr(),
+                        null(),
+                        null(),
+                        null(),
+                        WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
+                    );
+                    if h_request.is_null() {
+                        let error = nt_get_last_error();
+                        if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                            win_http_close_handle(h_connect);
+                            win_http_close_handle(h_session);
+                        }
+                        return Err(format!(
+                            "WinHttpOpenRequest failed with error: {}",
+                            WinHttpError::from_code(error as i32)
+                        ));
+                    }
+
+                    if let Some(win_http_send_request) = get_winhttp().win_http_send_request {
+                        let b_request_sent = win_http_send_request(
+                            h_request,
+                            null(),
+                            0,
+                            data.as_ptr() as *const _,
+                            data.len() as u32,
+                            data.len() as u32,
+                            0,
+                        );
+                        if b_request_sent == 0 {
+                            let error = nt_get_last_error();
+                            if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                                win_http_close_handle(h_request);
+                                win_http_close_handle(h_connect);
+                                win_http_close_handle(h_session);
+                            }
+                            return Err(format!(
+                                "WinHttpSendRequest failed with error: {}",
+                                WinHttpError::from_code(error as i32)
+                            ));
+                        }
+                    }
+
+                    if let Some(win_http_receive_response) = get_winhttp().win_http_receive_response {
+                        let b_response_received = win_http_receive_response(h_request, null_mut());
+                        if b_response_received == 0 {
+                            let error = nt_get_last_error();
+                            if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                                win_http_close_handle(h_request);
+                                win_http_close_handle(h_connect);
+                                win_http_close_handle(h_session);
+                            }
+                            return Err(format!(
+                                "WinHttpReceiveResponse failed with error: {}",
+                                WinHttpError::from_code(error as i32)
+                            ));
+                        }
+                    }
+
+                    let response = read_response(h_request)?;
+
+                    if let Some(win_http_close_handle) = get_winhttp().win_http_close_handle {
+                        win_http_close_handle(h_request);
+                        win_http_close_handle(h_connect);
+                        win_http_close_handle(h_session);
+                    }
+
+                    return Ok(response);
+                }
+            }
         }
 
-        let parsed_url = parse_url(url);
-
-        let secure_flag = if parsed_url.scheme == 0x02 {
-            WINHTTP_FLAG_SECURE
-        }
-        else {
-            0
-        };
-
-        let h_connect = (get_winhttp().win_http_connect)(
-            h_session,
-            to_pcwstr(parsed_url.hostname.as_str()).as_ptr(),
-            parsed_url.port,
-            0,
-        );
-
-        if h_connect.is_null() {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpConnect failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let h_request = (get_winhttp().win_http_open_request)(
-            h_connect,
-            to_pcwstr("POST").as_ptr(),
-            to_pcwstr(path).as_ptr(),
-            null(),
-            null(),
-            null(),
-            WINHTTP_FLAG_BYPASS_PROXY_CACHE | secure_flag,
-        );
-        if h_request.is_null() {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_connect);
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpOpenRequest failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let b_request_sent = (get_winhttp().win_http_send_request)(
-            h_request,
-            null(),
-            0,
-            data.as_ptr() as *const _,
-            data.len() as u32,
-            data.len() as u32,
-            0,
-        );
-        if b_request_sent == 0 {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_request);
-            (get_winhttp().win_http_close_handle)(h_connect);
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpSendRequest failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let b_response_received = (get_winhttp().win_http_receive_response)(h_request, null_mut());
-        if b_response_received == 0 {
-            let error = nt_get_last_error();
-            (get_winhttp().win_http_close_handle)(h_request);
-            (get_winhttp().win_http_close_handle)(h_connect);
-            (get_winhttp().win_http_close_handle)(h_session);
-            return Err(format!(
-                "WinHttpReceiveResponse failed with error: {}",
-                WinHttpError::from_code(error as i32)
-            ));
-        }
-
-        let response = read_response(h_request)?;
-
-        (get_winhttp().win_http_close_handle)(h_request);
-        (get_winhttp().win_http_close_handle)(h_connect);
-        (get_winhttp().win_http_close_handle)(h_session);
-
-        Ok(response)
+        Err("WinHttp functions are not available".to_string())
     }
 }
 

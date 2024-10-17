@@ -416,25 +416,46 @@ pub unsafe fn nt_create_user_process(
         .collect();
     us_current_directory.init(sz_target_process_path_utf16.as_ptr());
 
-    // Call RtlCreateProcessParametersEx to create the RTL_USER_PROCESS_PARAMETERS structure.
-    let status = (instance().ntdll.rtl_create_process_parameters_ex)(
-        &mut upp_process_parameters,
-        &us_nt_image_path,
-        null(),
-        &us_current_directory,
-        &us_command_line,
-        null(),
-        null(),
-        null(),
-        null(),
-        null(),
-        RTL_USER_PROC_PARAMS_NORMALIZED, // Normalized process parameters
-    );
+    if let Some(rtl_create_process_parameters_ex) = instance().ntdll.rtl_create_process_parameters_ex {
+        // Call RtlCreateProcessParametersEx to create the RTL_USER_PROCESS_PARAMETERS structure.
+        let status = rtl_create_process_parameters_ex(
+            &mut upp_process_parameters,
+            &us_nt_image_path,
+            null_mut(),
+            &us_current_directory,
+            &us_command_line,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            null_mut(),
+            RTL_USER_PROC_PARAMS_NORMALIZED, // Normalized process parameters
+        );
 
-    // Check if the process parameters creation failed.
-    if status != 0 {
-        return status; // Return error status if creation failed
+        // Check if the process parameters creation failed.
+        if status != 0 {
+            return status; // Return error status if creation failed
+        }
     }
+    // // Call RtlCreateProcessParametersEx to create the RTL_USER_PROCESS_PARAMETERS structure.
+    // let status = (instance().ntdll.rtl_create_process_parameters_ex)(
+    //     &mut upp_process_parameters,
+    //     &us_nt_image_path,
+    //     null(),
+    //     &us_current_directory,
+    //     &us_command_line,
+    //     null(),
+    //     null(),
+    //     null(),
+    //     null(),
+    //     null(),
+    //     RTL_USER_PROC_PARAMS_NORMALIZED, // Normalized process parameters
+    // );
+
+    // // Check if the process parameters creation failed.
+    // if status != 0 {
+    //     return status; // Return error status if creation failed
+    // }
 
     // // Initialize the PS_ATTRIBUTE_LIST structure, which holds attributes for the new process
     let mut attribute_list: PsAttributeList = mem::zeroed();
@@ -806,44 +827,86 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
         let target_process_utf16: Vec<u16> = target_process.encode_utf16().chain(Some(0)).collect();
         let mut cmdline_utf16: Vec<u16> = cmdline.encode_utf16().chain(Some(0)).collect();
 
-        // Create the process using CreateProcessW from kernel32.dll.
-        let success = (instance().kernel32.create_process_w)(
-            target_process_utf16.as_ptr(), // Path to the target executable.
-            cmdline_utf16.as_mut_ptr(),    // Command line to execute.
-            null_mut(),                    // No process security attributes.
-            null_mut(),                    // No thread security attributes.
-            true,                          // Inherit handles.
-            CREATE_NO_WINDOW,              // Create the process without a window.
-            null_mut(),                    // No environment block.
-            null_mut(),                    // Use the current directory.
-            &mut startup_info,             // Startup info structure.
-            &mut process_info,             // Process information structure.
-        );
+        if let Some(create_process_w) = instance().kernel32.create_process_w {
+            // Create the process using CreateProcessW from kernel32.dll.
+            let success = create_process_w(
+                target_process_utf16.as_ptr(), // Path to the target executable.
+                cmdline_utf16.as_mut_ptr(),    // Command line to execute.
+                null_mut(),                    // No process security attributes.
+                null_mut(),                    // No thread security attributes.
+                true,                          // Inherit handles.
+                CREATE_NO_WINDOW,              // Create the process without a window.
+                null_mut(),                    // No environment block.
+                null_mut(),                    // Use the current directory.
+                &mut startup_info,             // Startup info structure.
+                &mut process_info,             // Process information structure.
+            );
+
+            // Delay slightly to allow the process to start.
+            wait_until(3);
+
+            // If process creation fails, log the error and return the collected output (likely empty).
+            if !success {
+                libc_println!(
+                    "[!] Failed to create process: GetLastError [{}]",
+                    nt_get_last_error()
+                );
+                return output;
+            }
+
+            // Read the output from the read pipe using NtReadFile.
+            if !nt_read_pipe(h_read_pipe, &mut output) {
+                libc_println!(
+                    "[!] Failed to read from pipe: NTSTATUS [{}]",
+                    NT_STATUS(status)
+                );
+                return output;
+            }
+
+            // Clean up handles using NtClose.
+            instance().ntdll.nt_close.run(h_write_pipe);
+            instance().ntdll.nt_close.run(h_read_pipe);
+
+            return output; // Return the collected output.
+        }
+        // // Create the process using CreateProcessW from kernel32.dll.
+        // let success = (instance().kernel32.create_process_w)(
+        //     target_process_utf16.as_ptr(), // Path to the target executable.
+        //     cmdline_utf16.as_mut_ptr(),    // Command line to execute.
+        //     null_mut(),                    // No process security attributes.
+        //     null_mut(),                    // No thread security attributes.
+        //     true,                          // Inherit handles.
+        //     CREATE_NO_WINDOW,              // Create the process without a window.
+        //     null_mut(),                    // No environment block.
+        //     null_mut(),                    // Use the current directory.
+        //     &mut startup_info,             // Startup info structure.
+        //     &mut process_info,             // Process information structure.
+        // );
 
         // // Delay slightly to allow the process to start.
-        wait_until(3);
+        // wait_until(3);
 
-        // If process creation fails, log the error and return the collected output (likely empty).
-        if !success {
-            libc_println!(
-                "[!] Failed to create process: GetLastError [{}]",
-                nt_get_last_error()
-            );
-            return output;
-        }
+        // // If process creation fails, log the error and return the collected output
+        // (likelyempty). if !success {
+        //     libc_println!(
+        //         "[!] Failed to create process: GetLastError [{}]",
+        //         nt_get_last_error()
+        //     );
+        //     return output;
+        // }
 
-        // Read the output from the read pipe using NtReadFile.
-        if !nt_read_pipe(h_read_pipe, &mut output) {
-            libc_println!(
-                "[!] Failed to read from pipe: NTSTATUS [{}]",
-                NT_STATUS(status)
-            );
-            return output;
-        }
+        // // Read the output from the read pipe using NtReadFile.
+        // if !nt_read_pipe(h_read_pipe, &mut output) {
+        //     libc_println!(
+        //         "[!] Failed to read from pipe: NTSTATUS [{}]",
+        //         NT_STATUS(status)
+        //     );
+        //     return output;
+        // }
 
-        // Clean up handles using NtClose.
-        instance().ntdll.nt_close.run(h_write_pipe);
-        instance().ntdll.nt_close.run(h_read_pipe);
+        // // Clean up handles using NtClose.
+        // instance().ntdll.nt_close.run(h_write_pipe);
+        // instance().ntdll.nt_close.run(h_read_pipe);
 
         output // Return the collected output.
     }

@@ -20,7 +20,7 @@ use kageshirei_win32::{
 };
 use ldr::{ldr_function_addr, ldr_module_peb, nt_current_teb};
 use mod_hhtgates::get_syscall_number;
-use spin::Mutex;
+use spin::{Mutex, RwLock};
 
 /// Represents a session containing connection information.
 pub struct Session {
@@ -139,7 +139,8 @@ impl Instance {
 static INIT_INSTANCE: AtomicBool = AtomicBool::new(false);
 
 /// Global mutable instance of the agent.
-pub static mut INSTANCE: Mutex<UnsafeCell<Option<Instance>>> = Mutex::new(UnsafeCell::new(None));
+pub static mut INSTANCE: RwLock<UnsafeCell<Option<Instance>>> = RwLock::new(UnsafeCell::new(None));
+// pub static mut INSTANCE: Option<Instance> = None;
 
 /// Retrieves a reference to the global instance of the agent.
 ///
@@ -150,7 +151,8 @@ pub static mut INSTANCE: Mutex<UnsafeCell<Option<Instance>>> = Mutex::new(Unsafe
 #[expect(static_mut_refs)]
 pub unsafe fn instance() -> &'static Instance {
     ensure_initialized();
-    INSTANCE.lock().get().as_ref().unwrap().as_ref().unwrap()
+    let lock = INSTANCE.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Retrieves a mutable reference to the global instance of the agent.
@@ -162,7 +164,8 @@ pub unsafe fn instance() -> &'static Instance {
 #[expect(static_mut_refs)]
 pub unsafe fn instance_mut() -> &'static mut Instance {
     ensure_initialized();
-    INSTANCE.lock().get().as_mut().unwrap().as_mut().unwrap()
+    let lock = INSTANCE.write(); // Usa `write` per accesso mutabile
+    (*lock.get()).as_mut().unwrap()
 }
 
 /// Function to ensure that initialization is performed if it hasn't been already.
@@ -435,7 +438,8 @@ unsafe fn init_global_instance() {
         instance.config.polling_interval = 15;
         instance.config.polling_jitter = 10;
 
-        *INSTANCE.lock().get() = Some(instance);
+        let instance_lock = INSTANCE.write();
+        *instance_lock.get() = Some(instance);
 
         // Set the initialization flag to true.
         INIT_INSTANCE.store(true, Ordering::Release);
