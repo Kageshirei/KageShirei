@@ -2984,11 +2984,6 @@ dependencies = [
 [[package]]
 name = "kageshirei-utils"
 version = "0.1.0"
-dependencies = [
- "log",
- "serde_json",
- "validator",
-]
 
 [[package]]
 name = "kageshirei-win32"

@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use kageshirei_utils::{print_validation_error, unrecoverable_error::unrecoverable_error};
+use kageshirei_utils::{unrecoverable_error::unrecoverable_error};
 use log::error;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, RwLockReadGuard};

@@ -1,4 +1,4 @@
-use alloc::{
+use std::{
     borrow::ToOwned,
     format,
     string::{String, ToString},
@@ -32,7 +32,7 @@ pub fn print_validation_error(validation_errors: ValidationErrors) -> Result<(),
             },
             ValidationErrorsKind::Field(error) => {
                 for e in error.iter() {
-                    error!("{}", parse_field_error(field, e));
+                    error!("{}", parse_field_error(field, e)?);
                 }
             },
         }
@@ -52,7 +52,7 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> Result<
             ))
         },
         "range" => {
-            OK(format!(
+            Ok(format!(
                 "Validation error in field '{}': Value '{}' out of the defined range of {}-{}",
                 field,
                 &error.params["value"],
@@ -122,7 +122,7 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> Result<
                 let value = &error
                     .params
                     .get("value")
-                    .ok_or(Err(Configuration::MissingWrongField("value".to_owned())))?;
+                    .ok_or(Configuration::MissingWrongField("value".to_owned()))?;
                 message.push_str(&format!(
                     "An exact length of {} is required, {} given",
                     &error.params["equal"],
@@ -138,21 +138,21 @@ fn parse_field_error(field: &str, error: &validator::ValidationError) -> Result<
                 let value = &error
                     .params
                     .get("value")
-                    .ok_or(Err(Configuration::MissingWrongField("value".to_owned())))?;
+                    .ok_or(Configuration::MissingWrongField("value".to_owned()))?;
                 message.push_str(&format!(
                     "A length between '{}' and '{}' is required, '{}' given",
                     &error
                         .params
                         .get("min")
-                        .ok_or(Err(Configuration::MissingValidationLowerBound(
+                        .ok_or(Configuration::MissingValidationLowerBound(
                             "min".to_owned()
-                        )))?,
+                        ))?,
                     &error
                         .params
                         .get("max")
-                        .ok_or(Err(Configuration::MissingValidationLowerBound(
+                        .ok_or(Configuration::MissingValidationLowerBound(
                             "max".to_owned()
-                        )))?,
+                        ))?,
                     if value.is_array() {
                         value.as_array().unwrap().len()
                     }

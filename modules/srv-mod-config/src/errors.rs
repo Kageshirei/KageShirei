@@ -41,6 +41,9 @@ impl Display for Configuration {
             Configuration::MissingWrongField(field) => {
                 write!(f, "Missing value for field '{}'", field)
             },
+            Configuration::MissingEqualField(field) => {
+                write!(f, "Missing equal value for field '{}'", field)
+            }
         }
     }
 }
