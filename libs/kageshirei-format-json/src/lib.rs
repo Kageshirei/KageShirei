@@ -26,7 +26,9 @@ impl Format for FormatJson {
         }
 
         let magic_number_len = magic_numbers::JSON.len();
-        let magic_bytes = data.get(.. magic_number_len).ok_or(FormatError::InvalidData)?;
+        let magic_bytes = data
+            .get(.. magic_number_len)
+            .ok_or(FormatError::InvalidData)?;
         if data.len() < magic_number_len || magic_bytes != magic_numbers::JSON {
             return Err(FormatError::InvalidData);
         }
@@ -57,8 +59,8 @@ impl Format for FormatJson {
 
 #[cfg(test)]
 mod test {
-    use alloc::borrow::ToOwned;
-    use alloc::string::String;
+    use alloc::{borrow::ToOwned, string::String};
+
     use super::*;
 
     #[test]
@@ -67,7 +69,8 @@ mod test {
         data.extend_from_slice(&magic_numbers::JSON);
         data.extend_from_slice(b"{\"test\":42}");
 
-        let result: Result<BTreeMap<String, u8>, FormatError> = FormatJson.read(data.as_slice(), None::<BTreeMap<&str, &str>>);
+        let result: Result<BTreeMap<String, u8>, FormatError> =
+            FormatJson.read(data.as_slice(), None::<BTreeMap<&str, &str>>);
         assert!(result.is_ok());
 
         let result = unsafe { result.unwrap_unchecked() };
