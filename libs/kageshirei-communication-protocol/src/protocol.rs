@@ -23,5 +23,10 @@ pub trait Protocol: Send {
         metadata: Option<Arc<Metadata>>,
     ) -> impl Future<Output = Result<Vec<u8>, ProtocolError>> + Send;
 
+    /// Receive some data as raw bytes.
+    ///
+    /// # Returns
+    ///
+    /// A future that resolves to the received data.
     fn receive(&mut self) -> impl Future<Output = Result<Vec<u8>, ProtocolError>> + Send;
 }
