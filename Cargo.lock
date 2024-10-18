@@ -2895,7 +2895,7 @@ dependencies = [
  "mod-nostd-nt-runtime",
  "mod-nt-heapalloc",
  "mod-nt-virtualalloc",
- "mod-protocol-json",
+ "mod-protocol-http",
  "mod-protocol-winhttp",
  "mod-std-runtime",
  "mod-win32",
@@ -3371,16 +3371,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "mod-protocol-json"
+name = "mod-protocol-http"
 version = "0.1.0"
 dependencies = [
  "axum",
- "bytes",
  "kageshirei-communication-protocol",
- "kageshirei-crypt",
  "reqwest",
- "serde",
- "serde_json",
+ "serial_test",
  "tokio",
  "tokio-util",
 ]
@@ -5996,7 +5993,7 @@ dependencies = [
  "kageshirei-communication-protocol",
  "kageshirei-crypt",
  "kageshirei-utils",
- "mod-protocol-json",
+ "mod-protocol-http",
  "serde",
  "serde_json",
  "serial_test",
@@ -6018,7 +6015,7 @@ dependencies = [
  "kageshirei-communication-protocol",
  "kageshirei-crypt",
  "kageshirei-utils",
- "mod-protocol-json",
+ "mod-protocol-http",
  "serde",
  "serde_json",
  "serial_test",

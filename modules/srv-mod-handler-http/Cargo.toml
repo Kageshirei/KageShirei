@@ -31,7 +31,7 @@ tower-http = { version = "0.6.1", features = [
 ] }
 tokio = { version = "1.40.0", features = ["full", "tracing", "test-util"] }
 tokio-util = { version = "0.7.12", features = ["full"] }
-mod-protocol-json = { path = "../mod-protocol-json" }
+mod-protocol-http = { path = "../mod-protocol-http" }
 kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = [
     "sha3",
     "hex-encoding",

@@ -24,7 +24,7 @@ srv-mod-config = { path = "../srv-mod-config" }
 kageshirei-utils = { path = "../../libs/kageshirei-utils" }
 axum = "0.7.7"
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
-mod-protocol-json = { path = "../mod-protocol-json" }
+mod-protocol-http = { path = "../mod-protocol-http" }
 chrono = "0.4.38"
 tokio = { version = "1.40.0", features = ["full"] }
 serde_json = "1.0.128"

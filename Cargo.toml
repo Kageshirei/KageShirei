@@ -15,7 +15,7 @@ members = [
     "modules/mod-nostd-nt-runtime",
     "modules/mod-nt-heapalloc",
     "modules/mod-nt-virtualalloc",
-    "modules/mod-protocol-json",
+    "modules/mod-protocol-http",
     "modules/mod-protocol-winhttp",
     "modules/mod-std-runtime",
     "modules/mod-tokio-runtime",
@@ -27,7 +27,8 @@ members = [
     "modules/srv-mod-migration",
     "modules/srv-mod-operator-api",
     "modules/srv-mod-terminal-emulator-commands",
-    "server", "libs/kageshirei-format-json",
+    "server",
+    "libs/kageshirei-format-json",
 ]
 resolver = "2"
 
@@ -303,7 +304,7 @@ modulo_arithmetic = "allow"
 modulo_one = "deny"
 multi_assignments = "deny"
 multiple_bound_locations = "deny"
-multiple_crate_versions = "deny"
+multiple_crate_versions = "allow"
 multiple_inherent_impl = "deny"
 multiple_unsafe_ops_per_block = "allow"
 must_use_unit = "deny"

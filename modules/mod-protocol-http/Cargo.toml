@@ -1,5 +1,5 @@
 [package]
-name = "mod-protocol-json"
+name = "mod-protocol-http"
 version = "0.1.0"
 edition = "2021"
 categories = ["simulation"]
@@ -23,17 +23,18 @@ panic = "abort"
 incremental = false
 
 [dependencies]
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = { version = "1.0.128" }
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
-kageshirei-crypt = { path = "../../libs/kageshirei-crypt" }
-reqwest = { version = "0.12.8", features = ["rustls-tls", "stream"] }
-bytes = "1.7.2"
+reqwest = { version = "0.12.8", optional = true, features = ["rustls-tls", "stream"] }
 
 [dev-dependencies]
 tokio = { version = "1.40.0", features = ["full"] }
-axum = "0.7.7"
+axum = { version = "0.7.7" , features = ["macros"]}
 tokio-util = "0.7.12"
+serial_test = "3.1.1"
+
+[features]
+default = ["std"]
+std = ["dep:reqwest"]
 
 [lints]
 workspace = true

@@ -1,4 +1,5 @@
 use alloc::{boxed::Box};
+use alloc::string::String;
 #[cfg(any(feature = "server", test))]
 use core::{
     fmt::{Debug, Display, Formatter},
@@ -50,13 +51,13 @@ impl Display for Format {
 #[cfg(any(feature = "server", test))]
 impl ErrorTrait for Format {}
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Protocol {
     // TODO: Check if the error variants are correct, probably they are not
-    /// Error when trying to send data.
-    SendingError,
-    /// Error when trying to receive data.
-    ReceivingError,
+    /// Error when trying to send data. Takes a parameter to indicate the reason.
+    SendingError(Option<String>),
+    /// Error when trying to receive data. Takes a parameter to indicate the reason.
+    ReceivingError(Option<String>),
     /// Error when trying to connect to a server.
     ConnectionError,
     /// Error when trying to disconnect from a server.
@@ -90,11 +91,19 @@ impl Display for Protocol {
             //         bytes, received
             //     )
             // },
-            Protocol::SendingError => {
-                write!(f, "Error when trying to send data.")
+            Protocol::SendingError(reason) => {
+                if let Some(reason) = reason {
+                    write!(f, "Error when trying to send data: {}", reason)
+                } else {
+                    write!(f, "Error when trying to send data.")
+                }
             },
-            Protocol::ReceivingError => {
-                write!(f, "Error when trying to receive data.")
+            Protocol::ReceivingError(reason) => {
+                if let Some(reason) = reason {
+                    write!(f, "Error when trying to receive data: {}", reason)
+                } else {
+                    write!(f, "Error when trying to receive data.")
+                }
             },
             Protocol::ConnectionError => {
                 write!(f, "Error when trying to connect to a server.")
