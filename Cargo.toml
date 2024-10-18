@@ -16,7 +16,6 @@ members = [
     "modules/mod-nt-heapalloc",
     "modules/mod-nt-virtualalloc",
     "modules/mod-protocol-http",
-    "modules/mod-protocol-winhttp",
     "modules/mod-std-runtime",
     "modules/mod-tokio-runtime",
     "modules/mod-win32",

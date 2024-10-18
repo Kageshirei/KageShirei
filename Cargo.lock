@@ -2896,7 +2896,6 @@ dependencies = [
  "mod-nt-heapalloc",
  "mod-nt-virtualalloc",
  "mod-protocol-http",
- "mod-protocol-winhttp",
  "mod-std-runtime",
  "mod-win32",
  "rand 0.8.5",
@@ -3381,24 +3380,6 @@ dependencies = [
  "mod-win32",
  "reqwest",
  "serial_test",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
-name = "mod-protocol-winhttp"
-version = "0.1.0"
-dependencies = [
- "axum",
- "bytes",
- "kageshirei-communication-protocol",
- "kageshirei-crypt",
- "kageshirei-win32",
- "libc-print",
- "mod-agentcore",
- "mod-win32",
- "serde",
- "serde_json",
  "tokio",
  "tokio-util",
 ]
