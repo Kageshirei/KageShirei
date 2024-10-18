@@ -10,7 +10,7 @@ description = "A module for the KageShirei agent that provides JSON datatypes fo
 readme = "README.md"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [profile.release]
 opt-level = "z"

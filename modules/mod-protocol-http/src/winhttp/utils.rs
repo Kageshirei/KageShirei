@@ -1,6 +1,9 @@
+//! Utility functions for the WinHTTP module.
+
 use alloc::{
+    borrow::ToOwned as _,
     format,
-    string::{String, ToString},
+    string::{String},
     vec::Vec,
 };
 
@@ -21,17 +24,23 @@ pub fn to_pcwstr(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(Some(0)).collect()
 }
 
+/// A structure representing the result of parsing a URL.
 pub struct ParseUrlResult {
     // 0x01 = http or 0x02 = https
+    /// The scheme of the URL.
     pub scheme:   u16,
+    /// The hostname.
     pub hostname: String,
+    /// The port number.
     pub port:     u16,
+    /// The path of the URL.
     pub path:     String,
 }
 
 impl ParseUrlResult {
-    pub fn new(scheme: u16, hostname: String, port: u16, path: String) -> Self {
-        ParseUrlResult {
+    /// Create a new `ParseUrlResult`.
+    pub const fn new(scheme: u16, hostname: String, port: u16, path: String) -> Self {
+        Self {
             scheme,
             hostname,
             port,
@@ -65,41 +74,47 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
         (0x01, url)
     };
 
-    let (hostname, port, path) = if let Some(pos) = rest.find(':') {
-        let (host, port_and_path) = rest.split_at(pos);
-        let mut parts = port_and_path.splitn(2, '/');
-        let port_str = parts.next().unwrap().trim_start_matches(':');
-        let port = port_str
-            .parse()
-            .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
-        let path = parts.next().unwrap_or("");
-        (host.to_string(), port, format!("/{}", path))
-    }
-    else if let Some(pos) = rest.find('/') {
-        let (host, path) = rest.split_at(pos);
-        (
-            host.to_string(),
-            if scheme == 0x01 { 80 } else { 443 },
-            path.to_string(),
-        )
-    }
-    else {
-        (
-            rest.to_string(),
-            if scheme == 0x01 { 80 } else { 443 },
-            "/".to_string(),
-        )
-    };
+    let (hostname, port, path) = rest.find(':').map_or_else(
+        || {
+            rest.find('/').map_or_else(
+                || {
+                    (
+                        rest.to_owned(),
+                        if scheme == 0x01 { 80 } else { 443 },
+                        "/".to_owned(),
+                    )
+                },
+                |pos| {
+                    let (host, path) = rest.split_at(pos);
+                    (
+                        host.to_owned(),
+                        if scheme == 0x01 { 80 } else { 443 },
+                        path.to_owned(),
+                    )
+                },
+            )
+        },
+        |pos| {
+            let (host, port_and_path) = rest.split_at(pos);
+            let mut parts = port_and_path.splitn(2, '/');
+            let port_str = parts.next().unwrap().trim_start_matches(':');
+            let port = port_str
+                .parse()
+                .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
+            let path = parts.next().unwrap_or("");
+            (host.to_owned(), port, format!("/{}", path))
+        },
+    );
 
     ParseUrlResult::new(scheme, hostname, port, path)
 }
 
+#[cfg(test)]
 mod tests {
+    use super::*;
 
     #[test]
     fn test_parse_url() {
-        use crate::utils::{parse_url, ParseUrlResult};
-
         let parsed_url: ParseUrlResult = parse_url("http://localhost:8080/path");
         assert_eq!(parsed_url.scheme, 0x01);
         assert_eq!(parsed_url.hostname, "localhost");
