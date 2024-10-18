@@ -15,9 +15,18 @@
 
 // Enable the stdout capture feature for tests.
 #![cfg_attr(test, feature(internal_output_capture, proc_macro_hygiene))]
+
+#[cfg(not(feature = "std"))]
 extern crate core;
+#[cfg(not(feature = "std"))]
+extern crate alloc;
 
 #[cfg(feature = "std")]
 mod std;
 #[cfg(feature = "std")]
 pub use std::HttpProtocol;
+
+#[cfg(feature = "winhttp")]
+mod winhttp;
+#[cfg(feature = "winhttp")]
+pub use winhttp::HttpProtocol;

@@ -58,6 +58,10 @@ pub enum Protocol {
     SendingError(Option<String>),
     /// Error when trying to receive data. Takes a parameter to indicate the reason.
     ReceivingError(Option<String>),
+    /// Error when trying to initialize the protocol.
+    InitializationError(String),
+    /// A generic error occurred.
+    Generic(String),
     /// Error when trying to connect to a server.
     ConnectionError,
     /// Error when trying to disconnect from a server.
@@ -84,13 +88,6 @@ impl Display for Protocol {
             reason = "Cannot dereference into the Display trait implementation"
         )]
         match self {
-            // Self::InvalidKeyLength(bytes, received) => {
-            //     write!(
-            //         f,
-            //         "Invalid key length, expected {} bytes, got {}",
-            //         bytes, received
-            //     )
-            // },
             Protocol::SendingError(reason) => {
                 if let Some(reason) = reason {
                     write!(f, "Error when trying to send data: {}", reason)
@@ -116,6 +113,12 @@ impl Display for Protocol {
             },
             Protocol::ReceiveMessageError => {
                 write!(f, "Error when trying to receive a message from a server.")
+            },
+            Protocol::InitializationError(reason_or_errored_fragment) => {
+                write!(f, "Error when trying to initialize the protocol: {}", reason_or_errored_fragment)
+            }
+            Protocol::Generic(e) => {
+                write!(f, "A generic error occurred: {}", e)
             },
         }
     }

@@ -3376,6 +3376,9 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "kageshirei-communication-protocol",
+ "kageshirei-win32",
+ "mod-agentcore",
+ "mod-win32",
  "reqwest",
  "serial_test",
  "tokio",

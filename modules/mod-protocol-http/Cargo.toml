@@ -25,6 +25,9 @@ incremental = false
 [dependencies]
 kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 reqwest = { version = "0.12.8", optional = true, features = ["rustls-tls", "stream"] }
+kageshirei-win32 = {path = "../../libs/kageshirei-win32", optional = true}
+mod-win32 = {path = "../../modules/mod-win32", optional = true}
+mod-agentcore = {path = "../../modules/mod-agentcore", optional = true}
 
 [dev-dependencies]
 tokio = { version = "1.40.0", features = ["full"] }
@@ -35,6 +38,7 @@ serial_test = "3.1.1"
 [features]
 default = ["std"]
 std = ["dep:reqwest"]
+winhttp = ["dep:kageshirei-win32", "dep:mod-win32", "dep:mod-agentcore"]
 
 [lints]
 workspace = true
