@@ -748,6 +748,7 @@ impl<'a> Coffee<'a> {
                     warn!("Entry point is null");
                     break;
                 }
+                let entry_point = entry_point.unwrap();
                 let entry_point = entry_point.add(symbol.value as usize);
 
                 // Call entrypoint
@@ -785,10 +786,11 @@ impl<'a> Coffee<'a> {
             if section_base.is_none() || (section_base.is_some() && *section_base.unwrap() == 0) {
                 continue;
             }
+            let section_base = section_base.unwrap();
 
             /// Safety: VirtualFree is safe to call with a valid pointer and size.
             unsafe {
-                let _ = VirtualFree(section_base as *mut c_void, 0, MEM_RELEASE);
+                let _ = VirtualFree(*section_base as *mut c_void, 0, MEM_RELEASE);
             }
         }
 

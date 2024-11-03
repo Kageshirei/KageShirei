@@ -1,11 +1,7 @@
-use alloc::{boxed::Box};
-use alloc::string::String;
-#[cfg(any(feature = "server", test))]
-use core::{
-    fmt::{Debug, Display, Formatter},
-};
-
+use alloc::{boxed::Box, string::String};
 use core::error::Error as ErrorTrait;
+#[cfg(any(feature = "server", test))]
+use core::fmt::{Debug, Display, Formatter};
 
 pub enum Format {
     /// No data have been provided.
@@ -35,13 +31,13 @@ impl Display for Format {
             Self::EmptyData => {
                 write!(f, "No data have been provided.")
             },
-            Format::InvalidData => {
+            Self::InvalidData => {
                 write!(
                     f,
                     "The data provided is invalid, it does not match the expected format."
                 )
             },
-            Format::Generic(e) => {
+            Self::Generic(e) => {
                 write!(f, "A generic error occurred: {}", e)
             },
         }
@@ -88,36 +84,42 @@ impl Display for Protocol {
             reason = "Cannot dereference into the Display trait implementation"
         )]
         match self {
-            Protocol::SendingError(reason) => {
+            Self::SendingError(reason) => {
                 if let Some(reason) = reason {
                     write!(f, "Error when trying to send data: {}", reason)
-                } else {
+                }
+                else {
                     write!(f, "Error when trying to send data.")
                 }
             },
-            Protocol::ReceivingError(reason) => {
+            Self::ReceivingError(reason) => {
                 if let Some(reason) = reason {
                     write!(f, "Error when trying to receive data: {}", reason)
-                } else {
+                }
+                else {
                     write!(f, "Error when trying to receive data.")
                 }
             },
-            Protocol::ConnectionError => {
+            Self::ConnectionError => {
                 write!(f, "Error when trying to connect to a server.")
             },
-            Protocol::DisconnectionError => {
+            Self::DisconnectionError => {
                 write!(f, "Error when trying to disconnect from a server.")
             },
-            Protocol::MessageError => {
+            Self::MessageError => {
                 write!(f, "Error when trying to send a message to a server.")
             },
-            Protocol::ReceiveMessageError => {
+            Self::ReceiveMessageError => {
                 write!(f, "Error when trying to receive a message from a server.")
             },
-            Protocol::InitializationError(reason_or_errored_fragment) => {
-                write!(f, "Error when trying to initialize the protocol: {}", reason_or_errored_fragment)
-            }
-            Protocol::Generic(e) => {
+            Self::InitializationError(reason_or_errored_fragment) => {
+                write!(
+                    f,
+                    "Error when trying to initialize the protocol: {}",
+                    reason_or_errored_fragment
+                )
+            },
+            Self::Generic(e) => {
                 write!(f, "A generic error occurred: {}", e)
             },
         }

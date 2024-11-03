@@ -1,4 +1,4 @@
-use kageshirei_communication_protocol::network_interface::NetworkInterface;
+use kageshirei_communication_protocol::NetworkInterface;
 use sea_orm::{prelude::DateTime, DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
 

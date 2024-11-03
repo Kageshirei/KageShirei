@@ -51,7 +51,7 @@ async fn post_handler(
         .ok_or(ApiServerError::WrongCredentials)?;
 
     // Verify the password
-    if !kageshirei_crypt::argon::Argon2::verify_password(&payload.password, &usr.password) {
+    if !kageshirei_crypt::hash::argon::Hash::verify_password(&payload.password, &usr.password) {
         return Err(ApiServerError::WrongCredentials);
     }
 
