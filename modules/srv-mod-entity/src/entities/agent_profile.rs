@@ -42,14 +42,28 @@ impl Model {
         let working_hours = self.working_hours.as_ref().unwrap();
 
         // Check if the working hours are in pairs, e.g. 09:00-17:00
-        if working_hours.len() % 2 != 0 {
+        // Barrett reduction, equivalent to working_hours.len() % 2 != 0
+        if working_hours.len() & 1 != 0 {
             return false;
         }
 
+        // Barrett reduction, equivalent to working_hours.len() / 2
+        let upper_bound = working_hours.len() >> 1;
         // Check if the working hours are ordered (each start time is before the end time)
-        for i in 0 .. working_hours.len() / 2 {
-            let start = working_hours[i * 2];
-            let end = working_hours[i * 2 + 1];
+        for i in 0 .. upper_bound {
+            let start_index = i.saturating_mul(2);
+            let end_index = start_index.saturating_add(1);
+
+            let start = working_hours.get(start_index);
+            if start.is_none() {
+                return false;
+            }
+
+            let end = working_hours.get(end_index);
+            if end.is_none() {
+                return false;
+            }
+
             if start >= end {
                 return false;
             }
@@ -174,14 +188,29 @@ impl ActiveModel {
         let working_hours = working_hours.as_ref().unwrap();
 
         // Check if the working hours are in pairs, e.g. 09:00-17:00
-        if working_hours.len() % 2 != 0 {
+        // Barrett reduction, equivalent to working_hours.len() % 2 != 0
+        if working_hours.len() & 1 != 0 {
             return false;
         }
 
+        // Barrett reduction, equivalent to working_hours.len() / 2
+        let upper_bound = working_hours.len() >> 1;
+
         // Check if the working hours are ordered (each start time is before the end time)
-        for i in 0 .. working_hours.len() / 2 {
-            let start = working_hours[i * 2];
-            let end = working_hours[i * 2 + 1];
+        for i in 0 .. upper_bound {
+            let start_index = i.saturating_mul(2);
+            let end_index = start_index.saturating_add(1);
+
+            let start = working_hours.get(start_index);
+            if start.is_none() {
+                return false;
+            }
+
+            let end = working_hours.get(end_index);
+            if end.is_none() {
+                return false;
+            }
+
             if start >= end {
                 return false;
             }
