@@ -1,9 +1,8 @@
 //! Utility functions to decode the body of a request or return a failed response
 
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse as _, Response},
-};
+use std::num::NonZeroU16;
+
+use axum::http::StatusCode;
 use kageshirei_crypt::encoder::{
     base32::Encoder as Base32Encoder,
     base64::{Encoder as Base64Encoder, Variant as Base64Variant},
@@ -12,6 +11,8 @@ use kageshirei_crypt::encoder::{
 };
 use srv_mod_config::handlers::Encoder;
 use tracing::warn;
+
+use crate::response::BaseHandlerResponse;
 
 /// Converts a byte array to a string
 pub fn bytes_to_string(bytes: &[u8]) -> String { bytes.iter().map(|b| *b as char).collect::<String>() }
@@ -26,7 +27,7 @@ pub fn bytes_to_string(bytes: &[u8]) -> String { bytes.iter().map(|b| *b as char
 /// # Returns
 ///
 /// The decoded body or a failed response
-pub fn decode_or_fail_response(encoder: &Encoder, body: Vec<u8>) -> Result<Vec<u8>, Response> {
+pub fn decode_or_fail_response(encoder: &Encoder, body: Vec<u8>) -> Result<Vec<u8>, BaseHandlerResponse> {
     let decoded = match *encoder {
         Encoder::Hex => HexEncoder.decode(bytes_to_string(body.as_slice()).as_str()),
         Encoder::Base32 => Base32Encoder.decode(bytes_to_string(body.as_slice()).as_str()),
@@ -44,7 +45,11 @@ pub fn decode_or_fail_response(encoder: &Encoder, body: Vec<u8>) -> Result<Vec<u
         warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
         // always return OK to avoid leaking information
-        return Err((StatusCode::OK, "").into_response());
+        return Err(BaseHandlerResponse {
+            status:    NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
+            body:      vec![],
+            formatter: None,
+        });
     }
 
     Ok(decoded.unwrap())

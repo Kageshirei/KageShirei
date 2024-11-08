@@ -99,7 +99,7 @@ pub async fn heuristic_handler_variant_1(
         .collect::<Vec<&str>>()
         .join("");
 
-    handle_request(axum::extract::State(state), headers, body, id).await
+    handle_request(State(state), headers, body, id).await
 }
 
 /// This kind of route automatically takes the first string matching the ID length (32) as the
@@ -137,13 +137,13 @@ pub async fn heuristic_handler_variant_2(
     // Unwrap the id
     let id = id.unwrap().to_string();
 
-    handle_request(axum::extract::State(state), headers, body, id).await
+    handle_request(State(state), headers, body, id).await
 }
 
 /// Creates the routes for the commands handlers
 pub fn route(state: HandlerSharedState) -> Router<HandlerSharedState> {
     // TODO: Implement the command retrieval using the base handler, simple stub already present in
-    // lib.rs
+    //  lib.rs
     Router::new()
         .route("/:id_position/*path", post(heuristic_handler_variant_1))
         .route("/*path", post(heuristic_handler_variant_2))

@@ -2,12 +2,9 @@
 //! module that will try to match the magic numbers of the body to the appropriate format and then
 //! handle the command by executing it and returning the response if any
 
-use axum::{
-    body::Body,
-    http::{HeaderMap, StatusCode},
-    response::{IntoResponse as _, Response},
-    Json,
-};
+use std::num::NonZeroU16;
+
+use axum::http::{HeaderMap, StatusCode};
 use kageshirei_communication_protocol::{
     communication::{AgentCommands, BasicAgentResponse, Checkin as CheckinStruct},
     magic_numbers,
@@ -20,17 +17,21 @@ use srv_mod_config::handlers;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use tracing::{instrument, warn};
 
-use crate::{callback_handlers, error};
+use crate::{callback_handlers, error, response::BaseHandlerResponse};
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
-pub fn ensure_is_not_empty(body: Vec<u8>) -> Option<Response<Body>> {
+pub fn ensure_is_not_empty(body: Vec<u8>) -> Option<BaseHandlerResponse> {
     if body.is_empty() {
         warn!("Empty checking request received, request refused");
         warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
         // always return OK to avoid leaking information
-        return Some((StatusCode::OK, "").into_response());
+        return Some(BaseHandlerResponse {
+            status:    NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
+            body:      vec![],
+            formatter: None,
+        });
     }
 
     None
@@ -87,7 +88,7 @@ pub async fn process_body(
     body: Vec<u8>,
     headers: HeaderMap,
     cmd_request_id: String,
-) -> Response<Body> {
+) -> BaseHandlerResponse {
     // ensure that the body is not empty or return a response
     let is_empty = ensure_is_not_empty(body.clone());
     if is_empty.is_some() {
@@ -103,7 +104,12 @@ pub async fn process_body(
                         .await
                         .unwrap_or(Vec::<u8>::new());
 
-                    Json(response).into_response()
+                    BaseHandlerResponse {
+                        status:    NonZeroU16::try_from(StatusCode::OK.as_u16())
+                            .unwrap_or(NonZeroU16::new(200).unwrap()),
+                        body:      response,
+                        formatter: Some(handlers::Format::Json),
+                    }
                 },
             }
         },
@@ -115,7 +121,11 @@ pub async fn process_body(
             );
 
             // always return OK to avoid leaking information
-            (StatusCode::OK, "").into_response()
+            BaseHandlerResponse {
+                status:    NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
+                body:      vec![],
+                formatter: None,
+            }
         },
     }
 }
