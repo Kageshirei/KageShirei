@@ -8,27 +8,27 @@ use crate::{api_server::TlsConfig, validators};
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
 pub struct Config {
     /// Whether the handler is enabled
-    pub enabled:   bool,
+    pub enabled:  bool,
     /// The type of handler
-    pub r#type:    HandlerType,
+    pub r#type:   HandlerType,
     /// The protocols supported by the handler
-    pub protocols: Vec<Protocol>,
+    pub formats:  Vec<Format>,
     /// The port to listen on
     #[validate(
-        range(min = 1, max = 0xFFFF),
+        range(min = 1, max = 0xffff),
         custom(function = "validators::validate_port")
     )]
-    pub port:      u16,
+    pub port:     u16,
     /// The address to bind to
     #[validate(regex(
 		path = * validators::IP_V4_REGEX, message = "Host must be a valid IPv4 address or localhost, ':params.value' provided"
 	))]
-    pub host:      String,
+    pub host:     String,
     /// TLS configuration
     #[validate(nested)]
-    pub tls:       Option<TlsConfig>,
+    pub tls:      Option<TlsConfig>,
     #[validate(nested)]
-    pub security:  SecurityConfig,
+    pub security: SecurityConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
@@ -40,8 +40,8 @@ pub enum HandlerType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, Eq, PartialEq)]
-pub enum Protocol {
-    /// The protocol used during the communication is JSON
+pub enum Format {
+    /// The format used during the communication is JSON
     #[serde(rename = "json")]
     #[default]
     Json,

@@ -1,5 +1,7 @@
+//! This module contains the base handler for all the handler specialization.
+//! It contains the logic to handle the retrieval of commands and the processing of the results.
+
 use axum::{body::Body, http::HeaderMap, response::Response};
-use bytes::Bytes;
 use srv_mod_config::handlers::EncryptionScheme;
 
 use crate::state::HandlerSharedState;
@@ -8,6 +10,7 @@ pub(crate) mod callback_handlers;
 mod decode_or_fail;
 mod decrypt_asymmetric_or_fail;
 mod decrypt_symmetric_or_fail;
+mod error;
 mod process_body;
 pub mod state;
 
@@ -21,7 +24,7 @@ pub async fn handle_command_retrieval() {
 /// depending on the result
 pub async fn handle_command_result(
     state: HandlerSharedState,
-    mut body: Bytes,
+    mut body: Vec<u8>,
     headers: HeaderMap,
     cmd_request_id: String,
 ) -> Response<Body> {

@@ -1,16 +1,22 @@
+//! Evaluate the agent profiles and return the configuration profile to apply to the agent
+
 use std::time::Duration;
 
 use chrono::{DateTime, NaiveTime, Timelike as _};
-use kageshirei_communication_protocol::communication::checkin::CheckinResponse;
+use kageshirei_communication_protocol::communication::CheckinResponse;
 use srv_mod_entity::{
     active_enums::{FilterOperation, LogicalOperator},
     entities::{agent, agent_profile, filter},
     sea_orm::{prelude::*, DatabaseConnection, QueryOrder as _},
 };
 
+/// The result of a group evaluation
 struct GroupEvaluationResult {
+    /// The result of the group evaluation
     result:   bool,
+    /// The next_hop_relation to apply to the next filter if any
     next_hop: Option<LogicalOperator>,
+    /// The number of hops to skip
     hops:     usize,
 }
 
@@ -45,7 +51,7 @@ fn evaluate_filter(agent: &agent::Model, filter: &filter::Model) -> bool {
 }
 
 /// Combine the results of a filter with the next_hop_relation
-fn combine_results(result: Option<bool>, next_hop: Option<&LogicalOperator>, intermediary_result: bool) -> bool {
+const fn combine_results(result: Option<bool>, next_hop: Option<&LogicalOperator>, intermediary_result: bool) -> bool {
     if result.is_none() {
         return intermediary_result;
     }
@@ -54,7 +60,7 @@ fn combine_results(result: Option<bool>, next_hop: Option<&LogicalOperator>, int
         return intermediary_result;
     }
 
-    match next_hop.unwrap() {
+    match *next_hop.unwrap() {
         LogicalOperator::And => result.unwrap() && intermediary_result,
         LogicalOperator::Or => result.unwrap() || intermediary_result,
     }
@@ -70,14 +76,21 @@ fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usiz
     let mut i = index;
 
     while i < filters.len() {
-        let filter = &filters[i];
+        let filter = &filters.get(i);
+
+        // if the filter is None, skip to the next filter
+        if filter.is_none() {
+            i = i.saturating_add(1);
+            continue;
+        }
+        let filter = filter.unwrap();
 
         let intermediary_result: bool;
         let mut pending_next_hop: Option<LogicalOperator> = None;
 
         if filter.grouping_start {
             let group_start_result = evaluate_filter(agent, filter);
-            let evaluation_result = evaluate_group(agent, filters.clone(), i + 1);
+            let evaluation_result = evaluate_group(agent, filters.clone(), i.saturating_add(1));
             intermediary_result = combine_results(
                 Some(group_start_result),
                 filter.next_hop_relation.as_ref(),
@@ -86,7 +99,7 @@ fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usiz
             pending_next_hop = evaluation_result.next_hop;
 
             // skip the hops already evaluated
-            i += evaluation_result.hops;
+            i = i.saturating_add(evaluation_result.hops);
         }
         else {
             // apply the filter
@@ -123,22 +136,29 @@ fn evaluate_group(agent: &agent::Model, filters: Vec<filter::Model>, index: usiz
             return GroupEvaluationResult {
                 result:   result.unwrap_or(false),
                 next_hop: pending_next_hop,
-                hops:     i + 1 - original_index,
+                hops:     i.saturating_add(1).saturating_sub(original_index),
             };
         }
 
-        i += 1;
+        i = i.saturating_add(1);
     }
 
     // if the group ends, return the result
     GroupEvaluationResult {
         result:   result.unwrap_or(false),
         next_hop: None,
-        hops:     filters.len() - original_index,
+        hops:     filters.len().saturating_sub(original_index),
     }
 }
 
-fn seconds_since_midnight(time: &NaiveTime) -> i64 { (time.hour() * 3600 + time.minute() * 60 + time.second()) as i64 }
+/// Convert a NaiveTime to seconds since midnight
+fn seconds_since_midnight(time: &NaiveTime) -> i64 {
+    (time
+        .hour()
+        .saturating_mul(3600)
+        .saturating_add(time.minute().saturating_mul(60))
+        .saturating_add(time.second())) as i64
+}
 
 /// Apply filters to the agent and return the configuration profile
 pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) -> CheckinResponse {
@@ -152,6 +172,7 @@ pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) ->
 
     // if there are no profiles or an error occurred, return the default values
     if available_profiles.is_err() || available_profiles.as_ref().unwrap().is_empty() {
+        // TODO: Load the default configuration from the configuration file
         return CheckinResponse {
             id:               agent.id.clone(),
             working_hours:    None,
@@ -197,6 +218,7 @@ pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) ->
     }
 
     // fallback return type if none of the filters match
+    // TODO: Load the fallback configuration from the default one defined in the configuration file
     CheckinResponse {
         id:               agent.id.clone(),
         working_hours:    None,

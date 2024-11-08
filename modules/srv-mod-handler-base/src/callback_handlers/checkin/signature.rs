@@ -1,12 +1,21 @@
-use bytes::Bytes;
-use kageshirei_communication_protocol::communication::checkin::Checkin;
+//! This module contains the function to compute the signature of a checkin instance
+
+use kageshirei_communication_protocol::communication::Checkin;
 use kageshirei_crypt::{
-    encoder::{base64::Base64Encoder, Encoder as _},
+    encoder::{
+        base64::{Encoder, Variant},
+        Encoder as _,
+    },
     sha3::{Digest as _, Sha3_512},
+    CryptError,
 };
 
 /// Compute the signature of a checkin instance
-pub fn make_signature(checkin: &Checkin) -> String {
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "The module name is correct and the function should be quickly identifiable via its name"
+)]
+pub fn make_signature(checkin: &Checkin) -> Result<String, CryptError> {
     let mut hasher = Sha3_512::new();
     hasher.update(checkin.operative_system.as_bytes());
     hasher.update(checkin.hostname.as_bytes());
@@ -17,17 +26,16 @@ pub fn make_signature(checkin: &Checkin) -> String {
             .unwrap()
             .as_bytes(),
     );
-    hasher.update(checkin.process_id.to_le_bytes());
-    hasher.update(checkin.parent_process_id.to_le_bytes());
+    hasher.update(checkin.pid.to_le_bytes());
+    hasher.update(checkin.ppid.to_le_bytes());
     hasher.update(checkin.process_name.as_bytes());
     hasher.update(checkin.integrity_level.to_le_bytes());
     hasher.update(checkin.cwd.as_bytes());
 
     let hash = hasher.finalize();
-    let hash = Bytes::from(hash.to_vec());
+    let hash = hash.to_vec();
 
-    let encoder = Base64Encoder;
-    encoder.encode(hash)
+    Encoder::new(Variant::Standard).encode(hash.as_slice())
 }
 
 #[cfg(test)]

@@ -5971,11 +5971,11 @@ name = "srv-mod-handler-base"
 version = "0.1.0"
 dependencies = [
  "axum",
- "bytes",
  "chrono",
  "humantime",
  "kageshirei-communication-protocol",
  "kageshirei-crypt",
+ "kageshirei-format-json",
  "kageshirei-utils",
  "mod-protocol-http",
  "serde",

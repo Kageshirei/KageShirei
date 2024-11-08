@@ -18,6 +18,11 @@ pub struct NetworkInterface {
     pub dhcp_server: Option<String>,
 }
 
+// Safety: The struct is safe to send and share between threads
+unsafe impl Send for NetworkInterface {}
+// Safety: The struct is safe to send and share between threads
+unsafe impl Sync for NetworkInterface {}
+
 impl NetworkInterface {
     /// Creates a new NetworkInterface instance with optional parameters.
     ///

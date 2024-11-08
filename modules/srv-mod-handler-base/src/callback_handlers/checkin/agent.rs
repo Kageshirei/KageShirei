@@ -1,60 +1,52 @@
-use axum::http::StatusCode;
-use kageshirei_communication_protocol::communication::checkin::Checkin;
+//! Prepare the agent and operates on its middle stages in order to persist it into the database
+
+use kageshirei_communication_protocol::communication::Checkin;
 use kageshirei_crypt::{
-    encoder::{base64::Base64Encoder, Encoder as _},
-    encryption_algorithm::{asymmetric_encryption_algorithm::AsymmetricAlgorithm, ident_algorithm::IdentEncryptor},
+    encoder::{
+        base64::{Encoder, Variant},
+        Encoder as _,
+    },
+    encryption_algorithm::{ident_algorithm::IdentEncryptor, AsymmetricAlgorithm},
 };
 use srv_mod_entity::{
     active_enums::AgentIntegrity,
     entities::agent,
     sea_orm::{prelude::*, ActiveValue::Set, DatabaseConnection},
 };
-use tracing::{info, warn};
+use tracing::info;
 
 use super::signature::make_signature;
-
-/// Ensure that the checkin data is valid
-pub fn ensure_checkin_is_valid(data: Result<Checkin, String>) -> Result<Checkin, String> {
-    // if the data is not a checkin struct, drop the request
-    if data.is_err() {
-        warn!(
-            "Failed to parse checkin data, request refused: {:?}",
-            data.err()
-        );
-        warn!("Internal status code: {}", StatusCode::UNPROCESSABLE_ENTITY);
-
-        // always return OK to avoid leaking information
-        return Err("Failed to parse checkin data".to_owned());
-    }
-
-    // return the checkin data
-    data
-}
+use crate::error;
 
 /// Prepare the agent for insertion into the database
-pub fn prepare(data: Checkin) -> agent::ActiveModel {
-    let agent_signature = make_signature(&data);
+pub fn prepare(data: Checkin) -> Result<agent::ActiveModel, error::CommandHandling> {
+    let agent_signature = make_signature(&data).map_err(error::CommandHandling::Crypt)?;
 
-    let encoder = Base64Encoder;
+    let encoder = Encoder::new(Variant::UrlUnpadded);
+
     // the usage of the IdentEncryptor hardcoded here does not force it as it is used only to specialize
     // the type not to encrypt anything
     let agent_secret_key = AsymmetricAlgorithm::<IdentEncryptor>::make_temporary_secret_key();
-    let agent_secret_key = encoder.encode(agent_secret_key);
+    let agent_secret_key = encoder
+        .encode(agent_secret_key.as_slice())
+        .map_err(error::CommandHandling::Crypt)?;
 
     // the usage of the IdentEncryptor hardcoded here does not force it as it is used only to specialize
     // the type not to encrypt anything
     let server_secret = AsymmetricAlgorithm::<IdentEncryptor>::make_temporary_secret_key();
-    let server_secret = encoder.encode(server_secret);
+    let server_secret = encoder
+        .encode(server_secret.as_slice())
+        .map_err(error::CommandHandling::Crypt)?;
 
     // prepare the agent object for insertion
-    agent::ActiveModel {
+    Ok(agent::ActiveModel {
         operating_system: Set(data.operative_system),
         hostname: Set(data.hostname),
         domain: Set(Some(data.domain)),
         username: Set(data.username),
         network_interfaces: Set(data.network_interfaces),
-        pid: Set(data.process_id),
-        ppid: Set(data.parent_process_id),
+        pid: Set(data.pid),
+        ppid: Set(data.ppid),
         process_name: Set(data.process_name),
         integrity: Set(AgentIntegrity::from(data.integrity_level)),
         cwd: Set(data.cwd),
@@ -62,10 +54,14 @@ pub fn prepare(data: Checkin) -> agent::ActiveModel {
         secret: Set(agent_secret_key),
         signature: Set(agent_signature),
         ..Default::default()
-    }
+    })
 }
 
-pub async fn create_or_update(agent: agent::ActiveModel, connection: &DatabaseConnection) -> agent::Model {
+/// Creates or updates an agent in the database based on its signature
+pub async fn create_or_update(
+    agent: agent::ActiveModel,
+    connection: &DatabaseConnection,
+) -> Result<agent::Model, error::CommandHandling> {
     // check if the agent already exists
     let agent_exists = agent::Entity::find()
         .filter(agent::Column::Signature.eq(agent.signature.clone().unwrap()))
@@ -80,24 +76,37 @@ pub async fn create_or_update(agent: agent::ActiveModel, connection: &DatabaseCo
             .set(agent)
             .exec_with_returning(connection)
             .await
-            .unwrap();
+            .map_err(|e| error::CommandHandling::Database("Failed to update agent".to_owned(), e))?;
 
-        let agent = agent.first().unwrap().to_owned();
+        let agent = agent
+            .first()
+            // TOC/TOU inconsistency detected, this is generally really difficult to achieve as
+            // there are only a few instructions between the initial select and the update, anyway
+            // there is still a very small change that in highly parallelized environments with lots
+            // of agents and operators working concurrently this happens, so we need to handle it
+            // gracefully to avoid any possibility for the server to crash
+            .ok_or(error::CommandHandling::Generic(
+                "Failed to update the agent, TOC/TOU inconsistency detected".to_owned(),
+            ))?
+            .to_owned();
 
         info!("Agent data updated (id: {})", agent.id);
 
         // return the updated object
-        agent
+        Ok(agent)
     }
     else {
         info!("New agent detected, inserting ...");
 
-        let agent = agent.insert(connection).await.unwrap();
+        let agent = agent
+            .insert(connection)
+            .await
+            .map_err(|e| error::CommandHandling::Database("Failed to insert agent".to_owned(), e))?;
 
         info!("New agent recorded (id: {})", agent.id);
 
         // return the inserted object
-        agent
+        Ok(agent)
     }
 }
 

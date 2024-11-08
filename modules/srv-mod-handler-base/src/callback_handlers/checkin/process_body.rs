@@ -1,78 +1,42 @@
-use axum::{
-    body::{Body, Bytes},
-    http::StatusCode,
-    response::{IntoResponse as _, Response},
+//! Processes the body of a checkin request, this is the entrypoint to the complex checking
+//! procedures
+
+use kageshirei_communication_protocol::{
+    communication::{Checkin, CheckinResponse},
+    Format,
 };
-use kageshirei_communication_protocol::{communication::checkin::Checkin, format::Protocol as _};
-use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use kageshirei_utils::duration_extension::DurationExt as _;
-use mod_protocol_json::protocol::JsonProtocol;
 use srv_mod_entity::{entities::agent as agent_entity, sea_orm::DatabaseConnection};
-use tracing::{instrument, warn};
+use tracing::instrument;
 
 use super::{agent, agent_profiles::apply_filters};
-
-/// Ensure that the body is not empty by returning a response if it is
-#[instrument(skip_all)]
-pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
-    if body.is_empty() {
-        warn!("Empty checking request received, request refused");
-        warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
-
-        // always return OK to avoid leaking information
-        return Some((StatusCode::OK, "").into_response());
-    }
-
-    None
-}
+use crate::error;
 
 /// Persist the checkin data into the database as an agent
-async fn persist(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> agent_entity::Model {
-    let create_agent_instance = agent::prepare(data.unwrap());
+async fn persist(data: Checkin, db_pool: DatabaseConnection) -> Result<agent_entity::Model, error::CommandHandling> {
+    let create_agent_instance = agent::prepare(data)?;
 
     let db = db_pool.clone();
 
     agent::create_or_update(create_agent_instance, &db).await
 }
 
-#[instrument]
-pub async fn handle_checkin(data: Result<Checkin, String>, db_pool: DatabaseConnection) -> Result<Bytes, String> {
-    let data = agent::ensure_checkin_is_valid(data);
-
-    // if the data is not a checkin struct, drop the request
-    if data.is_err() {
-        return Ok(Bytes::new());
-    }
-
-    let agent = persist(data, db_pool.clone()).await;
+#[instrument(skip(db_pool, format))]
+pub async fn handle_checkin<F>(
+    data: Checkin,
+    db_pool: DatabaseConnection,
+    mut format: F,
+) -> Result<Vec<u8>, error::CommandHandling>
+where
+    F: Format,
+{
+    let agent = persist(data, db_pool.clone()).await?;
 
     // apply filters to the agent
     let config = apply_filters(&agent, db_pool.clone()).await;
 
-    Ok(Bytes::from(
-        serde_json::to_vec(&config).map_err(|e| e.to_string())?,
-    ))
-}
-
-/// Process the body as a JSON protocol
-#[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json(body: Bytes) -> Result<Checkin, String> {
-    let now = std::time::Instant::now();
-
-    // initialize the protocol implementation
-    let protocol = JsonProtocol::<IdentEncryptor>::new("".to_owned());
-
-    // try to read the body as a checkin struct
-    let result = protocol.read::<Checkin>(body, None);
-
-    // record the latency of the operation
-    let latency = now.elapsed();
-    tracing::Span::current().record(
-        "latency",
-        humantime::format_duration(latency.round()).to_string(),
-    );
-
-    result
+    format
+        .write::<CheckinResponse, &str>(config, None)
+        .map_err(error::CommandHandling::Format)
 }
 
 #[cfg(test)]

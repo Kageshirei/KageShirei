@@ -40,6 +40,11 @@ pub struct Checkin {
     pub metadata:           Option<Arc<Metadata>>,
 }
 
+// Safety: The struct is safe to send and share between threads
+unsafe impl Send for Checkin {}
+// Safety: The struct is safe to send and share between threads
+unsafe impl Sync for Checkin {}
+
 impl Default for Checkin {
     fn default() -> Self { Self::new() }
 }

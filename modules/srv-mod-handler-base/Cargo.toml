@@ -18,8 +18,8 @@ kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = [
     "base32-encoding",
     "base64-encoding",
     "asymmetric-encryption",
+    "server",
 ] }
-bytes = "1.7.2"
 srv-mod-config = { path = "../srv-mod-config" }
 kageshirei-utils = { path = "../../libs/kageshirei-utils" }
 axum = "0.7.7"
@@ -30,6 +30,7 @@ tokio = { version = "1.40.0", features = ["full"] }
 serde_json = "1.0.128"
 srv-mod-entity = { path = "../srv-mod-entity" }
 humantime = "2.1.0"
+kageshirei-format-json = { path = "../../libs/kageshirei-format-json" }
 
 [dev-dependencies]
 serial_test = "3.1.1"

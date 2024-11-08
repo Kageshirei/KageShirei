@@ -1,31 +1,30 @@
+//! This module contains the logic to process the body of the request, this is a protocol agnostic
+//! module that will try to match the magic numbers of the body to the appropriate format and then
+//! handle the command by executing it and returning the response if any
+
 use axum::{
-    body::{Body, Bytes},
+    body::Body,
     http::{HeaderMap, StatusCode},
     response::{IntoResponse as _, Response},
     Json,
 };
 use kageshirei_communication_protocol::{
-    communication::{
-        agent_commands::AgentCommands,
-        basic_agent_response::BasicAgentResponse,
-        checkin::Checkin as CheckinStruct,
-    },
-    format::Protocol,
+    communication::{AgentCommands, BasicAgentResponse, Checkin as CheckinStruct},
     magic_numbers,
+    Format,
 };
-use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
+use kageshirei_format_json::FormatJson;
 use kageshirei_utils::duration_extension::DurationExt as _;
-use mod_protocol_json::protocol::JsonProtocol;
 use serde::Deserialize;
 use srv_mod_config::handlers;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use tracing::{instrument, warn};
 
-use crate::callback_handlers;
+use crate::{callback_handlers, error};
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
-pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
+pub fn ensure_is_not_empty(body: Vec<u8>) -> Option<Response<Body>> {
     if body.is_empty() {
         warn!("Empty checking request received, request refused");
         warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
@@ -39,39 +38,44 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
 
 /// Match the magic numbers of the body to the appropriate protocol
 #[instrument(skip_all)]
-fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol, String> {
-    if body.len() >= magic_numbers::JSON.len() && body[.. magic_numbers::JSON.len()] == magic_numbers::JSON {
-        return Ok(handlers::Protocol::Json);
+fn match_magic_numbers(body: &[u8]) -> Result<handlers::Format, String> {
+    if body.len() >= magic_numbers::JSON.len() &&
+        body.get(.. magic_numbers::JSON.len())
+            .eq(&Some(&magic_numbers::JSON))
+    {
+        return Ok(handlers::Format::Json);
     }
 
-    Err("Unknown protocol".to_owned())
+    Err("Unknown format".to_owned())
 }
 
 /// Handle the command by executing it and returning the response if any
-#[instrument(skip(raw_body, protocol))]
-async fn handle_command<P>(
+#[instrument(skip(raw_body, format))]
+async fn handle_command<F>(
     db_pool: DatabaseConnection,
     basic_response: BasicAgentResponse,
-    protocol: P,
-    raw_body: Bytes,
+    format: F,
+    raw_body: Vec<u8>,
     headers: HeaderMap,
     cmd_request_id: String,
-) -> Result<Bytes, String>
+) -> Result<Vec<u8>, error::CommandHandling>
 where
-    P: Protocol<IdentEncryptor>,
+    F: Format + Send,
 {
     match AgentCommands::from(basic_response.metadata.command_id) {
         AgentCommands::Terminate => callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await,
         AgentCommands::Checkin => {
-            let checkin = protocol.read::<CheckinStruct>(raw_body, None);
-            callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool).await
+            let checkin = format
+                .read::<CheckinStruct, &str>(raw_body.as_slice(), None)
+                .map_err(error::CommandHandling::Format)?;
+            callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool, format).await
         },
         AgentCommands::INVALID => {
             // if the command is not recognized, return an empty response
             warn!("Unknown command, request refused");
             warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
-            Ok(Bytes::new())
+            Ok(Vec::<u8>::new())
         },
     }
 }
@@ -80,7 +84,7 @@ where
 #[instrument(skip_all)]
 pub async fn process_body(
     db_pool: DatabaseConnection,
-    body: Bytes,
+    body: Vec<u8>,
     headers: HeaderMap,
     cmd_request_id: String,
 ) -> Response<Body> {
@@ -90,30 +94,25 @@ pub async fn process_body(
         return is_empty.unwrap();
     }
 
-    match match_magic_numbers(body.clone()) {
-        Ok(protocol) => {
-            match protocol {
-                handlers::Protocol::Json => {
-                    let data = process_json(body.clone()).unwrap();
-                    let response = handle_command(
-                        db_pool,
-                        data,
-                        make_json_protocol_instance(),
-                        body.clone(),
-                        headers,
-                        cmd_request_id,
-                    )
-                    .await
-                    .unwrap_or(Bytes::new());
+    match match_magic_numbers(body.as_slice()) {
+        Ok(format) => {
+            match format {
+                handlers::Format::Json => {
+                    let data = process_json(body.as_slice()).unwrap();
+                    let response = handle_command(db_pool, data, FormatJson, body, headers, cmd_request_id)
+                        .await
+                        .unwrap_or(Vec::<u8>::new());
 
-                    Json(response.to_vec()).into_response()
+                    Json(response).into_response()
                 },
             }
         },
         Err(_) => {
             // if no protocol matches, drop the request
-            warn!("Unknown protocol, request refused");
-            warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
+            warn!(
+                "Unknown format, request refused. Internal status code: {}",
+                StatusCode::BAD_REQUEST
+            );
 
             // always return OK to avoid leaking information
             (StatusCode::OK, "").into_response()
@@ -121,21 +120,16 @@ pub async fn process_body(
     }
 }
 
-fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> { JsonProtocol::<IdentEncryptor>::new("".to_owned()) }
-
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json<T>(body: Bytes) -> Result<T, String>
+fn process_json<T>(body: &[u8]) -> Result<T, kageshirei_communication_protocol::error::Format>
 where
     T: for<'a> Deserialize<'a>,
 {
     let now = std::time::Instant::now();
 
-    // initialize the protocol implementation
-    let protocol = make_json_protocol_instance();
-
     // try to read the body as a checkin struct
-    let result = protocol.read::<T>(body, None);
+    let result = FormatJson.read::<T, &str>(body, None);
 
     // record the latency of the operation
     let latency = now.elapsed();

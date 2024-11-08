@@ -20,6 +20,11 @@ pub struct Metadata {
     pub path:       Option<String>,
 }
 
+// Safety: The Metadata struct is safe to be sent between threads
+unsafe impl Send for Metadata {}
+// Safety: The Metadata struct is safe to be shared between threads
+unsafe impl Sync for Metadata {}
+
 /// Define the metadata trait responsible for providing metadata about a type.
 #[expect(
     clippy::module_name_repetitions,
