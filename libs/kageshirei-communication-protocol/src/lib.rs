@@ -20,5 +20,5 @@ mod protocol;
 
 pub use format::Format;
 pub use metadata::{Metadata, WithMetadata};
-pub use network_interface::NetworkInterface;
+pub use network_interface::{NetworkInterface, NetworkInterfaceArray};
 pub use protocol::Protocol;

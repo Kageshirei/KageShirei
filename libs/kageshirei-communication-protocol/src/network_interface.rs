@@ -18,6 +18,12 @@ pub struct NetworkInterface {
     pub dhcp_server: Option<String>,
 }
 
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(FromJsonQueryResult, Debug))]
+pub struct NetworkInterfaceArray {
+    pub network_interfaces: Vec<NetworkInterface>,
+}
+
 // Safety: The struct is safe to send and share between threads
 unsafe impl Send for NetworkInterface {}
 // Safety: The struct is safe to send and share between threads
