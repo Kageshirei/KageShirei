@@ -5,6 +5,7 @@ use std::num::NonZeroU16;
 use srv_mod_config::handlers;
 
 /// The response returned by the base handler
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[expect(
     clippy::module_name_repetitions,
     reason = "The name is descriptive and will be used in higher order modules"

@@ -54,3 +54,48 @@ pub fn decode_or_fail_response(encoder: &Encoder, body: Vec<u8>) -> Result<Vec<u
 
     Ok(decoded.unwrap())
 }
+
+#[cfg(test)]
+mod test {
+    use std::num::NonZeroU16;
+
+    use axum::http::StatusCode;
+
+    use super::*;
+
+    #[test]
+    fn test_bytes_to_string() {
+        let bytes = b"Hello, World!";
+        let result = bytes_to_string(bytes);
+        assert_eq!(result, "Hello, World!");
+    }
+
+    #[test]
+    fn test_decode_or_fail_response() {
+        let encoder = Encoder::Hex;
+        let body = b"48656c6c6f2c20576f726c6421".to_vec();
+
+        let result = decode_or_fail_response(&encoder, body.clone());
+        assert!(result.is_ok());
+
+        let result = result.unwrap();
+        assert_eq!(result, b"Hello, World!".to_vec());
+    }
+
+    #[test]
+    fn test_decode_or_fail_response_unknown_format() {
+        let encoder = Encoder::Base32;
+        let body = b"Hello, World!".to_vec();
+
+        let result = decode_or_fail_response(&encoder, body.clone());
+        assert!(result.is_err());
+
+        let result = result.err().unwrap();
+        assert_eq!(
+            result.status,
+            NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap())
+        );
+        assert_eq!(result.body, Vec::<u8>::new());
+        assert_eq!(result.formatter, None);
+    }
+}
