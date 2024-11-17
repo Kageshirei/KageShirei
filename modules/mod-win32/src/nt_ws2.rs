@@ -17,7 +17,7 @@ use kageshirei_win32::{
 };
 use mod_agentcore::{
     instance,
-    ldr::{ldr_function_addr, nt_get_last_error},
+    ldr::{peb_get_function_addr, nt_get_last_error},
 };
 
 // Global variable to store Winsock functions
@@ -75,20 +75,20 @@ pub fn init_winsock_funcs() {
             let ws2_32_module = ws2_win32_handle as *mut u8;
 
             // Resolve function addresses using hashed names
-            let wsa_startup_addr = ldr_function_addr(ws2_32_module, WSA_STARTUP_DBJ2);
-            let wsa_cleanup_addr = ldr_function_addr(ws2_32_module, WSA_CLEANUP_DBJ2);
-            let socket_addr = ldr_function_addr(ws2_32_module, SOCKET_DBJ2);
-            let connect_addr = ldr_function_addr(ws2_32_module, CONNECT_DBJ2);
-            let send_addr = ldr_function_addr(ws2_32_module, SEND_DBJ2);
-            let recv_addr = ldr_function_addr(ws2_32_module, RECV_DBJ2);
-            let closesocket_addr = ldr_function_addr(ws2_32_module, CLOSESOCKET_DBJ2);
-            let inet_addr_addr = ldr_function_addr(ws2_32_module, INET_ADDR_DBJ2);
-            let htons_addr = ldr_function_addr(ws2_32_module, HTONS_DBJ2);
-            let getaddrinfo_addr = ldr_function_addr(ws2_32_module, GETADDRINFO_DBJ2);
-            let freeaddrinfo_addr = ldr_function_addr(ws2_32_module, FREEADDRINFO_DBJ2);
-            let ioctlsocket_addr = ldr_function_addr(ws2_32_module, IOCTLSOCKET_H);
-            let select_addr = ldr_function_addr(ws2_32_module, SELECT_H);
-            let wsa_get_last_error_addr = ldr_function_addr(ws2_32_module, WSAGETLASTERROR_H);
+            let wsa_startup_addr = peb_get_function_addr(ws2_32_module, WSA_STARTUP_DBJ2);
+            let wsa_cleanup_addr = peb_get_function_addr(ws2_32_module, WSA_CLEANUP_DBJ2);
+            let socket_addr = peb_get_function_addr(ws2_32_module, SOCKET_DBJ2);
+            let connect_addr = peb_get_function_addr(ws2_32_module, CONNECT_DBJ2);
+            let send_addr = peb_get_function_addr(ws2_32_module, SEND_DBJ2);
+            let recv_addr = peb_get_function_addr(ws2_32_module, RECV_DBJ2);
+            let closesocket_addr = peb_get_function_addr(ws2_32_module, CLOSESOCKET_DBJ2);
+            let inet_addr_addr = peb_get_function_addr(ws2_32_module, INET_ADDR_DBJ2);
+            let htons_addr = peb_get_function_addr(ws2_32_module, HTONS_DBJ2);
+            let getaddrinfo_addr = peb_get_function_addr(ws2_32_module, GETADDRINFO_DBJ2);
+            let freeaddrinfo_addr = peb_get_function_addr(ws2_32_module, FREEADDRINFO_DBJ2);
+            let ioctlsocket_addr = peb_get_function_addr(ws2_32_module, IOCTLSOCKET_H);
+            let select_addr = peb_get_function_addr(ws2_32_module, SELECT_H);
+            let wsa_get_last_error_addr = peb_get_function_addr(ws2_32_module, WSAGETLASTERROR_H);
 
             // Initialize Winsock functions
             let mut winsock_functions = Winsock::new();

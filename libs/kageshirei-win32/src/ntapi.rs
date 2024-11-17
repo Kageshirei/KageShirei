@@ -29,6 +29,13 @@ use crate::ntdef::{
     ULONG,
 };
 
+/// Retrieves a handle to the current process.
+///
+/// # Returns
+///
+/// A handle to the current process.
+pub const fn nt_current_process() -> HANDLE { -1isize as HANDLE }
+
 pub trait NtSyscall {
     /// Create a new syscall object
     fn new() -> Self;
@@ -1742,7 +1749,7 @@ impl NtQueryVirtualMemory {
 ///
 /// # Returns
 /// - `i32` - The NTSTATUS code of the operation.
-type LdrLoadDll = unsafe extern "system" fn(
+pub type LdrLoadDll = unsafe extern "system" fn(
     DllPath: *mut u16,
     DllCharacteristics: *mut u32,
     DllName: UnicodeString,
@@ -1778,7 +1785,7 @@ type LdrLoadDll = unsafe extern "system" fn(
 ///
 /// # Returns
 /// - `STATUS_SUCCESS` if successful, or an NTSTATUS error code if the function fails.
-type RtlCreateProcessParametersEx = unsafe extern "system" fn(
+pub type RtlCreateProcessParametersEx = unsafe extern "system" fn(
     pProcessParameters: *mut *mut RtlUserProcessParameters,
     ImagePathName: *const UnicodeString,
     DllPath: *const UnicodeString,
@@ -1814,7 +1821,7 @@ type RtlCreateProcessParametersEx = unsafe extern "system" fn(
 /// # Returns
 /// - `HANDLE`: A handle to the newly created heap. If the heap creation fails, the handle will be
 ///   `NULL`.
-type RtlCreateHeap = unsafe extern "system" fn(
+pub type RtlCreateHeap = unsafe extern "system" fn(
     Flags: u32,
     HeapBase: *mut u8,
     ReserveSize: usize,
@@ -1836,7 +1843,7 @@ type RtlCreateHeap = unsafe extern "system" fn(
 /// # Returns
 /// - `*mut u8`: A pointer to the allocated memory block. If the allocation fails, the pointer will
 ///   be `NULL`.
-type RtlAllocateHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, dwBytes: usize) -> *mut u8;
+pub type RtlAllocateHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, dwBytes: usize) -> *mut u8;
 
 /// Type definition for the RtlFreeHeap function.
 ///
@@ -1852,7 +1859,7 @@ type RtlAllocateHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, dw
 /// # Returns
 /// - `BOOL`: A boolean value indicating whether the operation was successful (`TRUE`) or not
 ///   (`FALSE`).
-type RtlFreeHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8) -> i32;
+pub type RtlFreeHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8) -> i32;
 
 /// Type definition for the RtlReAllocateHeap function.
 ///
@@ -1869,7 +1876,7 @@ type RtlFreeHeap = unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem:
 /// # Returns
 /// - `*mut u8`: A pointer to the reallocated memory block. If the reallocation fails, the pointer
 ///   will be `NULL`.
-type RtlReAllocateHeap =
+pub type RtlReAllocateHeap =
     unsafe extern "system" fn(hHeap: HANDLE, dwFlags: u32, lpMem: *mut u8, dwBytes: usize) -> *mut u8;
 
 /// Type definition for the RtlDestroyHeap function.
@@ -1883,7 +1890,7 @@ type RtlReAllocateHeap =
 /// # Returns
 /// - `HANDLE`: The function returns `NULL` if the heap was successfully destroyed. If the function
 ///   fails, it returns the handle to the heap.
-type RtlDestroyHeap = unsafe extern "system" fn(hHeap: HANDLE) -> HANDLE;
+pub type RtlDestroyHeap = unsafe extern "system" fn(hHeap: HANDLE) -> HANDLE;
 /// Type definition for the `RtlGetFullPathName_U` function.
 ///
 /// Retrieves the full path and file name for the specified file, resolving any relative path
@@ -1910,7 +1917,7 @@ type RtlDestroyHeap = unsafe extern "system" fn(hHeap: HANDLE) -> HANDLE;
 ///   string.
 /// - This function operates on wide character strings (`wchar_t`), meaning it is designed for use
 ///   with the Windows Unicode string types.
-type RtlGetFullPathNameU =
+pub type RtlGetFullPathNameU =
     unsafe extern "system" fn(FileName: PWSTR, BufferLength: ULONG, Buffer: PWSTR, FilePart: *mut PWSTR) -> ULONG;
 
 /// Type definition for the RtlGetFullPathName_UstrEx function.
@@ -1971,7 +1978,7 @@ type RtlGetFullPathNameUstrEx = unsafe extern "system" fn(
 /// # Returns
 /// - `BOOLEAN`: The function returns `TRUE` if the conversion was successful, or `FALSE` if the
 ///   conversion failed.
-type RtlDosPathNameToNtPathNameU = unsafe extern "system" fn(
+pub type RtlDosPathNameToNtPathNameU = unsafe extern "system" fn(
     DosFileName: PWSTR,                  // Pointer to the DOS path to convert
     NtFileName: *mut UnicodeString,      // Receives the converted NT path
     FilePart: *mut PWSTR,                // Receives the file part of the path (optional)

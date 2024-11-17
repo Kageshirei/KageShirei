@@ -24,7 +24,7 @@ use kageshirei_win32::{
 };
 use mod_agentcore::{
     instance,
-    ldr::{ldr_function_addr, nt_get_last_error},
+    ldr::{peb_get_function_addr, nt_get_last_error},
 };
 
 use crate::utils::{parse_url, to_pcwstr};
@@ -83,19 +83,19 @@ fn init_winhttp_funcs() {
             }
 
             // Load function addresses from the module
-            let win_http_open_addr = ldr_function_addr(h_module, WINHTTP_OPEN_DBJ2);
-            let win_http_connect_addr = ldr_function_addr(h_module, WINHTTP_CONNECT_DBJ2);
-            let win_http_open_request_addr = ldr_function_addr(h_module, WINHTTP_OPEN_REQUEST_DBJ2);
-            let win_http_set_option_addr = ldr_function_addr(h_module, WINHTTP_SET_OPTION_DBJ2);
-            let win_http_close_handle_addr = ldr_function_addr(h_module, WINHTTP_CLOSE_HANDLE_DBJ2);
-            let win_http_send_request_addr = ldr_function_addr(h_module, WINHTTP_SEND_REQUEST_DBJ2);
-            let win_http_add_request_headers_addr = ldr_function_addr(h_module, WINHTTP_ADD_REQUEST_HEADERS_DBJ2);
-            let win_http_receive_response_addr = ldr_function_addr(h_module, WINHTTP_RECEIVE_RESPONSE_DBJ2);
-            let win_http_read_data_addr = ldr_function_addr(h_module, WINHTTP_READ_DATA_DBJ2);
-            let win_http_query_headers_addr = ldr_function_addr(h_module, WINHTTP_QUERY_HEADERS_DBJ2);
+            let win_http_open_addr = peb_get_function_addr(h_module, WINHTTP_OPEN_DBJ2);
+            let win_http_connect_addr = peb_get_function_addr(h_module, WINHTTP_CONNECT_DBJ2);
+            let win_http_open_request_addr = peb_get_function_addr(h_module, WINHTTP_OPEN_REQUEST_DBJ2);
+            let win_http_set_option_addr = peb_get_function_addr(h_module, WINHTTP_SET_OPTION_DBJ2);
+            let win_http_close_handle_addr = peb_get_function_addr(h_module, WINHTTP_CLOSE_HANDLE_DBJ2);
+            let win_http_send_request_addr = peb_get_function_addr(h_module, WINHTTP_SEND_REQUEST_DBJ2);
+            let win_http_add_request_headers_addr = peb_get_function_addr(h_module, WINHTTP_ADD_REQUEST_HEADERS_DBJ2);
+            let win_http_receive_response_addr = peb_get_function_addr(h_module, WINHTTP_RECEIVE_RESPONSE_DBJ2);
+            let win_http_read_data_addr = peb_get_function_addr(h_module, WINHTTP_READ_DATA_DBJ2);
+            let win_http_query_headers_addr = peb_get_function_addr(h_module, WINHTTP_QUERY_HEADERS_DBJ2);
             let win_http_get_ie_proxy_config_addr =
-                ldr_function_addr(h_module, WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2);
-            let win_http_get_proxy_for_url_addr = ldr_function_addr(h_module, WINHTTP_GET_PROXY_FOR_URL_DBJ2);
+                peb_get_function_addr(h_module, WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2);
+            let win_http_get_proxy_for_url_addr = peb_get_function_addr(h_module, WINHTTP_GET_PROXY_FOR_URL_DBJ2);
 
             let mut winhttp_functions = WinHttp::new();
 

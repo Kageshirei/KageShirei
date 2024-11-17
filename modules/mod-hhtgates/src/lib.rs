@@ -1,7 +1,9 @@
 #![no_std]
-/// A crate for detecting syscall numbers by scanning memory for specific assembly patterns.
-/// Supports Hell's Gate, Halo's Gate, and Tartarus' Gate techniques for identifying syscalls.
-/// Works in `no_std` environments with raw pointer manipulation for high-performance use cases.
+//! # Module HHTGates
+//!
+//! A crate for detecting syscall numbers by scanning memory for specific assembly patterns.
+//! Supports Hell's Gate, Halo's Gate, and Tartarus' Gate techniques for identifying syscalls.
+//! Works in `no_std` environments with raw pointer manipulation for high-performance use cases.
 
 /// The offset to move up in memory.
 const UP: isize = -32;
