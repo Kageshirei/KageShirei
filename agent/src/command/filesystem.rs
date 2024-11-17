@@ -1,4 +1,4 @@
-use kageshirei_communication_protocol::{communication::task_output::TaskOutput, metadata::Metadata};
+use kageshirei_communication_protocol::communication::TaskOutput;
 use mod_win32::{nt_path::change_directory, nt_peb::get_current_directory, nt_time::current_timestamp};
 
 /// Changes the current working directory to the specified path.
@@ -30,7 +30,7 @@ use mod_win32::{nt_path::change_directory, nt_peb::get_current_directory, nt_tim
 ///   ends.
 /// - On success, the new directory is retrieved using `get_current_directory`, and the result is
 ///   stored in `output`.
-pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
+pub fn command_cd(path: &str) -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
 
@@ -41,7 +41,6 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
         // If the change_directory function returns a positive value, it indicates an error occurred
         output.ended_at = Some(current_timestamp());
         output.exit_code = Some(status);
-        output.with_metadata(metadata);
         return output;
     }
 
@@ -50,7 +49,6 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
     output.output = Some(current_dir);
     output.ended_at = Some(current_timestamp());
     output.exit_code = Some(0);
-    output.with_metadata(metadata);
     output
 }
 
@@ -81,7 +79,7 @@ pub fn command_cd(path: &str, metadata: Metadata) -> TaskOutput {
 /// - If the current directory cannot be retrieved or is empty, an error is indicated by setting the
 ///   `exit_code`.
 /// - On success, the current directory is stored in `output`.
-pub fn command_pwd(metadata: Metadata) -> TaskOutput {
+pub fn command_pwd() -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
 
@@ -93,7 +91,6 @@ pub fn command_pwd(metadata: Metadata) -> TaskOutput {
         // If the directory is empty, an error occurred during retrieval
         output.ended_at = Some(current_timestamp());
         output.exit_code = Some(-1); // Changed to 1 to indicate an error
-        output.with_metadata(metadata);
         return output;
     }
 
@@ -101,12 +98,12 @@ pub fn command_pwd(metadata: Metadata) -> TaskOutput {
     output.output = Some(current_dir);
     output.ended_at = Some(current_timestamp());
     output.exit_code = Some(0); // Success
-    output.with_metadata(metadata);
     output
 }
 
 #[cfg(test)]
 mod tests {
+    use kageshirei_communication_protocol::Metadata;
     use libc_print::libc_println;
     use mod_win32::nt_time::timestamp_to_datetime;
 
@@ -126,7 +123,7 @@ mod tests {
             path:       None,
         };
 
-        let result = command_cd(target_directory, metadata.clone());
+        let result = command_cd(target_directory);
 
         // Print all elements of `TaskOutput`
         libc_println!("TaskOutput for target_directory: {}", target_directory);
@@ -159,7 +156,7 @@ mod tests {
         );
 
         // Test changing to the parent directory with "cd .."
-        let result = command_cd("..\\..", metadata);
+        let result = command_cd("..\\..");
 
         // Print all elements of `TaskOutput` for the parent directory change
         libc_println!("TaskOutput for parent directory");
@@ -199,7 +196,7 @@ mod tests {
             agent_id:   "agent-1234".to_string(),
             path:       None,
         };
-        let cwd_output = command_pwd(metadata);
+        let cwd_output = command_pwd();
 
         // Print all elements of TaskOutput
         libc_println!("TaskOutput for pwd command");
