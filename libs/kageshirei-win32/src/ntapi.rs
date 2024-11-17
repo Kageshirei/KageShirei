@@ -29,64 +29,81 @@ use crate::ntdef::{
     ULONG,
 };
 
-pub struct NtSyscall {
+pub trait NtSyscall {
+    /// Create a new syscall object
+    fn new() -> Self;
     /// The number of the syscall
-    pub number:  u16,
+    fn number(&self) -> u16;
     /// The address of the syscall
-    pub address: *mut u8,
+    fn address(&self) -> *mut u8;
     /// The hash of the syscall (used for lookup)
-    pub hash:    usize,
+    fn hash(&self) -> usize;
 }
 
-// Safety: We implement Sync for NtSyscall to ensure that it can be safely shared
-// across multiple threads. This is necessary because lazy_static requires
-// the types it manages to be Sync. Since NtSyscall only contains raw pointers
-// and does not perform any interior mutability, it is safe to implement Sync manually.
-unsafe impl Sync for NtSyscall {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtSyscall {}
-
-impl Default for NtSyscall {
-    fn default() -> Self { Self::new() }
-}
-
-impl NtSyscall {
-    pub const fn new() -> Self {
-        Self {
-            number:  0,
-            address: null_mut(),
-            hash:    0,
+/// Macro to define a syscall structure and its associated implementations.
+///
+/// This macro generates a struct with the given name and a specified hash value.
+/// It also implements the `NtSyscall` trait, `Send`, `Sync`, and `Default` traits for the generated
+/// struct.
+///
+/// # Arguments
+///
+/// * `$name` - The identifier for the syscall struct.
+/// * `$hash` - The hash value associated with the syscall.
+///
+/// # Generated Struct
+///
+/// The generated struct will have the following fields:
+/// * `number` - A `u16` representing the syscall number.
+/// * `address` - A mutable pointer to `u8` representing the address of the syscall.
+/// * `hash` - A `usize` representing the hash value of the syscall.
+///
+/// # Example
+///
+/// ```rust
+/// define_syscall!(MySyscall, 0x12345678);
+///
+/// let syscall = MySyscall::new();
+/// assert_eq!(syscall.hash(), 0x12345678);
+/// ```
+macro_rules! define_syscall {
+    ($name:ident, $hash:expr) => {
+        pub struct $name {
+            pub number:  u16,
+            pub address: *mut u8,
+            pub hash:    usize,
         }
-    }
+
+        impl NtSyscall for $name {
+            fn new() -> Self {
+                Self {
+                    number:  0,
+                    address: core::ptr::null_mut(),
+                    hash:    $hash,
+                }
+            }
+
+            fn number(&self) -> u16 { self.number }
+
+            fn address(&self) -> *mut u8 { self.address }
+
+            fn hash(&self) -> usize { self.hash }
+        }
+
+        // Safety: This is safe because the struct $name does not contain any non-thread-safe data.
+        unsafe impl Send for $name {}
+        // Safety: This is safe because the struct $name does not contain any non-thread-safe data.
+        unsafe impl Sync for $name {}
+
+        impl Default for $name {
+            fn default() -> Self { Self::new() }
+        }
+    };
 }
 
-/// Retrieves a handle to the current process.
-///
-/// # Returns
-///
-/// A handle to the current process.
-pub const fn nt_current_process() -> HANDLE { -1isize as HANDLE }
-
-pub struct NtClose {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtClose {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtClose {}
-
-impl Default for NtClose {
-    fn default() -> Self { Self::new() }
-}
+define_syscall!(NtClose, 0x40d6e69d);
 
 impl NtClose {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
     /// Wrapper function for NtClose to avoid repetitive run_syscall calls.
     ///
     /// # Safety
@@ -104,31 +121,12 @@ impl NtClose {
     ///
     /// * `true` if the operation was successful, `false` otherwise. The function returns an
     ///   NTSTATUS code; however, in this wrapper, the result is simplified to a boolean.
-    pub unsafe fn run(&self, handle: *mut c_void) -> i32 {
-        run!(self.syscall.number, self.syscall.address as usize, handle)
-    }
+    pub unsafe fn run(&self, handle: *mut c_void) -> i32 { run!(self.number, self.address as usize, handle) }
 }
 
-pub struct NtAllocateVirtualMemory {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtAllocateVirtualMemory {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtAllocateVirtualMemory {}
-
-impl Default for NtAllocateVirtualMemory {
-    fn default() -> Self { Self::new() }
-}
+define_syscall!(NtAllocateVirtualMemory, 0xf783b8ec);
 
 impl NtAllocateVirtualMemory {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
     /// Wrapper function for NtAllocateVirtualMemory to allocate memory in the virtual address space
     /// of a specified process.
     ///
@@ -171,8 +169,8 @@ impl NtAllocateVirtualMemory {
         protect: ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             handle,
             base_address,
             zero_bits,
@@ -183,30 +181,13 @@ impl NtAllocateVirtualMemory {
     }
 }
 
-pub struct NtWriteVirtualMemory {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtWriteVirtualMemory {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtWriteVirtualMemory {}
-
-impl Default for NtWriteVirtualMemory {
-    fn default() -> Self { Self::new() }
-}
+define_syscall!(NtWriteVirtualMemory, 0xc3170192);
 
 impl NtWriteVirtualMemory {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtWriteVirtualMemory syscall.
+    /// Wrapper for the NtWriteVirtualMemory
     ///
     /// This function writes data to the virtual memory of a process. It wraps the
-    /// NtWriteVirtualMemory syscall.
+    /// NtWriteVirtualMemory
     ///
     /// # Safety
     ///
@@ -229,7 +210,7 @@ impl NtWriteVirtualMemory {
     ///
     /// # Returns
     ///
-    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
+    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the
     pub unsafe fn run(
         &self,
         process_handle: HANDLE,
@@ -239,8 +220,8 @@ impl NtWriteVirtualMemory {
         number_of_bytes_written: &mut usize,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             base_address,
             buffer,
@@ -250,30 +231,13 @@ impl NtWriteVirtualMemory {
     }
 }
 
-pub struct NtFreeVirtualMemory {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtFreeVirtualMemory {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtFreeVirtualMemory {}
-
-impl Default for NtFreeVirtualMemory {
-    fn default() -> Self { Self::new() }
-}
+define_syscall!(NtFreeVirtualMemory, 0x2802c609);
 
 impl NtFreeVirtualMemory {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtFreeVirtualMemory syscall.
+    /// Wrapper for the NtFreeVirtualMemory
     ///
     /// This function frees a region of pages within the virtual address space of a specified
-    /// process. It wraps the NtFreeVirtualMemory syscall.
+    /// process. It wraps the NtFreeVirtualMemory
     ///
     /// # Safety
     ///
@@ -298,7 +262,7 @@ impl NtFreeVirtualMemory {
     ///
     /// # Returns
     ///
-    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
+    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the
     pub unsafe fn run(
         &self,
         process_handle: *mut c_void,
@@ -307,8 +271,8 @@ impl NtFreeVirtualMemory {
         free_type: ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             &mut (base_address as *mut c_void),
             &mut region_size,
@@ -317,29 +281,11 @@ impl NtFreeVirtualMemory {
     }
 }
 
-pub struct NtOpenKey {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtOpenKey {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtOpenKey {}
-
-impl Default for NtOpenKey {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtOpenKey, 0x7682ed42);
 impl NtOpenKey {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtOpenKey syscall.
+    /// Wrapper for the NtOpenKey
     ///
-    /// This function opens the specified registry key. It wraps the NtOpenKey syscall.
+    /// This function opens the specified registry key. It wraps the NtOpenKey
     ///
     /// # Arguments
     ///
@@ -351,7 +297,7 @@ impl NtOpenKey {
     ///
     /// # Returns
     ///
-    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the syscall.
+    /// * `i32` - The NTSTATUS code of the operation, indicating success or failure of the
     pub fn run(
         &self,
         p_key_handle: &mut *mut c_void,
@@ -359,8 +305,8 @@ impl NtOpenKey {
         object_attributes: &mut ObjectAttributes,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             p_key_handle,
             desired_access,
             object_attributes as *mut _ as *mut c_void
@@ -368,27 +314,9 @@ impl NtOpenKey {
     }
 }
 
-pub struct NtQueryValueKey {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtQueryValueKey {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtQueryValueKey {}
-
-impl Default for NtQueryValueKey {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtQueryValueKey, 0x85967123);
 impl NtQueryValueKey {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtQueryValueKey syscall.
+    /// Wrapper for the NtQueryValueKey
     ///
     /// # Safety
     ///
@@ -424,8 +352,8 @@ impl NtQueryValueKey {
         result_length: &mut u32,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             key_handle,
             value_name as *const _ as usize,
             key_value_information_class,
@@ -436,27 +364,9 @@ impl NtQueryValueKey {
     }
 }
 
-pub struct NtEnumerateKey {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtEnumerateKey {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtEnumerateKey {}
-
-impl Default for NtEnumerateKey {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtEnumerateKey, 0x4d8a8976);
 impl NtEnumerateKey {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtEnumerateKey syscall.
+    /// Wrapper for the NtEnumerateKey
     ///
     /// # Safety
     ///
@@ -490,8 +400,8 @@ impl NtEnumerateKey {
         result_length: &mut ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             key_handle,
             index,
             key_information_class,
@@ -502,27 +412,9 @@ impl NtEnumerateKey {
     }
 }
 
-pub struct NtQuerySystemInformation {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtQuerySystemInformation {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtQuerySystemInformation {}
-
-impl Default for NtQuerySystemInformation {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtQuerySystemInformation, 0x4d8a8976);
 impl NtQuerySystemInformation {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtQuerySystemInformation syscall.
+    /// Wrapper for the NtQuerySystemInformation
     ///
     /// # Safety
     ///
@@ -553,8 +445,8 @@ impl NtQuerySystemInformation {
         return_length: *mut u32,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             system_information_class,
             system_information,
             system_information_length,
@@ -563,27 +455,9 @@ impl NtQuerySystemInformation {
     }
 }
 
-pub struct NtQueryInformationProcess {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtQueryInformationProcess {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtQueryInformationProcess {}
-
-impl Default for NtQueryInformationProcess {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtQueryInformationProcess, 0x8cdc5dc2);
 impl NtQueryInformationProcess {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtQueryInformationProcess syscall.
+    /// Wrapper for the NtQueryInformationProcess
     ///
     /// # Safety
     ///
@@ -616,8 +490,8 @@ impl NtQueryInformationProcess {
         return_length: *mut ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             process_information_class,
             process_information,
@@ -627,27 +501,9 @@ impl NtQueryInformationProcess {
     }
 }
 
-pub struct NtOpenProcess {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtOpenProcess {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtOpenProcess {}
-
-impl Default for NtOpenProcess {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtOpenProcess, 0x4b82f718);
 impl NtOpenProcess {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtOpenProcess syscall.
+    /// Wrapper for the NtOpenProcess
     ///
     /// # Safety
     ///
@@ -676,8 +532,8 @@ impl NtOpenProcess {
         client_id: *mut c_void,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             desired_access,
             object_attributes as *mut _ as *mut c_void,
@@ -686,27 +542,9 @@ impl NtOpenProcess {
     }
 }
 
-pub struct NtOpenProcessToken {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtOpenProcessToken {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtOpenProcessToken {}
-
-impl Default for NtOpenProcessToken {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtOpenProcessToken, 0x350dca99);
 impl NtOpenProcessToken {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtOpenProcessToken syscall.
+    /// Wrapper for the NtOpenProcessToken
     ///
     /// # Safety
     ///
@@ -727,8 +565,8 @@ impl NtOpenProcessToken {
     /// * `i32` - The NTSTATUS code of the operation.
     pub unsafe fn run(&self, process_handle: HANDLE, desired_access: AccessMask, token_handle: &mut HANDLE) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             desired_access,
             token_handle
@@ -736,27 +574,9 @@ impl NtOpenProcessToken {
     }
 }
 
-pub struct NtOpenProcessTokenEx {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtOpenProcessTokenEx {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtOpenProcessTokenEx {}
-
-impl Default for NtOpenProcessTokenEx {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtOpenProcessTokenEx, 0xafaade16);
 impl NtOpenProcessTokenEx {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtOpenProcessTokenEx syscall.
+    /// Wrapper for the NtOpenProcessTokenEx
     ///
     /// # Safety
     ///
@@ -784,8 +604,8 @@ impl NtOpenProcessTokenEx {
         token_handle: &mut HANDLE,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             desired_access,
             handle_attributes,
@@ -794,27 +614,9 @@ impl NtOpenProcessTokenEx {
     }
 }
 
-pub struct NtQueryInformationToken {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtQueryInformationToken {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtQueryInformationToken {}
-
-impl Default for NtQueryInformationToken {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtQueryInformationToken, 0xf371fe4);
 impl NtQueryInformationToken {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtQueryInformationToken syscall.
+    /// Wrapper for the NtQueryInformationToken
     ///
     /// # Safety
     ///
@@ -847,8 +649,8 @@ impl NtQueryInformationToken {
         return_length: *mut ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             token_handle,
             token_information_class,
             token_information,
@@ -858,27 +660,9 @@ impl NtQueryInformationToken {
     }
 }
 
-pub struct NtAdjustPrivilegesToken {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtAdjustPrivilegesToken {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtAdjustPrivilegesToken {}
-
-impl Default for NtAdjustPrivilegesToken {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtAdjustPrivilegesToken, 0x2dbc736d);
 impl NtAdjustPrivilegesToken {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtAdjustPrivilegesToken syscall.
+    /// Wrapper for the NtAdjustPrivilegesToken
     ///
     /// # Safety
     ///
@@ -911,8 +695,8 @@ impl NtAdjustPrivilegesToken {
         return_length: *mut ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             token_handle,
             disable_all_privileges as u32,
             new_state,
@@ -923,27 +707,9 @@ impl NtAdjustPrivilegesToken {
     }
 }
 
-pub struct NtWaitForSingleObject {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtWaitForSingleObject {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtWaitForSingleObject {}
-
-impl Default for NtWaitForSingleObject {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtWaitForSingleObject, 0xe8ac0c3c);
 impl NtWaitForSingleObject {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtWaitForSingleObject syscall.
+    /// Wrapper for the NtWaitForSingleObject
     ///
     /// # Safety
     ///
@@ -963,8 +729,8 @@ impl NtWaitForSingleObject {
     /// * `i32` - The NTSTATUS code of the operation.
     pub unsafe fn run(&self, handle: HANDLE, alertable: bool, timeout: *mut c_void) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             handle,
             alertable as u32,
             timeout
@@ -972,27 +738,9 @@ impl NtWaitForSingleObject {
     }
 }
 
-pub struct NtOpenFile {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtOpenFile {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtOpenFile {}
-
-impl Default for NtOpenFile {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtOpenFile, 0x46dde739);
 impl NtOpenFile {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtOpenFile syscall.
+    /// Wrapper for the NtOpenFile
     ///
     /// # Arguments
     ///
@@ -1017,8 +765,8 @@ impl NtOpenFile {
         open_options: ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             file_handle,
             desired_access,
             object_attributes,
@@ -1029,26 +777,8 @@ impl NtOpenFile {
     }
 }
 
-pub struct NtCreateEvent {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateEvent {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateEvent {}
-
-impl Default for NtCreateEvent {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateEvent, 0x28d3233d);
 impl NtCreateEvent {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
     /// Wrapper function for NtCreateEvent to avoid repetitive run_syscall calls.
     ///
     /// # Safety
@@ -1086,8 +816,8 @@ impl NtCreateEvent {
             attrs as *mut _ as *mut c_void
         });
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             event_handle,
             desired_access,
             obj_attr_ptr,
@@ -1097,29 +827,11 @@ impl NtCreateEvent {
     }
 }
 
-pub struct NtWriteFile {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtWriteFile {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtWriteFile {}
-
-impl Default for NtWriteFile {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtWriteFile, 0xe0d61db2);
 impl NtWriteFile {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtWriteFile syscall.
+    /// Wrapper for the NtWriteFile
     ///
-    /// This function writes data to a file or I/O device. It wraps the NtWriteFile syscall.
+    /// This function writes data to a file or I/O device. It wraps the NtWriteFile
     ///
     /// # Safety
     ///
@@ -1168,8 +880,8 @@ impl NtWriteFile {
         key: *mut ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             file_handle,
             event,
             apc_routine,
@@ -1183,29 +895,11 @@ impl NtWriteFile {
     }
 }
 
-pub struct NtCreateFile {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateFile {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateFile {}
-
-impl Default for NtCreateFile {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateFile, 0x66163fbb);
 impl NtCreateFile {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateFile syscall.
+    /// Wrapper for the NtCreateFile
     ///
-    /// This function creates or opens a file or I/O device. It wraps the NtCreateFile syscall.
+    /// This function creates or opens a file or I/O device. It wraps the NtCreateFile
     ///
     /// # Safety
     ///
@@ -1258,8 +952,8 @@ impl NtCreateFile {
         ea_length: u32,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             file_handle,
             desired_access,
             obj_attributes,
@@ -1275,29 +969,11 @@ impl NtCreateFile {
     }
 }
 
-pub struct NtReadFile {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtReadFile {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtReadFile {}
-
-impl Default for NtReadFile {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtReadFile, 0xb2d93203);
 impl NtReadFile {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtReadFile syscall.
+    /// Wrapper for the NtReadFile
     ///
-    /// This function reads data from a file or I/O device. It wraps the NtReadFile syscall.
+    /// This function reads data from a file or I/O device. It wraps the NtReadFile
     ///
     /// # Safety
     ///
@@ -1346,8 +1022,8 @@ impl NtReadFile {
         key: *mut ULONG,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             file_handle,
             event,
             apc_routine,
@@ -1361,27 +1037,9 @@ impl NtReadFile {
     }
 }
 
-pub struct NtCreateProcessEx {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateProcessEx {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateProcessEx {}
-
-impl Default for NtCreateProcessEx {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateProcessEx, 0xf8b2017);
 impl NtCreateProcessEx {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateProcessEx syscall.
+    /// Wrapper for the NtCreateProcessEx
     ///
     /// # Safety
     ///
@@ -1423,8 +1081,8 @@ impl NtCreateProcessEx {
         in_job: u32,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             desired_access,
             object_attributes,
@@ -1438,27 +1096,9 @@ impl NtCreateProcessEx {
     }
 }
 
-pub struct NtCreateThread {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateThread {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateThread {}
-
-impl Default for NtCreateThread {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateThread, 0x653e8db3);
 impl NtCreateThread {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateThread syscall.
+    /// Wrapper for the NtCreateThread
     ///
     /// # Safety
     ///
@@ -1487,7 +1127,7 @@ impl NtCreateThread {
     ///
     /// # Returns
     ///
-    /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
+    /// * `i32` - Il codice NTSTATUS dell'operazione.
     #[expect(
         clippy::too_many_arguments,
         reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
@@ -1502,10 +1142,10 @@ impl NtCreateThread {
         thread_context: *mut CONTEXT,
         initial_teb: *mut InitialTeb,
         create_suspended: bool,
-    ) -> NTSTATUS {
+    ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             thread_handle,
             desired_access,
             object_attributes,
@@ -1518,27 +1158,9 @@ impl NtCreateThread {
     }
 }
 
-pub struct NtCreateThreadEx {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateThreadEx {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateThreadEx {}
-
-impl Default for NtCreateThreadEx {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateThreadEx, 0xaf18cfb0);
 impl NtCreateThreadEx {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateThreadEx syscall.
+    /// Wrapper for the NtCreateThreadEx
     ///
     /// # Safety
     ///
@@ -1584,8 +1206,8 @@ impl NtCreateThreadEx {
         attribute_list: *mut c_void,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             thread_handle,
             desired_access,
             object_attributes,
@@ -1601,27 +1223,9 @@ impl NtCreateThreadEx {
     }
 }
 
-pub struct ZwCreateThreadEx {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for ZwCreateThreadEx {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for ZwCreateThreadEx {}
-
-impl Default for ZwCreateThreadEx {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(ZwCreateThreadEx, 0x2b6cdf7f);
 impl ZwCreateThreadEx {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the ZwCreateThreadEx syscall.
+    /// Wrapper for the ZwCreateThreadEx
     ///
     /// # Safety
     ///
@@ -1653,7 +1257,7 @@ impl ZwCreateThreadEx {
     ///
     /// # Returns
     ///
-    /// * `NTSTATUS` - Il codice NTSTATUS dell'operazione.
+    /// * `i32` - Il codice NTSTATUS dell'operazione.
     #[expect(
         clippy::too_many_arguments,
         reason = "This function is a wrapper for a syscall aliasing native windows calling behaviour"
@@ -1671,10 +1275,10 @@ impl ZwCreateThreadEx {
         stack_size: SIZE_T,
         maximum_stack_size: SIZE_T,
         attribute_list: *mut c_void,
-    ) -> NTSTATUS {
+    ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             thread_handle,
             desired_access,
             object_attributes,
@@ -1690,27 +1294,9 @@ impl ZwCreateThreadEx {
     }
 }
 
-pub struct NtCreateUserProcess {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateUserProcess {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateUserProcess {}
-
-impl Default for NtCreateUserProcess {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateUserProcess, 0x54ce5f79);
 impl NtCreateUserProcess {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateUserProcess syscall.
+    /// Wrapper for the NtCreateUserProcess
     ///
     /// # Safety
     ///
@@ -1758,8 +1344,8 @@ impl NtCreateUserProcess {
         attribute_list: *mut PsAttributeList,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             thread_handle,
             process_desired_access,
@@ -1775,29 +1361,11 @@ impl NtCreateUserProcess {
     }
 }
 
-pub struct NtResumeThread {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtResumeThread {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtResumeThread {}
-
-impl Default for NtResumeThread {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtResumeThread, 0x5a4bc3d0);
 impl NtResumeThread {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtResumeThread syscall.
+    /// Wrapper for the NtResumeThread
     ///
-    /// This function resumes a suspended thread. It wraps the NtResumeThread syscall.
+    /// This function resumes a suspended thread. It wraps the NtResumeThread
     ///
     /// # Safety
     ///
@@ -1816,36 +1384,19 @@ impl NtResumeThread {
     /// * `i32` - The NTSTATUS code of the operation.
     pub unsafe fn run(&self, thread_handle: HANDLE, suspend_count: &mut u32) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             thread_handle,
             suspend_count
         )
     }
 }
 
-pub struct NtTerminateProcess {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtTerminateProcess {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtTerminateProcess {}
-impl Default for NtTerminateProcess {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtTerminateProcess, 0x4ed9dd4f);
 impl NtTerminateProcess {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtTerminateProcess syscall.
+    /// Wrapper for the NtTerminateProcess
     ///
-    /// This function terminates a process. It wraps the NtTerminateProcess syscall.
+    /// This function terminates a process. It wraps the NtTerminateProcess
     ///
     /// # Safety
     ///
@@ -1863,37 +1414,19 @@ impl NtTerminateProcess {
     /// * `i32` - The NTSTATUS code of the operation.
     pub unsafe fn run(&self, process_handle: HANDLE, exit_status: i32) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             exit_status
         )
     }
 }
 
-pub struct NtTerminateThread {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtTerminateThread {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtTerminateThread {}
-
-impl Default for NtTerminateThread {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtTerminateThread, 0xccf58808);
 impl NtTerminateThread {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtTerminateProcess syscall.
+    /// Wrapper for the NtTerminateProcess
     ///
-    /// This function terminates a process. It wraps the NtTerminateProcess syscall.
+    /// This function terminates a process. It wraps the NtTerminateProcess
     ///
     /// # Safety
     ///
@@ -1911,35 +1444,17 @@ impl NtTerminateThread {
     /// * `i32` - The NTSTATUS code of the operation.
     pub unsafe fn run(&self, thread_handle: HANDLE, exit_status: i32) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             thread_handle,
             exit_status
         )
     }
 }
 
-pub struct NtDelayExecution {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtDelayExecution {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtDelayExecution {}
-
-impl Default for NtDelayExecution {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtDelayExecution, 0xf5a936aa);
 impl NtDelayExecution {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtDelayExecution syscall.
+    /// Wrapper for the NtDelayExecution
     ///
     /// This function delays the execution of the current thread for the specified interval.
     ///
@@ -1961,35 +1476,17 @@ impl NtDelayExecution {
     /// * `i32` - The NTSTATUS code of the operation.
     pub unsafe fn run(&self, alertable: bool, delay_interval: *const i64) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             alertable as u32,
             delay_interval
         )
     }
 }
 
-pub struct NtCreateNamedPipeFile {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateNamedPipeFile {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateNamedPipeFile {}
-
-impl Default for NtCreateNamedPipeFile {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateNamedPipeFile, 0x1da0062e);
 impl NtCreateNamedPipeFile {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateNamedPipeFile syscall.
+    /// Wrapper for the NtCreateNamedPipeFile
     ///
     /// This function creates a named pipe file and returns a handle to it.
     ///
@@ -2047,8 +1544,8 @@ impl NtCreateNamedPipeFile {
         default_timeout: *const LargeInteger,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             file_handle,
             desired_access,
             object_attributes,
@@ -2067,27 +1564,9 @@ impl NtCreateNamedPipeFile {
     }
 }
 
-pub struct NtReadVirtualMemory {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtReadVirtualMemory {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtReadVirtualMemory {}
-
-impl Default for NtReadVirtualMemory {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtReadVirtualMemory, 0xa3288103);
 impl NtReadVirtualMemory {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtReadVirtualMemory syscall.
+    /// Wrapper for the NtReadVirtualMemory
     ///
     /// This function reads memory in the virtual address space of a specified process.
     ///
@@ -2121,8 +1600,8 @@ impl NtReadVirtualMemory {
         number_of_bytes_read: *mut usize,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             base_address,
             buffer,
@@ -2132,27 +1611,9 @@ impl NtReadVirtualMemory {
     }
 }
 
-pub struct NtCreateProcess {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtCreateProcess {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtCreateProcess {}
-
-impl Default for NtCreateProcess {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtCreateProcess, 0xf043985a);
 impl NtCreateProcess {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtCreateProcess syscall.
+    /// Wrapper for the NtCreateProcess
     ///
     /// This function creates a new process object. It wraps the NtCreateProcess syscall, which is
     /// used to create a new process in the Windows NT kernel. Unlike NtCreateUserProcess, this
@@ -2200,10 +1661,10 @@ impl NtCreateProcess {
         section_handle: HANDLE,
         debug_port: HANDLE,
         exception_port: HANDLE,
-    ) -> NTSTATUS {
+    ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             desired_access,
             object_attributes,
@@ -2216,27 +1677,9 @@ impl NtCreateProcess {
     }
 }
 
-pub struct NtQueryVirtualMemory {
-    pub syscall: NtSyscall,
-}
-
-// Safety: This type is safe to send between threads.
-unsafe impl Sync for NtQueryVirtualMemory {}
-// Safety: This type is safe to send between threads.
-unsafe impl Send for NtQueryVirtualMemory {}
-
-impl Default for NtQueryVirtualMemory {
-    fn default() -> Self { Self::new() }
-}
-
+define_syscall!(NtQueryVirtualMemory, 0x10c0e85d);
 impl NtQueryVirtualMemory {
-    pub const fn new() -> Self {
-        Self {
-            syscall: NtSyscall::new(),
-        }
-    }
-
-    /// Wrapper for the NtQueryVirtualMemory syscall.
+    /// Wrapper for the NtQueryVirtualMemory
     ///
     /// This function queries information about the virtual memory of a specified process.
     ///
@@ -2273,8 +1716,8 @@ impl NtQueryVirtualMemory {
         return_length: *mut usize,
     ) -> i32 {
         run!(
-            self.syscall.number,
-            self.syscall.address as usize,
+            self.number,
+            self.address as usize,
             process_handle,
             base_address,
             memory_information_class as usize,

@@ -2,7 +2,7 @@ use alloc::vec::Vec;
 use core::{
     ffi::{c_ulong, c_void},
     mem::{self, size_of},
-    ptr::{null, null_mut},
+    ptr::null_mut,
 };
 
 use kageshirei_win32::{
