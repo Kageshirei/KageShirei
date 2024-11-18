@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use core::ops::Add;
 
 use kageshirei_win32::ntdef::LargeInteger;
 use mod_agentcore::instance;
@@ -113,22 +114,22 @@ pub fn timestamp_to_datetime(timestamp: i64) -> (i64, u8, u8, u8, u8, u8) {
 
     while remaining_days >= days_in_year(year) {
         remaining_days -= days_in_year(year);
-        year += 1;
+        year = year.add(1);
     }
 
     let mut month = 0;
     while remaining_days >= days_in_month(year, month) {
         remaining_days -= days_in_month(year, month);
-        month += 1;
+        month = month.add(1);
     }
 
-    let day = remaining_days + 1; // day starts from 1
+    let day = remaining_days.add(1); // day starts from 1
 
-    (year, (month + 1) as u8, day as u8, hour, minute, second)
+    (year, (month.add(1)) as u8, day as u8, hour, minute, second)
 }
 
 /// Helper function to determine if a year is a leap year.
-fn is_leap_year(year: i64) -> bool { (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) }
+const fn is_leap_year(year: i64) -> bool { (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) }
 
 /// Helper function to return the number of days in a year.
 fn days_in_year(year: i64) -> i64 {
@@ -176,7 +177,7 @@ fn days_in_month(year: i64, month: usize) -> i64 {
 /// * `seconds_to_wait` - The number of seconds to wait.
 pub fn wait_until(seconds_to_wait: i64) {
     let start_time = current_timestamp(); // Get the current time
-    let target_time = start_time + seconds_to_wait; // Calculate the target timestamp
+    let target_time = start_time.overflowing_add(seconds_to_wait).0; // Calculate the target timestamp
 
     // Loop until the current timestamp reaches or exceeds the target timestamp
     loop {
@@ -210,7 +211,10 @@ pub fn is_working_hours(working_hours: &Option<Vec<Option<i64>>>) -> bool {
     // Check if working hours are defined
     if let Some(hours) = working_hours {
         // Ensure that both start and end are present
-        if let (Some(start), Some(end)) = (hours.get(0).and_then(|&s| s), hours.get(1).and_then(|&e| e)) {
+        if let (Some(start), Some(end)) = (
+            hours.first().and_then(|&s| s),
+            hours.get(1).and_then(|&e| e),
+        ) {
             // Check if the current time is outside the working hours
             if current_time < start || current_time > end {
                 return false; // We are outside working hours

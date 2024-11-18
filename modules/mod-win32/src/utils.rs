@@ -1,9 +1,4 @@
-use alloc::{
-    borrow::ToOwned,
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{borrow::ToOwned as _, format, string::String, vec::Vec};
 use core::str;
 
 use kageshirei_win32::{ntdef::UnicodeString, ntstatus::*};
@@ -51,8 +46,8 @@ impl ParseUrlResult {
     ///
     /// # Returns
     /// A new `ParseUrlResult` instance with the provided scheme, hostname, port, and path.
-    pub fn new(scheme: u16, hostname: String, port: u16, path: String) -> Self {
-        ParseUrlResult {
+    pub const fn new(scheme: u16, hostname: String, port: u16, path: String) -> Self {
+        Self {
             scheme,
             hostname,
             port,
@@ -86,31 +81,37 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
         (0x01, url)
     };
 
-    let (hostname, port, path) = if let Some(pos) = rest.find(':') {
-        let (host, port_and_path) = rest.split_at(pos);
-        let mut parts = port_and_path.splitn(2, '/');
-        let port_str = parts.next().unwrap().trim_start_matches(':');
-        let port = port_str
-            .parse()
-            .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
-        let path = parts.next().unwrap_or("");
-        (host.to_owned(), port, format!("/{}", path))
-    }
-    else if let Some(pos) = rest.find('/') {
-        let (host, path) = rest.split_at(pos);
-        (
-            host.to_owned(),
-            if scheme == 0x01 { 80 } else { 443 },
-            path.to_owned(),
-        )
-    }
-    else {
-        (
-            rest.to_owned(),
-            if scheme == 0x01 { 80 } else { 443 },
-            "/".to_owned(),
-        )
-    };
+    let (hostname, port, path) = rest.find(':').map_or_else(
+        || {
+            rest.find('/').map_or_else(
+                || {
+                    (
+                        rest.to_owned(),
+                        if scheme == 0x01 { 80 } else { 443 },
+                        "/".to_owned(),
+                    )
+                },
+                |pos| {
+                    let (host, path) = rest.split_at(pos);
+                    (
+                        host.to_owned(),
+                        if scheme == 0x01 { 80 } else { 443 },
+                        path.to_owned(),
+                    )
+                },
+            )
+        },
+        |pos| {
+            let (host, port_and_path) = rest.split_at(pos);
+            let mut parts = port_and_path.splitn(2, '/');
+            let port_str = parts.next().unwrap().trim_start_matches(':');
+            let port = port_str
+                .parse()
+                .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
+            let path = parts.next().unwrap_or("");
+            (host.to_owned(), port, format!("/{}", path))
+        },
+    );
 
     ParseUrlResult::new(scheme, hostname, port, path)
 }

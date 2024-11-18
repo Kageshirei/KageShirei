@@ -103,14 +103,14 @@ pub struct TIMEVAL {
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsastartup
-type WSAStartupFunc = unsafe extern "system" fn(wVersionRequested: u16, lpWsaData: *mut WsaData) -> i32;
+pub type WSAStartupFunc = unsafe extern "system" fn(wVersionRequested: u16, lpWsaData: *mut WsaData) -> i32;
 
 /// The WSACleanup function terminates use of the Winsock 2 DLL (Ws2_32.dll).
 ///
 /// int WSAAPI WSACleanup();
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsacleanup
-type WSACleanupFunc = unsafe extern "system" fn() -> i32;
+pub type WSACleanupFunc = unsafe extern "system" fn() -> i32;
 
 /// The socket function creates a socket that is bound to a specific transport service provider.
 ///
@@ -121,7 +121,7 @@ type WSACleanupFunc = unsafe extern "system" fn() -> i32;
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-socket
-type SocketFunc = unsafe extern "system" fn(af: i32, socket_type: i32, protocol: i32) -> SOCKET;
+pub type SocketFunc = unsafe extern "system" fn(af: i32, socket_type: i32, protocol: i32) -> SOCKET;
 
 /// The connect function establishes a connection to a specified socket.
 ///
@@ -132,7 +132,7 @@ type SocketFunc = unsafe extern "system" fn(af: i32, socket_type: i32, protocol:
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect
-type ConnectFunc = unsafe extern "system" fn(s: SOCKET, name: *const SockAddr, namelen: i32) -> i32;
+pub type ConnectFunc = unsafe extern "system" fn(s: SOCKET, name: *const SockAddr, namelen: i32) -> i32;
 
 /// The send function sends data on a connected socket.
 ///
@@ -144,7 +144,7 @@ type ConnectFunc = unsafe extern "system" fn(s: SOCKET, name: *const SockAddr, n
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-send
-type SendFunc = unsafe extern "system" fn(s: SOCKET, buf: *const i8, len: i32, flags: i32) -> i32;
+pub type SendFunc = unsafe extern "system" fn(s: SOCKET, buf: *const i8, len: i32, flags: i32) -> i32;
 
 /// The recv function receives data from a connected socket or a bound connectionless socket.
 ///
@@ -156,7 +156,7 @@ type SendFunc = unsafe extern "system" fn(s: SOCKET, buf: *const i8, len: i32, f
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-recv
-type RecvFunc = unsafe extern "system" fn(s: SOCKET, buf: *mut i8, len: i32, flags: i32) -> i32;
+pub type RecvFunc = unsafe extern "system" fn(s: SOCKET, buf: *mut i8, len: i32, flags: i32) -> i32;
 
 /// The closesocket function closes an existing socket.
 ///
@@ -165,7 +165,7 @@ type RecvFunc = unsafe extern "system" fn(s: SOCKET, buf: *mut i8, len: i32, fla
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-closesocket
-type CloseSocketFunc = unsafe extern "system" fn(s: SOCKET) -> i32;
+pub type CloseSocketFunc = unsafe extern "system" fn(s: SOCKET) -> i32;
 
 /// The inet_addr function converts a string containing an IPv4 dotted-decimal address into a proper
 /// address for the IN_ADDR structure.
@@ -175,7 +175,7 @@ type CloseSocketFunc = unsafe extern "system" fn(s: SOCKET) -> i32;
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-inet_addr
-type InetAddrFunc = unsafe extern "system" fn(cp: *const i8) -> u32;
+pub type InetAddrFunc = unsafe extern "system" fn(cp: *const i8) -> u32;
 
 /// The htons function converts a u_short from host to TCP/IP network byte order (which is
 /// big-endian).
@@ -185,7 +185,7 @@ type InetAddrFunc = unsafe extern "system" fn(cp: *const i8) -> u32;
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock/nf-winsock-htons
-type HtonsFunc = unsafe extern "system" fn(hostshort: u16) -> u16;
+pub type HtonsFunc = unsafe extern "system" fn(hostshort: u16) -> u16;
 
 /// The getaddrinfo function provides protocol-independent translation from an ANSI host name to an
 /// address.
@@ -198,7 +198,7 @@ type HtonsFunc = unsafe extern "system" fn(hostshort: u16) -> u16;
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-getaddrinfo
-type GetAddrInfoFunc = unsafe extern "system" fn(
+pub type GetAddrInfoFunc = unsafe extern "system" fn(
     node: *const i8,
     service: *const i8,
     hints: *const AddrInfo,
@@ -213,7 +213,7 @@ type GetAddrInfoFunc = unsafe extern "system" fn(
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/ws2tcpip/nf-ws2tcpip-freeaddrinfo
-type FreeAddrInfoFunc = unsafe extern "system" fn(res: *mut AddrInfo);
+pub type FreeAddrInfoFunc = unsafe extern "system" fn(res: *mut AddrInfo);
 
 /// The ioctlsocket function controls the I/O mode of a socket.
 ///
@@ -224,7 +224,7 @@ type FreeAddrInfoFunc = unsafe extern "system" fn(res: *mut AddrInfo);
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-ioctlsocket
-type Ioctlsocket = unsafe extern "system" fn(s: SOCKET, cmd: i32, argp: *mut u32) -> i32;
+pub type IoctlsocketFunc = unsafe extern "system" fn(s: SOCKET, cmd: i32, argp: *mut u32) -> i32;
 
 /// The select function determines the status of one or more sockets, waiting if necessary, to
 /// perform synchronous I/O.
@@ -238,7 +238,7 @@ type Ioctlsocket = unsafe extern "system" fn(s: SOCKET, cmd: i32, argp: *mut u32
 /// );
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-select
-type Select = unsafe extern "system" fn(
+pub type SelectFunc = unsafe extern "system" fn(
     nfds: i32,
     readfds: *mut FD_SET,
     writefds: *mut FD_SET,
@@ -252,7 +252,7 @@ type Select = unsafe extern "system" fn(
 /// int WSAAPI WSAGetLastError();
 ///
 /// https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-wsagetlasterror
-type WSAGetLastError = unsafe extern "system" fn() -> i32;
+pub type WSAGetLastErrorFunc = unsafe extern "system" fn() -> i32;
 
 // Structure to hold function pointers
 pub struct Winsock {
@@ -267,9 +267,9 @@ pub struct Winsock {
     pub htons:              Option<HtonsFunc>,
     pub getaddrinfo:        Option<GetAddrInfoFunc>,
     pub freeaddrinfo:       Option<FreeAddrInfoFunc>,
-    pub ioctlsocket:        Option<Ioctlsocket>,
-    pub select:             Option<Select>,
-    pub wsa_get_last_error: Option<WSAGetLastError>,
+    pub ioctlsocket:        Option<IoctlsocketFunc>,
+    pub select:             Option<SelectFunc>,
+    pub wsa_get_last_error: Option<WSAGetLastErrorFunc>,
 }
 
 impl Default for Winsock {
