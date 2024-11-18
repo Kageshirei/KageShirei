@@ -10,23 +10,29 @@ use spin::Mutex;
 /// including the buffer, capacity, and atomic flags for data availability and space availability.
 #[derive(Debug)]
 pub struct NoStdChannel<T> {
-    buffer:          Mutex<Vec<T>>, // A mutex-protected vector that serves as the buffer for the channel.
-    capacity:        usize,         // The maximum number of items the buffer can hold.
-    available:       AtomicBool,    // Indicates if there is data available for the receiver.
-    space_available: AtomicBool,    // Indicates if there is space available for the sender.
+    /// A mutex-protected vector that serves as the buffer for the channel.
+    buffer:          Mutex<Vec<T>>,
+    /// The maximum number of items the buffer can hold.
+    capacity:        usize,
+    /// Indicates if there is data available for the receiver.
+    available:       AtomicBool,
+    /// Indicates if there is space available for the sender.
+    space_available: AtomicBool,
 }
 
 /// The `Sender` struct represents the sending side of the channel. It allows
 /// multiple producers to send messages to a single consumer.
 #[derive(Debug)]
 pub struct Sender<T> {
-    channel: Arc<NoStdChannel<T>>, // An atomic reference-counted pointer to the shared `Channel`.
+    /// An atomic reference-counted pointer to the shared `Channel`.
+    channel: Arc<NoStdChannel<T>>,
 }
 
 /// The `Receiver` struct represents the receiving side of the channel. It allows
 /// a single consumer to receive messages from multiple producers.
 pub struct Receiver<T> {
-    channel: Arc<NoStdChannel<T>>, // An atomic reference-counted pointer to the shared `Channel`.
+    /// An atomic reference-counted pointer to the shared `Channel`.
+    channel: Arc<NoStdChannel<T>>,
 }
 
 /// Creates a new MPSC channel with a fixed-size buffer and returns a `Sender` and `Receiver` pair.
@@ -88,6 +94,10 @@ impl<T> Sender<T> {
     /// # Returns
     /// * `Result<(), ()>` - Returns `Ok(())` if the value was successfully sent, or `Err(())` if
     ///   the buffer is full.
+    #[expect(
+        clippy::result_unit_err,
+        reason = "The function returns `Ok(())` on success and `Err(())` on failure."
+    )]
     pub fn send(&self, value: T) -> Result<(), ()> {
         loop {
             {

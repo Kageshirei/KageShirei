@@ -240,6 +240,7 @@ where
             // });
         }
     })
+    .expect("Failed to spawn result handler thread")
 }
 
 // #[cfg(feature = "std-runtime")]
