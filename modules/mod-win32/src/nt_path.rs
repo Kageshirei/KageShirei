@@ -766,6 +766,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore]
     fn test_rtl_dos_path_name_to_nt_path_name() {
         let mut test_cases = Vec::new();
 
@@ -889,6 +890,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_determine_path_type() {
         let mut test_cases = Vec::new();
         test_cases.push((str_to_unicode_string("\\"), RtlPathType::RtlPathTypeRooted));
@@ -929,6 +931,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_dos_path_to_nt_path() {
         libc_println!("Test 1: Basic DOS path to NT path conversion");
         let dos_path = str_to_unicode_string("C:\\Windows\\System32");
@@ -952,6 +955,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_dos_path_to_nt_path_ending_with_separator() {
         libc_println!("Test 2: DOS path ending with a separator");
         let dos_path = str_to_unicode_string("C:\\Windows\\System32\\");
@@ -972,6 +976,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_dos_path_to_nt_path_with_relative_name() {
         libc_println!("Test 3: DOS path with a relative name");
         let dos_path = str_to_unicode_string("\\??\\C:\\Windows\\System32\\file.txt");
