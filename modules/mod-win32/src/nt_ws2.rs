@@ -17,7 +17,7 @@ use kageshirei_win32::{
 };
 use mod_agentcore::{
     instance,
-    ldr::{peb_get_function_addr, nt_get_last_error},
+    ldr::{nt_get_last_error, peb_get_function_addr},
 };
 
 // Global variable to store Winsock functions
@@ -123,6 +123,11 @@ pub fn init_winsock_funcs() {
 ///
 /// # Returns
 /// * `&'static Winsock` - A reference to the initialized Winsock functions.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
 pub fn get_winsock() -> &'static Winsock {
     init_winsock_funcs();
     return unsafe { WINSOCK_FUNCS.as_ref().unwrap() };

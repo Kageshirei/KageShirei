@@ -800,7 +800,7 @@ mod tests {
 
             // Verifica che part_name e relative_name siano impostati correttamente
             if let Some(part_name_ptr) = unsafe { part_name.as_mut() } {
-                let part_name_str = ptr_to_str(part_name_ptr);
+                let part_name_str = unsafe { ptr_to_str(part_name_ptr) };
                 libc_println!("Part Name: {}", part_name_str);
                 assert!(
                     !part_name_str.is_empty(),
@@ -884,7 +884,7 @@ mod tests {
         assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32");
 
         if !part_name.is_null() {
-            let part_name_str = ptr_to_str(part_name);
+            let part_name_str = unsafe { ptr_to_str(part_name) };
             libc_println!("Part Name: {}", part_name_str);
             assert_eq!(part_name_str, "System32");
         }
@@ -933,7 +933,7 @@ mod tests {
         assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32\\file.txt");
 
         if !part_name.is_null() {
-            let part_name_str = ptr_to_str(part_name);
+            let part_name_str = unsafe { ptr_to_str(part_name) };
             libc_println!("Part Name: {}", part_name_str);
             assert_eq!(part_name_str, "file.txt");
         }

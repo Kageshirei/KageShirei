@@ -1,7 +1,8 @@
 use alloc::{boxed::Box, string::String};
-use core::error::Error as ErrorTrait;
-#[cfg(any(feature = "server", test))]
-use core::fmt::{Debug, Display, Formatter};
+use core::{
+    error::Error as ErrorTrait,
+    fmt::{Debug, Display, Formatter},
+};
 
 pub enum Format {
     /// No data have been provided.
@@ -12,7 +13,6 @@ pub enum Format {
     Generic(Box<dyn ErrorTrait>),
 }
 
-#[cfg(any(feature = "server", test))]
 impl Debug for Format {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         // Delegate to Display
@@ -20,7 +20,6 @@ impl Debug for Format {
     }
 }
 
-#[cfg(any(feature = "server", test))]
 impl Display for Format {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         #[expect(
@@ -44,7 +43,6 @@ impl Display for Format {
     }
 }
 
-#[cfg(any(feature = "server", test))]
 impl ErrorTrait for Format {}
 
 #[derive(Clone, PartialEq, Eq)]
@@ -68,7 +66,6 @@ pub enum Protocol {
     ReceiveMessageError,
 }
 
-#[cfg(any(feature = "server", test))]
 impl Debug for Protocol {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         // Delegate to Display
@@ -76,7 +73,6 @@ impl Debug for Protocol {
     }
 }
 
-#[cfg(any(feature = "server", test))]
 impl Display for Protocol {
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         #[expect(
@@ -126,5 +122,4 @@ impl Display for Protocol {
     }
 }
 
-#[cfg(any(feature = "server", test))]
 impl ErrorTrait for Protocol {}

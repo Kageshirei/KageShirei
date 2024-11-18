@@ -1,4 +1,5 @@
 use alloc::{
+    borrow::ToOwned,
     format,
     string::{String, ToString},
     vec::Vec,
@@ -93,21 +94,21 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
             .parse()
             .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
         let path = parts.next().unwrap_or("");
-        (host.to_string(), port, format!("/{}", path))
+        (host.to_owned(), port, format!("/{}", path))
     }
     else if let Some(pos) = rest.find('/') {
         let (host, path) = rest.split_at(pos);
         (
-            host.to_string(),
+            host.to_owned(),
             if scheme == 0x01 { 80 } else { 443 },
-            path.to_string(),
+            path.to_owned(),
         )
     }
     else {
         (
-            rest.to_string(),
+            rest.to_owned(),
             if scheme == 0x01 { 80 } else { 443 },
-            "/".to_string(),
+            "/".to_owned(),
         )
     };
 
@@ -118,10 +119,6 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
 ///
 /// This function takes a `UnicodeString` and converts it into an `Option<String>`.
 /// If the `UnicodeString` is empty or its buffer is null, it returns `None`.
-///
-/// # Safety
-/// This function performs unsafe operations, such as dereferencing raw pointers.
-/// Ensure that the input `UnicodeString` is valid and properly initialized.
 ///
 /// # Parameters
 /// - `unicode_string`: A reference to the `UnicodeString` that needs to be converted.
@@ -135,13 +132,22 @@ pub fn unicodestring_to_string(unicode_string: &UnicodeString) -> Option<String>
     }
 
     // Convert the raw UTF-16 buffer into a Rust slice.
-    let slice = unsafe { core::slice::from_raw_parts(unicode_string.buffer, (unicode_string.length / 2) as usize) };
+    // SAFETY: The buffer is assumed to be valid and properly null-terminated.
+    let slice = unsafe {
+        core::slice::from_raw_parts(
+            unicode_string.buffer,
+            (unicode_string.length.overflowing_div(2).0) as usize,
+        )
+    };
 
     // Attempt to convert the UTF-16 slice into a Rust String.
     String::from_utf16(slice).ok()
 }
 
-#[allow(non_snake_case)]
+#[expect(
+    non_snake_case,
+    reason = "This function is named after the Windows API function."
+)]
 pub fn NT_STATUS(status: i32) -> String {
     match status {
         STATUS_SUCCESS => format!("STATUS_SUCCESS [0x{:08X}]", status),
@@ -223,11 +229,6 @@ pub fn format_named_pipe_string(process_id: usize, pipe_id: u32) -> Vec<u16> {
 ///
 /// # Returns
 /// - A `UnicodeString` containing the UTF-16 encoded version of the input string.
-///
-/// # Safety
-/// This function allocates a buffer for the UTF-16 string and transfers ownership to the
-/// `UnicodeString`. The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must
-/// be taken to free the memory if necessary.
 pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     // Convert the Rust &str to a Vec<u16> (UTF-16 encoding)
     let utf16: Vec<u16> = source.encode_utf16().collect();
@@ -236,20 +237,20 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     let mut unicode_string = UnicodeString::new();
 
     // Set the length of the UnicodeString (in bytes)
-    unicode_string.length = (utf16.len() * 2) as u16;
+    unicode_string.length = (utf16.len().overflowing_mul(2).0) as u16;
 
     // Set the maximum length, accounting for a null terminator
-    unicode_string.maximum_length = unicode_string.length + 2; // +2 for the null terminator
+    unicode_string.maximum_length = unicode_string.length.overflowing_add(2).0; // +2 for the null terminator
 
     // Clone the UTF-16 vector and append a null terminator
-    let mut utf16_with_null = utf16.clone();
+    let mut utf16_with_null = utf16;
     utf16_with_null.push(0); // Add null terminator
 
     // Assign the buffer pointer to the UnicodeString
     unicode_string.buffer = utf16_with_null.as_mut_ptr();
 
     // Prevent Vec from deallocating the buffer when it goes out of scope
-    core::mem::forget(utf16_with_null);
+    // core::mem::forget(utf16_with_null);
 
     unicode_string
 }
@@ -268,16 +269,16 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
 /// # Safety
 /// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a
 /// valid, null-terminated UTF-16 string.
-pub fn ptr_to_str(ptr: *mut u16) -> String {
+pub unsafe fn ptr_to_str(ptr: *mut u16) -> String {
     if ptr.is_null() {
         return String::new();
     }
 
     // Calculate the length of the string by finding the null terminator
-    let len = (0 ..).take_while(|&i| unsafe { *ptr.add(i) } != 0).count();
+    let len = (0 ..).take_while(|&i| *ptr.add(i) != 0).count();
 
     // Create a slice from the pointer and the calculated length
-    let slice = unsafe { core::slice::from_raw_parts(ptr, len) };
+    let slice = core::slice::from_raw_parts(ptr, len);
 
     // Convert the UTF-16 slice to a Rust String
     String::from_utf16_lossy(slice)
@@ -290,4 +291,4 @@ pub fn ptr_to_str(ptr: *mut u16) -> String {
 ///
 /// # Returns
 /// `true` if the character is a path separator, `false` otherwise.
-pub fn is_path_separator(ch: u16) -> bool { ch == '\\' as u16 || ch == '/' as u16 }
+pub const fn is_path_separator(ch: u16) -> bool { ch == '\\' as u16 || ch == '/' as u16 }

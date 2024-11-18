@@ -221,14 +221,15 @@ unsafe fn ensure_initialized() {
 /// # Example
 ///
 /// ```rust
-/// resolve_indirect_syscall!(
+/// resolve_indirect_syscalls!(
 ///     module_base,
 ///     instance.ntdll.nt_allocate_virtual_memory,
 ///     instance.ntdll.nt_free_virtual_memory,
 ///     instance.ntdll.nt_terminate_thread
 /// );
 /// ```
-macro_rules! resolve_indirect_syscall {
+#[macro_export]
+macro_rules! resolve_indirect_syscalls {
     ($module_base:expr, $( $syscall:expr ),* ) => {
         $(
             // Resolve the address of the syscall using the module base and hash.
@@ -240,40 +241,49 @@ macro_rules! resolve_indirect_syscall {
     };
 }
 
-/// Resolves the address of a direct syscall and casts it to a specific function signature.
+/// Resolves the address and assigns function pointers for a list of direct syscalls.
 ///
 /// # Arguments
 ///
-/// - `module_base`: A pointer to the base address of the module containing the syscall.
-/// - `apicall`: A mutable variable to store the resolved function pointer, which will be cast to
-///   the specified function signature.
-/// - `hash`: The hash of the API call name to locate in the export table of the module.
-/// - `apicall_sig`: The expected function signature for the API call.
+/// - `module_base`: A pointer to the base address of the module containing the syscalls.
+/// - `syscalls`: A list of tuples, where each tuple contains:
+///   - A mutable reference to the syscall's field (`syscall`).
+///   - The hash value (`hash`) used to locate the function in the export table.
+///   - The type of the function pointer (`f`) to which the resolved address will be cast.
 ///
-/// This macro resolves the address of the API call using `peb_get_function_addr` and casts it to
-/// the specified function signature using `core::mem::transmute`.
+/// This macro iterates over the provided list of syscalls, resolving each syscall's address using
+/// `peb_get_function_addr` and casting it to the specified function pointer type.
 ///
-/// # Safety
+/// # Example
 ///
-/// This macro performs unsafe operations:
-/// - Resolving addresses from raw pointers.
-/// - Casting the resolved address to a specific function type using `core::mem::transmute`.
-///
-/// Ensure that:
-/// 1. The `module_base` points to a valid module loaded in memory.
-/// 2. The `hash` corresponds to a valid API function name.
-/// 3. The specified function signature (`apicall_sig`) matches the resolved function's actual
-///    signature.
-///
-/// Misuse of this macro may lead to undefined behavior.
-macro_rules! resolve_direct_syscall {
-    // Define the macro with the required arguments
-    ($module_base:expr, $apicall:expr, $hash:expr, $apicall_sig:ty) => {
-        // Resolve the address of the API call using its hash
-        let apicall_addr = $crate::ldr::peb_get_function_addr($module_base, $hash);
+/// ```rust
+/// resolve_direct_syscalls!(
+///     module_base,
+///     [
+///         (instance.ntdll.ldr_load_dll, 0x613eace5, LdrLoadDllFunc),
+///         (
+///             instance.ntdll.rtl_create_process_parameters_ex,
+///             0x42ae761a,
+///             RtlCreateProcessParametersExFunc
+///         ),
+///         (
+///             instance.ntdll.rtl_destroy_heap,
+///             0x59fe27f1,
+///             RtlDestroyHeapFunc
+///         )
+///     ]
+/// );
+/// ```
+#[macro_export]
+macro_rules! resolve_direct_syscalls {
+    ($module_base:expr, [ $( ($syscall:expr, $hash:expr, $f:ty) ),* ]) => {
+        $(
+            // Resolve the address of the API call using the provided hash
+            let apicall_addr = $crate::ldr::peb_get_function_addr($module_base, $hash);
 
-        // Safely cast the resolved address to the specified function signature
-        $apicall = Some(core::mem::transmute::<*mut u8, $apicall_sig>(apicall_addr));
+            // Cast the resolved address to the specified function signature and assign it
+            $syscall = Some(core::mem::transmute::<*mut u8, $f>(apicall_addr));
+        )*
     };
 }
 
@@ -290,7 +300,7 @@ unsafe fn init_global_instance() {
         instance.ntdll.module_base = peb_get_module(0x1edab0ed);
 
         // Resolve Ntdll syscalls
-        resolve_indirect_syscall!(
+        resolve_indirect_syscalls!(
             instance.ntdll.module_base,
             instance.ntdll.nt_allocate_virtual_memory,
             instance.ntdll.nt_free_virtual_memory,
@@ -316,75 +326,47 @@ unsafe fn init_global_instance() {
             instance.ntdll.nt_query_system_information
         );
 
-        // Resolve LdrLoadDll
-        resolve_direct_syscall!(
+        resolve_direct_syscalls!(
             instance.ntdll.module_base,
-            instance.ntdll.ldr_load_dll,
-            0x9e456a43,
-            LdrLoadDll
-        );
-
-        // Resolve RtlCreateProcessParameters
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_create_process_parameters_ex,
-            0x533a05db,
-            RtlCreateProcessParametersEx
-        );
-
-        // Resolve RtlGetFullPathName_U
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_get_full_path_name_u,
-            0xc4415dac,
-            RtlGetFullPathNameU
-        );
-
-        // Resolve RtlCreateHeap
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_create_heap,
-            0xe1af6849,
-            RtlCreateHeap
-        );
-        // Resolve RtlAllocateHeap
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_allocate_heap,
-            0x3be94c5a,
-            RtlAllocateHeap
-        );
-        // Resolve RtlFreeHeap
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_free_heap,
-            0x73a9e4d7,
-            RtlFreeHeap
-        );
-        // Resolve RtlReAllocateHeap
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_reallocate_heap,
-            0xaf740371,
-            RtlReAllocateHeap
-        );
-        // Resolve RtlDestroyHeap
-        resolve_direct_syscall!(
-            instance.ntdll.module_base,
-            instance.ntdll.rtl_destroy_heap,
-            0xceb5349f,
-            RtlDestroyHeap
+            [
+                (instance.ntdll.ldr_load_dll, 0x9e456a43, LdrLoadDll),
+                (
+                    instance.ntdll.rtl_create_process_parameters_ex,
+                    0x533a05db,
+                    RtlCreateProcessParametersEx
+                ),
+                (
+                    instance.ntdll.rtl_get_full_path_name_u,
+                    0xc4415dac,
+                    RtlGetFullPathNameU
+                ),
+                (instance.ntdll.rtl_create_heap, 0xe1af6849, RtlCreateHeap),
+                (
+                    instance.ntdll.rtl_allocate_heap,
+                    0x3be94c5a,
+                    RtlAllocateHeap
+                ),
+                (instance.ntdll.rtl_free_heap, 0x73a9e4d7, RtlFreeHeap),
+                (
+                    instance.ntdll.rtl_reallocate_heap,
+                    0xaf740371,
+                    RtlReAllocateHeap
+                ),
+                (instance.ntdll.rtl_destroy_heap, 0xceb5349f, RtlDestroyHeap)
+            ]
         );
 
         // Resolve Kernel32 base address
         instance.kernel32.module_base = peb_get_module(0x6ddb9555);
 
         // Resolve CreateProcessW
-        resolve_direct_syscall!(
+        resolve_direct_syscalls!(
             instance.kernel32.module_base,
-            instance.kernel32.create_process_w,
-            0xfbaf90cf,
-            CreateProcessW
+            [(
+                instance.kernel32.create_process_w,
+                0xfbaf90cf,
+                CreateProcessW
+            )]
         );
 
         // Init Session Data

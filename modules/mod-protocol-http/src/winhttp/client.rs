@@ -1,12 +1,7 @@
 //! The `client` module contains the `WinHttpClient` struct, which is responsible for managing
 //! WinHTTP session and connection handles.
 
-use alloc::{
-    borrow::ToOwned as _,
-    format,
-    string::{String},
-    vec::Vec,
-};
+use alloc::{borrow::ToOwned as _, format, string::String, vec::Vec};
 use core::{
     ffi::c_void,
     mem::transmute,
@@ -37,7 +32,10 @@ use mod_win32::nt_winhttp::get_winhttp;
 use super::utils::{parse_url, to_pcwstr};
 
 /// The WinHttpClient struct is responsible for managing WinHTTP session and connection handles.
-#[expect(clippy::module_name_repetitions, reason = "The module name is descriptive.")]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "The module name is descriptive."
+)]
 pub struct WinHttpClient {
     /// Atomic pointer to the WinHTTP session handle.
     pub session_handle:    AtomicPtr<c_void>,

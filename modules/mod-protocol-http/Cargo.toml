@@ -36,7 +36,7 @@ tokio-util = "0.7.12"
 serial_test = "3.1.1"
 
 [features]
-default = ["std"]
+default = ["winhttp"]
 std = ["dep:reqwest"]
 winhttp = ["dep:kageshirei-win32", "dep:mod-win32", "dep:mod-agentcore"]
 

@@ -23,6 +23,7 @@ incremental = false
 kageshirei-communication-protocol = {path = "../libs/kageshirei-communication-protocol"}
 kageshirei-crypt = {path = "../libs/kageshirei-crypt"}
 kageshirei-runtime = {path = "../libs/kageshirei-runtime"}
+kageshirei-format-json = {path = "../libs/kageshirei-format-json"}
 mod-agentcore = {path = "../modules/mod-agentcore" }
 mod-hhtgates = {path = "../modules/mod-hhtgates"}
 mod-win32 = {path = "../modules/mod-win32" }

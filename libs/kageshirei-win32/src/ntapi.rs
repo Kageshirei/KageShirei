@@ -5,28 +5,31 @@ use core::{
 
 use kageshirei_indirect_syscall::run;
 
-use crate::ntdef::{
-    AccessMask,
-    ClientId,
-    InitialTeb,
-    IoStatusBlock,
-    LargeInteger,
-    ObjectAttributes,
-    PEventType,
-    PsAttributeList,
-    PsCreateInfo,
-    RtlPathType,
-    RtlRelativeNameU,
-    RtlUserProcessParameters,
-    TokenPrivileges,
-    UnicodeString,
-    CONTEXT,
-    HANDLE,
-    NTSTATUS,
-    PHANDLE,
-    PWSTR,
-    SIZE_T,
-    ULONG,
+use crate::{
+    define_indirect_syscall,
+    ntdef::{
+        AccessMask,
+        ClientId,
+        InitialTeb,
+        IoStatusBlock,
+        LargeInteger,
+        ObjectAttributes,
+        PEventType,
+        PsAttributeList,
+        PsCreateInfo,
+        RtlPathType,
+        RtlRelativeNameU,
+        RtlUserProcessParameters,
+        TokenPrivileges,
+        UnicodeString,
+        CONTEXT,
+        HANDLE,
+        NTSTATUS,
+        PHANDLE,
+        PWSTR,
+        SIZE_T,
+        ULONG,
+    },
 };
 
 /// Retrieves a handle to the current process.
@@ -47,68 +50,7 @@ pub trait NtSyscall {
     fn hash(&self) -> usize;
 }
 
-/// Macro to define a syscall structure and its associated implementations.
-///
-/// This macro generates a struct with the given name and a specified hash value.
-/// It also implements the `NtSyscall` trait, `Send`, `Sync`, and `Default` traits for the generated
-/// struct.
-///
-/// # Arguments
-///
-/// * `$name` - The identifier for the syscall struct.
-/// * `$hash` - The hash value associated with the syscall.
-///
-/// # Generated Struct
-///
-/// The generated struct will have the following fields:
-/// * `number` - A `u16` representing the syscall number.
-/// * `address` - A mutable pointer to `u8` representing the address of the syscall.
-/// * `hash` - A `usize` representing the hash value of the syscall.
-///
-/// # Example
-///
-/// ```rust
-/// define_syscall!(MySyscall, 0x12345678);
-///
-/// let syscall = MySyscall::new();
-/// assert_eq!(syscall.hash(), 0x12345678);
-/// ```
-macro_rules! define_syscall {
-    ($name:ident, $hash:expr) => {
-        pub struct $name {
-            pub number:  u16,
-            pub address: *mut u8,
-            pub hash:    usize,
-        }
-
-        impl NtSyscall for $name {
-            fn new() -> Self {
-                Self {
-                    number:  0,
-                    address: core::ptr::null_mut(),
-                    hash:    $hash,
-                }
-            }
-
-            fn number(&self) -> u16 { self.number }
-
-            fn address(&self) -> *mut u8 { self.address }
-
-            fn hash(&self) -> usize { self.hash }
-        }
-
-        // Safety: This is safe because the struct $name does not contain any non-thread-safe data.
-        unsafe impl Send for $name {}
-        // Safety: This is safe because the struct $name does not contain any non-thread-safe data.
-        unsafe impl Sync for $name {}
-
-        impl Default for $name {
-            fn default() -> Self { Self::new() }
-        }
-    };
-}
-
-define_syscall!(NtClose, 0x40d6e69d);
+define_indirect_syscall!(NtClose, 0x40d6e69d);
 
 impl NtClose {
     /// Wrapper function for NtClose to avoid repetitive run_syscall calls.
@@ -131,7 +73,7 @@ impl NtClose {
     pub unsafe fn run(&self, handle: *mut c_void) -> i32 { run!(self.number, self.address as usize, handle) }
 }
 
-define_syscall!(NtAllocateVirtualMemory, 0xf783b8ec);
+define_indirect_syscall!(NtAllocateVirtualMemory, 0xf783b8ec);
 
 impl NtAllocateVirtualMemory {
     /// Wrapper function for NtAllocateVirtualMemory to allocate memory in the virtual address space
@@ -188,7 +130,7 @@ impl NtAllocateVirtualMemory {
     }
 }
 
-define_syscall!(NtWriteVirtualMemory, 0xc3170192);
+define_indirect_syscall!(NtWriteVirtualMemory, 0xc3170192);
 
 impl NtWriteVirtualMemory {
     /// Wrapper for the NtWriteVirtualMemory
@@ -238,7 +180,7 @@ impl NtWriteVirtualMemory {
     }
 }
 
-define_syscall!(NtFreeVirtualMemory, 0x2802c609);
+define_indirect_syscall!(NtFreeVirtualMemory, 0x2802c609);
 
 impl NtFreeVirtualMemory {
     /// Wrapper for the NtFreeVirtualMemory
@@ -288,7 +230,7 @@ impl NtFreeVirtualMemory {
     }
 }
 
-define_syscall!(NtOpenKey, 0x7682ed42);
+define_indirect_syscall!(NtOpenKey, 0x7682ed42);
 impl NtOpenKey {
     /// Wrapper for the NtOpenKey
     ///
@@ -321,7 +263,7 @@ impl NtOpenKey {
     }
 }
 
-define_syscall!(NtQueryValueKey, 0x85967123);
+define_indirect_syscall!(NtQueryValueKey, 0x85967123);
 impl NtQueryValueKey {
     /// Wrapper for the NtQueryValueKey
     ///
@@ -371,7 +313,7 @@ impl NtQueryValueKey {
     }
 }
 
-define_syscall!(NtEnumerateKey, 0x4d8a8976);
+define_indirect_syscall!(NtEnumerateKey, 0x4d8a8976);
 impl NtEnumerateKey {
     /// Wrapper for the NtEnumerateKey
     ///
@@ -419,7 +361,7 @@ impl NtEnumerateKey {
     }
 }
 
-define_syscall!(NtQuerySystemInformation, 0x4d8a8976);
+define_indirect_syscall!(NtQuerySystemInformation, 0x4d8a8976);
 impl NtQuerySystemInformation {
     /// Wrapper for the NtQuerySystemInformation
     ///
@@ -462,7 +404,7 @@ impl NtQuerySystemInformation {
     }
 }
 
-define_syscall!(NtQueryInformationProcess, 0x8cdc5dc2);
+define_indirect_syscall!(NtQueryInformationProcess, 0x8cdc5dc2);
 impl NtQueryInformationProcess {
     /// Wrapper for the NtQueryInformationProcess
     ///
@@ -508,7 +450,7 @@ impl NtQueryInformationProcess {
     }
 }
 
-define_syscall!(NtOpenProcess, 0x4b82f718);
+define_indirect_syscall!(NtOpenProcess, 0x4b82f718);
 impl NtOpenProcess {
     /// Wrapper for the NtOpenProcess
     ///
@@ -549,7 +491,7 @@ impl NtOpenProcess {
     }
 }
 
-define_syscall!(NtOpenProcessToken, 0x350dca99);
+define_indirect_syscall!(NtOpenProcessToken, 0x350dca99);
 impl NtOpenProcessToken {
     /// Wrapper for the NtOpenProcessToken
     ///
@@ -581,7 +523,7 @@ impl NtOpenProcessToken {
     }
 }
 
-define_syscall!(NtOpenProcessTokenEx, 0xafaade16);
+define_indirect_syscall!(NtOpenProcessTokenEx, 0xafaade16);
 impl NtOpenProcessTokenEx {
     /// Wrapper for the NtOpenProcessTokenEx
     ///
@@ -621,7 +563,7 @@ impl NtOpenProcessTokenEx {
     }
 }
 
-define_syscall!(NtQueryInformationToken, 0xf371fe4);
+define_indirect_syscall!(NtQueryInformationToken, 0xf371fe4);
 impl NtQueryInformationToken {
     /// Wrapper for the NtQueryInformationToken
     ///
@@ -667,7 +609,7 @@ impl NtQueryInformationToken {
     }
 }
 
-define_syscall!(NtAdjustPrivilegesToken, 0x2dbc736d);
+define_indirect_syscall!(NtAdjustPrivilegesToken, 0x2dbc736d);
 impl NtAdjustPrivilegesToken {
     /// Wrapper for the NtAdjustPrivilegesToken
     ///
@@ -714,7 +656,7 @@ impl NtAdjustPrivilegesToken {
     }
 }
 
-define_syscall!(NtWaitForSingleObject, 0xe8ac0c3c);
+define_indirect_syscall!(NtWaitForSingleObject, 0xe8ac0c3c);
 impl NtWaitForSingleObject {
     /// Wrapper for the NtWaitForSingleObject
     ///
@@ -745,7 +687,7 @@ impl NtWaitForSingleObject {
     }
 }
 
-define_syscall!(NtOpenFile, 0x46dde739);
+define_indirect_syscall!(NtOpenFile, 0x46dde739);
 impl NtOpenFile {
     /// Wrapper for the NtOpenFile
     ///
@@ -784,7 +726,7 @@ impl NtOpenFile {
     }
 }
 
-define_syscall!(NtCreateEvent, 0x28d3233d);
+define_indirect_syscall!(NtCreateEvent, 0x28d3233d);
 impl NtCreateEvent {
     /// Wrapper function for NtCreateEvent to avoid repetitive run_syscall calls.
     ///
@@ -834,7 +776,7 @@ impl NtCreateEvent {
     }
 }
 
-define_syscall!(NtWriteFile, 0xe0d61db2);
+define_indirect_syscall!(NtWriteFile, 0xe0d61db2);
 impl NtWriteFile {
     /// Wrapper for the NtWriteFile
     ///
@@ -902,7 +844,7 @@ impl NtWriteFile {
     }
 }
 
-define_syscall!(NtCreateFile, 0x66163fbb);
+define_indirect_syscall!(NtCreateFile, 0x66163fbb);
 impl NtCreateFile {
     /// Wrapper for the NtCreateFile
     ///
@@ -976,7 +918,7 @@ impl NtCreateFile {
     }
 }
 
-define_syscall!(NtReadFile, 0xb2d93203);
+define_indirect_syscall!(NtReadFile, 0xb2d93203);
 impl NtReadFile {
     /// Wrapper for the NtReadFile
     ///
@@ -1044,7 +986,7 @@ impl NtReadFile {
     }
 }
 
-define_syscall!(NtCreateProcessEx, 0xf8b2017);
+define_indirect_syscall!(NtCreateProcessEx, 0xf8b2017);
 impl NtCreateProcessEx {
     /// Wrapper for the NtCreateProcessEx
     ///
@@ -1103,7 +1045,7 @@ impl NtCreateProcessEx {
     }
 }
 
-define_syscall!(NtCreateThread, 0x653e8db3);
+define_indirect_syscall!(NtCreateThread, 0x653e8db3);
 impl NtCreateThread {
     /// Wrapper for the NtCreateThread
     ///
@@ -1165,7 +1107,7 @@ impl NtCreateThread {
     }
 }
 
-define_syscall!(NtCreateThreadEx, 0xaf18cfb0);
+define_indirect_syscall!(NtCreateThreadEx, 0xaf18cfb0);
 impl NtCreateThreadEx {
     /// Wrapper for the NtCreateThreadEx
     ///
@@ -1230,7 +1172,7 @@ impl NtCreateThreadEx {
     }
 }
 
-define_syscall!(ZwCreateThreadEx, 0x2b6cdf7f);
+define_indirect_syscall!(ZwCreateThreadEx, 0x2b6cdf7f);
 impl ZwCreateThreadEx {
     /// Wrapper for the ZwCreateThreadEx
     ///
@@ -1301,7 +1243,7 @@ impl ZwCreateThreadEx {
     }
 }
 
-define_syscall!(NtCreateUserProcess, 0x54ce5f79);
+define_indirect_syscall!(NtCreateUserProcess, 0x54ce5f79);
 impl NtCreateUserProcess {
     /// Wrapper for the NtCreateUserProcess
     ///
@@ -1368,7 +1310,7 @@ impl NtCreateUserProcess {
     }
 }
 
-define_syscall!(NtResumeThread, 0x5a4bc3d0);
+define_indirect_syscall!(NtResumeThread, 0x5a4bc3d0);
 impl NtResumeThread {
     /// Wrapper for the NtResumeThread
     ///
@@ -1399,7 +1341,7 @@ impl NtResumeThread {
     }
 }
 
-define_syscall!(NtTerminateProcess, 0x4ed9dd4f);
+define_indirect_syscall!(NtTerminateProcess, 0x4ed9dd4f);
 impl NtTerminateProcess {
     /// Wrapper for the NtTerminateProcess
     ///
@@ -1429,7 +1371,7 @@ impl NtTerminateProcess {
     }
 }
 
-define_syscall!(NtTerminateThread, 0xccf58808);
+define_indirect_syscall!(NtTerminateThread, 0xccf58808);
 impl NtTerminateThread {
     /// Wrapper for the NtTerminateProcess
     ///
@@ -1459,7 +1401,7 @@ impl NtTerminateThread {
     }
 }
 
-define_syscall!(NtDelayExecution, 0xf5a936aa);
+define_indirect_syscall!(NtDelayExecution, 0xf5a936aa);
 impl NtDelayExecution {
     /// Wrapper for the NtDelayExecution
     ///
@@ -1491,7 +1433,7 @@ impl NtDelayExecution {
     }
 }
 
-define_syscall!(NtCreateNamedPipeFile, 0x1da0062e);
+define_indirect_syscall!(NtCreateNamedPipeFile, 0x1da0062e);
 impl NtCreateNamedPipeFile {
     /// Wrapper for the NtCreateNamedPipeFile
     ///
@@ -1571,7 +1513,7 @@ impl NtCreateNamedPipeFile {
     }
 }
 
-define_syscall!(NtReadVirtualMemory, 0xa3288103);
+define_indirect_syscall!(NtReadVirtualMemory, 0xa3288103);
 impl NtReadVirtualMemory {
     /// Wrapper for the NtReadVirtualMemory
     ///
@@ -1618,7 +1560,7 @@ impl NtReadVirtualMemory {
     }
 }
 
-define_syscall!(NtCreateProcess, 0xf043985a);
+define_indirect_syscall!(NtCreateProcess, 0xf043985a);
 impl NtCreateProcess {
     /// Wrapper for the NtCreateProcess
     ///
@@ -1684,7 +1626,7 @@ impl NtCreateProcess {
     }
 }
 
-define_syscall!(NtQueryVirtualMemory, 0x10c0e85d);
+define_indirect_syscall!(NtQueryVirtualMemory, 0x10c0e85d);
 impl NtQueryVirtualMemory {
     /// Wrapper for the NtQueryVirtualMemory
     ///

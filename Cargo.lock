@@ -2854,6 +2854,7 @@ dependencies = [
  "futures",
  "kageshirei-communication-protocol",
  "kageshirei-crypt",
+ "kageshirei-format-json",
  "kageshirei-runtime",
  "libc-print",
  "mod-agentcore",

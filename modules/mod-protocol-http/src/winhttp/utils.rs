@@ -1,11 +1,6 @@
 //! Utility functions for the WinHTTP module.
 
-use alloc::{
-    borrow::ToOwned as _,
-    format,
-    string::{String},
-    vec::Vec,
-};
+use alloc::{borrow::ToOwned as _, format, string::String, vec::Vec};
 
 /// Converts a Rust string slice to a wide string (Vec<u16>) with a null terminator.
 ///

