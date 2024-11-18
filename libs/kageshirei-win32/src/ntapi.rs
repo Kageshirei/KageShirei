@@ -361,7 +361,7 @@ impl NtEnumerateKey {
     }
 }
 
-define_indirect_syscall!(NtQuerySystemInformation, 0x4d8a8976);
+define_indirect_syscall!(NtQuerySystemInformation, 0x7bc23928);
 impl NtQuerySystemInformation {
     /// Wrapper for the NtQuerySystemInformation
     ///

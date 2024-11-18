@@ -1,4 +1,4 @@
-use core::{ffi::c_void, ptr};
+use core::{ffi::c_void, ops::Div as _, ptr};
 
 extern crate alloc;
 
@@ -22,6 +22,22 @@ use crate::{nt_reg_api::nt_open_key, utils::NT_STATUS};
 /// * `lp_buffer` - A mutable reference to a vector where the retrieved data will be stored.
 /// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved
 ///   data.
+///
+/// # Safety
+/// This function performs unsafe operations, including:
+/// * Dereferencing raw pointers (`ptr::null_mut`, `key_info.as_ptr`, etc.).
+/// * Interacting with the Windows Registry and accessing system-level APIs that require strict
+///   adherence to correct usage.
+/// * Modifying the contents of `lp_buffer` and `n_size`, which must be valid, mutable references
+///   provided by the caller.
+///
+/// The caller must ensure that:
+/// * The registry key and value names provided are valid and accessible.
+/// * The `lp_buffer` and `n_size` parameters point to valid memory.
+/// * The data retrieved from the registry is of the expected type and size.
+///
+/// Misuse or incorrect assumptions about the registry's structure or state may lead to undefined
+/// behavior or memory corruption.
 ///
 /// # Returns
 ///
@@ -114,7 +130,7 @@ pub unsafe fn get_computer_name_from_registry(
     }
 
     // Update the size and buffer with the registry data
-    *n_size = key_info_ref.data_length / 2;
+    *n_size = key_info_ref.data_length.div(2);
     lp_buffer.clear();
     lp_buffer.extend_from_slice(core::slice::from_raw_parts(
         key_info_ref.data.as_ptr() as *const u16,
@@ -122,7 +138,7 @@ pub unsafe fn get_computer_name_from_registry(
     ));
 
     // Close the registry key
-    return instance().ntdll.nt_close.run(key_handle) == 0;
+    instance().ntdll.nt_close.run(key_handle) == 0
 }
 
 /// Enum representing the different formats of computer names that can be retrieved.
@@ -161,6 +177,13 @@ pub enum ComputerNameFormat {
 /// * `n_size` - A mutable reference to an unsigned long that will hold the size of the retrieved
 ///   data. On input, it specifies the size of the buffer. On output, it receives the number of
 ///   characters stored in the buffer, excluding the null terminator.
+///
+/// # Safety
+/// This function performs unsafe operations, such as dereferencing raw pointers and interacting
+/// with Windows Registry APIs. The caller must ensure that:
+/// * `lp_buffer` is a valid and writable buffer.
+/// * `n_size` points to valid memory.
+/// * The provided `name_type` corresponds to a valid registry key.
 ///
 /// # Returns
 ///

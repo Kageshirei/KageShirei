@@ -908,6 +908,13 @@ pub const THREAD_CREATE_FLAGS_SKIP_LOADER_INIT: u32 = 0x00000020; // NtCreateThr
 pub const THREAD_CREATE_FLAGS_BYPASS_PROCESS_FREEZE: u32 = 0x00000040; // NtCreateThreadEx only
 pub const THREAD_CREATE_FLAGS_INITIAL_THREAD: u32 = 0x00000080; // ?
 
+/// Enables the use of standard input, output, and error handles.
+pub const STARTF_USESTDHANDLES: u32 = 0x00000100;
+/// Allows control over the window display using the wShowWindow member.
+pub const STARTF_USESHOWWINDOW: u32 = 0x00000001;
+/// Creates the process without displaying a window.
+pub const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 pub struct TokenInformationClass(pub i32);
 pub struct TokenAccessMask(pub u32);
 // pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(8u32);

@@ -1,5 +1,5 @@
-use alloc::string::{String, ToString};
-use core::slice;
+use alloc::{borrow::ToOwned as _, string::String};
+use core::{ops::Div as _, slice};
 
 use kageshirei_win32::ntdef::{OSVersionInfo, RtlUserProcessParameters};
 use mod_agentcore::instance;
@@ -27,12 +27,14 @@ pub unsafe fn get_process_name() -> String {
             let image_path_name = &(*process_parameters).image_path_name;
             if !image_path_name.buffer.is_null() {
                 // Convert the UTF-16 buffer to a Rust slice
-                let image_path_slice =
-                    slice::from_raw_parts(image_path_name.buffer, image_path_name.length as usize / 2);
+                let image_path_slice = slice::from_raw_parts(
+                    image_path_name.buffer,
+                    image_path_name.length.div(2) as usize,
+                );
                 // Convert the UTF-16 slice to a Rust string
                 let full_path = String::from_utf16_lossy(image_path_slice);
                 // Extract the process name from the full path
-                return full_path.split('\\').last().unwrap_or("").to_string();
+                return full_path.split('\\').last().unwrap_or("").to_owned();
             }
         }
     }
@@ -118,15 +120,15 @@ unsafe fn get_environment_variable(variable_name: &str) -> String {
                 while *env_ptr != 0 {
                     let mut len = 0;
                     while *env_ptr.add(len) != 0 {
-                        len += 1;
+                        len = len.overflowing_add(1).0;
                     }
-                    let env_slice = slice::from_raw_parts(env_ptr, len as usize);
+                    let env_slice = slice::from_raw_parts(env_ptr, len);
                     let env_string = String::from_utf16_lossy(env_slice);
                     // Check if the environment string starts with the specified variable name
                     if let Some(value) = env_string.strip_prefix(variable_name) {
-                        return value.to_string();
+                        return value.to_owned();
                     }
-                    env_ptr = env_ptr.add(len + 1);
+                    env_ptr = env_ptr.add(len.overflowing_add(1).0);
                 }
             }
         }
@@ -135,6 +137,18 @@ unsafe fn get_environment_variable(variable_name: &str) -> String {
     String::new()
 }
 
+/// Prints all environment variables of the current process by accessing the PEB (Process
+/// Environment Block).
+///
+/// # Safety
+/// This function performs unsafe operations, including dereferencing raw pointers obtained from the
+/// PEB and accessing memory directly. It assumes that the PEB and its fields are valid and
+/// accessible. Misuse or incorrect assumptions may lead to undefined behavior.
+///
+/// # Notes
+/// - Environment variables are retrieved as UTF-16 strings and printed to standard output.
+/// - This function is intended for low-level debugging or research purposes and should be used with
+///   caution.
 pub unsafe fn print_all_environment_variables() {
     // Get the pointer to the PEB
     let peb = instance().teb.as_ref().unwrap().process_environment_block;
@@ -150,12 +164,12 @@ pub unsafe fn print_all_environment_variables() {
                 while *env_ptr != 0 {
                     let mut len = 0;
                     while *env_ptr.add(len) != 0 {
-                        len += 1;
+                        len = len.overflowing_add(1).0;
                     }
                     // let env_slice = slice::from_raw_parts(env_ptr, len as usize);
                     // let env_string = String::from_utf16_lossy(env_slice);
                     // libc_println!("{}", env_string);
-                    env_ptr = env_ptr.add(len + 1);
+                    env_ptr = env_ptr.add(len.overflowing_add(1).0);
                 }
             }
         }
@@ -260,7 +274,7 @@ pub unsafe fn get_image_path_name() -> String {
             let image_path_name = &(*process_parameters).image_path_name;
             if !image_path_name.buffer.is_null() {
                 // Convert the ImagePathName to a Rust String
-                let length = (image_path_name.length / 2) as usize;
+                let length = (image_path_name.length.div(2)) as usize;
                 let buffer = core::slice::from_raw_parts(image_path_name.buffer, length);
                 return alloc::string::String::from_utf16_lossy(buffer);
             }
@@ -292,7 +306,7 @@ pub fn get_current_directory() -> String {
             let cur_dir = &mut process_parameters.as_mut().unwrap().current_directory;
 
             // Convert the current directory's DOS path to a Rust string
-            return unicodestring_to_string(&(*cur_dir).dos_path).unwrap_or_default();
+            return unicodestring_to_string(&(cur_dir).dos_path).unwrap_or_default();
         }
     }
     String::new()
@@ -352,5 +366,15 @@ mod tests {
         let user_domain = unsafe { get_user_domain() };
         libc_println!("User Domain: {:?}", user_domain);
         assert!(!user_domain.is_empty(), "User domain should not be empty");
+    }
+
+    #[test]
+    fn test_get_current_directory() {
+        let current_directory = get_current_directory();
+        libc_println!("Current Directory: {:?}", current_directory);
+        assert!(
+            !current_directory.is_empty(),
+            "Current directory should not be empty"
+        );
     }
 }

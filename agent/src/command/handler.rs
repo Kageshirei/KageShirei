@@ -222,14 +222,22 @@ where
             let formatter = unsafe { formatter_from_raw(instance().session.formatter_ptr) };
             // let encryptor = unsafe { encryptor_from_raw(instance().session.encryptor_ptr) };
 
-            let formatted_data = formatter
-                .write(result.clone(), None::<BTreeMap<&str, &str>>)
-                .unwrap();
+            let formatted_data = formatter.write(result.clone(), None::<BTreeMap<&str, &str>>);
 
-            // Block on the async write operation using the runtime's block_on method
-            rt.block_on(async move {
-                protocol.send(formatted_data, None).await;
-            });
+            match formatted_data {
+                Ok(data) => {
+                    // Block on the async write operation using the runtime's block_on method
+                    rt.block_on(async move {
+                        protocol.send(data, None).await;
+                    });
+                },
+                Err(_) => {},
+            }
+
+            // // Block on the async write operation using the runtime's block_on method
+            // rt.block_on(async move {
+            //     protocol.send(formatted_data, None).await;
+            // });
         }
     })
 }
