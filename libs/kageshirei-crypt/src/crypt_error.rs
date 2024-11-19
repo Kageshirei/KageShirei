@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::string::{String, ToString};
 #[cfg(any(feature = "server", test))]
 use core::{
     error::Error as ErrorTrait,
@@ -6,6 +6,40 @@ use core::{
     fmt::{Display, Formatter},
 };
 
+/// The wrapper type for the hkdf::InvalidLength error that does not implement the PartialEq nor Eq
+/// traits
+#[cfg(feature = "hkdf")]
+#[derive(Clone)]
+pub struct HkdfInvalidLength;
+
+/// Implement the conversion from hkdf::InvalidLength to HkdfInvalidLength, as the former does not
+/// implement the PartialEq nor Eq traits.
+///
+/// Note that the original type is simply empty, as the error does not provide any additional data,
+/// and the conversion is simply a way to wrap the error into a type that can be compared.
+#[cfg(feature = "hkdf")]
+impl From<hkdf::InvalidLength> for HkdfInvalidLength {
+    fn from(_: hkdf::InvalidLength) -> Self { HkdfInvalidLength }
+}
+
+/// All `HkdfInvalidLength` instances are considered equal as they do not contain any additional
+/// data.
+#[cfg(feature = "hkdf")]
+impl PartialEq for HkdfInvalidLength {
+    fn eq(&self, _: &Self) -> bool { true }
+}
+
+#[cfg(feature = "hkdf")]
+impl Eq for HkdfInvalidLength {}
+
+/// Implement the Display trait for the HkdfInvalidLength error, delegating to the original error
+/// message.
+#[cfg(feature = "hkdf")]
+impl Display for HkdfInvalidLength {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result { write!(f, "{}", hkdf::InvalidLength) }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub enum CryptError {
     /// The key length is invalid (expected, received)
     InvalidKeyLength(u8, usize),
@@ -19,7 +53,7 @@ pub enum CryptError {
     CannotDeriveArgon2(argon2::Error),
     /// The provided data cannot be hashed
     #[cfg(feature = "hkdf")]
-    CannotHashOrDerive(hkdf::InvalidLength),
+    CannotHashOrDerive(HkdfInvalidLength),
     /// Invalid character in input
     InvalidCharacterInput,
     /// Cannot decode the data

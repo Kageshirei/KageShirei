@@ -16,6 +16,7 @@ use rand::rngs::OsRng;
 #[cfg(feature = "hkdf")]
 use crate::encryption_algorithm::WithKeyDerivation;
 use crate::{
+    crypt_error::HkdfInvalidLength,
     encryption_algorithm::algorithms::{BasicAlgorithm, SymmetricAlgorithm},
     CryptError,
 };
@@ -219,7 +220,7 @@ impl WithKeyDerivation for XChaCha20Poly1305Algorithm {
     {
         let mut key = [0u8; 32];
         hkdf.expand(&[], &mut key)
-            .map_err(CryptError::CannotHashOrDerive)?;
+            .map_err(|e| CryptError::CannotHashOrDerive(HkdfInvalidLength::from(e)))?;
 
         algorithm.key = Arc::new(key.to_vec());
 
