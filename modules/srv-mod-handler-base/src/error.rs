@@ -10,7 +10,7 @@ use kageshirei_crypt::CryptError;
 use srv_mod_entity::sea_orm::DbErr;
 
 /// Represent the different types of errors that can occur during command handling
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 pub enum CommandHandling {
     /// Represent a formatting error that occurred while trying to parse a command
     Format(Format),
