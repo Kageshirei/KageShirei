@@ -1,4 +1,4 @@
-use core::slice;
+use core::{ops::Div as _, slice};
 
 extern crate alloc;
 
@@ -45,7 +45,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
             index,
             0,
             result_buffer.as_mut_ptr() as *mut _,
-            result_buffer.len() as u32 * 2,
+            result_buffer.len().overflowing_mul(2).0 as u32,
             &mut result_length,
         );
 
@@ -66,15 +66,15 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
         // Extract the name of the subkey
         let name_length = key_info_ref.name_length as usize;
-        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length / 2);
-        let key_name_str: String = String::from_utf16_lossy(name_slice);
+        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length.div(2));
+        let key_name_str = String::from_utf16_lossy(name_slice);
         let sub_key_path = format!("{}\\{}", registry_key, key_name_str);
 
         // Open the subkey to access its values
         let sub_key_handle = match nt_open_key(&sub_key_path) {
             Ok(handle) => handle,
             Err(_) => {
-                index += 1;
+                index = index.overflowing_add(1).0;
                 continue;
             },
         };
@@ -96,7 +96,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
         // If no IP address is found, skip to the next key
         if ip_address.is_empty() {
-            index += 1;
+            index = index.overflowing_add(1).0;
             instance().ntdll.nt_close.run(sub_key_handle);
             continue;
         }
@@ -112,7 +112,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         let name_key_handle = match nt_open_key(&name_key_path) {
             Ok(handle) => handle,
             Err(_) => {
-                index += 1;
+                index = index.overflowing_add(1).0;
                 continue;
             },
         };
@@ -128,7 +128,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         // Close the handles to the subkey and name key
         instance().ntdll.nt_close.run(sub_key_handle);
         instance().ntdll.nt_close.run(name_key_handle);
-        index += 1;
+        index = index.overflowing_add(1).0;
     }
 
     // Close the handle to the main registry key

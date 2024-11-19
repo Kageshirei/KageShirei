@@ -20,6 +20,10 @@ pub struct NetworkInterface {
 
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "server", derive(FromJsonQueryResult, Debug))]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "The name repetition clarifies the struct's purpose as an array of NetworkInterface objects."
+)]
 pub struct NetworkInterfaceArray {
     pub network_interfaces: Vec<NetworkInterface>,
 }

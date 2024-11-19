@@ -1,10 +1,7 @@
 extern crate alloc;
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
-use core::{ptr::null_mut, slice};
+use alloc::{borrow::ToOwned as _, string::String, vec::Vec};
+use core::{ops::Div as _, ptr::null_mut, slice};
 
 use kageshirei_win32::{
     ntdef::{
@@ -141,12 +138,15 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
     let data_length = value_info_ref.data_length as usize;
 
     // Extract the data as a UTF-16 string
-    let data_slice = slice::from_raw_parts(value_info_ref.data.as_ptr() as *const u16, data_length / 2);
+    let data_slice = slice::from_raw_parts(
+        value_info_ref.data.as_ptr() as *const u16,
+        data_length.div(2),
+    );
 
     // Convert the UTF-16 string to a Rust string and remove trailing null characters
-    let value = String::from_utf16_lossy(&data_slice)
+    let value = String::from_utf16_lossy(data_slice)
         .trim_end_matches('\0')
-        .to_string();
+        .to_owned();
 
     Ok(value) // Return the value as a string
 }
@@ -181,11 +181,11 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
         // Call NtEnumerateKey to retrieve the next sub-key name
         let status = instance().ntdll.nt_enumerate_key.run(
             key_handle,
-            index,                                // Index of the sub-key to enumerate
-            0,                                    // Key information class (0 for KeyBasicInformation)
-            result_buffer.as_mut_ptr() as *mut _, // Buffer to receive the sub-key information
-            result_buffer.len() as u32 * 2,       // Buffer length in bytes
-            &mut result_length,                   // Variable to receive the length of the result
+            index,                                           // Index of the sub-key to enumerate
+            0,                                               // Key information class (0 for KeyBasicInformation)
+            result_buffer.as_mut_ptr() as *mut _,            // Buffer to receive the sub-key information
+            result_buffer.len().overflowing_mul(2).0 as u32, // Buffer length in bytes
+            &mut result_length,                              // Variable to receive the length of the result
         );
 
         // Check the status of the operation
@@ -207,12 +207,12 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
 
         // Extract the name of the sub-key
         let name_length = key_info_ref.name_length as usize;
-        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length / 2);
-        let sub_key_name: String = String::from_utf16_lossy(name_slice);
+        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length.div(2));
+        let sub_key_name = String::from_utf16_lossy(name_slice);
 
         // Store the sub-key name in the vector
         sub_keys.push(sub_key_name);
-        index += 1; // Increment the index to enumerate the next sub-key
+        index = index.overflowing_add(1).0; // Increment the index to enumerate the next sub-key
     }
 
     // Close the registry key handle

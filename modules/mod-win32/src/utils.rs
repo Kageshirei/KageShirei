@@ -1,5 +1,5 @@
 use alloc::{borrow::ToOwned as _, format, string::String, vec::Vec};
-use core::str;
+use core::{ops::Div as _, str};
 
 use kageshirei_win32::{ntdef::UnicodeString, ntstatus::*};
 
@@ -137,7 +137,7 @@ pub fn unicodestring_to_string(unicode_string: &UnicodeString) -> Option<String>
     let slice = unsafe {
         core::slice::from_raw_parts(
             unicode_string.buffer,
-            (unicode_string.length.overflowing_div(2).0) as usize,
+            (unicode_string.length.div(2)) as usize,
         )
     };
 

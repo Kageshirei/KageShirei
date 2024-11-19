@@ -12,14 +12,18 @@ use spin::Mutex;
 
 use crate::nostd_nt_threadpool::NoStdThreadPool;
 
-/// The `NoStdNtRuntime` struct provides a custom implementation of the `Runtime` trait,
-/// using a thread pool to manage the execution of jobs. This runtime is designed to work
-/// in a `no_std` environment, relying on custom synchronization primitives and a custom MPSC
-/// channel.
+/// The `NoStdNtRuntime` struct provides a custom implementation of the `Runtime` trait.
+///
+/// This implementation uses a thread pool to manage the execution of jobs. It is specifically
+/// designed for `no_std` environments, where the standard library is not available.
+///
+/// The runtime relies on custom synchronization primitives and a custom MPSC (multiple-producer,
+/// single-consumer) channel for job management.
 #[derive(Clone)]
 pub struct NoStdNtRuntime {
-    pool: Arc<Mutex<NoStdThreadPool>>, /* The thread pool is protected by a Mutex for safe concurrent access and is
-                                        * wrapped in an Arc for shared ownership. */
+    /// The thread pool is protected by a Mutex for safe concurrent access and is wrapped in an Arc
+    /// for shared ownership.
+    pool: Arc<Mutex<NoStdThreadPool>>,
 }
 
 impl fmt::Debug for NoStdNtRuntime {
@@ -43,7 +47,7 @@ impl NoStdNtRuntime {
     ///
     /// * A new `NoStdNtRuntime` instance that wraps the thread pool.
     pub fn new(size: usize) -> Self {
-        NoStdNtRuntime {
+        Self {
             pool: Arc::new(Mutex::new(NoStdThreadPool::new(size))),
         }
     }
@@ -122,8 +126,8 @@ impl Runtime for NoStdNtRuntime {
 /// This struct is used within the `block_on` method to notify the runtime that the future
 /// has made progress and should be polled again.
 struct SimpleWaker {
-    tx: Mutex<Option<nostd_mpsc::Sender<()>>>, /* The sender half of the MPSC channel, wrapped in a Mutex for safe
-                                                * access. */
+    /// The sender half of the MPSC channel, wrapped in a Mutex for safe access.
+    tx: Mutex<Option<nostd_mpsc::Sender<()>>>,
 }
 
 impl alloc::task::Wake for SimpleWaker {
@@ -134,7 +138,7 @@ impl alloc::task::Wake for SimpleWaker {
     /// make progress.
     fn wake(self: Arc<Self>) {
         if let Some(tx) = self.tx.lock().take() {
-            let _ = tx.send(());
+            _ = tx.send(());
         }
     }
 }

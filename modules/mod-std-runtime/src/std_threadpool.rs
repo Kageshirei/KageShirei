@@ -6,8 +6,10 @@ use std::{
 /// The `ThreadPool` struct manages a pool of worker threads that execute jobs.
 #[derive(Debug)]
 pub struct ThreadPool {
-    workers: Vec<Worker>,                           // Vector of workers (threads) in the pool.
-    sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
+    /// Vector of workers (threads) in the pool.
+    workers: Vec<Worker>,
+    /// Sender channel to dispatch jobs to the workers.
+    sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>,
 }
 
 /// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and
@@ -25,7 +27,12 @@ impl ThreadPool {
     ///
     /// * A new `ThreadPool` instance with the specified number of workers.
     pub fn new(size: usize) -> Self {
-        assert!(size > 0); // Ensure the size of the pool is greater than 0.
+        let size = if size == 0 {
+            1 // Set the pool size to 1 if the specified size is 0.
+        }
+        else {
+            size // Set the pool size to the specified size.
+        };
 
         // Create a channel for sending jobs to workers. `sender` is used to send jobs,
         // and `receiver` is used by workers to receive jobs.
@@ -58,7 +65,7 @@ impl ThreadPool {
     where
         F: FnOnce() + Send + 'static,
     {
-        if let Some(sender) = &self.sender {
+        if let Some(sender) = self.sender.as_ref() {
             let job = Box::new(f); // Box the job (closure) to make it a heap-allocated trait object.
             sender.lock().unwrap().send(job).unwrap(); // Send the job to the workers via the
                                                        // channel.
@@ -80,7 +87,8 @@ impl ThreadPool {
 /// The `Worker` struct represents a single thread in the thread pool.
 #[derive(Debug)]
 struct Worker {
-    handle: Option<thread::JoinHandle<()>>, // Handle to the thread, allowing it to be joined later.
+    /// Handle to the thread, allowing it to be joined later.
+    handle: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {

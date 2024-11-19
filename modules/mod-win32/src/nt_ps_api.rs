@@ -1,4 +1,4 @@
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec, vec::Vec};
 use core::{
     ffi::{c_ulong, c_void},
     mem::{self, size_of},
@@ -28,6 +28,7 @@ use kageshirei_win32::{
         SystemProcessInformation,
         TokenMandatoryLabel,
         UnicodeString,
+        CREATE_NO_WINDOW,
         FILE_CREATE,
         FILE_GENERIC_WRITE,
         FILE_NON_DIRECTORY_FILE,
@@ -48,6 +49,8 @@ use kageshirei_win32::{
         PS_ATTRIBUTE_IMAGE_NAME,
         PS_ATTRIBUTE_PARENT_PROCESS,
         RTL_USER_PROC_PARAMS_NORMALIZED,
+        STARTF_USESHOWWINDOW,
+        STARTF_USESTDHANDLES,
         SYNCHRONIZE,
         THREAD_ALL_ACCESS,
         TOKEN_INTEGRITY_LEVEL,
@@ -181,7 +184,7 @@ pub unsafe fn get_process_handle(pid: i32, desired_access: AccessMask) -> HANDLE
 
     // Initialize client ID structure with the target process ID.
     let mut client_id = ClientId::new();
-    client_id.unique_process = pid as _;
+    client_id.unique_process = pid as *mut core::ffi::c_void;
 
     // Perform a system call to NtOpenProcess to obtain a handle to the specified process.
     instance().ntdll.nt_open_process.run(
@@ -341,15 +344,17 @@ pub unsafe fn get_process_integrity(process_handle: HANDLE) -> i16 {
         // Extract the RID (Relative Identifier) from the SID to determine the integrity level
         let sid = &*label.label.sid;
         let sub_authority_count = sid.sub_authority_count as usize;
-        let rid = *sid.sub_authority.get_unchecked(sub_authority_count - 1);
+        let rid = *sid
+            .sub_authority
+            .get_unchecked(sub_authority_count.overflowing_sub(1).0);
 
         instance().ntdll.nt_close.run(token_handle);
-        return rid as i16;
+        rid as i16
     }
     else {
         libc_println!("[!] NtQueryInformationToken failed: {}", NT_STATUS(status));
         instance().ntdll.nt_close.run(token_handle);
-        return -1;
+        -1
     }
 }
 
@@ -465,14 +470,13 @@ pub unsafe fn nt_create_user_process(
     attribute_list.attributes[0].value.value = us_nt_image_path.buffer as usize;
 
     // If a parent process handle is provided, add it to the attribute list
+    attribute_list.attributes[1].attribute = PS_ATTRIBUTE_PARENT_PROCESS; // Attribute for parent process
+    attribute_list.attributes[1].size = mem::size_of::<HANDLE>();
+
     if !h_parent_process.is_null() {
-        attribute_list.attributes[1].attribute = PS_ATTRIBUTE_PARENT_PROCESS; // Attribute for parent process
-        attribute_list.attributes[1].size = mem::size_of::<HANDLE>();
         attribute_list.attributes[1].value.value = h_parent_process as usize;
     }
     else {
-        attribute_list.attributes[1].attribute = PS_ATTRIBUTE_PARENT_PROCESS; // Attribute for parent process
-        attribute_list.attributes[1].size = mem::size_of::<HANDLE>();
         attribute_list.attributes[1].value.value = nt_current_process() as usize;
     }
 
@@ -518,7 +522,7 @@ pub unsafe fn nt_create_user_process(
         return status; // Return error status if creation failed
     }
 
-    return 0; // Return success status
+    0 // Return success status
 }
 
 /// Creates a named pipe and returns handles for reading and writing.
@@ -566,10 +570,10 @@ pub unsafe fn nt_create_named_pipe_file(
     n_size: u32,
 ) -> NTSTATUS {
     // Initialize the necessary structures
-    let mut pipe_name: UnicodeString = UnicodeString::new();
-    let mut object_attributes: ObjectAttributes = ObjectAttributes::new();
-    let mut status_block: IoStatusBlock = IoStatusBlock::new();
-    let mut default_timeout: LargeInteger = LargeInteger::new();
+    let mut pipe_name = UnicodeString::new();
+    let mut object_attributes = ObjectAttributes::new();
+    let mut status_block = IoStatusBlock::new();
+    let mut default_timeout = LargeInteger::new();
     let mut read_pipe_handle: HANDLE = null_mut();
     let mut write_pipe_handle: HANDLE = null_mut();
     let mut pipe_id: u32 = 0;
@@ -582,7 +586,7 @@ pub unsafe fn nt_create_named_pipe_file(
     let n_size = if n_size == 0 { 0x1000 } else { n_size };
 
     // Increment the pipe ID (normally done with InterlockedIncrement)
-    pipe_id += 1;
+    pipe_id = pipe_id.overflowing_add(1).0;
 
     // Format the pipe name using the process ID and pipe ID
     let pipe_name_utf16 = format_named_pipe_string(
@@ -679,7 +683,7 @@ pub unsafe fn nt_create_named_pipe_file(
 /// This function uses unsafe operations to interact with low-level Windows APIs. Ensure that the
 /// inputs are valid and that the function is called in a safe context.
 pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
-    let mut io_status_block: IoStatusBlock = IoStatusBlock::new(); // IO status block for the read operation
+    let mut io_status_block = IoStatusBlock::new(); // IO status block for the read operation
     let mut local_buffer = [0u8; 1024]; // Local buffer to store each chunk of data read
     let mut has_data = false; // Track if we have read any data
 
@@ -714,15 +718,20 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
         }
 
         // Number of bytes read in this iteration
-        let bytes_read = io_status_block.information as u32;
+        let bytes_read = io_status_block.information;
 
         // If no bytes were read, it means there's no more data
         if bytes_read == 0 {
             break;
         }
-
         // Append the data from the local buffer to the provided buffer
-        buffer.extend_from_slice(&local_buffer[.. bytes_read as usize]);
+        if let Some(slice) = local_buffer.get(.. bytes_read as usize) {
+            buffer.extend_from_slice(slice);
+        }
+        else {
+            // This should never happen because `bytes_read` is guaranteed to be within `local_buffer.len()`.
+            return false;
+        }
 
         // Mark that we have successfully read some data
         has_data = true;
@@ -766,11 +775,6 @@ pub unsafe fn nt_read_pipe(handle: HANDLE, buffer: &mut Vec<u8>) -> bool {
 /// valid. If the paths or command lines are invalid, the function will fail and return an empty
 /// output vector.
 pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> Vec<u8> {
-    // Constants used for process creation and pipe handling.
-    const STARTF_USESTDHANDLES: u32 = 0x00000100; // Use standard handles (input, output, error).
-    const STARTF_USESHOWWINDOW: u32 = 0x00000001; // Use the wShowWindow member to control the window display.
-    const CREATE_NO_WINDOW: u32 = 0x08000000; // The process is created with no window.
-
     // Initialize the vector to store the output of the command.
     let mut output = Vec::new();
 
@@ -818,7 +822,7 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
         startup_info.h_std_error = h_write_pipe; // Redirect standard error to the write pipe.
         startup_info.h_std_input = null_mut(); // No standard input.
         startup_info.h_std_output = h_write_pipe; // Redirect standard output to the write pipe.
-        startup_info.w_show_window = 0 as u16; // Hide the window.
+        startup_info.w_show_window = 0; // Hide the window.
 
         // Initialize the process information structure.
         let mut process_info: ProcessInformation = mem::zeroed();
@@ -869,44 +873,6 @@ pub unsafe fn nt_create_process_w_piped(target_process: &str, cmdline: &str) -> 
 
             return output; // Return the collected output.
         }
-        // // Create the process using CreateProcessW from kernel32.dll.
-        // let success = (instance().kernel32.create_process_w)(
-        //     target_process_utf16.as_ptr(), // Path to the target executable.
-        //     cmdline_utf16.as_mut_ptr(),    // Command line to execute.
-        //     null_mut(),                    // No process security attributes.
-        //     null_mut(),                    // No thread security attributes.
-        //     true,                          // Inherit handles.
-        //     CREATE_NO_WINDOW,              // Create the process without a window.
-        //     null_mut(),                    // No environment block.
-        //     null_mut(),                    // Use the current directory.
-        //     &mut startup_info,             // Startup info structure.
-        //     &mut process_info,             // Process information structure.
-        // );
-
-        // // Delay slightly to allow the process to start.
-        // wait_until(3);
-
-        // // If process creation fails, log the error and return the collected output
-        // (likelyempty). if !success {
-        //     libc_println!(
-        //         "[!] Failed to create process: GetLastError [{}]",
-        //         nt_get_last_error()
-        //     );
-        //     return output;
-        // }
-
-        // // Read the output from the read pipe using NtReadFile.
-        // if !nt_read_pipe(h_read_pipe, &mut output) {
-        //     libc_println!(
-        //         "[!] Failed to read from pipe: NTSTATUS [{}]",
-        //         NT_STATUS(status)
-        //     );
-        //     return output;
-        // }
-
-        // // Clean up handles using NtClose.
-        // instance().ntdll.nt_close.run(h_write_pipe);
-        // instance().ntdll.nt_close.run(h_read_pipe);
 
         output // Return the collected output.
     }
@@ -946,8 +912,10 @@ pub unsafe fn nt_process_snapshot(snapshot: &mut *mut SystemProcessInformation, 
     }
 
     // Allocate memory for the SystemProcessInformation structure.
-    let mut buffer = Vec::new();
-    buffer.resize(length as usize, 0); // Initialize buffer with the required length.
+    let mut buffer = vec![0; length as usize].into_boxed_slice();
+
+    // let mut buffer = Vec::new();
+    // buffer.resize(length as usize, 0); // Initialize buffer with the required length.
 
     // Second call to actually retrieve the process information into the allocated buffer.
     status = instance().ntdll.nt_query_system_information.run(
@@ -966,8 +934,12 @@ pub unsafe fn nt_process_snapshot(snapshot: &mut *mut SystemProcessInformation, 
     *snapshot = buffer.as_mut_ptr() as *mut SystemProcessInformation;
     *size = length as usize;
 
-    // Keep the buffer alive by preventing its deallocation.
-    core::mem::forget(buffer);
+    // // Keep the buffer alive by preventing its deallocation.
+    // core::mem::forget(buffer);
+
+    // Transfer ownership of the buffer so it isn't deallocated.
+    // By turning it into a Box, Rust will ensure it stays alive until explicitly dropped elsewhere.
+    Box::leak(buffer);
 
     status
 }
@@ -990,6 +962,10 @@ pub unsafe fn nt_process_snapshot(snapshot: &mut *mut SystemProcessInformation, 
 /// # Safety
 /// This function is unsafe because it directly interacts with low-level Windows APIs and performs
 /// raw pointer dereferencing.
+#[expect(
+    clippy::fn_to_numeric_cast_any,
+    reason = "Required to pass function pointer to NtCreateThreadEx API"
+)]
 pub unsafe fn nt_create_thread_ex(
     proc_handle: HANDLE,
     start_routine: extern "system" fn(*mut c_void) -> u32,
@@ -997,10 +973,10 @@ pub unsafe fn nt_create_thread_ex(
 ) -> HANDLE {
     let mut thread_handle: HANDLE = null_mut();
     let mut client_id = ClientId::new();
-    client_id.unique_process = get_current_process_id() as _;
+    client_id.unique_process = get_current_process_id() as *mut core::ffi::c_void;
 
     // Initialize object attributes for the thread
-    let mut obj_attr: ObjectAttributes = ObjectAttributes::new();
+    let mut obj_attr = ObjectAttributes::new();
 
     ObjectAttributes::initialize(
         &mut obj_attr,
@@ -1013,16 +989,16 @@ pub unsafe fn nt_create_thread_ex(
     // Call NtCreateThreadEx to create the thread
     let status = instance().ntdll.nt_create_thread_ex.run(
         &mut thread_handle,
-        THREAD_ALL_ACCESS,            // Full access to the thread
-        &mut obj_attr,                // ObjectAttributes can be null
-        proc_handle,                  // Handle to the current process
-        start_routine as *mut c_void, // Start routine for the new thread
-        arg_ptr,                      // Argument to pass to the start routine
-        0,                            // Non create the thread in suspended state
-        0,                            // StackZeroBits
-        0,                            // SizeOfStackCommit
-        0,                            // SizeOfStackReserve
-        null_mut(),                   // BytesBuffer can be null
+        THREAD_ALL_ACCESS,                       // Full access to the thread
+        &mut obj_attr,                           // ObjectAttributes can be null
+        proc_handle,                             // Handle to the current process
+        start_routine as *mut core::ffi::c_void, // Start routine for the new thread
+        arg_ptr,                                 // Argument to pass to the start routine
+        0,                                       // Non create the thread in suspended state
+        0,                                       // StackZeroBits
+        0,                                       // SizeOfStackCommit
+        0,                                       // SizeOfStackReserve
+        null_mut(),                              // BytesBuffer can be null
     );
 
     if !NT_SUCCESS(status) {
