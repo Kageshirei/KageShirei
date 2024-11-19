@@ -1,4 +1,4 @@
-use alloc::{boxed::Box, string::String};
+use alloc::string::String;
 use core::{
     error::Error as ErrorTrait,
     fmt::{Debug, Display, Formatter},
@@ -11,7 +11,7 @@ pub enum Format {
     /// The data provided is invalid, it does not match the expected format.
     InvalidData,
     /// A generic error occurred.
-    Generic(Box<dyn ErrorTrait>),
+    Generic(String),
 }
 
 impl Debug for Format {

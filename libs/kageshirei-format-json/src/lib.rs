@@ -7,7 +7,7 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, collections::BTreeMap, vec::Vec};
+use alloc::{boxed::Box, collections::BTreeMap, string::ToString, vec::Vec};
 use core::any::Any;
 
 use kageshirei_communication_protocol::{error::Format as FormatError, magic_numbers, Format};
@@ -39,7 +39,7 @@ impl Format for FormatJson {
         }
         let data_chunk = data_chunk.unwrap();
 
-        serde_json::from_slice::<T>(data_chunk).map_err(|e| FormatError::Generic(Box::new(e)))
+        serde_json::from_slice::<T>(data_chunk).map_err(|e| FormatError::Generic(e.to_string()))
     }
 
     fn write<D, V>(&mut self, data: D, _extra: Option<BTreeMap<&str, V>>) -> Result<Vec<u8>, FormatError>
@@ -50,7 +50,7 @@ impl Format for FormatJson {
         let mut buffer = Vec::new();
         buffer.extend_from_slice(&magic_numbers::JSON);
 
-        let data = serde_json::to_vec(&data).map_err(|e| FormatError::Generic(Box::new(e)))?;
+        let data = serde_json::to_vec(&data).map_err(|e| FormatError::Generic(e.to_string()))?;
         buffer.extend_from_slice(&data);
 
         Ok(buffer)
