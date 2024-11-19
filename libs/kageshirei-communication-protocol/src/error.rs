@@ -4,6 +4,7 @@ use core::{
     fmt::{Debug, Display, Formatter},
 };
 
+#[derive(Clone, PartialEq, Eq)]
 pub enum Format {
     /// No data have been provided.
     EmptyData,
