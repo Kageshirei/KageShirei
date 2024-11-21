@@ -1,14 +1,23 @@
+version: '3.8'
+
 services:
   server-dedicated-machine:
-    image: debian:latest
+    image: debian:bookworm
     container_name: kageshirei-server-dedicated-machine
-    entrypoint: /app/target/debug/kageshirei-server
+    entrypoint: /bin/bash
     command:
-      - run
       - -c
-      - /app/server/sample-config.json
+      - "apt-get update && apt-get install -y libssl3 && /app/target/debug/kageshirei-server run -c /app/server/sample-config.json"
     volumes:
       - ".:/app"
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_PASSWORD=kageshirei
+      - POSTGRES_DB=kageshirei
+      - POSTGRES_USER=kageshirei
+    ports:
+      - "8080:8080"  # 修改为不同的端口
 
   # Development/testing database
   postgres:

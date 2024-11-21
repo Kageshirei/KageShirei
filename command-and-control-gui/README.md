@@ -67,3 +67,29 @@ suggested,
 you can use the server component to build the GUI for you, it will take care of dependency management and
 cross-compilation
 for you.
+
+
+### If you are are wsl debian / debian os
+```
+sudo apt-get update
+sudo apt-get install libwebkit2gtk-4.1-dev
+sudo apt-get install libsoup-3.0-dev libjavascriptcoregtk-4.0-dev
+export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/pkgconfig
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm install npm
+npm install -g @tauri-apps/cli
+cd command-and-control-gui/
+
+
+
+
+
+```
+
+
+install MobaXterm
+```
+sudo ./target/release/kageshirei-server compile gui
+```

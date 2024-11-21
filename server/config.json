@@ -1,0 +1,54 @@
+{
+    "$schema":    "server-config.schema.json",
+    "api_server": {
+        "port": 8080,
+        "host": "127.0.0.1",
+        "tls":  {
+            "enabled": false,
+            "port":    8443,
+            "host":    "127.0.0.1",
+            "cert":    "./server/sample-tls-certificates/cert.pem",
+            "key":     "./server/sample-tls-certificates/key.pem"
+        }
+    },
+    "log":        {
+        "file":    {
+            "enabled": false,
+            "path":    "./target/logs/server.log"
+        },
+        "console": {
+            "enabled": true,
+            "format":  "compact"
+        }
+    },
+    "jwt":        {
+        "secret": "GEBtLsXxSsi15vZPh+uj5b15AJrHQVBxTEXzhsqytjux6ty6KqfTR7OfRlADefwHFrRgaBO/AMZ/gGrcCLqqnw=="
+    },
+    "database":   {
+        "url":       "postgresql://kageshirei:kageshirei@localhost/kageshirei",
+        "pool_size": 10
+    },
+    "handlers":   [
+        {
+            "enabled":   true,
+            "type":      "http",
+            "protocols": [
+                "json"
+            ],
+            "port":      8081,
+            "host":      "127.0.0.1",
+            "tls":       {
+                "enabled": true,
+                "port":    8444,
+                "host":    "127.0.0.1",
+                "cert":    "./server/sample-tls-certificates/cert.pem",
+                "key":     "./server/sample-tls-certificates/key.pem"
+            },
+            "security":  {
+                "encryption_scheme": "asymmetric",
+                "algorithm":         "xchacha20-poly1305",
+                "encoder":           "hex"
+            }
+        }
+    ]
+}
