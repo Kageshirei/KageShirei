@@ -34,6 +34,7 @@ run_task = { parallel = true, name = [
 
 # Define the tasks responsible for setting up the environment for the build
 [tasks.setup-env.linux]
+rustup target add <missing-target>
 description = "Setup the environment for the build"
 install_script = '''
     rustup target add x86_64-unknown-linux-gnu --force-non-host

@@ -27,7 +27,7 @@ const REQUIRED_PACKAGES: [&str; 15] = [
 fn check_root() -> Result<(), String> {
     if !nix::unistd::Uid::effective().is_root() {
         error!("This command must be run as root.");
-        return Err(anyhow::anyhow!("This command must be run as root"));
+        return Err(anyhow::anyhow!("This command must be run as root").to_string());
     }
 
     Ok(())

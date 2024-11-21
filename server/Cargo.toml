@@ -37,5 +37,5 @@ kageshirei-communication-protocol = { path = "../libs/kageshirei-communication-p
 srv-mod-migration = { path = "../modules/srv-mod-migration" }
 srv-mod-entity = { path = "../modules/srv-mod-entity" }
 chrono = "0.4.38"
-
+anyhow = "1.0.86"
 [features]
