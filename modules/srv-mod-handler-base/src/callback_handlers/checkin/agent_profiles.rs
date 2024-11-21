@@ -207,7 +207,7 @@ pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) ->
                 }),
                 polling_jitter:   profile
                     .get_polling_jitter()
-                    .unwrap_or(Duration::from_secs(10))
+                    .unwrap()//_or(Duration::from_secs(10))
                     .as_millis(),
                 polling_interval: profile
                     .get_polling_interval()
@@ -228,628 +228,245 @@ pub async fn apply_filters(agent: &agent::Model, db_pool: DatabaseConnection) ->
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-// use std::sync::Arc;
-//
-// use serial_test::serial;
-// use srv_mod_config::{
-// handlers,
-// handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType},
-// };
-// use srv_mod_database::{
-// bb8,
-// diesel,
-// diesel::{Connection, PgConnection, SelectableHelper},
-// diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection},
-// diesel_migrations::MigrationHarness,
-// migration::MIGRATIONS,
-// models::{agent_profile::CreateAgentProfile, filter::CreateFilter},
-// schema::filters::dsl::filters,
-// schema_extension::AgentFields,
-// Pool,
-// CUID2,
-// };
-// use srv_mod_handler_base::state::HttpHandlerState;
-//
-// use super::*;
-//
-// fn make_config() -> HandlerConfig {
-// let config = HandlerConfig {
-// enabled:   true,
-// r#type:    HandlerType::Http,
-// protocols: vec![handlers::Protocol::Json],
-// port:      8081,
-// host:      "127.0.0.1".to_string(),
-// tls:       None,
-// security:  HandlerSecurityConfig {
-// encryption_scheme: EncryptionScheme::Plain,
-// algorithm:         None,
-// encoder:           None,
-// },
-// };
-//
-// config
-// }
-//
-// async fn drop_database(url: String) {
-// let mut connection = PgConnection::establish(url.as_str()).unwrap();
-//
-// connection.revert_all_migrations(MIGRATIONS).unwrap();
-// connection.run_pending_migrations(MIGRATIONS).unwrap();
-// }
-//
-// async fn make_pool(url: String) -> Pool {
-// let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(url);
-// Arc::new(
-// bb8::Pool::builder()
-// .max_size(1u32)
-// .build(connection_manager)
-// .await
-// .unwrap(),
-// )
-// }
-//
-// #[tokio::test]
-// #[serial]
-// async fn test_apply_filters_simple_true_check() {
-// let agent = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-//
-// let shared_config = make_config();
-// let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-//
-// Ensure the database is clean
-// drop_database(connection_string.clone()).await;
-// let pool = make_pool(connection_string.clone()).await;
-//
-// let route_state = Arc::new(HttpHandlerState {
-// config:  Arc::new(shared_config),
-// db_pool: pool,
-// });
-//
-// let profile = diesel::insert_into(agent_profiles)
-// .values(CreateAgentProfile {
-// id:               CUID2.create_id(),
-// name:             "Test Profile".to_string(),
-// kill_date:        Some(1),
-// working_hours:    Some(vec![1, 1]),
-// polling_interval: Some(1),
-// polling_jitter:   Some(1),
-// })
-// .returning(AgentProfile::as_returning())
-// .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// diesel::insert_into(filters)
-// .values(&vec![CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::Hostname,
-// filter_op:         FilterOperator::Equals,
-// value:             "DESKTOP-PC".to_string(),
-// sequence:          1,
-// next_hop_relation: None,
-// grouping_start:    false,
-// grouping_end:      false,
-// }])
-// .execute(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// let response = apply_filters(&agent, &route_state).await;
-//
-// println!("{:#?}", response);
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// drop_database(connection_string.clone()).await;
-// }
-//
-// #[tokio::test]
-// #[serial]
-// async fn test_apply_filters_simple_false_check() {
-// let agent = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Windows".to_string(),
-// hostname:          "example-hostname".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-//
-// let shared_config = make_config();
-// let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-//
-// Ensure the database is clean
-// drop_database(connection_string.clone()).await;
-// let pool = make_pool(connection_string.clone()).await;
-//
-// let route_state = Arc::new(HttpHandlerState {
-// config:  Arc::new(shared_config),
-// db_pool: pool,
-// });
-//
-// let profile = diesel::insert_into(agent_profiles)
-// .values(CreateAgentProfile {
-// id:               CUID2.create_id(),
-// name:             "Test Profile".to_string(),
-// kill_date:        Some(1),
-// working_hours:    Some(vec![1, 1]),
-// polling_interval: Some(1),
-// polling_jitter:   Some(1),
-// })
-// .returning(AgentProfile::as_returning())
-// .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// diesel::insert_into(filters)
-// .values(&vec![CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::Hostname,
-// filter_op:         FilterOperator::Equals,
-// value:             "DESKTOP-PC".to_string(),
-// sequence:          1,
-// next_hop_relation: None,
-// grouping_start:    false,
-// grouping_end:      false,
-// }])
-// .execute(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// let response = apply_filters(&agent, &route_state).await;
-//
-// println!("{:#?}", response);
-// assert_eq!(response.kill_date, None);
-// assert_eq!(response.working_hours, None);
-// assert_eq!(response.polling_interval, 30_000);
-// assert_eq!(response.polling_jitter, 10_000);
-//
-// drop_database(connection_string.clone()).await;
-// }
-//
-// #[tokio::test]
-// #[serial]
-// async fn test_apply_filters_one_level_complex_check() {
-// let shared_config = make_config();
-// let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-//
-// Ensure the database is clean
-// drop_database(connection_string.clone()).await;
-// let pool = make_pool(connection_string.clone()).await;
-//
-// let route_state = Arc::new(HttpHandlerState {
-// config:  Arc::new(shared_config),
-// db_pool: pool,
-// });
-//
-// let profile = diesel::insert_into(agent_profiles)
-// .values(CreateAgentProfile {
-// id:               CUID2.create_id(),
-// name:             "Test Profile".to_string(),
-// kill_date:        Some(1),
-// working_hours:    Some(vec![1, 1]),
-// polling_interval: Some(1),
-// polling_jitter:   Some(1),
-// })
-// .returning(AgentProfile::as_returning())
-// .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// NOTE: the following syntax may be prone to misunderstanding as parenthesis are not used to group
-// the filters, using parenthesis is recommended to avoid confusion.
-// hostname = "DESKTOP-PC" AND operative_system = "Windows" or ip = "1.1.1.1"
-// THIS IS EQUAL to (hostname = "DESKTOP-PC" AND operative_system = "Windows") or ip = "1.1.1.1"
-// THIS IS NOT EQUAL to hostname = "DESKTOP-PC" AND (operative_system = "Windows" or ip = "1.1.1.1")
-// Use parenthesis if the latter is the intended behavior
-// let or_id = CUID2.create_id();
-// let and_id = CUID2.create_id();
-// diesel::insert_into(filters)
-// .values(&vec![
-// hostname = "DESKTOP-PC"
-// CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::Hostname,
-// filter_op:         FilterOperator::Equals,
-// value:             "DESKTOP-PC".to_string(),
-// sequence:          1,
-// next_hop_relation: Some(LogicalOperator::And),
-// grouping_start:    false,
-// grouping_end:      false,
-// },
-// operative_system = "Windows"
-// CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::OperativeSystem,
-// filter_op:         FilterOperator::Equals,
-// value:             "Windows".to_string(),
-// sequence:          2,
-// next_hop_relation: Some(LogicalOperator::Or),
-// grouping_start:    false,
-// grouping_end:      false,
-// },
-// ip = "1.1.1.1"
-// CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::Ip,
-// filter_op:         FilterOperator::Equals,
-// value:             "1.1.1.1".to_string(),
-// sequence:          3,
-// next_hop_relation: None,
-// grouping_start:    false,
-// grouping_end:      false,
-// },
-// ])
-// .execute(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// let agent_matching_hostname_and_os = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_hostname_and_os, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname_and_os (expected profile): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// let agent_matching_hostname = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Linux".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "0.0.0.0".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_hostname, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname (expected fallback): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, None);
-// assert_eq!(response.working_hours, None);
-// assert_eq!(response.polling_interval, 30_000);
-// assert_eq!(response.polling_jitter, 10_000);
-//
-// let agent_matching_hostname_and_ip = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Linux".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_hostname_and_ip, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname_and_ip (expected profile): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// let agent_matching_os_and_ip = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Windows".to_string(),
-// hostname:          "example-hostname".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_os_and_ip, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname_and_ip (expected profile): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// drop_database(connection_string.clone()).await;
-// }
-//
-// #[tokio::test]
-// #[serial]
-// async fn test_apply_filters_nesting_complex_check() {
-// let shared_config = make_config();
-// let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-//
-// Ensure the database is clean
-// drop_database(connection_string.clone()).await;
-// let pool = make_pool(connection_string.clone()).await;
-//
-// let route_state = Arc::new(HttpHandlerState {
-// config:  Arc::new(shared_config),
-// db_pool: pool,
-// });
-//
-// let profile = diesel::insert_into(agent_profiles)
-// .values(CreateAgentProfile {
-// id:               CUID2.create_id(),
-// name:             "Test Profile".to_string(),
-// kill_date:        Some(1),
-// working_hours:    Some(vec![1, 1]),
-// polling_interval: Some(1),
-// polling_jitter:   Some(1),
-// })
-// .returning(AgentProfile::as_returning())
-// .get_result::<AgentProfile>(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// operative_system equals "Windows" or hostname equals "DESKTOP-PC";
-//
-// (process_name starts_with "example" and process_name ends_with ".exe") or ip not_equals
-// "1.1.1.1";
-//
-// (hostname = "DESKTOP-PC" AND operative_system = "Windows") or ip = "1.1.1.1"
-// let or_id = CUID2.create_id();
-// let and_id = CUID2.create_id();
-// diesel::insert_into(filters)
-// .values(&vec![
-// hostname = "DESKTOP-PC"
-// CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::Hostname,
-// filter_op:         FilterOperator::Equals,
-// value:             "DESKTOP-PC".to_string(),
-// sequence:          1,
-// next_hop_relation: Some(LogicalOperator::And),
-// grouping_start:    true,
-// grouping_end:      false,
-// },
-// operative_system = "Windows"
-// CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::OperativeSystem,
-// filter_op:         FilterOperator::Equals,
-// value:             "Windows".to_string(),
-// sequence:          2,
-// next_hop_relation: Some(LogicalOperator::Or),
-// grouping_start:    false,
-// grouping_end:      true,
-// },
-// ip = "1.1.1.1"
-// CreateFilter {
-// id:                CUID2.create_id(),
-// agent_profile_id:  profile.id.clone(),
-// agent_field:       AgentFields::Ip,
-// filter_op:         FilterOperator::Equals,
-// value:             "1.1.1.1".to_string(),
-// sequence:          3,
-// next_hop_relation: None,
-// grouping_start:    false,
-// grouping_end:      false,
-// },
-// ])
-// .execute(&mut route_state.db_pool.get().await.unwrap())
-// .await
-// .unwrap();
-//
-// let agent_matching_hostname_and_os = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_hostname_and_os, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname_and_os (expected profile): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// let agent_matching_hostname = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Linux".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "0.0.0.0".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_hostname, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname (expected fallback): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, None);
-// assert_eq!(response.working_hours, None);
-// assert_eq!(response.polling_interval, 30_000);
-// assert_eq!(response.polling_jitter, 10_000);
-//
-// let agent_matching_hostname_and_ip = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Linux".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_hostname_and_ip, &route_state).await;
-//
-// println!(
-// "agent_matching_hostname_and_ip (expected profile): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// let agent_matching_os_and_ip = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Windows".to_string(),
-// hostname:          "example-hostname".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_os_and_ip, &route_state).await;
-//
-// println!(
-// "agent_matching_os_and_ip (expected profile): {:#?}",
-// response
-// );
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// let agent_matching_ip = Agent {
-// id:                CUID2.create_id(),
-// operative_system:  "Linux".to_string(),
-// hostname:          "example-hostname".to_string(),
-// domain:            "example-domain".to_string(),
-// username:          "user".to_string(),
-// ip:                "1.1.1.1".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "example.exe".to_string(),
-// elevated:          false,
-// server_secret_key: "server-key".to_string(),
-// secret_key:        "key".to_string(),
-// signature:         "signature".to_string(),
-// created_at:        Default::default(),
-// updated_at:        Default::default(),
-// };
-// let response = apply_filters(&agent_matching_ip, &route_state).await;
-//
-// println!("agent_matching_ip (expected profile): {:#?}", response);
-// assert_eq!(response.kill_date, Some(1));
-// assert_eq!(response.working_hours, Some(vec![Some(1), Some(1)]));
-// assert_eq!(response.polling_interval, 1);
-// assert_eq!(response.polling_jitter, 1);
-//
-// drop_database(connection_string.clone()).await;
-// }
-// }
+#[cfg(test)]
+mod test {
+    use std::time::Duration;
+
+    use chrono::{NaiveTime, Utc};
+    use kageshirei_communication_protocol::{NetworkInterface, NetworkInterfaceArray};
+    use srv_mod_entity::{
+        active_enums::{AgentField, AgentIntegrity, FilterOperation},
+        entities::{agent, agent_profile, filter},
+        sea_orm::{ActiveValue, Database, TransactionTrait},
+    };
+
+    use super::*;
+
+    async fn cleanup(db: DatabaseConnection) {
+        db.transaction::<_, (), DbErr>(|txn| {
+            Box::pin(async move {
+                agent::Entity::delete_many().exec(txn).await.unwrap();
+                agent_profile::Entity::delete_many()
+                    .exec(txn)
+                    .await
+                    .unwrap();
+                filter::Entity::delete_many().exec(txn).await.unwrap();
+
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+    }
+
+    async fn init() -> DatabaseConnection {
+        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
+            .await
+            .unwrap();
+
+        cleanup(db_pool.clone()).await;
+
+        let agent = agent::Entity::insert(agent::ActiveModel {
+            id:                 ActiveValue::Set("agent1".to_owned()),
+            pid:                ActiveValue::Set(1),
+            secret:             ActiveValue::Set("test".to_owned()),
+            cwd:                ActiveValue::Set("test".to_owned()),
+            server_secret:      ActiveValue::Set("test".to_owned()),
+            operating_system:   ActiveValue::Set("test".to_owned()),
+            integrity:          ActiveValue::Set(AgentIntegrity::Medium),
+            updated_at:         ActiveValue::Set(Utc::now().naive_utc()),
+            domain:             ActiveValue::Set(Some("test".to_owned())),
+            hostname:           ActiveValue::Set("test-hostname".to_owned()),
+            network_interfaces: ActiveValue::Set(NetworkInterfaceArray {
+                network_interfaces: vec![NetworkInterface {
+                    name:        Some("test".to_owned()),
+                    dhcp_server: Some("test".to_owned()),
+                    address:     Some("test".to_owned()),
+                }],
+            }),
+            ppid:               ActiveValue::Set(1),
+            username:           ActiveValue::Set("test".to_owned()),
+            process_name:       ActiveValue::Set("test".to_owned()),
+            signature:          ActiveValue::Set("test".to_owned()),
+            terminated_at:      ActiveValue::Set(None),
+            created_at:         ActiveValue::Set(Utc::now().naive_utc()),
+        })
+        .exec_with_returning(&db_pool)
+        .await
+        .unwrap();
+
+        agent_profile::Entity::insert(agent_profile::ActiveModel {
+            id:               ActiveValue::Set("profile123".to_owned()),
+            name:             ActiveValue::Set("test-profile".to_owned()),
+            working_hours:    ActiveValue::Set(Some(vec![
+                NaiveTime::from_hms_opt(9, 0, 0).unwrap(),
+                NaiveTime::from_hms_opt(18, 0, 0).unwrap(),
+            ])),
+            kill_date:        ActiveValue::Set(Some(
+                DateTimeUtc::from_timestamp(1_700_000_000, 0)
+                    .unwrap()
+                    .naive_utc(),
+            )),
+            polling_jitter:   ActiveValue::Set(humantime::format_duration(Duration::from_secs(20)).to_string()),
+            polling_interval: ActiveValue::Set(humantime::format_duration(Duration::from_secs(20)).to_string()),
+            created_at:       ActiveValue::Set(Utc::now().naive_utc()),
+            updated_at:       ActiveValue::Set(Utc::now().naive_utc()),
+        })
+        .exec(&db_pool)
+        .await
+        .unwrap();
+
+        db_pool
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_apply_filters_no_profiles() {
+        let db = init().await;
+        let agent_model = agent::Entity::find().one(&db).await.unwrap().unwrap();
+
+        let response = apply_filters(&agent_model, db).await;
+
+        assert_eq!(response.id, "agent1");
+        assert_eq!(response.working_hours, None);
+        assert_eq!(response.kill_date, None);
+        assert_eq!(response.polling_jitter, 10_000); // 10 seconds
+        assert_eq!(response.polling_interval, 30_000); // 30 seconds
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_apply_filters_matching_profile() {
+        let db_pool = init().await;
+
+        filter::Entity::insert(filter::ActiveModel {
+            id:                ActiveValue::Set("filter123".to_string()),
+            agent_profile_id:  ActiveValue::Set("profile123".to_owned()),
+            agent_field:       ActiveValue::Set(AgentField::Hostname),
+            filter_op:         ActiveValue::Set(FilterOperation::Equals),
+            value:             ActiveValue::Set(serde_json::Value::String("test-hostname".to_owned())),
+            sequence:          ActiveValue::Set(1),
+            next_hop_relation: ActiveValue::Set(None),
+            grouping_start:    ActiveValue::Set(false),
+            grouping_end:      ActiveValue::Set(false),
+            created_at:        ActiveValue::Set(Utc::now().naive_utc()),
+            updated_at:        ActiveValue::Set(Utc::now().naive_utc()),
+        })
+        .exec(&db_pool)
+        .await
+        .unwrap();
+
+        let agent_model = agent::Entity::find().one(&db_pool).await.unwrap().unwrap();
+
+        let response = apply_filters(&agent_model, db_pool).await;
+
+        assert_eq!(response.id, "agent1");
+        let working_hours = response.working_hours.unwrap();
+        assert_eq!(
+            working_hours[0].unwrap(),
+            seconds_since_midnight(&NaiveTime::from_hms_opt(9, 0, 0).unwrap())
+        );
+        assert_eq!(
+            working_hours[1].unwrap(),
+            seconds_since_midnight(&NaiveTime::from_hms_opt(18, 0, 0).unwrap()),
+        );
+        assert_eq!(response.kill_date.unwrap(), 1_700_000_000);
+        assert_eq!(response.polling_jitter, 20_000);
+        assert_eq!(response.polling_interval, 20_000);
+    }
+
+    #[tokio::test]
+    async fn test_seconds_since_midnight() {
+        let time = NaiveTime::from_hms_opt(14, 30, 45).unwrap(); // 2:30:45 PM
+        let seconds = seconds_since_midnight(&time);
+        assert_eq!(seconds, 14 * 3600 + 30 * 60 + 45);
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_evaluate_filter_equals() {
+        let db_pool = init().await;
+        let agent_model = agent::Entity::find().one(&db_pool).await.unwrap().unwrap();
+
+        let filter = filter::Model {
+            id:                "filter123".to_string(),
+            agent_profile_id:  "profile123".to_owned(),
+            agent_field:       AgentField::Hostname,
+            filter_op:         FilterOperation::Equals,
+            value:             serde_json::Value::String("test-hostname".to_owned()),
+            sequence:          1,
+            next_hop_relation: None,
+            grouping_start:    false,
+            grouping_end:      false,
+            created_at:        Utc::now().naive_utc(),
+            updated_at:        Utc::now().naive_utc(),
+        };
+
+        let result = evaluate_filter(&agent_model, &filter);
+        assert!(result);
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_evaluate_filter_not_equals() {
+        let db_pool = init().await;
+        let agent_model = agent::Entity::find().one(&db_pool).await.unwrap().unwrap();
+
+        let filter = filter::Model {
+            id:                "filter123".to_string(),
+            agent_profile_id:  "profile123".to_owned(),
+            agent_field:       AgentField::Hostname,
+            filter_op:         FilterOperation::NotEquals,
+            value:             serde_json::Value::String("other-agent".to_owned()),
+            sequence:          1,
+            next_hop_relation: None,
+            grouping_start:    false,
+            grouping_end:      false,
+            created_at:        Utc::now().naive_utc(),
+            updated_at:        Utc::now().naive_utc(),
+        };
+
+        let result = evaluate_filter(&agent_model, &filter);
+        assert!(result);
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_evaluate_group_simple() {
+        let db_pool = init().await;
+        let agent_model = agent::Entity::find().one(&db_pool).await.unwrap().unwrap();
+
+        let filters = vec![
+            filter::Model {
+                id:                "filter123".to_string(),
+                agent_profile_id:  "profile123".to_owned(),
+                agent_field:       AgentField::Hostname,
+                filter_op:         FilterOperation::NotEquals,
+                value:             serde_json::Value::String("other-agent".to_owned()),
+                sequence:          1,
+                grouping_start:    true,
+                next_hop_relation: Some(LogicalOperator::And),
+                grouping_end:      false,
+                created_at:        Utc::now().naive_utc(),
+                updated_at:        Utc::now().naive_utc(),
+            },
+            filter::Model {
+                id:                "filter124".to_string(),
+                agent_profile_id:  "profile123".to_owned(),
+                agent_field:       AgentField::Hostname,
+                filter_op:         FilterOperation::Equals,
+                value:             serde_json::Value::String("test-hostname".to_owned()),
+                sequence:          2,
+                grouping_end:      true,
+                next_hop_relation: None,
+                grouping_start:    false,
+                created_at:        Utc::now().naive_utc(),
+                updated_at:        Utc::now().naive_utc(),
+            },
+        ];
+
+        let result = evaluate_group(&agent_model, filters, 0);
+        assert!(result.result);
+        assert_eq!(result.hops, 2);
+    }
+}

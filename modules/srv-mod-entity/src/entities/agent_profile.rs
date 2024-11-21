@@ -17,7 +17,9 @@ pub struct Model {
     pub name:             String,
     pub kill_date:        Option<DateTime>,
     pub working_hours:    Option<Vec<Time>>,
+    #[sea_orm(select_as = "text", save_as = "interval")]
     pub polling_interval: String,
+    #[sea_orm(select_as = "text", save_as = "interval")]
     pub polling_jitter:   String,
     pub created_at:       DateTime,
     pub updated_at:       DateTime,
@@ -78,7 +80,10 @@ impl Model {
     ///
     /// The polling interval as a `Duration` if it is valid, an error message otherwise
     pub fn get_polling_interval(&self) -> Result<Duration, String> {
-        let interval = humantime::parse_duration(&self.polling_interval);
+        let fragments = self.polling_interval.split(":").collect::<Vec<&str>>();
+        let interval =
+            humantime::parse_duration(format!("{}h {}m {}s", fragments[0], fragments[1], fragments[2]).as_ref());
+
         match interval {
             Ok(interval) => Ok(interval),
             Err(e) => Err(format!("Invalid polling interval: {}", e)),
@@ -91,7 +96,10 @@ impl Model {
     ///
     /// The polling jitter as a `Duration` if it is valid, an error message otherwise
     pub fn get_polling_jitter(&self) -> Result<Duration, String> {
-        let jitter = humantime::parse_duration(&self.polling_jitter);
+        let fragments = self.polling_jitter.split(":").collect::<Vec<&str>>();
+        let jitter =
+            humantime::parse_duration(format!("{}h {}m {}s", fragments[0], fragments[1], fragments[2]).as_ref());
+
         match jitter {
             Ok(jitter) => Ok(jitter),
             Err(e) => Err(format!("Invalid polling jitter: {}", e)),
