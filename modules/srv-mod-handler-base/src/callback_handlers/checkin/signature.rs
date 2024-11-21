@@ -38,33 +38,77 @@ pub fn make_signature(checkin: &Checkin) -> Result<String, CryptError> {
     Encoder::new(Variant::Standard).encode(hash.as_slice())
 }
 
-// #[cfg(test)]
-// mod test {
-// use kageshirei_communication_protocol::communication::checkin::PartialCheckin;
-//
-// use super::*;
-//
-// #[test]
-// fn test_make_signature() {
-// let checkin = Checkin::new(PartialCheckin {
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "WORKGROUP".to_string(),
-// username:          "user".to_string(),
-// ip:                "10.2.123.45".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "agent.exe".to_string(),
-// elevated:          true,
-// });
-//
-// let signature = make_signature(&checkin);
-//
-// println!("Signature: {}", signature);
-//
-// assert_eq!(
-// signature,
-// "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g"
-// );
-// }
-// }
+#[cfg(test)]
+mod test {
+    use kageshirei_communication_protocol::{communication::Checkin, NetworkInterface};
+
+    use super::*;
+
+    #[test]
+    fn test_make_signature_valid_input() {
+        // Mock a valid Checkin object
+        let checkin = Checkin {
+            operative_system:   "Windows 10".to_owned(),
+            hostname:           "test-host".to_owned(),
+            domain:             "test-domain".to_owned(),
+            username:           "test-user".to_owned(),
+            network_interfaces: vec![
+                NetworkInterface {
+                    name:        Some("Ethernet".to_owned()),
+                    dhcp_server: Some("192.168.1.1".to_owned()),
+                    address:     Some("192.168.0.1".to_owned()),
+                },
+                NetworkInterface {
+                    name:        Some("Ethernet".to_owned()),
+                    dhcp_server: Some("192.168.10.1".to_owned()),
+                    address:     Some("192.168.10.1".to_owned()),
+                },
+            ],
+            pid:                12345,
+            ppid:               67890,
+            process_name:       "test-process.exe".to_string(),
+            integrity_level:    2,
+            cwd:                "C:\\Users\\test-user".to_string(),
+            metadata:           None,
+        };
+
+        // Compute the signature
+        let signature = make_signature(&checkin);
+
+        // Ensure the signature is valid
+        assert!(signature.is_ok());
+
+        // Validate the signature's length
+        // SHA3-512 output is 64 bytes; base64 encoding adds approximately 33% overhead
+        let signature = signature.unwrap();
+        assert_eq!(signature.len(), 88); // Base64 of 64 bytes is 88 characters
+    }
+
+    #[test]
+    fn test_make_signature_empty_checkin() {
+        // Mock an empty Checkin object
+        let checkin = Checkin {
+            operative_system:   "".to_string(),
+            hostname:           "".to_string(),
+            domain:             "".to_string(),
+            username:           "".to_string(),
+            network_interfaces: vec![],
+            pid:                0,
+            ppid:               0,
+            process_name:       "".to_string(),
+            integrity_level:    0,
+            cwd:                "".to_string(),
+            metadata:           None,
+        };
+
+        // Compute the signature
+        let signature = make_signature(&checkin);
+
+        // Ensure the signature is valid
+        assert!(signature.is_ok());
+
+        // Validate the signature's length
+        let signature = signature.unwrap();
+        assert_eq!(signature.len(), 88); // Even with empty data, the hash output remains consistent
+    }
+}
