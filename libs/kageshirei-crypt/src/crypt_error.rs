@@ -19,7 +19,7 @@ pub struct HkdfInvalidLength;
 /// and the conversion is simply a way to wrap the error into a type that can be compared.
 #[cfg(feature = "hkdf")]
 impl From<hkdf::InvalidLength> for HkdfInvalidLength {
-    fn from(_: hkdf::InvalidLength) -> Self { HkdfInvalidLength }
+    fn from(_: hkdf::InvalidLength) -> Self { Self }
 }
 
 /// All `HkdfInvalidLength` instances are considered equal as they do not contain any additional

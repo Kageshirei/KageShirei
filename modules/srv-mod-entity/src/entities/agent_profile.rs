@@ -81,8 +81,15 @@ impl Model {
     /// The polling interval as a `Duration` if it is valid, an error message otherwise
     pub fn get_polling_interval(&self) -> Result<Duration, String> {
         let fragments = self.polling_interval.split(":").collect::<Vec<&str>>();
-        let interval =
-            humantime::parse_duration(format!("{}h {}m {}s", fragments[0], fragments[1], fragments[2]).as_ref());
+        let interval = humantime::parse_duration(
+            format!(
+                "{}h {}m {}s",
+                fragments.first().unwrap_or(&"0"),
+                fragments.get(1).unwrap_or(&"0"),
+                fragments.last().unwrap_or(&"0")
+            )
+            .as_ref(),
+        );
 
         match interval {
             Ok(interval) => Ok(interval),
@@ -97,8 +104,15 @@ impl Model {
     /// The polling jitter as a `Duration` if it is valid, an error message otherwise
     pub fn get_polling_jitter(&self) -> Result<Duration, String> {
         let fragments = self.polling_jitter.split(":").collect::<Vec<&str>>();
-        let jitter =
-            humantime::parse_duration(format!("{}h {}m {}s", fragments[0], fragments[1], fragments[2]).as_ref());
+        let jitter = humantime::parse_duration(
+            format!(
+                "{}h {}m {}s",
+                fragments.first().unwrap_or(&"0"),
+                fragments.get(1).unwrap_or(&"0"),
+                fragments.last().unwrap_or(&"0")
+            )
+            .as_ref(),
+        );
 
         match jitter {
             Ok(jitter) => Ok(jitter),

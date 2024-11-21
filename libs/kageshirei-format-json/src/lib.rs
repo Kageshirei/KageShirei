@@ -7,7 +7,7 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, collections::BTreeMap, string::ToString, vec::Vec};
+use alloc::{boxed::Box, collections::BTreeMap, string::ToString as _, vec::Vec};
 use core::any::Any;
 
 use kageshirei_communication_protocol::{error::Format as FormatError, magic_numbers, Format};

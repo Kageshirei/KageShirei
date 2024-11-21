@@ -27,10 +27,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
     let registry_key = "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
 
     // Open the registry key and obtain a handle
-    let key_handle = match nt_open_key(registry_key) {
-        Ok(handle) => handle,
-        Err(status) => return Err(status),
-    };
+    let key_handle = nt_open_key(registry_key)?;
 
     let mut ip_addresses = Vec::new();
 
