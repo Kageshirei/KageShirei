@@ -1,5 +1,7 @@
 //! Prepare the agent and operates on its middle stages in order to persist it into the database
 
+use std::mem;
+
 use kageshirei_communication_protocol::{communication::Checkin, NetworkInterfaceArray};
 use kageshirei_crypt::{
     encoder::{
@@ -70,17 +72,17 @@ pub async fn create_or_update(
         .one(connection)
         .await;
 
-    if agent_exists.is_ok() {
+    if agent_exists.is_ok() && agent_exists.unwrap().is_some() {
         info!("Existing agent detected, updating ...");
 
-        let agent = agent::Entity::update_many()
+        let agents = agent::Entity::update_many()
             .filter(agent::Column::Signature.eq(agent.signature.clone().unwrap()))
             .set(agent)
             .exec_with_returning(connection)
             .await
             .map_err(|e| error::CommandHandling::Database("Failed to update agent".to_owned(), e))?;
 
-        let agent = agent
+        let agent = agents
             .first()
             // TOC/TOU inconsistency detected, this is generally really difficult to achieve as
             // there are only a few instructions between the initial select and the update, anyway
@@ -112,159 +114,115 @@ pub async fn create_or_update(
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-// use std::sync::Arc;
-//
-// use anyhow::anyhow;
-// use kageshirei_communication_protocol::communication::checkin::{Checkin, PartialCheckin};
-// use srv_mod_database::{
-// bb8,
-// diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl},
-// diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl},
-// diesel_migrations::MigrationHarness,
-// migration::MIGRATIONS,
-// Pool,
-// };
-//
-// use crate::routes::public::checkin::agent::ensure_checkin_is_valid;
-//
-// async fn drop_database(url: String) {
-// let mut connection = PgConnection::establish(url.as_str()).unwrap();
-//
-// connection.revert_all_migrations(MIGRATIONS).unwrap();
-// connection.run_pending_migrations(MIGRATIONS).unwrap();
-// }
-//
-// async fn make_pool(url: String) -> Pool {
-// let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(url);
-// Arc::new(
-// bb8::Pool::builder()
-// .max_size(1u32)
-// .build(connection_manager)
-// .await
-// .unwrap(),
-// )
-// }
-//
-// #[test]
-// fn ensure_checkin_is_valid_returns_error_when_data_is_err() {
-// let data = Err(anyhow!("Failed to parse checkin data"));
-// let result = ensure_checkin_is_valid(data);
-// assert!(result.is_err());
-// }
-//
-// #[test]
-// fn ensure_checkin_is_valid_returns_ok_when_data_is_ok() {
-// let data = Checkin::new(PartialCheckin {
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "WORKGROUP".to_string(),
-// username:          "user".to_string(),
-// ip:                "10.2.123.45".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "agent.exe".to_string(),
-// elevated:          true,
-// });
-// let result = ensure_checkin_is_valid(Ok(data.clone()));
-// assert_eq!(result.unwrap(), data);
-// }
-//
-// #[test]
-// fn prepare_returns_create_agent() {
-// let data = Checkin::new(PartialCheckin {
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "WORKGROUP".to_string(),
-// username:          "user".to_string(),
-// ip:                "10.2.123.45".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "agent.exe".to_string(),
-// elevated:          true,
-// });
-// let result = super::prepare(data);
-// assert_eq!(result.operative_system, "Windows");
-// assert_eq!(result.hostname, "DESKTOP-PC");
-// assert_eq!(result.domain, "WORKGROUP");
-// assert_eq!(result.username, "user");
-// assert_eq!(result.ip, "10.2.123.45");
-// assert_eq!(result.process_id, 1234);
-// assert_eq!(result.parent_process_id, 5678);
-// assert_eq!(result.process_name, "agent.exe");
-// assert_eq!(result.elevated, true);
-// assert_ne!(result.server_secret_key, "");
-// assert_ne!(result.secret_key, "");
-// assert_ne!(result.signature, "");
-// assert_ne!(result.id, "");
-// }
-//
-// #[tokio::test]
-// async fn create_or_update_returns_agent() {
-// let data = Checkin::new(PartialCheckin {
-// operative_system:  "Windows".to_string(),
-// hostname:          "DESKTOP-PC".to_string(),
-// domain:            "WORKGROUP".to_string(),
-// username:          "user".to_string(),
-// ip:                "10.2.123.45".to_string(),
-// process_id:        1234,
-// parent_process_id: 5678,
-// process_name:      "agent.exe".to_string(),
-// elevated:          true,
-// });
-//
-// let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-//
-// Ensure the database is clean
-// drop_database(connection_string.clone()).await;
-// let pool = make_pool(connection_string.clone()).await;
-//
-// let mut connection = pool.get().await.unwrap();
-// let agent = super::prepare(data.clone());
-// let result = super::create_or_update(agent, &mut connection).await;
-//
-// assert_eq!(result.operative_system, "Windows");
-// assert_eq!(result.hostname, "DESKTOP-PC");
-// assert_eq!(result.domain, "WORKGROUP");
-// assert_eq!(result.username, "user");
-// assert_eq!(result.ip, "10.2.123.45");
-// assert_eq!(result.process_id, 1234);
-// assert_eq!(result.parent_process_id, 5678);
-// assert_eq!(result.process_name, "agent.exe");
-// assert_eq!(result.elevated, true);
-// assert_ne!(result.server_secret_key, "");
-// assert_ne!(result.secret_key, "");
-// assert_ne!(result.signature, "");
-// assert_ne!(result.id, "");
-//
-// check if the agent already exists
-// let agent_exists = srv_mod_database::schema::agents::dsl::agents
-// .filter(srv_mod_database::schema::agents::dsl::signature.eq(&result.signature))
-// .first::<srv_mod_database::models::agent::Agent>(&mut connection)
-// .await;
-//
-// assert!(agent_exists.is_ok());
-// assert_eq!(agent_exists.unwrap().id, result.id);
-//
-// update the agent with the new server/agent secret key and signature
-// let agent = super::prepare(data);
-// let new_result = super::create_or_update(agent, &mut connection).await;
-//
-// assert_eq!(new_result.operative_system, "Windows");
-// assert_eq!(new_result.hostname, "DESKTOP-PC");
-// assert_eq!(new_result.domain, "WORKGROUP");
-// assert_eq!(new_result.username, "user");
-// assert_eq!(new_result.ip, "10.2.123.45");
-// assert_eq!(new_result.process_id, 1234);
-// assert_eq!(new_result.parent_process_id, 5678);
-// assert_eq!(new_result.process_name, "agent.exe");
-// assert_eq!(new_result.elevated, true);
-// assert_ne!(new_result.server_secret_key, result.server_secret_key);
-// assert_ne!(new_result.secret_key, result.secret_key);
-// assert_eq!(new_result.signature, result.signature);
-//
-// Ensure the database is clean
-// drop_database(connection_string.clone()).await;
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use kageshirei_communication_protocol::communication::Checkin;
+    use srv_mod_entity::{
+        entities::agent_command,
+        sea_orm::{ActiveValue, Database, TransactionTrait},
+    };
+
+    use super::*;
+
+    /// Helper function to create a mock `Checkin` object
+    fn mock_checkin() -> Checkin {
+        Checkin {
+            operative_system:   "Linux".to_string(),
+            hostname:           "test-host".to_string(),
+            domain:             "test-domain".to_string(),
+            username:           "test-user".to_string(),
+            network_interfaces: vec![],
+            pid:                1234,
+            ppid:               5678,
+            process_name:       "test-process".to_string(),
+            integrity_level:    1,
+            cwd:                "/test/path".to_string(),
+            metadata:           None,
+        }
+    }
+
+    async fn cleanup(db: DatabaseConnection) {
+        db.transaction::<_, (), DbErr>(|txn| {
+            Box::pin(async move {
+                agent::Entity::delete_many().exec(txn).await.unwrap();
+
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+    }
+
+    async fn init() -> DatabaseConnection {
+        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
+            .await
+            .unwrap();
+
+        cleanup(db_pool.clone()).await;
+
+        db_pool
+    }
+
+    #[tokio::test]
+    async fn test_prepare() {
+        let checkin_data = mock_checkin();
+
+        // Test prepare function
+        let prepared_agent = prepare(checkin_data.clone()).expect("Failed to prepare agent");
+
+        assert_eq!(
+            prepared_agent.operating_system.unwrap(),
+            checkin_data.operative_system
+        );
+        assert_eq!(prepared_agent.hostname.unwrap(), checkin_data.hostname);
+        assert_eq!(prepared_agent.username.unwrap(), checkin_data.username);
+        assert_eq!(prepared_agent.pid.unwrap(), checkin_data.pid);
+        assert_eq!(prepared_agent.ppid.unwrap(), checkin_data.ppid);
+        assert_eq!(
+            prepared_agent.process_name.unwrap(),
+            checkin_data.process_name
+        );
+        assert_eq!(prepared_agent.cwd.unwrap(), checkin_data.cwd);
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_create_or_update_insert() {
+        let db: DatabaseConnection = init().await;
+
+        let checkin_data = mock_checkin();
+        let prepared_agent = prepare(checkin_data).expect("Failed to prepare agent");
+
+        // Insert a new agent
+        let inserted_agent = create_or_update(prepared_agent, &db)
+            .await
+            .expect("Failed to create or update agent");
+
+        assert!(inserted_agent.id.len() > 0);
+        assert_eq!(inserted_agent.hostname, "test-host");
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_create_or_update_update() {
+        let db = init().await;
+
+        let checkin_data = mock_checkin();
+        let mut prepared_agent = prepare(checkin_data.clone()).expect("Failed to prepare agent");
+
+        // Insert a new agent
+        let inserted_agent = create_or_update(prepared_agent.clone(), &db)
+            .await
+            .expect("Failed to create or update agent");
+
+        prepared_agent.hostname = Set("updated-host".to_owned());
+
+        // Update the same agent
+        let updated_agent = create_or_update(prepared_agent, &db)
+            .await
+            .expect("Failed to update agent");
+
+        assert_eq!(inserted_agent.id, updated_agent.id);
+        assert_eq!(updated_agent.hostname, "updated-host");
+    }
+}
