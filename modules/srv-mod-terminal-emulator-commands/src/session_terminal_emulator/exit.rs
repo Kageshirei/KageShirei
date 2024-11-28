@@ -1,3 +1,5 @@
+//! Exit the terminal session on the client side
+
 use tracing::{debug, instrument};
 
 use crate::command_handler::CommandHandlerArguments;

@@ -1,3 +1,5 @@
+//! This module contains the command handler for the `notification` command
+
 use clap::Args;
 use serde::Serialize;
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};

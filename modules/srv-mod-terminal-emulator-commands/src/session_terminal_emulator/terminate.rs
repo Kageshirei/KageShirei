@@ -1,3 +1,5 @@
+//! Handle the terminate command
+
 use kageshirei_communication_protocol::{
     communication::{AgentCommands, SimpleAgentCommand},
     Metadata,

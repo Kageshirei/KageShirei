@@ -1,3 +1,5 @@
+//! The global session terminal command
+
 use clap::Args;
 use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
@@ -15,17 +17,25 @@ pub struct GlobalSessionTerminalSessionsArguments {
     pub ids: Option<Vec<String>>,
 }
 
+/// The record of a terminal session
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionOpeningRecordUnparsed {
+    /// The identifier of the session
     pub id:       String,
+    /// The hostname of the session
     pub hostname: String,
+    /// The current working directory of the session
     pub cwd:      String,
 }
 
+/// The record of a terminal session
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SessionOpeningRecord {
+    /// The hostname of the session
     pub hostname: String,
+    /// The current working directory of the session
     pub cwd:      String,
+    /// The arguments of the session
     pub args:     Vec<String>,
 }
 
@@ -39,6 +49,15 @@ impl From<agent::Model> for SessionOpeningRecord {
     }
 }
 
+/// Chains the hostname condition for the query
+///
+/// # Arguments
+///
+/// * `ids` - The list of hostnames to query
+///
+/// # Returns
+///
+/// The condition for the query
 fn make_hostname_condition_from_ids(ids: Vec<String>) -> Condition {
     let mut condition = Condition::any();
 

@@ -1,3 +1,5 @@
+//! Global session terminal `make` commands
+
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use tracing::{debug, instrument};
@@ -10,12 +12,14 @@ use crate::{
 mod notification;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionMakeArguments {
+    /// The subcommand to run
     #[command(subcommand)]
     pub command: MakeSubcommands,
 }
 
+/// Make something enumeration, a list of possible subcommands
 #[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
 pub enum MakeSubcommands {
     /// Make a new notification and broadcast it to all connected clients
@@ -28,6 +32,7 @@ pub enum MakeSubcommands {
 pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionMakeArguments) -> Result<String, String> {
     debug!("Terminal command received");
 
+    #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
     match &args.command {
         MakeSubcommands::Notification(args) => notification::handle(config.clone(), args).await,
     }

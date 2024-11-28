@@ -1,3 +1,5 @@
+//! Terminal emulator commands handling logic for the terminal emulator on the client side
+
 pub use clap::builder::StyledStr;
 use clap::Parser;
 use serde::{Serialize, Serializer};
@@ -13,7 +15,7 @@ pub mod global_session;
 mod post_process_result;
 pub mod session_terminal_emulator;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Command {
     SessionTerminalEmulatorCommands(SessionTerminalEmulatorCommands),
     GlobalSessionTerminalEmulatorCommands(GlobalSessionTerminalEmulatorCommands),
@@ -24,6 +26,7 @@ impl Serialize for Command {
     where
         S: Serializer,
     {
+        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
         match self {
             Self::SessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
             Self::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
@@ -74,6 +77,7 @@ impl Command {
 
 impl CommandHandler for Command {
     async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
+        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
         match self {
             Self::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
             Self::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,

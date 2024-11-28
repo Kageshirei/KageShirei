@@ -74,7 +74,7 @@ impl WithMetadata for Checkin {
 /// The checkin response struct
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[cfg_attr(feature = "server", derive(Debug))]
-#[expect(
+#[allow(
     clippy::module_name_repetitions,
     reason = "The struct is named `CheckinResponse` because it represents the response to a checkin."
 )]

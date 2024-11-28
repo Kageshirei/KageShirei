@@ -11,6 +11,10 @@ pub trait CommandHandler: Debug {
     ) -> impl std::future::Future<Output = Result<String, String>> + Send;
 }
 
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "Module name repeated to avoid confusion"
+)]
 pub type CommandHandlerArguments = Arc<HandleArguments>;
 
 #[derive(Debug, Clone)]

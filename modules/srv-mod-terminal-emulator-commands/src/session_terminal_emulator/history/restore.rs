@@ -1,3 +1,5 @@
+//! Restore terminal session history commands
+
 use clap::Args;
 use serde::Serialize;
 use serde_json::json;

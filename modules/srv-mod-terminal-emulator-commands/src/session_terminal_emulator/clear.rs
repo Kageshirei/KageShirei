@@ -1,3 +1,5 @@
+//! Handle the clear command for the terminal emulator
+
 use chrono::Utc;
 use clap::Args;
 use serde::Serialize;
@@ -28,9 +30,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
 
     let db = config.db_pool.clone();
 
-    let log: logs::Model;
-
-    if !args.permanent {
+    let log: logs::Model = if !args.permanent {
         // clear commands marking them as deleted (soft delete)
         let pending_log = logs::ActiveModel {
             level: Set(LogLevel::Warning),
@@ -56,7 +56,7 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         );
 
         update.map_err(|e| e.to_string())?;
-        log = log_insertion.map_err(|e| e.to_string())?;
+        log_insertion.map_err(|e| e.to_string())?
     }
     else {
         // clear commands permanently
@@ -78,8 +78,8 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         );
 
         delete.map_err(|e| e.to_string())?;
-        log = log_insertion.map_err(|e| e.to_string())?;
-    }
+        log_insertion.map_err(|e| e.to_string())?
+    };
 
     // broadcast the log
     config

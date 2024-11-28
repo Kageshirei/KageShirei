@@ -26,7 +26,7 @@ unsafe impl Send for Metadata {}
 unsafe impl Sync for Metadata {}
 
 /// Define the metadata trait responsible for providing metadata about a type.
-#[expect(
+#[allow(
     clippy::module_name_repetitions,
     reason = "The trait is named `WithMetadata` because it provides metadata for a type."
 )]

@@ -3,21 +3,21 @@ use serde::Serialize;
 
 use crate::{
     command_handler::{CommandHandler, CommandHandlerArguments},
-    global_session::{make::TerminalSessionMakeArguments, session::GlobalSessionTerminalSessionsArguments},
-    session_terminal_emulator::{
-        clear,
-        clear::TerminalSessionClearArguments,
-        exit,
-        history,
-        history::TerminalSessionHistoryArguments,
-    },
+    session_terminal_emulator::{clear::TerminalSessionClearArguments, history::TerminalSessionHistoryArguments},
 };
-mod make;
-mod session;
 
-#[derive(Parser, Debug, PartialEq, Serialize)]
+pub(crate) mod clear;
+pub(crate) mod exit;
+pub(crate) mod history;
+mod terminate;
+
+#[derive(Parser, Debug, PartialEq, Eq, Serialize)]
 #[command(about, long_about = None, no_binary_name(true), bin_name = "")]
-pub struct GlobalSessionTerminalEmulatorCommands {
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "Module name repeated to avoid confusion with the global context"
+)]
+pub struct SessionTerminalEmulatorCommands {
     /// Turn debugging information on
     #[arg(
 		short,
@@ -36,7 +36,7 @@ The more occurrences increase the verbosity level
     pub command: Commands,
 }
 
-#[derive(Subcommand, Debug, PartialEq, Serialize)]
+#[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
 pub enum Commands {
     /// Clear the terminal screen
     #[serde(rename = "clear")]
@@ -47,22 +47,22 @@ pub enum Commands {
     /// Get the history of the terminal session and operate on it
     #[serde(rename = "history")]
     History(TerminalSessionHistoryArguments),
-    /// List terminal sessions or open the terminal session for the provided hostnames
-    #[serde(rename = "sessions")]
-    Sessions(GlobalSessionTerminalSessionsArguments),
-    /// Generate something
-    #[serde(rename = "make")]
-    Make(TerminalSessionMakeArguments),
+    /// Terminate the agent linked to the terminal session.
+    ///
+    /// This action cannot be undone and will cause the immediate
+    /// drop of any active connection
+    #[serde(rename = "terminate")]
+    Terminate,
 }
 
-impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
+impl CommandHandler for SessionTerminalEmulatorCommands {
     async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
+        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
         match &self.command {
             Commands::Clear(args) => clear::handle(config, args).await,
             Commands::Exit => exit::handle(config).await,
             Commands::History(args) => history::handle(config, args).await,
-            Commands::Sessions(args) => session::handle(config, args).await,
-            Commands::Make(args) => make::handle(config, args).await,
+            Commands::Terminate => terminate::handle(config).await,
         }
     }
 }

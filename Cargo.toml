@@ -40,7 +40,7 @@ readme = "README.md"
 
 [workspace.lints.clippy]
 alloc_instead_of_core = "deny"
-allow_attributes = "deny"
+allow_attributes = "allow"
 allow_attributes_without_reason = "deny"
 almost_complete_range = "warn"
 approx_constant = "deny"

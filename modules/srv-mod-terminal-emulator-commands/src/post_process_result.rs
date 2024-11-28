@@ -1,3 +1,5 @@
+//! The result of a command requiring additional post-processing in the terminal emulator.
+
 use serde::{Deserialize, Serialize};
 
 /// The result of a command requiring additional post-processing in the terminal emulator.

@@ -1,3 +1,5 @@
+//! Module for managing the terminal session history
+
 use clap::{Args, Subcommand};
 use serde::Serialize;
 use srv_mod_entity::{
@@ -15,11 +17,12 @@ use crate::{
 mod restore;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionHistoryArguments {
     /// Display the full history including the commands hidden using `clear`
     #[arg(short, long)]
     pub full:    bool,
+    /// The subcommand to run if any
     #[command(subcommand)]
     pub command: Option<HistorySubcommands>,
 }
@@ -36,7 +39,8 @@ pub enum HistorySubcommands {
 pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHistoryArguments) -> Result<String, String> {
     debug!("Terminal command received");
 
-    if let Some(subcommand) = &args.command {
+    if let Some(ref subcommand) = args.command {
+        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
         match subcommand {
             HistorySubcommands::Restore(args) => restore::handle(config.clone(), args).await,
         }
