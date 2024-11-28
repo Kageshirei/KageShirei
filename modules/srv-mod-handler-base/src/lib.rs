@@ -29,7 +29,10 @@ pub mod state;
 /// Handle the extraction of pending commands for a given id marking all the retrieved ones as
 /// running
 #[instrument]
-pub async fn handle_command_retrieval(state: HandlerSharedState, agent_id: String) -> BaseHandlerResponse {
+pub async fn handle_command_retrieval(
+    state: HandlerSharedState,
+    agent_id: String,
+) -> Result<BaseHandlerResponse, BaseHandlerResponse> {
     let db_connection = state.db_pool.clone();
 
     let commands = db_connection
@@ -65,11 +68,11 @@ pub async fn handle_command_retrieval(state: HandlerSharedState, agent_id: Strin
             commands.err().unwrap()
         );
         // Return an empty response if the transaction failed
-        return BaseHandlerResponse {
+        return Err(BaseHandlerResponse {
             status:    NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
             body:      Vec::new(),
             formatter: None,
-        };
+        });
     }
     let commands = commands.unwrap();
 
@@ -79,11 +82,11 @@ pub async fn handle_command_retrieval(state: HandlerSharedState, agent_id: Strin
         .write::<_, &str>(commands, None)
         .unwrap_or_default();
 
-    BaseHandlerResponse {
+    Ok(BaseHandlerResponse {
         status: NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
         body,
         formatter: None,
-    }
+    })
 }
 
 /// Handle the result of the execution of a given command marking it as completed or failed

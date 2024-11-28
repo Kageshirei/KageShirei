@@ -1,17 +1,24 @@
+//! Server module for handling callback using http requests
+
 #![feature(str_as_str)]
+#![allow(
+    clippy::integer_division_remainder_used,
+    reason = "mostly present in macros"
+)]
+#![allow(clippy::redundant_pub_crate, reason = "mostly present in macros")]
 
 use std::{sync::Arc, time::Duration};
 
 use axum::{
     extract::{DefaultBodyLimit, Host, MatchedPath},
-    handler::HandlerWithoutStateExt,
+    handler::HandlerWithoutStateExt as _,
     http::{Request, StatusCode, Uri},
     response::{Redirect, Response},
     Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
-use kageshirei_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
-use srv_mod_config::handlers::HandlerConfig;
+use kageshirei_utils::{duration_extension::DurationExt as _, unrecoverable_error::unrecoverable_error};
+use srv_mod_config::handlers::Config;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use srv_mod_handler_base::{state, state::HandlerSharedState};
 use tokio::select;
@@ -26,11 +33,12 @@ use tower_http::{
 };
 use tracing::{error, info, info_span, instrument, warn, Span};
 
+mod parse_base_handler_response;
 mod routes;
 
 #[instrument(name = "HTTP handler", skip_all)]
 pub async fn start(
-    config: Arc<HandlerConfig>,
+    config: Arc<Config>,
     cancellation_token: CancellationToken,
     pool: DatabaseConnection,
 ) -> Result<(), String> {
@@ -48,16 +56,11 @@ pub async fn start(
             // add log tracing
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
-                    let matched_path = if let Some(path) = request
+                    let matched_path = request
                         .extensions()
                         .get::<MatchedPath>()
                         .map(MatchedPath::as_str)
-                    {
-                        path
-                    }
-                    else {
-                        "None"
-                    };
+                        .map_or("None", |path| path);
 
                     info_span!(
                         "http_request",
@@ -118,12 +121,10 @@ pub async fn start(
 
         let listener = tokio::net::TcpListener::bind(format!(
             "{}:{}",
-            if let Some(tls_host) = tls_config.host.clone() {
-                tls_host
-            }
-            else {
-                config.host.clone()
-            },
+            tls_config
+                .host
+                .clone()
+                .map_or_else(|| config.host.clone(), |tls_host| tls_host),
             tls_config.port
         ))
         .await;
@@ -222,7 +223,7 @@ fn make_https(host: String, uri: Uri, http_port: u16, https_port: u16) -> Result
     }
 
     let https_host = host.replace(&http_port.to_string(), &https_port.to_string());
-    parts.authority = Some(https_host.parse().map_err(|_| "Invalid authority")?);
+    parts.authority = Some(https_host.parse().map_err(|_e| "Invalid authority")?);
 
-    Ok(Uri::from_parts(parts).map_err(|_| "Invalid URI")?)
+    Ok(Uri::from_parts(parts).map_err(|_e| "Invalid URI")?)
 }

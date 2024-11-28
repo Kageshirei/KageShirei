@@ -1,3 +1,5 @@
+//! Public routes for the API server
+
 use axum::Router;
 use srv_mod_handler_base::state::HandlerSharedState;
 

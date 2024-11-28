@@ -1,3 +1,5 @@
+//! This module is used to manage the database schema and migrations.
+
 pub use sea_orm_migration::prelude::*;
 
 pub struct Migrator;

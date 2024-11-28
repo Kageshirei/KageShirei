@@ -6,14 +6,20 @@ use crate::{
     sea_orm::{EnumIter, Iterable as _},
 };
 
+/// The status of a command
 #[derive(DeriveIden)]
 struct CommandStatus;
 
+/// The possible statuses of a command
 #[derive(DeriveIden, EnumIter)]
 enum CommandStatusVariants {
+    /// The command is pending
     Pending,
+    /// The command is running
     Running,
+    /// The command is completed
     Completed,
+    /// The command has failed
     Failed,
 }
 
@@ -78,18 +84,31 @@ impl MigrationTrait for Migration {
     }
 }
 
+/// The column definitions for the `agent_command` table + the table name
 #[derive(DeriveIden)]
 enum AgentCommand {
+    /// The table name
     Table,
+    /// The unique identifier of the command
     Id,
+    /// The agent identifier
     AgentId,
+    /// The command to execute
     Command,
+    /// The output of the command
     Output,
+    /// The exit code of the command
     ExitCode,
+    /// The status of the command (running, completed, failed, pending, etc.)
     Status,
+    /// The timestamp when the command was retrieved
     RetrievedAt,
+    /// The timestamp when the command was completed
     CompletedAt,
+    /// The timestamp when the command failed
     FailedAt,
+    /// The timestamp when the command was created
     CreatedAt,
+    /// The timestamp when the command was updated
     UpdatedAt,
 }

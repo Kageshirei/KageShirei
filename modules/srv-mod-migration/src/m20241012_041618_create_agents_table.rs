@@ -5,17 +5,30 @@ use sea_orm_migration::{
 
 use crate::sea_orm::{EnumIter, Iterable as _};
 
+/// The integrity level of an agent
 #[derive(DeriveIden)]
 struct AgentIntegrity;
 
+/// The possible integrity levels of an agent
 #[derive(DeriveIden, EnumIter)]
 enum AgentIntegrityVariants {
+    /// The agent is untrusted
     Untrusted,
+    /// The agent has low integrity
     Low,
+    /// The agent has medium integrity
     Medium,
+    /// The agent has high integrity
     High,
+    /// The agent is protected by the system
     System,
+    /// The agent is a protected process
     ProtectedProcess,
+    /// The integrity provided is invalid
+    #[expect(
+        clippy::upper_case_acronyms,
+        reason = "The integrity provided is invalid and must be easily recognizable in code"
+    )]
     INVALID,
 }
 
@@ -77,30 +90,48 @@ impl MigrationTrait for Migration {
 
 #[derive(DeriveIden, EnumIter)]
 pub enum Agent {
+    /// The id of the agent
     Table,
+    /// The id of the agent
     Id,
+    /// The operating system of the agent
     #[sea_orm(iden = "operating_system")]
     OperativeSystem,
+    /// The hostname of the agent
     Hostname,
+    /// The domain of the agent
     Domain,
+    /// The username of the agent
     Username,
+    /// The network interfaces of the agent
     #[sea_orm(iden = "network_interfaces")]
     NetworkInterfaces,
+    /// The process identifier of the agent
     PID,
+    /// The parent process identifier of the agent
     PPID,
+    /// The name of the process of the agent
     #[sea_orm(iden = "process_name")]
     ProcessName,
+    /// The integrity level of the agent
     Integrity,
+    /// The current working directory of the agent
     #[sea_orm(iden = "cwd")]
     CurrentWorkingDirectory,
+    /// The server secret used to communicate with the agent
     #[sea_orm(iden = "server_secret")]
     ServerSecret,
+    /// The secret associated with the agent
     Secret,
+    /// The signature of the agent
     Signature,
+    /// The time the agent was terminated
     #[sea_orm(iden = "terminated_at")]
     TerminatedAt,
+    /// The time the agent was created
     #[sea_orm(iden = "created_at")]
     CreatedAt,
+    /// The time the agent was updated
     #[sea_orm(iden = "updated_at")]
     UpdatedAt,
 }

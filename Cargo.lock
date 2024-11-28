@@ -5942,6 +5942,7 @@ dependencies = [
  "humantime",
  "kageshirei-communication-protocol",
  "kageshirei-crypt",
+ "kageshirei-format-json",
  "kageshirei-utils",
  "mod-protocol-http",
  "serde",
