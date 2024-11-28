@@ -89,7 +89,7 @@ impl MigrationTrait for Migration {
                 -- Get the current max session_command_id for this session_id
                 select coalesce(max(sequence_counter), -1) + 1
                 into current_max
-                from commands
+                from terminal_history
                 where session_id = new.session_id;
 
                 -- Set the session_command_id for the new row
