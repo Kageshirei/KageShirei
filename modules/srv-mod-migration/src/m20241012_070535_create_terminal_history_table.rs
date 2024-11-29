@@ -86,11 +86,19 @@ impl MigrationTrait for Migration {
             declare
                 current_max bigint;
             begin
-                -- Get the current max session_command_id for this session_id
-                select coalesce(max(sequence_counter), -1) + 1
-                into current_max
-                from terminal_history
-                where session_id = new.session_id;
+                if new.session_id is null then
+                    -- If session_id is NULL, calculate the max sequence_counter globally
+                    select coalesce(max(sequence_counter), 0) + 1
+                    into current_max
+                    from terminal_history
+                    where session_id is null;
+                else
+                    -- If session_id is not NULL, calculate the max sequence_counter for that session_id
+                    select coalesce(max(sequence_counter), 0) + 1
+                    into current_max
+                    from terminal_history
+                    where session_id = new.session_id;
+                end if;
 
                 -- Set the session_command_id for the new row
                 new.sequence_counter = current_max;
