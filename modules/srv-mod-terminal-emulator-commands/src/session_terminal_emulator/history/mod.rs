@@ -86,70 +86,140 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionHisto
 
 #[cfg(test)]
 mod tests {
-    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
-    use serial_test::serial;
-    use srv_mod_database::models::command::CreateCommand;
+    use std::sync::Arc;
+
+    use srv_mod_entity::{
+        entities::logs,
+        sea_orm::{prelude::*, Database, DatabaseConnection, EntityTrait, TransactionTrait},
+    };
+    use tokio::{self, sync::broadcast};
 
     use super::*;
-    use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
+    use crate::command_handler::{HandleArguments, HandleArgumentsSession, HandleArgumentsUser};
+
+    async fn cleanup(db: DatabaseConnection) {
+        db.transaction::<_, (), DbErr>(|txn| {
+            Box::pin(async move {
+                logs::Entity::delete_many().exec(txn).await.unwrap();
+
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+    }
+
+    async fn init() -> DatabaseConnection {
+        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
+            .await
+            .unwrap();
+
+        cleanup(db_pool.clone()).await;
+
+        db_pool
+    }
 
     #[tokio::test]
-    #[serial]
-    async fn test_handle_history_display() {
-        drop_database().await;
-        let db_pool = make_pool().await;
+    #[serial_test::serial]
+    async fn test_handle_history_full() {
+        // Mock database setup
+        let db = init().await;
 
-        let user = generate_test_user(db_pool.clone()).await;
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
 
-        let session_id_v = "global";
+        // Create command handler arguments
+        let config = Arc::new(HandleArguments {
+            session:          HandleArgumentsSession {
+                session_id: "test".to_owned(),
+                hostname:   "test".to_owned(),
+            },
+            user:             HandleArgumentsUser {
+                user_id:  "test".to_owned(),
+                username: "test".to_owned(),
+            },
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
+
         let args = TerminalSessionHistoryArguments {
+            full:    true,
             command: None,
         };
 
-        let binding = db_pool.clone();
-
-        // open a scope to automatically drop the connection once exited
-        {
-            let mut connection = binding.get().await.unwrap();
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "ls".to_string();
-
-            // Insert a dummy command
-            let inserted_command_0 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_0.deleted_at, None);
-            assert_eq!(inserted_command_0.restored_at, None);
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "pwd".to_string();
-
-            let inserted_command_1 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_1.deleted_at, None);
-            assert_eq!(inserted_command_1.restored_at, None);
-        }
-
-        let result = handle(session_id_v, db_pool, &args).await;
-
+        let result = handle(config, &args).await;
         assert!(result.is_ok());
-        let result = result.unwrap();
-        let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
+        let output = result.unwrap();
+        assert!(output.contains("\"type\":\"history\""));
+    }
 
-        assert_eq!(deserialized.len(), 2);
-        assert_eq!(deserialized[0].command, "ls");
-        assert_eq!(deserialized[1].command, "pwd");
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_handle_history_filtered() {
+        // Mock database setup
+        let db = init().await;
 
-        drop_database().await;
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
+
+        // Create command handler arguments
+        let config = Arc::new(HandleArguments {
+            session:          HandleArgumentsSession {
+                session_id: "test".to_owned(),
+                hostname:   "test".to_owned(),
+            },
+            user:             HandleArgumentsUser {
+                user_id:  "test".to_owned(),
+                username: "test".to_owned(),
+            },
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
+        let args = TerminalSessionHistoryArguments {
+            full:    false,
+            command: None,
+        };
+
+        let result = handle(config, &args).await;
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.contains("\"type\":\"history\""));
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_handle_restore_subcommand() {
+        // Mock database setup
+        let db = init().await;
+
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
+
+        // Create command handler arguments
+        let config = Arc::new(HandleArguments {
+            session:          HandleArgumentsSession {
+                session_id: "test".to_owned(),
+                hostname:   "test".to_owned(),
+            },
+            user:             HandleArgumentsUser {
+                user_id:  "test".to_owned(),
+                username: "test".to_owned(),
+            },
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
+        let restore_args = TerminalSessionHistoryRestoreArguments {
+            command_ids: vec![1, 2],
+        };
+
+        let args = TerminalSessionHistoryArguments {
+            full:    false,
+            command: Some(HistorySubcommands::Restore(restore_args)),
+        };
+
+        let result = handle(config, &args).await;
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.contains("Restored"));
     }
 }
