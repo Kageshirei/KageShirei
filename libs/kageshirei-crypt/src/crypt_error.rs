@@ -34,7 +34,7 @@ impl Eq for HkdfInvalidLength {}
 
 /// Implement the Display trait for the HkdfInvalidLength error, delegating to the original error
 /// message.
-#[cfg(feature = "hkdf")]
+#[cfg(all(feature = "hkdf", any(feature = "server", test)))]
 impl Display for HkdfInvalidLength {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result { write!(f, "{}", hkdf::InvalidLength) }
 }
