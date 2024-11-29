@@ -9,7 +9,7 @@ use crate::validators;
 pub struct Config {
     /// The port to listen on
     #[validate(
-        range(min = 1, max = 0xFFFF),
+        range(min = 1, max = 0xffff),
         custom(function = "validators::validate_port")
     )]
     pub port: u16,
@@ -29,7 +29,7 @@ pub struct TlsConfig {
     pub enabled: bool,
     /// The port to listen on for TLS connections
     #[validate(
-        range(min = 1, max = 0xFFFF),
+        range(min = 1, max = 0xffff),
         custom(function = "validators::validate_port")
     )]
     pub port:    u16,

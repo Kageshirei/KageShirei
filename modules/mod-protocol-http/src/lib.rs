@@ -17,9 +17,9 @@
 #![cfg_attr(test, feature(internal_output_capture, proc_macro_hygiene))]
 
 #[cfg(not(feature = "std"))]
-extern crate core;
-#[cfg(not(feature = "std"))]
 extern crate alloc;
+#[cfg(not(feature = "std"))]
+extern crate core;
 
 #[cfg(feature = "std")]
 mod std;

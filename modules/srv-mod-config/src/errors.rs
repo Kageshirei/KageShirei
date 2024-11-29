@@ -48,13 +48,13 @@ impl Display for Configuration {
             },
             Self::MissingEqualField(field) => {
                 write!(f, "Missing equal value for field '{}'", field)
-            }
+            },
             Self::Unrecoverable(reason) => {
                 write!(f, "Unrecoverable error: {}", reason)
-            }
+            },
             Self::Generic(nested) => {
                 write!(f, "{}", nested)
-            }
+            },
         }
     }
 }
