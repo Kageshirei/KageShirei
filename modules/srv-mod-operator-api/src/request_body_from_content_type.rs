@@ -1,3 +1,5 @@
+//! Extracts the request body based on the content type of the request.
+
 use axum::{
     async_trait,
     extract::{FromRequest, Request},

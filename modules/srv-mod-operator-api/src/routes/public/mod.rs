@@ -1,3 +1,5 @@
+//! Public routes for the API server
+
 use axum::Router;
 
 use crate::state::ApiServerSharedState;

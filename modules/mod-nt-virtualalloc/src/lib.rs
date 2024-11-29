@@ -36,6 +36,11 @@ static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscal
 /// Unsafe function to perform the initialization of the static variables.
 /// This includes locating and storing the addresses and syscall numbers for
 /// `NtAllocateVirtualMemory` and `NtFreeVirtualMemory`.
+///
+/// # Safety
+///
+/// This function is unsafe because it performs memory operations that can lead to undefined
+/// behavior if not handled correctly.
 pub unsafe fn initialize() {
     // Check if initialization has already occurred.
     if !INIT.load(Ordering::Acquire) {

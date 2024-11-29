@@ -1,3 +1,5 @@
+//! The error module for the API server
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -5,6 +7,7 @@ use axum::{
 };
 use serde_json::json;
 
+/// The error enum for the API server
 macro_rules! define_error_enum {
     ($enum_name:ident, $($variant:ident = ($status:expr, $msg:expr)),* $(,)?) => {
         #[derive(Debug)]

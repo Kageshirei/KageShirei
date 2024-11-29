@@ -1,4 +1,6 @@
-use axum::{debug_handler, extract::State, routing::get, Json, Router};
+//! Routes for fetching the available sessions
+
+use axum::{extract::State, routing::get, Json, Router};
 use srv_mod_entity::{
     entities::agent,
     partial_models::agent::full_session_record::FullSessionRecord,
@@ -11,7 +13,6 @@ use crate::{claims::JwtClaims, errors::ApiServerError, state::ApiServerSharedSta
 /// The handler for the logs route
 ///
 /// This handler fetches the logs from the database and returns them as a JSON response
-#[debug_handler]
 #[instrument(name = "GET /sessions", skip(state))]
 async fn get_handler(
     State(state): State<ApiServerSharedState>,

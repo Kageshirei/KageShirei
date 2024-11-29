@@ -1,7 +1,8 @@
+//! The protected Server-Sent Events (SSE) route
+
 use std::convert::Infallible;
 
 use axum::{
-    debug_handler,
     extract::State,
     response::{sse::Event, Sse},
     routing::get,
@@ -13,7 +14,6 @@ use tracing::instrument;
 use crate::{claims::JwtClaims, state::ApiServerSharedState};
 
 /// The handler for the public authentication route
-#[debug_handler]
 #[instrument(name = "GET /sse", skip(state))]
 async fn get_handler(
     State(state): State<ApiServerSharedState>,

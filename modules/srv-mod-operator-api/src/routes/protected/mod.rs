@@ -1,3 +1,5 @@
+//! Protected routes for the API server
+
 use axum::Router;
 
 use crate::state::ApiServerSharedState;
@@ -9,6 +11,7 @@ mod sessions;
 mod sse;
 mod terminal;
 
+/// Create the protected routes for the API server
 pub fn make_routes(state: ApiServerSharedState) -> Router<ApiServerSharedState> {
     Router::new()
         .merge(refresh_token::route(state.clone()))

@@ -1,7 +1,8 @@
+//! Notifications route module
+
 use std::collections::HashMap;
 
 use axum::{
-    debug_handler,
     extract::{Query, State},
     routing::get,
     Json,
@@ -22,7 +23,6 @@ use crate::{claims::JwtClaims, errors::ApiServerError, state::ApiServerSharedSta
 /// # Request parameters
 ///
 /// - `page` (optional): The page number to fetch. Defaults to 1
-#[debug_handler]
 #[instrument(name = "GET /notifications", skip(state))]
 async fn get_handler(
     State(state): State<ApiServerSharedState>,
@@ -33,7 +33,7 @@ async fn get_handler(
 
     let mut page = params
         .get("page")
-        .and_then(|page| page.parse::<u64>().ok())
+        .and_then(|page| page.parse::<i64>().ok())
         .unwrap_or(1);
 
     // Ensure the page is at least 1
@@ -63,7 +63,7 @@ async fn get_handler(
         )
         .order_by_asc(logs::Column::CreatedAt)
         .paginate(&db, page_size)
-        .fetch_page(page - 1)
+        .fetch_page(page.saturating_sub(1) as u64)
         .await
         .map_err(|e| {
             error!("Failed to fetch logs: {}", e.to_string());

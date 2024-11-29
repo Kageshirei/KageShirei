@@ -191,6 +191,10 @@ impl NtHeapAlloc {
     pub fn is_initialized(&self) -> bool { self.0.load(Ordering::Relaxed) != 0 }
 
     /// Initializes the allocator if it has not been initialized yet.
+    ///
+    /// # Safety
+    /// This function is marked as `unsafe` because it directly interacts with low-level memory
+    /// management, which can lead to undefined behavior if not handled correctly.
     pub unsafe fn init_if_required(&self) {
         if !self.is_initialized() {
             self.initialize();

@@ -1,7 +1,8 @@
+//! The terminal route module
+
 use std::{collections::HashMap, sync::Arc};
 
 use axum::{
-    debug_handler,
     extract::{Query, State},
     response::Response,
     routing::post,
@@ -29,6 +30,7 @@ use crate::{
     state::ApiServerSharedState,
 };
 
+/// The payload for the terminal command route
 #[derive(Deserialize, Debug)]
 struct TerminalCommand {
     /// The raw command written in the terminal emulator
@@ -38,6 +40,7 @@ struct TerminalCommand {
     session_id: Option<String>,
 }
 
+/// The response for the terminal command route
 #[derive(Debug, Serialize)]
 struct TerminalCommandResponse {
     /// The terminal session ID, if any. This is used to identify the terminal session (aka agent
@@ -164,7 +167,6 @@ async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -
 }
 
 /// The handler for the public authentication route
-#[debug_handler]
 #[instrument(name = "POST /terminal", skip(state))]
 async fn post_handler(
     State(state): State<ApiServerSharedState>,
@@ -229,7 +231,7 @@ async fn post_handler(
         futures::future::join_all(pending_handlers).await;
 
         return Ok(Json(TerminalCommandResponse {
-            session_id: Some(session_id.to_string()),
+            session_id: Some(session_id),
             command: body.command,
             response,
         }));
@@ -278,7 +280,7 @@ async fn post_handler(
     let response = match response {
         Ok(response) => response,
         Err(e) => {
-            let response = e.to_string();
+            let response = e.clone();
             let movable_response = response.clone();
             let cloned_state = state.clone();
 
@@ -296,7 +298,7 @@ async fn post_handler(
             return Err(ApiServerError::make_terminal_emulator_error(
                 session_id.as_str(),
                 body.command.as_str(),
-                e.to_string().as_str(),
+                e.as_str(),
             ));
         },
     };
@@ -316,7 +318,7 @@ async fn post_handler(
     futures::future::join_all(pending_handlers).await;
 
     Ok(Json(TerminalCommandResponse {
-        session_id: Some(session_id.to_string()),
+        session_id: Some(session_id),
         command: serde_json::to_string(&cmd).unwrap(),
         response,
     }))
@@ -329,7 +331,6 @@ async fn post_handler(
 /// # Request parameters
 ///
 /// - `page` (optional): The page number to fetch. Defaults to 1
-#[debug_handler]
 #[instrument(name = "GET /terminal", skip(state))]
 async fn get_handler(
     State(state): State<ApiServerSharedState>,
@@ -343,7 +344,7 @@ async fn get_handler(
 
     let mut page = params
         .get("page")
-        .and_then(|page| page.parse::<u64>().ok())
+        .and_then(|page| page.parse::<i64>().ok())
         .unwrap_or(1);
 
     // Ensure the page is not less than 1
@@ -384,7 +385,7 @@ async fn get_handler(
         .order_by_asc(terminal_history::Column::CreatedAt)
         .into_partial_model::<FullHistoryRecord>()
         .paginate(&db, page_size)
-        .fetch_page(page - 1)
+        .fetch_page(page.saturating_sub(1) as u64)
         .await
         .map_err(|e| {
             error!("Failed to fetch commands: {}", e.to_string());

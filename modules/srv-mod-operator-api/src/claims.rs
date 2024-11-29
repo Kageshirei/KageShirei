@@ -1,3 +1,5 @@
+//! The claims module for the API server
+
 use axum::{async_trait, extract::FromRequestParts, http::request::Parts, RequestPartsExt as _};
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -32,6 +34,10 @@ impl JwtClaims {
         let now = chrono::Utc::now();
 
         Self {
+            #[expect(
+                clippy::arithmetic_side_effects,
+                reason = "This is an implicit call to the implementation of the su into the DateTime type"
+            )]
             exp: (now + lifetime).timestamp() as u64,
             iat: now.timestamp() as u64,
             iss: "kageshirei-api-server".to_owned(),
@@ -53,10 +59,10 @@ where
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
-            .map_err(|_| ApiServerError::InvalidToken)?;
+            .map_err(|_silenced| ApiServerError::InvalidToken)?;
 
         // extract the header from the token
-        let header = jsonwebtoken::decode_header(bearer.token()).map_err(|_| ApiServerError::InvalidToken)?;
+        let header = jsonwebtoken::decode_header(bearer.token()).map_err(|_silenced| ApiServerError::InvalidToken)?;
 
         // Ensure the token is signed with HS512
         if header.alg != jsonwebtoken::Algorithm::HS512 {
@@ -74,7 +80,7 @@ where
             &API_SERVER_JWT_KEYS.get().unwrap().decoding,
             &validation,
         )
-        .map_err(|_| ApiServerError::InvalidToken)?;
+        .map_err(|_silenced| ApiServerError::InvalidToken)?;
 
         Ok(token_data.claims)
     }

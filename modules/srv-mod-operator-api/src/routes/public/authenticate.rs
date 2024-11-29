@@ -1,4 +1,6 @@
-use axum::{debug_handler, extract::State, routing::post, Json, Router};
+//! The public authentication route for the API server
+
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
     active_enums::LogLevel,
@@ -15,26 +17,32 @@ use crate::{
     state::ApiServerSharedState,
 };
 
+/// The payload for the public authentication route
 #[derive(Debug, Deserialize)]
-struct AuthenticatePostPayload {
+struct PostPayload {
+    /// The username for the user
     pub username: String,
+    /// The password for the user
     pub password: String,
 }
 
+/// The response for the public authentication route
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AuthenticatePostResponse {
+pub struct PostResponse {
+    /// The access token type
     pub access_token: String,
+    /// The time in seconds until the JWT token expires
     pub expires_in:   u64,
+    /// The JWT token
     pub token:        String,
 }
 
 /// The handler for the public authentication route
-#[debug_handler]
 #[instrument(name = "POST /authenticate", skip_all)]
 async fn post_handler(
     State(state): State<ApiServerSharedState>,
-    InferBody(payload): InferBody<AuthenticatePostPayload>,
-) -> Result<Json<AuthenticatePostResponse>, ApiServerError> {
+    InferBody(payload): InferBody<PostPayload>,
+) -> Result<Json<PostResponse>, ApiServerError> {
     // Ensure the username and password are not empty
     if payload.username.is_empty() || payload.password.is_empty() {
         return Err(ApiServerError::MissingCredentials);
@@ -47,7 +55,7 @@ async fn post_handler(
         .filter(user::Column::Username.eq(&payload.username))
         .one(&db)
         .await
-        .map_err(|_| ApiServerError::WrongCredentials)?
+        .map_err(|_silenced| ApiServerError::WrongCredentials)?
         .ok_or(ApiServerError::WrongCredentials)?;
 
     // Verify the password
@@ -64,7 +72,7 @@ async fn post_handler(
         &claims,
         &API_SERVER_JWT_KEYS.get().unwrap().encoding,
     )
-    .map_err(|_| ApiServerError::TokenCreation)?;
+    .map_err(|_silenced| ApiServerError::TokenCreation)?;
 
     // Log the authentication on the cli and db
     info!("User {} authenticated", usr.username);
@@ -76,9 +84,9 @@ async fn post_handler(
     }
     .insert(&db)
     .await
-    .map_err(|e| ApiServerError::InternalServerError)?;
+    .map_err(|_e| ApiServerError::InternalServerError)?;
 
-    Ok(Json(AuthenticatePostResponse {
+    Ok(Json(PostResponse {
         access_token: "bearer".to_owned(),
         expires_in: token_lifetime.num_seconds() as u64,
         token,
@@ -209,7 +217,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // unpack the response
-        let body = serde_json::from_slice::<AuthenticatePostResponse>(
+        let body = serde_json::from_slice::<PostResponse>(
             to_bytes(response.into_body(), usize::MAX)
                 .await
                 .unwrap()

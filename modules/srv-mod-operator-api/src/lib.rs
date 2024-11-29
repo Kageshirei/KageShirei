@@ -1,10 +1,17 @@
+//! # Operator API Server
+//! Provides an API server for operators.
+
 #![feature(let_chains)]
+#![allow(
+    clippy::integer_division_remainder_used,
+    reason = "mostly present in macros"
+)]
+#![allow(clippy::redundant_pub_crate, reason = "mostly present in macros")]
 
 use std::{iter::once, sync::Arc, time::Duration};
 
 use axum::{
     extract::{DefaultBodyLimit, Host, MatchedPath},
-    handler::HandlerWithoutStateExt as _,
     http::{header::AUTHORIZATION, Request, StatusCode, Uri},
     response::{Redirect, Response},
     routing::post,
@@ -138,12 +145,10 @@ pub async fn start(
 
         let listener = tokio::net::TcpListener::bind(format!(
             "{}:{}",
-            if let Some(tls_host) = tls_config.host {
-                tls_host
-            }
-            else {
-                readonly_config.api_server.host.clone()
-            },
+            tls_config.host.map_or_else(
+                || readonly_config.api_server.host.clone(),
+                |tls_host| tls_host
+            ),
             tls_config.port
         ))
         .await;
@@ -176,6 +181,7 @@ pub async fn start(
         readonly_config.api_server.port,
         listener,
     );
+    drop(readonly_config);
 
     info!(address = %listener.local_addr().unwrap(), "Api server listening");
 
@@ -267,7 +273,11 @@ fn make_https(host: String, uri: Uri, http_port: u16, https_port: u16) -> Result
     }
 
     let https_host = host.replace(&http_port.to_string(), &https_port.to_string());
-    parts.authority = Some(https_host.parse().map_err(|_| "Invalid authority")?);
+    parts.authority = Some(
+        https_host
+            .parse()
+            .map_err(|_silenced| "Invalid authority")?,
+    );
 
-    Ok(Uri::from_parts(parts).map_err(|_| "Invalid URI")?)
+    Ok(Uri::from_parts(parts).map_err(|_silenced| "Invalid URI")?)
 }
