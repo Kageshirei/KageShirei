@@ -31,7 +31,7 @@ use crate::{
 };
 
 /// The payload for the terminal command route
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 struct TerminalCommand {
     /// The raw command written in the terminal emulator
     command:    String,
@@ -41,7 +41,7 @@ struct TerminalCommand {
 }
 
 /// The response for the terminal command route
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct TerminalCommandResponse {
     /// The terminal session ID, if any. This is used to identify the terminal session (aka agent
     /// id). If empty the "global" terminal session is used.

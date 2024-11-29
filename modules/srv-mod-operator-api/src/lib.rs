@@ -7,6 +7,7 @@
     reason = "mostly present in macros"
 )]
 #![allow(clippy::redundant_pub_crate, reason = "mostly present in macros")]
+extern crate core;
 
 use std::{iter::once, sync::Arc, time::Duration};
 

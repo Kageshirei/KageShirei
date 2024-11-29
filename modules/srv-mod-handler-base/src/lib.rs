@@ -234,6 +234,9 @@ mod test {
 
         let response = handle_command_retrieval(state.clone(), agent.id.clone()).await;
 
+        assert!(response.is_ok());
+        let response = response.unwrap();
+
         assert_eq!(
             response.status,
             NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap())

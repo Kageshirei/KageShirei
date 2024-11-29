@@ -33,7 +33,7 @@ tower-http = { version = "0.6.1", features = [
 tracing = "0.1.40"
 jsonwebtoken = "9.3.0"
 kageshirei-utils = { path = "../../libs/kageshirei-utils" }
-kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = ["argon2"] }
+kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = ["argon2", "server"] }
 chrono = "0.4.38"
 srv-mod-config = { path = "../srv-mod-config" }
 humantime = "2.1.0"
@@ -43,6 +43,11 @@ futures-util = "0.3.31"
 tokio-stream = { version = "0.1.16", features = ["sync"] }
 srv-mod-entity = { path = "../srv-mod-entity" }
 srv-mod-migration = { path = "../srv-mod-migration" }
+
+[dev-dependencies]
+serial_test = "3.1.1"
+hyper = { version = "1.4.1", features = ["full", "client"] }
+kageshirei-communication-protocol = { path = "../../libs/kageshirei-communication-protocol" }
 
 [lints]
 workspace = true

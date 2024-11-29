@@ -1,4 +1,4 @@
-use kageshirei_communication_protocol::NetworkInterface;
+use kageshirei_communication_protocol::{NetworkInterface, NetworkInterfaceArray};
 use sea_orm::{prelude::DateTime, DerivePartialModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
 
@@ -18,7 +18,7 @@ pub struct FullSessionRecord {
     /// The username of whose runs the agent
     pub username:           String,
     /// The internal IP(s) of the victim (multiple network interfaces)
-    pub network_interfaces: Vec<NetworkInterface>,
+    pub network_interfaces: NetworkInterfaceArray,
     /// The process ID of the agent
     pub pid:                i64,
     /// The parent process ID of the agent
