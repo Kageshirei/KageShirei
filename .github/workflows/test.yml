@@ -10,8 +10,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: kageshirei
+          POSTGRES_USER: kageshirei
+          POSTGRES_DB: kageshirei
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     steps:
     - uses: actions/checkout@v4
 
@@ -54,6 +68,13 @@ jobs:
       # Install the frontend dependencies
     - name: install frontend dependencies
       run: pnpm i -C command-and-control-gui
+
+    - name: Migrate database
+      run: |
+        . "$HOME/.cargo/env"
+        cargo install sea-orm-cli
+        export DATABASE_URL=postgres://kageshirei:kageshirei@localhost:5432/kageshirei
+        sea-orm-cli migrate fresh -d ./modules/srv-mod-migration/
 
     - name: Run tests
       run: |
