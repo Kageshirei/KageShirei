@@ -275,3 +275,113 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         NT_ALLOCATOR_STATUS.store(ntstatus as isize, Ordering::SeqCst);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    extern crate alloc;
+    use alloc::{boxed::Box, string::String, vec::Vec};
+    use core::{ptr::null_mut, slice};
+
+    use super::*;
+
+    static GLOBAL: NtVirtualAlloc = NtVirtualAlloc;
+
+    /// Test to check memory allocation and deallocation using `alloc` and `dealloc`.
+    #[test]
+    fn test_alloc_dealloc() {
+        let layout = Layout::from_size_align(1024, 8).unwrap();
+
+        unsafe {
+            // Allocate 1024 bytes of memory
+            let ptr = GLOBAL.alloc(layout);
+            assert_ne!(ptr, null_mut(), "Allocation failed");
+
+            // Deallocate the memory
+            GLOBAL.dealloc(ptr, layout);
+        }
+    }
+
+    /// Test to check zeroed memory allocation using `alloc_zeroed`.
+    #[test]
+    fn test_alloc_zeroed() {
+        let layout = Layout::from_size_align(512, 8).unwrap();
+
+        unsafe {
+            // Allocate 512 bytes of zeroed memory
+            let ptr = GLOBAL.alloc_zeroed(layout);
+            assert_ne!(ptr, null_mut(), "Zeroed allocation failed");
+
+            // Verify that the memory is actually zeroed
+            let data = slice::from_raw_parts(ptr, 512);
+            for &byte in data {
+                assert_eq!(byte, 0, "Memory not zeroed");
+            }
+
+            // Deallocate the memory
+            GLOBAL.dealloc(ptr, layout);
+        }
+    }
+
+    /// Test to check memory reallocation using `realloc`.
+    #[test]
+    fn test_realloc() {
+        let initial_layout = Layout::from_size_align(256, 8).unwrap();
+        let new_size = 512;
+
+        unsafe {
+            // Initial allocation of 256 bytes
+            let ptr = GLOBAL.alloc(initial_layout);
+            assert_ne!(ptr, null_mut(), "Initial allocation failed");
+
+            // Reallocate the memory to 512 bytes
+            let new_ptr = GLOBAL.realloc(ptr, initial_layout, new_size);
+            assert_ne!(new_ptr, null_mut(), "Reallocation failed");
+
+            // Deallocate the memory
+            let new_layout = Layout::from_size_align(new_size, 8).unwrap();
+            GLOBAL.dealloc(new_ptr, new_layout);
+        }
+    }
+
+    /// Test to check memory allocation and deallocation using a `Vec`.
+    #[test]
+    fn test_vec_allocation() {
+        // Test Vec allocation and deallocation
+        let mut vec: Vec<i32> = Vec::new();
+        for i in 0 .. 10 {
+            vec.push(i);
+        }
+
+        // Verify the contents of the vector
+        for (i, &value) in vec.iter().enumerate() {
+            assert_eq!(value, i as i32, "Vec contains incorrect value");
+        }
+
+        // Deallocation is automatic when the vector goes out of scope
+    }
+
+    /// Test to check memory allocation and deallocation using a `String`.
+    #[test]
+    fn test_string_allocation() {
+        // Test String allocation and deallocation
+        let mut string = String::from("Hello, ");
+        string.push_str("world!");
+
+        // Verify the contents of the string
+        assert_eq!(string, "Hello, world!", "String contains incorrect value");
+
+        // Deallocation is automatic when the string goes out of scope
+    }
+
+    /// Test to check memory allocation and deallocation using a `Box`.
+    #[test]
+    fn test_box_allocation() {
+        // Test Box allocation and deallocation
+        let boxed_value = Box::new(42);
+
+        // Verify the value
+        assert_eq!(*boxed_value, 42, "Box contains incorrect value");
+
+        // Deallocation is automatic when the Box goes out of scope
+    }
+}
