@@ -3363,15 +3363,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mod-tokio-runtime"
-version = "0.1.0"
-dependencies = [
- "kageshirei-communication-protocol",
- "kageshirei-runtime",
- "tokio",
-]
-
-[[package]]
 name = "mod-win32"
 version = "0.1.0"
 dependencies = [

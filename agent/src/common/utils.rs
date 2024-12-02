@@ -215,8 +215,6 @@ pub const fn downcast_rightmost_u128(value: u128) -> i64 {
 #[cfg(test)]
 mod tests {
 
-    use libc_print::libc_println;
-
     use super::*;
 
     #[test]

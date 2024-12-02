@@ -17,7 +17,6 @@ members = [
     "modules/mod-nt-virtualalloc",
     "modules/mod-protocol-http",
     "modules/mod-std-runtime",
-    "modules/mod-tokio-runtime",
     "modules/mod-win32",
     "modules/srv-mod-config",
     "modules/srv-mod-entity",
