@@ -4,6 +4,7 @@
 
 use clap::Parser as _;
 use log::trace;
+use rustls::{crypto, crypto::CryptoProvider};
 use srv_mod_config::RootConfig;
 
 use crate::{
@@ -83,6 +84,9 @@ fn main() -> Result<(), String> {
 
     setup_logging(args.debug)?;
     trace!("Parsed arguments: {:?}", args);
+
+    // Install the default AWS LC provider
+    let _ = crypto::aws_lc_rs::default_provider().install_default();
 
     match args.command {
         Commands::Compile(compile_args) => {
