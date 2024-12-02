@@ -1,4 +1,4 @@
-name: Format check
+name: Linting checks
 
 on:
   pull_request:
@@ -24,4 +24,4 @@ jobs:
       - name: Check formatting
         run: |
           . "$HOME/.cargo/env"
-          cargo fmt --all --check
+          cargo clippy --workspace --keep-going
