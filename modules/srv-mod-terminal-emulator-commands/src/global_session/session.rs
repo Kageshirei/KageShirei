@@ -114,6 +114,8 @@ pub async fn handle(
         .await
         .map_err(|e| e.to_string())?;
 
+    debug!("Found agents: {:?}", result);
+
     // Serialize the result
     serde_json::to_string(&PostProcessResult {
         r#type: "sessions".to_owned(),

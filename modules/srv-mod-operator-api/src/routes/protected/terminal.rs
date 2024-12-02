@@ -110,8 +110,6 @@ async fn get_current_username(
     command: &str,
 ) -> Result<String, Response> {
     let user = user::Entity::find()
-        .select_only()
-        .column(user::Column::Username)
         .filter(user::Column::Id.eq(user_id))
         .one(&db)
         .await
@@ -146,8 +144,6 @@ async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -
     }
     else {
         let agent = agent::Entity::find()
-            .select_only()
-            .column(agent::Column::Hostname)
             .filter(agent::Column::Id.eq(session_id))
             .one(&db)
             .await
