@@ -100,6 +100,10 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
                 // right-align column
                 textAlign: "center",
                 render:    ({ operative_system }) => {
+                    if (!operative_system) {
+                        return <Text size={ "sm" }>Unknown</Text>;
+                    }
+
                     if (operative_system.toLowerCase() === "windows") {
                         return <IconBrandWindows size={ 24 } />;
                     }
