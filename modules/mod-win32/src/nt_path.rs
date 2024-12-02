@@ -86,7 +86,7 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
         // unicode_path.init(path_utf16_string.as_ptr());
 
         let full_path_length = rtl_get_full_path_name_ustr(
-            &unicode_path,
+            unicode_path,
             full_path.maximum_length as usize,
             full_path.buffer,
             None,

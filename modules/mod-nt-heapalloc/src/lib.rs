@@ -12,7 +12,7 @@
 //! - **Dynamic Allocation:** Supports memory allocation, reallocation, and deallocation with
 //!   options for zeroed memory.
 //! - **Thread Safety:** Ensures safe access and initialization of heap functions with atomic flags
-//!   and mutexes.
+//!   and RwLockes.
 //!
 //! ## Examples
 //!
@@ -86,18 +86,25 @@ use nt_heapalloc_def::{
     RTL_FREE_HEAP_H,
     RTL_REALLOCATE_HEAP_H,
 };
-use spin::Mutex;
+use spin::RwLock;
 
 /// Atomic flag to ensure that the initialization of function pointers happens only once.
 static INIT_NT_HEAPALLOC: AtomicBool = AtomicBool::new(false);
 
-/// Static variables to hold the pointers to the heap-related functions in ntdll.dll.
-/// These are wrapped in `Mutex` and `UnsafeCell` for thread-safe, interior mutable access.
-static mut RTL_CREATE_HEAP: Mutex<UnsafeCell<Option<RtlCreateHeap>>> = Mutex::new(UnsafeCell::new(None));
-static mut RTL_ALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlAllocateHeap>>> = Mutex::new(UnsafeCell::new(None));
-static mut RTL_FREE_HEAP: Mutex<UnsafeCell<Option<RtlFreeHeap>>> = Mutex::new(UnsafeCell::new(None));
-static mut RTL_REALLOCATE_HEAP: Mutex<UnsafeCell<Option<RtlReAllocateHeap>>> = Mutex::new(UnsafeCell::new(None));
-static mut RTL_DESTROY_HEAP: Mutex<UnsafeCell<Option<RtlDestroyHeap>>> = Mutex::new(UnsafeCell::new(None));
+/// Holds a reference to the RtlCreateHeap function pointer.
+static mut RTL_CREATE_HEAP: RwLock<UnsafeCell<Option<RtlCreateHeap>>> = RwLock::new(UnsafeCell::new(None));
+
+/// Holds a reference to the RtlAllocateHeap function pointer.
+static mut RTL_ALLOCATE_HEAP: RwLock<UnsafeCell<Option<RtlAllocateHeap>>> = RwLock::new(UnsafeCell::new(None));
+
+/// Holds a reference to the RtlFreeHeap function pointer.
+static mut RTL_FREE_HEAP: RwLock<UnsafeCell<Option<RtlFreeHeap>>> = RwLock::new(UnsafeCell::new(None));
+
+/// Holds a reference to the RtlReAllocateHeap function pointer.
+static mut RTL_REALLOCATE_HEAP: RwLock<UnsafeCell<Option<RtlReAllocateHeap>>> = RwLock::new(UnsafeCell::new(None));
+
+/// Holds a reference to the RtlDestroyHeap function pointer.
+static mut RTL_DESTROY_HEAP: RwLock<UnsafeCell<Option<RtlDestroyHeap>>> = RwLock::new(UnsafeCell::new(None));
 
 /// Ensures that the heap-related function pointers are initialized.
 /// If they have not been initialized, this function will call `initialize_nt_heapalloc_funcs` to
@@ -116,26 +123,49 @@ fn ensure_nt_heapalloc_funcs_initialize() {
 /// - `RtlFreeHeap`
 /// - `RtlReAllocateHeap`
 /// - `RtlDestroyHeap`
-/// This function also sets the initialization flag to true.
+#[expect(
+    static_mut_refs,
+    reason = "This is a controlled access to a mutable static using a RwLock, ensuring that only one thread can write \
+              at a time and preventing data races."
+)]
 fn initialize_nt_heapalloc_funcs() {
     let ntdll_address = unsafe { peb_get_module(NTDLL_HASH) };
 
     unsafe {
         // Resolve RtlCreateHeap
         let rtl_create_heap_addr = peb_get_function_addr(ntdll_address, RTL_CREATE_HEAP_H);
-        *RTL_CREATE_HEAP.lock().get() = Some(core::mem::transmute(rtl_create_heap_addr));
+        let rtl_create_heap_lock = RTL_CREATE_HEAP.write();
+        *rtl_create_heap_lock.get() = Some(core::mem::transmute::<*mut u8, RtlCreateHeap>(
+            rtl_create_heap_addr,
+        ));
+
         // Resolve RtlAllocateHeap
         let rtl_allocate_heap_addr = peb_get_function_addr(ntdll_address, RTL_ALLOCATE_HEAP_H);
-        *RTL_ALLOCATE_HEAP.lock().get() = Some(core::mem::transmute(rtl_allocate_heap_addr));
+        let rtl_allocate_heap_lock = RTL_ALLOCATE_HEAP.write();
+        *rtl_allocate_heap_lock.get() = Some(core::mem::transmute::<*mut u8, RtlAllocateHeap>(
+            rtl_allocate_heap_addr,
+        ));
+
         // Resolve RtlFreeHeap
         let rtl_free_heap_addr = peb_get_function_addr(ntdll_address, RTL_FREE_HEAP_H);
-        *RTL_FREE_HEAP.lock().get() = Some(core::mem::transmute(rtl_free_heap_addr));
+        let rtl_free_heap_lock = RTL_FREE_HEAP.write();
+        *rtl_free_heap_lock.get() = Some(core::mem::transmute::<*mut u8, RtlFreeHeap>(
+            rtl_free_heap_addr,
+        ));
+
         // Resolve RtlReAllocateHeap
         let rtl_reallocate_heap_addr = peb_get_function_addr(ntdll_address, RTL_REALLOCATE_HEAP_H);
-        *RTL_REALLOCATE_HEAP.lock().get() = Some(core::mem::transmute(rtl_reallocate_heap_addr));
+        let rtl_reallocate_heap_lock = RTL_REALLOCATE_HEAP.write();
+        *rtl_reallocate_heap_lock.get() = Some(core::mem::transmute::<*mut u8, RtlReAllocateHeap>(
+            rtl_reallocate_heap_addr,
+        ));
+
         // Resolve RtlDestroyHeap
         let rtl_destroy_heap_addr = peb_get_function_addr(ntdll_address, RTL_DESTROY_HEAP_H);
-        *RTL_DESTROY_HEAP.lock().get() = Some(core::mem::transmute(rtl_destroy_heap_addr));
+        let rtl_destroy_heap_lock = RTL_DESTROY_HEAP.write();
+        *rtl_destroy_heap_lock.get() = Some(core::mem::transmute::<*mut u8, RtlDestroyHeap>(
+            rtl_destroy_heap_addr,
+        ));
     }
 
     // Set the initialization flag to true.
@@ -146,73 +176,88 @@ fn initialize_nt_heapalloc_funcs() {
 }
 
 /// Function to get a reference to the `RtlCreateHeap` syscall, ensuring initialization first.
-fn get_rtl_create_heap() -> &'static RtlCreateHeap {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_rtl_create_heap() -> &'static RtlCreateHeap {
     ensure_nt_heapalloc_funcs_initialize();
-    unsafe {
-        RTL_CREATE_HEAP
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = RTL_CREATE_HEAP.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Function to get a reference to the `RtlAllocateHeap` syscall, ensuring initialization first.
-fn get_rtl_allocate_heap() -> &'static RtlAllocateHeap {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_rtl_allocate_heap() -> &'static RtlAllocateHeap {
     ensure_nt_heapalloc_funcs_initialize();
-    unsafe {
-        RTL_ALLOCATE_HEAP
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = RTL_ALLOCATE_HEAP.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Function to get a reference to the `RtlFreeHeap` syscall, ensuring initialization first.
-fn get_rtl_free_heap() -> &'static RtlFreeHeap {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_rtl_free_heap() -> &'static RtlFreeHeap {
     ensure_nt_heapalloc_funcs_initialize();
-    unsafe {
-        RTL_FREE_HEAP
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = RTL_FREE_HEAP.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Function to get a reference to the `RtlReAllocateHeap` syscall, ensuring initialization first.
-fn get_rtl_reallocate_heap() -> &'static RtlReAllocateHeap {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_rtl_reallocate_heap() -> &'static RtlReAllocateHeap {
     ensure_nt_heapalloc_funcs_initialize();
-    unsafe {
-        RTL_REALLOCATE_HEAP
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = RTL_REALLOCATE_HEAP.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Function to get a reference to the `RtlDestroyHeap` syscall, ensuring initialization first.
-fn get_rtl_destroy_heap() -> &'static RtlDestroyHeap {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_rtl_destroy_heap() -> &'static RtlDestroyHeap {
     ensure_nt_heapalloc_funcs_initialize();
-    unsafe {
-        RTL_DESTROY_HEAP
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = RTL_DESTROY_HEAP.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Global allocator implementation using NT Heap API.
@@ -359,8 +404,6 @@ mod tests {
     use alloc::{boxed::Box, string::String, vec::Vec};
     use core::{ptr::null_mut, slice};
 
-    use libc_print::libc_println;
-
     use super::*;
 
     /// Test to check memory allocation and deallocation using `alloc` and `dealloc`.
@@ -373,11 +416,8 @@ mod tests {
             let ptr = NT_HEAPALLOCATOR.alloc(layout);
             assert_ne!(ptr, null_mut(), "Allocation failed");
 
-            libc_println!("Allocated 1024 bytes at {:p}", ptr);
-
             // Deallocate the memory
             NT_HEAPALLOCATOR.dealloc(ptr, layout);
-            libc_println!("Deallocated memory at {:p}", ptr);
         }
     }
 
@@ -391,8 +431,6 @@ mod tests {
             let ptr = NT_HEAPALLOCATOR.alloc_zeroed(layout);
             assert_ne!(ptr, null_mut(), "Zeroed allocation failed");
 
-            libc_println!("Allocated 512 zeroed bytes at {:p}", ptr);
-
             // Verify that the memory is actually zeroed
             let data = slice::from_raw_parts(ptr, 512);
             for &byte in data {
@@ -401,7 +439,6 @@ mod tests {
 
             // Deallocate the memory
             NT_HEAPALLOCATOR.dealloc(ptr, layout);
-            libc_println!("Deallocated zeroed memory at {:p}", ptr);
         }
     }
 
@@ -416,18 +453,13 @@ mod tests {
             let ptr = NT_HEAPALLOCATOR.alloc(initial_layout);
             assert_ne!(ptr, null_mut(), "Initial allocation failed");
 
-            libc_println!("Allocated 256 bytes at {:p}", ptr);
-
             // Reallocate the memory to 512 bytes
             let new_ptr = NT_HEAPALLOCATOR.realloc(ptr, initial_layout, new_size);
             assert_ne!(new_ptr, null_mut(), "Reallocation failed");
 
-            libc_println!("Reallocated memory to 512 bytes at {:p}", new_ptr);
-
             // Deallocate the memory
             let new_layout = Layout::from_size_align(new_size, 8).unwrap();
             NT_HEAPALLOCATOR.dealloc(new_ptr, new_layout);
-            libc_println!("Deallocated reallocated memory at {:p}", new_ptr);
         }
     }
 
@@ -445,8 +477,6 @@ mod tests {
             assert_eq!(value, i as i32, "Vec contains incorrect value");
         }
 
-        libc_println!("Vec allocated and verified: {:?}", vec);
-
         // Deallocation is automatic when the vector goes out of scope
     }
 
@@ -460,8 +490,6 @@ mod tests {
         // Verify the contents of the string
         assert_eq!(string, "Hello, world!", "String contains incorrect value");
 
-        libc_println!("String allocated and verified: {}", string);
-
         // Deallocation is automatic when the string goes out of scope
     }
 
@@ -473,8 +501,6 @@ mod tests {
 
         // Verify the value
         assert_eq!(*boxed_value, 42, "Box contains incorrect value");
-
-        libc_println!("Box allocated and verified with value: {}", boxed_value);
 
         // Deallocation is automatic when the Box goes out of scope
     }

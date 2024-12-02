@@ -57,7 +57,7 @@ use core::{
 use kageshirei_indirect_syscall::run;
 use mod_agentcore::ldr::{peb_get_function_addr, peb_get_module};
 use mod_hhtgates::get_syscall_number;
-use spin::Mutex;
+use spin::RwLock;
 
 /// Structure to hold information about an NT syscall.
 pub struct NtAllocSyscall {
@@ -77,13 +77,13 @@ static INIT: AtomicBool = AtomicBool::new(false);
 
 /// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for
 /// interior mutability.
-static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscall>>> =
-    Mutex::new(UnsafeCell::new(None));
+static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: RwLock<UnsafeCell<Option<NtAllocSyscall>>> =
+    RwLock::new(UnsafeCell::new(None));
 
 /// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for
 /// interior mutability.
-static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscall>>> =
-    Mutex::new(UnsafeCell::new(None));
+static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: RwLock<UnsafeCell<Option<NtAllocSyscall>>> =
+    RwLock::new(UnsafeCell::new(None));
 
 /// Unsafe function to perform the initialization of the static variables.
 /// This includes locating and storing the addresses and syscall numbers for
@@ -107,7 +107,14 @@ pub unsafe fn initialize() {
             hash:    0xf783b8ec,
         };
 
-        *NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(alloc_syscall);
+        #[expect(
+            static_mut_refs,
+            reason = "This is a controlled access to a mutable static using a RwLock, ensuring that only one thread \
+                      can write at a time and preventing data races."
+        )]
+        let nt_allocate_virtual_memory_lock = NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.write();
+        *nt_allocate_virtual_memory_lock.get() = Some(alloc_syscall);
+        // *NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(alloc_syscall);
 
         // Initialize the syscall for NtFreeVirtualMemory.
         let free_syscall_address = peb_get_function_addr(ntdll_address, 0x2802c609);
@@ -117,7 +124,14 @@ pub unsafe fn initialize() {
             hash:    0x2802c609,
         };
 
-        *NT_FREE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(free_syscall);
+        #[expect(
+            static_mut_refs,
+            reason = "This is a controlled access to a mutable static using a RwLock, ensuring that only one thread \
+                      can write at a time and preventing data races."
+        )]
+        let nt_free_virtual_memory_lock = NT_FREE_VIRTUAL_MEMORY_SYSCALL.write();
+        *nt_free_virtual_memory_lock.get() = Some(free_syscall);
+        // *NT_FREE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(free_syscall);
 
         // Set the initialization flag to true.
         INIT.store(true, Ordering::Release);
@@ -136,31 +150,37 @@ fn ensure_initialized() {
 
 /// Function to get a reference to the NtAllocateVirtualMemory syscall, ensuring initialization
 /// first.
-fn get_nt_allocate_virtual_memory_syscall() -> &'static NtAllocSyscall {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_nt_allocate_virtual_memory_syscall() -> &'static NtAllocSyscall {
     ensure_initialized();
-    unsafe {
-        NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Function to get a reference to the NtFreeVirtualMemory syscall, ensuring initialization first.
-fn get_nt_free_virtual_memory_syscall() -> &'static NtAllocSyscall {
+///
+/// # Safety
+///
+/// This function is unsafe because it involves mutable static data.
+/// The caller must ensure no data races occur when accessing the global instance.
+#[expect(
+    static_mut_refs,
+    reason = "Access to mutable static data is protected by a RwLock, ensuring shared references are safe and \
+              preventing data races."
+)]
+unsafe fn get_nt_free_virtual_memory_syscall() -> &'static NtAllocSyscall {
     ensure_initialized();
-    unsafe {
-        NT_FREE_VIRTUAL_MEMORY_SYSCALL
-            .lock()
-            .get()
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    }
+    let lock = NT_FREE_VIRTUAL_MEMORY_SYSCALL.read();
+    (*lock.get()).as_ref().unwrap()
 }
 
 /// Custom allocator using NT system calls.
