@@ -42,13 +42,13 @@ jobs:
         version: latest
         run_install: false
 
-      # install Rust stable
-    - name: install Rust stable
+      # install Rust nightly
+    - name: install Rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         . "$HOME/.cargo/env"
         rustup default nightly
-        rustup target add x86_64-pc-windows-msvc
+        rustup target add x86_64-pc-windows-gnu
         rustup target add x86_64-unknown-linux-gnu
 
       # Install the frontend dependencies
