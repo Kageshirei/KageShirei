@@ -1,82 +1,4 @@
 #![no_std]
-//! # No-Std NT Runtime: Lightweight Runtime and Thread Pool for `no_std`
-//!
-//! This crate provides a custom runtime implementation and a thread pool designed for `no_std`
-//! environments. It leverages low-level Windows NT APIs and lightweight abstractions to enable
-//! asynchronous task execution and multi-threading in constrained environments.
-//!
-//! ## Features
-//! - **Custom Runtime (`NoStdNtRuntime`)**:
-//!   - Implements the `Runtime` trait, providing support for task scheduling, spawning, and
-//!     blocking on asynchronous tasks.
-//!   - Allows integration with `futures` for asynchronous programming.
-//! - **Thread Pool (`NoStdThreadPool`)**:
-//!   - Manages a pool of worker threads to execute tasks concurrently.
-//!   - Provides a lightweight implementation suitable for environments where standard Rust
-//!     threading is unavailable.
-//! - **Message Passing (`nostd_mpsc`)**:
-//!   - Facilitates inter-thread communication using a multiple-producer, single-consumer (MPSC)
-//!     channel.
-//!
-//! ## Modules
-//! - [`nostd_nt_runtime`]: Custom runtime for task scheduling and execution.
-//! - [`nostd_nt_threadpool`]: Thread pool implementation for managing worker threads.
-//!
-//! ## Examples
-//!
-//! ### Using the Custom Runtime
-//! ```rust ignore
-//! use std::sync::Arc;
-//!
-//! use mod_nostd_nt_runtime::NoStdNtRuntime;
-//!
-//! // Create a runtime with 4 worker threads
-//! let runtime = Arc::new(NoStdNtRuntime::new(4));
-//!
-//! // Define an asynchronous task
-//! async fn async_task() -> u32 { 42 }
-//!
-//! // Run the async task and block until completion
-//! let result = runtime.block_on(async_task());
-//! assert_eq!(result, 42);
-//!
-//! // Shut down the runtime
-//! Arc::try_unwrap(runtime).unwrap().shutdown();
-//! ```
-//!
-//! ### Using the Thread Pool
-//! ```rust ignore
-//! use mod_nostd_nt_runtime::nostd_nt_threadpool::NoStdThreadPool;
-//!
-//! // Create a thread pool with 4 worker threads
-//! let pool = NoStdThreadPool::new(4);
-//!
-//! // Submit tasks to the thread pool
-//! for i in 0 .. 10 {
-//!     pool.execute(move || {
-//!         // Perform some work
-//!         println!("Task {} is running", i);
-//!     });
-//! }
-//!
-//! // Shut down the thread pool
-//! pool.shutdown();
-//! ```
-//!
-//! ## Safety
-//! This crate interacts directly with low-level Windows NT APIs and performs unsafe operations such
-//! as:
-//! - Raw pointer manipulations
-//! - Direct system calls to manage threads and synchronization
-//!
-//! ### Caller Responsibilities
-//! - Ensure correct usage of pointers and system resources.
-//! - Avoid data races and deadlocks by properly managing concurrency.
-//! - Use the provided APIs in contexts where `no_std` is strictly required to minimize complexity.
-//!
-//! ## Testing
-//! The crate includes tests for both runtime and thread pool functionalities.
-//! ```
 
 pub mod nostd_nt_runtime;
 pub mod nostd_nt_threadpool;
@@ -90,8 +12,12 @@ mod tests {
     use alloc::{format, string::ToString, sync::Arc};
 
     use kageshirei_communication_protocol::{
-        communication::{AgentCommands, SimpleAgentCommand, TaskOutput},
-        Metadata,
+        communication_structs::{
+            agent_commands::AgentCommands,
+            simple_agent_command::SimpleAgentCommand,
+            task_output::TaskOutput,
+        },
+        metadata::Metadata,
     };
     use kageshirei_runtime::Runtime;
     use libc_print::libc_println;
@@ -108,14 +34,14 @@ mod tests {
 
         // Create a channel to receive results from tasks.
         // This channel will be used to send results from the tasks back to the main thread.
-        let (result_tx, result_rx) = nostd_mpsc::channel::<TaskOutput>();
+        let (result_tx, result_rx) = nostd_mpsc::channel();
 
         // Spawn a separate thread to handle and print the results as they are received.
         // This thread will listen on the receiver end of the channel and print each result.
         let result_handler = nostd_thread::NoStdThread::spawn(move || {
             let mut i = 0;
             for result in result_rx {
-                libc_println!("Result {}: {:?}", i, result.output.unwrap());
+                libc_println!("Result {}: {:?}", i, result);
                 i += 1;
             }
         });
@@ -153,9 +79,9 @@ mod tests {
             // and send the result back through the channel.
             runtime_clone.spawn(move || {
                 let result = match command.op {
-                    AgentCommands::Terminate => task_type_a(),
-                    AgentCommands::Checkin => task_type_a(),
-                    AgentCommands::INVALID => task_type_b(),
+                    AgentCommands::Terminate => task_type_a(command.metadata),
+                    AgentCommands::Checkin => task_type_a(command.metadata),
+                    AgentCommands::INVALID => task_type_b(command.metadata),
                 };
                 result_tx.send(result).unwrap();
             });
@@ -167,7 +93,7 @@ mod tests {
 
         // Wait for the result handler thread to finish processing all results.
         // This ensures that all tasks have completed and their results have been printed.
-        result_handler.unwrap().join().unwrap();
+        result_handler.join().unwrap();
 
         // Shutdown the runtime to ensure all threads are properly terminated.
         // This releases any resources held by the runtime and ensures clean exit.
@@ -198,15 +124,17 @@ mod tests {
         Arc::try_unwrap(runtime).unwrap().shutdown();
     }
 
-    pub fn task_type_a() -> TaskOutput {
+    pub fn task_type_a(metadata: Metadata) -> TaskOutput {
         let mut output = TaskOutput::new();
+        output.with_metadata(metadata);
         output.output = Some("Result from task type A".to_string());
         output
     }
 
-    pub fn task_type_b() -> TaskOutput {
+    pub fn task_type_b(metadata: Metadata) -> TaskOutput {
         delay(3);
         let mut output = TaskOutput::new();
+        output.with_metadata(metadata);
         output.output = Some("Result from task type B".to_string());
         output
     }

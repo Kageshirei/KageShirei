@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct Config {
+pub struct DatabaseConfig {
     /// Connection string for the database, refer to
     /// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS for more information
     pub url:       String,

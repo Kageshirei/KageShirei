@@ -4,15 +4,15 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct Config {
+pub struct LogConfig {
     /// Configuration for the file logger
-    pub file:    FileConfig,
+    pub file:    FileLogConfig,
     /// Configuration for the console logger
-    pub console: ConsoleConfig,
+    pub console: ConsoleLogConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct FileConfig {
+pub struct FileLogConfig {
     /// The path to the log file
     pub path:    PathBuf,
     /// Whether to enable the logger
@@ -20,15 +20,15 @@ pub struct FileConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
-pub struct ConsoleConfig {
+pub struct ConsoleLogConfig {
     /// Whether to enable the logger
     pub enabled: bool,
     /// The format to use for the log output
-    pub format:  ConsoleFormat,
+    pub format:  ConsoleLogFormat,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub enum ConsoleFormat {
+pub enum ConsoleLogFormat {
     #[serde(rename = "pretty")]
     Pretty,
     #[serde(rename = "full")]

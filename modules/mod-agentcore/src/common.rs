@@ -15,18 +15,16 @@ pub fn dbj2_hash(buffer: &[u8]) -> u32 {
     let mut cur: u8;
 
     while iter < buffer.len() {
-        cur = *buffer.get(iter).unwrap_or(&0);
+        cur = buffer[iter];
         if cur == 0 {
-            iter = iter.overflowing_add(1).0;
+            iter += 1;
             continue;
         }
-        if cur >= b'a' {
-            cur = cur.overflowing_sub(0x20).0;
+        if cur >= ('a' as u8) {
+            cur -= 0x20;
         }
-        hsh = ((hsh << 5).overflowing_add(hsh).0)
-            .overflowing_add(cur as u32)
-            .0;
-        iter = iter.overflowing_add(1).0;
+        hsh = ((hsh << 5).wrapping_add(hsh)) + cur as u32;
+        iter += 1;
     }
     hsh
 }

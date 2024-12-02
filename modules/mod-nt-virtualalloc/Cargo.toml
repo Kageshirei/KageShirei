@@ -2,12 +2,6 @@
 name = "mod-nt-virtualalloc"
 version = "0.1.0"
 edition = "2021"
-categories = ["simulation"]
-keywords = ["kageshirei", "agent", "module", "allocator", "windows-nt"]
-repository = "https://github.com/Kageshirei/KageShirei"
-license-file = "../../LICENSE"
-description = "A module for the KageShirei agent that provides NT VirtualAlloc functionality."
-readme = "README.md"
 
 [dependencies]
 kageshirei-indirect-syscall = {path = "../../libs/kageshirei-indirect-syscall" }
@@ -16,6 +10,3 @@ mod-win32 = {path = "../mod-win32" }
 mod-hhtgates = {path = "../mod-hhtgates" }
 mod-agentcore = {path = "../mod-agentcore" }
 spin = "0.9"
-
-[lints]
-workspace = true

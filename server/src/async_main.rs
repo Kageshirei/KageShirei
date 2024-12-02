@@ -1,31 +1,25 @@
-//! This module contains the main entry point for the server, this is where the async runtime is
-//! started and the server is run.
-
-#![allow(
-    clippy::integer_division_remainder_used,
-    reason = "Used mainly in macros"
-)]
-
 use std::{fs, sync::Arc};
 
-use srv_mod_config::{handlers::HandlerType, logging::ConsoleFormat, ReadOnlyConfig, SharedConfig};
+use log::info;
+use srv_mod_config::{handlers::HandlerType, logging::ConsoleLogFormat, ReadOnlyConfig, SharedConfig};
+use srv_mod_entity::sea_orm::{ConnectOptions, Database};
+use srv_mod_migration::{Migrator, MigratorTrait};
 use tokio::{select, signal};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, level_filters::LevelFilter, warn};
-use tracing_subscriber::{layer::SubscriberExt as _, Layer};
+use tracing_subscriber::{layer::SubscriberExt, Layer};
 
 use crate::{
     auto_migrate,
     servers::{api_server, http_handler},
 };
 
-/// Build the logger for the server
 fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry::LookupSpan<'span>>(
     debug_level: u8,
-    format: ConsoleFormat,
+    format: ConsoleLogFormat,
 ) -> Box<dyn Layer<S> + Send + Sync + 'static> {
     match format {
-        ConsoleFormat::Json => {
+        ConsoleLogFormat::Json => {
             tracing_subscriber::fmt::layer()
                 .json()
                 .with_span_list(true)
@@ -42,7 +36,7 @@ fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry
                 })
                 .boxed()
         },
-        ConsoleFormat::Pretty => {
+        ConsoleLogFormat::Pretty => {
             tracing_subscriber::fmt::layer()
                 .with_writer(std::io::stdout)
                 .pretty()
@@ -59,7 +53,7 @@ fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry
                 })
                 .boxed()
         },
-        ConsoleFormat::Full => {
+        ConsoleLogFormat::Full => {
             tracing_subscriber::fmt::layer()
                 .with_writer(std::io::stdout)
                 .with_level(true)
@@ -75,7 +69,7 @@ fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry
                 })
                 .boxed()
         },
-        ConsoleFormat::Compact => {
+        ConsoleLogFormat::Compact => {
             tracing_subscriber::fmt::layer()
                 .with_writer(std::io::stdout)
                 .compact()
@@ -99,7 +93,7 @@ fn build_logger<S: tracing::Subscriber + for<'span> tracing_subscriber::registry
 pub fn setup_logging(config: &ReadOnlyConfig) -> Result<(), String> {
     if !config.log.console.enabled && !config.log.file.enabled {
         error!("No logging enabled, this is not supported, exiting");
-        return Err("No logging enabled, cannot continue".to_owned());
+        return Err("No logging enabled, cannot continue".to_string());
     }
 
     let mut layers = Vec::new();
@@ -112,7 +106,7 @@ pub fn setup_logging(config: &ReadOnlyConfig) -> Result<(), String> {
     }
 
     if config.log.file.enabled {
-        fs::create_dir_all(config.log.file.path.parent().unwrap()).map_err(|e| {
+        fs::create_dir_all(&config.log.file.path.parent().unwrap()).map_err(|e| {
             error!("Failed to create log directory: {}", e);
             e.to_string()
         })?;
@@ -149,17 +143,13 @@ pub fn setup_logging(config: &ReadOnlyConfig) -> Result<(), String> {
 
     let subscriber = tracing_subscriber::registry().with(layers);
 
-    #[expect(
-        clippy::expect_used,
-        reason = "This is a safe operation, the cli should die if the logging does not work for some reason"
-    )]
     tracing::subscriber::set_global_default(subscriber).expect("Failed to set subscriber");
 
     Ok(())
 }
 
-/// The main entry point for async runtime of the server this will be called by the main function
-/// and is responsible for setting up the server and running it
+/// The main entry point for async runtime of the server this will be called by the main function and is responsible
+/// for setting up the server and running it
 pub async fn async_main(config: SharedConfig) -> Result<(), String> {
     let readonly_config = config.read().await;
     setup_logging(&readonly_config)?;
@@ -193,8 +183,6 @@ pub async fn async_main(config: SharedConfig) -> Result<(), String> {
         }
     }
 
-    drop(readonly_config);
-
     let cancellation_handler_thread = tokio::spawn(async move {
         handle_shutdown_signals(cancellation_token).await;
     });
@@ -206,14 +194,9 @@ pub async fn async_main(config: SharedConfig) -> Result<(), String> {
     Ok(())
 }
 
-/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to
-/// complete
+/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to complete
 async fn handle_shutdown_signals(cancellation_token: CancellationToken) {
     let ctrl_c = async {
-        #[expect(
-            clippy::expect_used,
-            reason = "This is a safe operation, the cli should die if for some reason it cannot be stopped manually"
-        )]
         signal::ctrl_c()
             .await
             .expect("failed to install Ctrl+C handler");

@@ -1,13 +1,10 @@
-//! Base CLI arguments and subcommands
-
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
 use crate::cli::{compile::CompileArguments, generate::GenerateArguments, run::RunArguments};
 
-/// Base CLI arguments
-#[derive(Parser, Debug, PartialEq, Eq)]
+#[derive(Parser, Debug, PartialEq)]
 #[command(version, about, long_about = None)]
 pub struct CliArguments {
     /// Turn debugging information on
@@ -20,13 +17,12 @@ pub struct CliArguments {
     #[arg(short, long, default_value = "config.json", global = true)]
     pub config: PathBuf,
 
-    /// The subcommand to run
     #[command(subcommand)]
     pub command: Commands,
 }
 
 /// First level server commands
-#[derive(Subcommand, Debug, PartialEq, Eq)]
+#[derive(Subcommand, Debug, PartialEq)]
 pub enum Commands {
     /// Compile agent or C2 gui
     Compile(CompileArguments),

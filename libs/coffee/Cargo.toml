@@ -8,8 +8,6 @@ license = "GPL-3.0-or-later"
 homepage = "https://github.com/hakaioffsec/coffee"
 repository = "https://github.com/hakaioffsec/coffee"
 edition = "2021"
-categories = ["simulation"]
-keywords = ["Coffee", "COFF", "loader"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -31,4 +29,4 @@ tracing = { version = "0.1.37" }
 # Error handling.
 color-eyre = "0.6.2"
 # Implementation
-mod-coffee-core = { path = "../../modules/mod-coffee-core", features = ["tracing"] }
+mod-coffee-core = { path = "../../modules/mod-loader-coffee-core", features = ["tracing"] }

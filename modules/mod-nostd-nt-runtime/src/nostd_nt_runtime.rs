@@ -12,18 +12,13 @@ use spin::Mutex;
 
 use crate::nostd_nt_threadpool::NoStdThreadPool;
 
-/// The `NoStdNtRuntime` struct provides a custom implementation of the `Runtime` trait.
-///
-/// This implementation uses a thread pool to manage the execution of jobs. It is specifically
-/// designed for `no_std` environments, where the standard library is not available.
-///
-/// The runtime relies on custom synchronization primitives and a custom MPSC (multiple-producer,
-/// single-consumer) channel for job management.
+/// The `NoStdNtRuntime` struct provides a custom implementation of the `Runtime` trait,
+/// using a thread pool to manage the execution of jobs. This runtime is designed to work
+/// in a `no_std` environment, relying on custom synchronization primitives and a custom MPSC channel.
 #[derive(Clone)]
 pub struct NoStdNtRuntime {
-    /// The thread pool is protected by a Mutex for safe concurrent access and is wrapped in an Arc
-    /// for shared ownership.
-    pool: Arc<Mutex<NoStdThreadPool>>,
+    pool: Arc<Mutex<NoStdThreadPool>>, /* The thread pool is protected by a Mutex for safe concurrent access and is
+                                        * wrapped in an Arc for shared ownership. */
 }
 
 impl fmt::Debug for NoStdNtRuntime {
@@ -47,16 +42,14 @@ impl NoStdNtRuntime {
     ///
     /// * A new `NoStdNtRuntime` instance that wraps the thread pool.
     pub fn new(size: usize) -> Self {
-        Self {
+        NoStdNtRuntime {
             pool: Arc::new(Mutex::new(NoStdThreadPool::new(size))),
         }
     }
 
-    /// Shuts down the thread pool, ensuring all worker threads complete their tasks before
-    /// termination.
+    /// Shuts down the thread pool, ensuring all worker threads complete their tasks before termination.
     ///
-    /// This method locks the Mutex around the thread pool to ensure safe access during the shutdown
-    /// process.
+    /// This method locks the Mutex around the thread pool to ensure safe access during the shutdown process.
     pub fn shutdown(&self) {
         let mut pool = self.pool.lock(); // Acquire a lock on the thread pool to safely shut it down.
         pool.shutdown();
@@ -70,8 +63,7 @@ impl Runtime for NoStdNtRuntime {
     ///
     /// # Arguments
     ///
-    /// * `job` - A closure that implements `FnOnce` and `Send`, representing the task to be
-    ///   executed.
+    /// * `job` - A closure that implements `FnOnce` and `Send`, representing the task to be executed.
     fn spawn<F>(&self, job: F)
     where
         F: FnOnce() + Send + 'static,
@@ -126,19 +118,17 @@ impl Runtime for NoStdNtRuntime {
 /// This struct is used within the `block_on` method to notify the runtime that the future
 /// has made progress and should be polled again.
 struct SimpleWaker {
-    /// The sender half of the MPSC channel, wrapped in a Mutex for safe access.
-    tx: Mutex<Option<nostd_mpsc::Sender<()>>>,
+    tx: Mutex<Option<nostd_mpsc::Sender<()>>>, /* The sender half of the MPSC channel, wrapped in a Mutex for safe
+                                                * access. */
 }
 
 impl alloc::task::Wake for SimpleWaker {
-    /// Sends a signal on the channel to indicate that the future has made progress and should be
-    /// polled.
+    /// Sends a signal on the channel to indicate that the future has made progress and should be polled.
     ///
-    /// This method is called when the waker is woken up, typically because the future is ready to
-    /// make progress.
+    /// This method is called when the waker is woken up, typically because the future is ready to make progress.
     fn wake(self: Arc<Self>) {
         if let Some(tx) = self.tx.lock().take() {
-            _ = tx.send(());
+            let _ = tx.send(());
         }
     }
 }

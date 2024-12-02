@@ -12,8 +12,7 @@ use crate::std_threadpool::ThreadPool;
 /// The `CustomRuntime` struct wraps a custom thread pool to implement the `Runtime` trait.
 #[derive(Debug, Clone)]
 pub struct StdRuntime {
-    /// Wrap the ThreadPool in a Mutex inside an Arc.
-    pool: Arc<Mutex<ThreadPool>>,
+    pool: Arc<Mutex<ThreadPool>>, // Wrap the ThreadPool in a Mutex inside an Arc.
 }
 
 impl StdRuntime {
@@ -27,7 +26,7 @@ impl StdRuntime {
     ///
     /// * A `CustomRuntime` instance wrapping the custom thread pool.
     pub fn new(size: usize) -> Self {
-        Self {
+        StdRuntime {
             pool: Arc::new(Mutex::new(ThreadPool::new(size))),
         }
     }
@@ -73,7 +72,7 @@ impl Runtime for StdRuntime {
                 Poll::Ready(output) => return output,
                 Poll::Pending => {
                     // Wait for the signal to be sent
-                    _ = rx.recv();
+                    let _ = rx.recv();
                 },
             }
         }
@@ -82,15 +81,13 @@ impl Runtime for StdRuntime {
 
 /// Struct for a simple custom Waker that sends a signal on a channel
 struct SimpleWaker {
-    /// Mutex-protected sender for the channel
     tx: Mutex<Option<mpsc::Sender<()>>>,
 }
 
 impl std::task::Wake for SimpleWaker {
     fn wake(self: Arc<Self>) {
-        let value = self.tx.lock().unwrap().take();
-        if let Some(tx) = value {
-            _ = tx.send(());
+        if let Some(tx) = self.tx.lock().unwrap().take() {
+            let _ = tx.send(());
         }
     }
 }

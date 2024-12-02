@@ -1,17 +1,15 @@
-//! # Async Context
-//! This module provides the necessary functions to run futures in a tokio runtime.
-
 use std::future::Future;
 
 use log::{info, trace, warn};
 use srv_mod_config::SharedConfig;
+use tokio;
 
 /// Run the given future in a tokio runtime
 ///
 /// # Arguments
 ///
 /// * `future` - The future to run
-pub fn enter<F: Future + Send>(future: F) -> F::Output {
+pub fn enter<F: Future>(future: F) -> F::Output {
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -26,7 +24,7 @@ pub fn enter<F: Future + Send>(future: F) -> F::Output {
 /// * `debug_level` - The debug level to use
 /// * `config` - The shared configuration
 /// * `future` - The future to run
-pub async fn init_context<F: Future + Send>(debug_level: u8, config: SharedConfig, future: F) -> F::Output {
+pub async fn init_context<F: Future>(debug_level: u8, config: SharedConfig, future: F) -> F::Output {
     info!("Initializing context...");
     trace!("Starting async runtime...");
 

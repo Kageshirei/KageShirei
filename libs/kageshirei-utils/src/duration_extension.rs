@@ -1,4 +1,4 @@
-use core::time::Duration;
+use std::time::Duration;
 
 pub trait DurationExt {
     fn round(&self) -> Duration;
@@ -7,9 +7,9 @@ pub trait DurationExt {
 impl DurationExt for Duration {
     /// Truncate the duration to the millisecond
     fn round(&self) -> Duration {
-        let millis = (self.as_millis() as u64).saturating_add(self.subsec_millis() as u64);
+        let millis = self.as_millis() + self.subsec_millis() as u128;
 
         // Convert the truncated nanoseconds back to a Duration
-        Self::from_millis(millis)
+        Duration::from_millis(millis as u64)
     }
 }

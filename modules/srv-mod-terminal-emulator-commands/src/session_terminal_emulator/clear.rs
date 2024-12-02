@@ -1,5 +1,3 @@
-//! Handle the clear command for the terminal emulator
-
 use chrono::Utc;
 use clap::Args;
 use serde::Serialize;
@@ -7,14 +5,14 @@ use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_entity::{
     active_enums::LogLevel,
     entities::{logs, terminal_history},
-    sea_orm::{prelude::*, ActiveValue::Set},
+    sea_orm::{prelude::*, sea_query::SimpleExpr, ActiveValue::Set},
 };
 use tracing::{debug, instrument};
 
 use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Eq, Serialize)]
+#[derive(Args, Debug, PartialEq, Serialize)]
 pub struct TerminalSessionClearArguments {
     /// Delete the command permanently, removing it from the database.
     ///
@@ -30,12 +28,14 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
 
     let db = config.db_pool.clone();
 
-    let log: logs::Model = if !args.permanent {
+    let log: logs::Model;
+
+    if !args.permanent {
         // clear commands marking them as deleted (soft delete)
         let pending_log = logs::ActiveModel {
             level: Set(LogLevel::Warning),
-            title: Set("Soft clean".to_owned()),
-            message: Set(Some("Commands have been soft cleaned.".to_owned())),
+            title: Set("Soft clean".to_string()),
+            message: Set(Some("Commands have been soft cleaned.".to_string())),
             extra: Set(Some(serde_json::json!({
                 "session": config.session.hostname,
                 "ran_by": config.user.username,
@@ -56,14 +56,14 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         );
 
         update.map_err(|e| e.to_string())?;
-        log_insertion.map_err(|e| e.to_string())?
+        log = log_insertion.map_err(|e| e.to_string())?;
     }
     else {
         // clear commands permanently
         let pending_log = logs::ActiveModel {
             level: Set(LogLevel::Warning),
-            title: Set("Permanent clean".to_owned()),
-            message: Set(Some("Commands have been permanently cleaned.".to_owned())),
+            title: Set("Permanent clean".to_string()),
+            message: Set(Some("Commands have been permanently cleaned.".to_string())),
             extra: Set(Some(serde_json::json!({
                 "session": config.session.hostname,
                 "ran_by": config.user.username,
@@ -78,8 +78,8 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         );
 
         delete.map_err(|e| e.to_string())?;
-        log_insertion.map_err(|e| e.to_string())?
-    };
+        log = log_insertion.map_err(|e| e.to_string())?;
+    }
 
     // broadcast the log
     config
@@ -92,139 +92,143 @@ pub async fn handle(config: CommandHandlerArguments, args: &TerminalSessionClear
         .map_err(|e| e.to_string())?;
 
     // Signal the frontend terminal emulator to clear the terminal screen
-    Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_owned())
+    Ok("__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__".to_string())
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
-    use chrono::Utc;
-    use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
-    use srv_mod_entity::sea_orm::{
-        ActiveValue::Set,
-        Database,
-        DatabaseConnection,
-        EntityTrait,
-        QueryFilter,
-        TransactionTrait,
-    };
-    use tokio::sync::{broadcast, mpsc};
+    use kageshirei_srv_test_helper::tests::*;
+    use serial_test::serial;
+    use srv_mod_database::models::command::CreateCommand;
 
     use super::*;
-    use crate::command_handler::{HandleArguments, HandleArgumentsSession, HandleArgumentsUser};
-
-    async fn cleanup(db: DatabaseConnection) {
-        db.transaction::<_, (), DbErr>(|txn| {
-            Box::pin(async move {
-                logs::Entity::delete_many().exec(txn).await.unwrap();
-
-                Ok(())
-            })
-        })
-        .await
-        .unwrap();
-    }
-
-    async fn init() -> DatabaseConnection {
-        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
-            .await
-            .unwrap();
-
-        cleanup(db_pool.clone()).await;
-
-        db_pool
-    }
+    use crate::session_terminal_emulator::clear::TerminalSessionClearArguments;
 
     #[tokio::test]
-    #[serial_test::serial]
+    #[serial]
     async fn test_handle_soft_delete() {
-        // Mock database setup
-        let db = init().await;
+        drop_database().await;
+        let db_pool = make_pool().await;
 
-        // Mock broadcast channel
-        let (sender, mut receiver) = broadcast::channel(1);
+        let user = generate_test_user(db_pool.clone()).await;
 
-        // Create command handler arguments
-        let config = Arc::new(HandleArguments {
-            session:          HandleArgumentsSession {
-                session_id: "test".to_owned(),
-                hostname:   "test".to_owned(),
-            },
-            user:             HandleArgumentsUser {
-                user_id:  "test".to_owned(),
-                username: "test".to_owned(),
-            },
-            db_pool:          db,
-            broadcast_sender: sender,
-        });
-
+        let session_id_v = "global";
         let args = TerminalSessionClearArguments {
             permanent: false,
         };
 
-        let result = handle(config, &args).await;
-        assert!(result.is_ok());
-        let message = result.unwrap();
-        assert_eq!(message, "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__");
+        let binding = db_pool.clone();
 
-        if let Ok(SseEvent {
-            event,
-            data,
-            id: _,
-        }) = receiver.recv().await
+        // open a scope to automatically drop the connection once exited
         {
-            assert_eq!(event, EventType::Log);
-            assert!(data.contains("Soft clean"));
+            let mut connection = binding.get().await.unwrap();
+
+            // Insert a dummy command
+            let inserted_command_0 = diesel::insert_into(commands)
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
+
+            assert_eq!(inserted_command_0.deleted_at, None);
+            assert_eq!(inserted_command_0.restored_at, None);
+
+            let inserted_command_1 = diesel::insert_into(commands)
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
+
+            assert_eq!(inserted_command_1.deleted_at, None);
+            assert_eq!(inserted_command_1.restored_at, None);
         }
-        else {
-            panic!("Expected SSE event not received");
-        }
+
+        let result = handle(session_id_v, db_pool, &args).await;
+        assert!(result.is_ok());
+
+        let mut connection = binding.get().await.unwrap();
+        let retrieved_commands = commands
+            .select(Command::as_select())
+            .filter(session_id.eq(session_id_v))
+            .get_results(&mut connection)
+            .await
+            .unwrap();
+
+        assert_eq!(retrieved_commands.len(), 2);
+        assert!(retrieved_commands.iter().all(|c| c.deleted_at.is_some()));
+        assert!(retrieved_commands.iter().all(|c| c.restored_at.is_none()));
+
+        drop_database().await;
     }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_handle_permanent_delete() {
-        // Mock database setup
-        let db = init().await;
+    #[serial]
+    async fn test_handle_hard_delete() {
+        drop_database().await;
+        let db_pool = make_pool().await;
 
-        // Mock broadcast channel
-        let (sender, mut receiver) = broadcast::channel(1);
+        let user = generate_test_user(db_pool.clone()).await;
 
-        // Create command handler arguments
-        let config = Arc::new(HandleArguments {
-            session:          HandleArgumentsSession {
-                session_id: "test".to_owned(),
-                hostname:   "test".to_owned(),
-            },
-            user:             HandleArgumentsUser {
-                user_id:  "test".to_owned(),
-                username: "test".to_owned(),
-            },
-            db_pool:          db,
-            broadcast_sender: sender,
-        });
-
+        let session_id_v = "global";
         let args = TerminalSessionClearArguments {
             permanent: true,
         };
 
-        let result = handle(config, &args).await;
-        assert!(result.is_ok());
-        let message = result.unwrap();
-        assert_eq!(message, "__TERMINAL_EMULATOR_INTERNAL_HANDLE_CLEAR__");
+        let binding = db_pool.clone();
 
-        if let Ok(SseEvent {
-            event,
-            data,
-            id: _,
-        }) = receiver.recv().await
+        // open a scope to automatically drop the connection once exited
         {
-            assert_eq!(event, EventType::Log);
-            assert!(data.contains("Permanent clean"));
+            let mut connection = binding.get().await.unwrap();
+
+            // Insert a dummy command
+            let inserted_command_0 = diesel::insert_into(commands)
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
+
+            assert_eq!(inserted_command_0.deleted_at, None);
+            assert_eq!(inserted_command_0.restored_at, None);
+
+            let inserted_command_1 = diesel::insert_into(commands)
+                .values(&CreateCommand::new(
+                    user.id.clone(),
+                    session_id_v.to_string(),
+                ))
+                .returning(Command::as_select())
+                .get_result(&mut connection)
+                .await
+                .unwrap();
+
+            assert_eq!(inserted_command_1.deleted_at, None);
+            assert_eq!(inserted_command_1.restored_at, None);
         }
-        else {
-            panic!("Expected SSE event not received");
-        }
+
+        let result = handle(session_id_v, db_pool, &args).await;
+        assert!(result.is_ok());
+
+        let mut connection = binding.get().await.unwrap();
+        let retrieved_commands = commands
+            .select(Command::as_select())
+            .filter(session_id.eq(session_id_v))
+            .get_results(&mut connection)
+            .await
+            .unwrap();
+
+        assert_eq!(retrieved_commands.len(), 0);
+
+        drop_database().await;
     }
 }

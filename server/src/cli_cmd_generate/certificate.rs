@@ -1,8 +1,5 @@
-//! Certificate generation for the server
+use std::io::Write;
 
-use std::io::Write as _;
-
-use chrono::{Datelike as _, Utc};
 use log::info;
 use rcgen::{DnType, KeyPair, PKCS_ED25519};
 
@@ -56,34 +53,21 @@ pub fn make_tls(args: &GenerateCertificateArguments) -> Result<(), String> {
         .split("-")
         .map(|x| x.parse::<u32>().unwrap())
         .collect::<Vec<u32>>();
-    let not_before_year = *not_before_pieces
-        .first()
-        .unwrap_or(&(Utc::now().year() as u32));
-    let not_before_month = *not_before_pieces.get(1).unwrap_or(&(Utc::now().month()));
-    let not_before_day = *not_before_pieces.get(2).unwrap_or(&(Utc::now().day()));
-
     server_ee_params.not_before = rcgen::date_time_ymd(
-        not_before_year as i32,
-        not_before_month as u8,
-        not_before_day as u8,
+        not_before_pieces[0] as i32,
+        not_before_pieces[1] as u8,
+        not_before_pieces[2] as u8,
     );
-
     // Parse the not_after date and set it
     let not_after_pieces = args
         .not_after
         .split("-")
         .map(|x| x.parse::<u32>().unwrap())
         .collect::<Vec<u32>>();
-    let not_after_year = *not_after_pieces
-        .first()
-        .unwrap_or(&(Utc::now().year().saturating_add(1) as u32));
-    let not_after_month = *not_after_pieces.get(1).unwrap_or(&(Utc::now().month()));
-    let not_after_day = *not_after_pieces.get(2).unwrap_or(&(Utc::now().day()));
-
     server_ee_params.not_after = rcgen::date_time_ymd(
-        not_after_year as i32,
-        not_after_month as u8,
-        not_after_day as u8,
+        not_after_pieces[0] as i32,
+        not_after_pieces[1] as u8,
+        not_after_pieces[2] as u8,
     );
 
     let ee_key = KeyPair::generate_for(&PKCS_ED25519).unwrap();
