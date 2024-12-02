@@ -220,99 +220,94 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
     Ok(sub_keys) // Return the vector of sub-key names
 }
 
-// #[cfg(test)]
-// mod tests {
-// use kageshirei_win32::ntstatus::NT_SUCCESS;
-// use libc_print::libc_println;
-//
-// use super::*;
-// use crate::utils::NT_STATUS;
-//
-// #[test]
-// fn test_nt_open_key() {
-// unsafe {
-// Try to open a well-known registry key
-// let registry_key = r"\Registry\Machine\Software\Microsoft\Windows\CurrentVersion";
-// match nt_open_key(registry_key) {
-// Ok(handle) => {
-// libc_println!("Successfully opened registry key: {}\n", registry_key);
-// instance().ntdll.nt_close.run(handle);
-// },
-// Err(status) => {
-// libc_println!(
-// "Failed to open registry key: {}. NTSTATUS: {}",
-// registry_key,
-// NT_STATUS(status)
-// );
-// assert!(
-// NT_SUCCESS(status),
-// "Expected success, but got NTSTATUS: {}",
-// NT_STATUS(status)
-// );
-// },
-// }
-// }
-// }
-//
-// #[test]
-// fn test_nt_query_value_key() {
-// unsafe {
-// First, open a well-known registry key
-// let registry_key = r"\Registry\Machine\Software\Microsoft\Windows\CurrentVersion";
-// let key_handle = match nt_open_key(registry_key) {
-// Ok(handle) => handle,
-// Err(status) => {
-// libc_println!(
-// "Failed to open registry key: {}. NTSTATUS: {}",
-// registry_key,
-// NT_STATUS(status)
-// );
-// return;
-// },
-// };
-//
-// Query a well-known value from the opened registry key
-// let value_name = "ProgramFilesDir";
-// match nt_query_value_key(key_handle, value_name) {
-// Ok(value) => {
-// libc_println!("Successfully queried value: {} = {}\n", value_name, value);
-// },
-// Err(status) => {
-// libc_println!(
-// "Failed to query value: {}. NTSTATUS: {}",
-// value_name,
-// NT_STATUS(status)
-// );
-// assert!(
-// NT_SUCCESS(status),
-// "Expected success, but got NTSTATUS: {}",
-// NT_STATUS(status)
-// );
-// },
-// }
-//
-// instance().ntdll.nt_close.run(key_handle);
-// }
-// }
-//
-// #[test]
-// fn test_nt_enumerate_key() {
-// unsafe {
-// let registry_key =
-// "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
-// match nt_enumerate_key(registry_key) {
-// Ok(sub_keys) => {
-// for sub_key in sub_keys {
-// libc_println!("Sub-key: {}\\{}", registry_key, sub_key);
-// }
-// },
-// Err(status) => {
-// libc_println!(
-// "Failed to enumerate sub-keys. NT STATUS: {}",
-// NT_STATUS(status)
-// );
-// },
-// }
-// }
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use kageshirei_win32::ntstatus::NT_SUCCESS;
+    use libc_print::libc_println;
+
+    use super::*;
+    use crate::utils::NT_STATUS;
+
+    #[test]
+    fn test_nt_open_key() {
+        unsafe {
+            // Try to open a well-known registry key
+            let registry_key = r"\Registry\Machine\Software\Microsoft\Windows\CurrentVersion";
+            match nt_open_key(registry_key) {
+                Ok(handle) => {
+                    libc_println!("Successfully opened registry key, handle: {:p}\n", handle);
+                    instance().ntdll.nt_close.run(handle);
+                },
+                Err(status) => {
+                    assert!(
+                        NT_SUCCESS(status),
+                        "Expected success, but got NTSTATUS: {}",
+                        NT_STATUS(status)
+                    );
+                },
+            }
+        }
+    }
+
+    #[test]
+    fn test_nt_query_value_key() {
+        unsafe {
+            // First, open a well-known registry key
+            let registry_key = r"\Registry\Machine\Software\Microsoft\Windows\CurrentVersion";
+            let key_handle = match nt_open_key(registry_key) {
+                Ok(handle) => handle,
+                Err(status) => {
+                    libc_println!(
+                        "Failed to open registry key: {}. NTSTATUS: {}",
+                        registry_key,
+                        NT_STATUS(status)
+                    );
+                    return;
+                },
+            };
+
+            // Query a well-known value from the opened registry key
+            let value_name = "ProgramFilesDir";
+            match nt_query_value_key(key_handle, value_name) {
+                Ok(value) => {
+                    libc_println!("Successfully queried value: {} = {}\n", value_name, value);
+                },
+                Err(status) => {
+                    libc_println!(
+                        "Failed to query value: {}. NTSTATUS: {}",
+                        value_name,
+                        NT_STATUS(status)
+                    );
+                    assert!(
+                        NT_SUCCESS(status),
+                        "Expected success, but got NTSTATUS: {}",
+                        NT_STATUS(status)
+                    );
+                },
+            }
+
+            instance().ntdll.nt_close.run(key_handle);
+        }
+    }
+
+    #[test]
+    fn test_nt_enumerate_key() {
+        unsafe {
+            let registry_key =
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
+            match nt_enumerate_key(registry_key) {
+                Ok(sub_keys) => {
+                    for sub_key in sub_keys {
+                        libc_println!("Sub-key: {}\\{}", registry_key, sub_key);
+                    }
+                },
+                Err(status) => {
+                    libc_println!(
+                        "Failed to enumerate sub-keys. NT STATUS: {}",
+                        NT_STATUS(status)
+                    );
+                },
+            }
+        }
+    }
+}

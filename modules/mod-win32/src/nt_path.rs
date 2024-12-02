@@ -80,8 +80,13 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
 
         // Retrieve the full path name using the custom function
         let unicode_path = &str_to_unicode_string(path);
+
+        // let path_utf16_string: Vec<u16> = path.encode_utf16().collect();
+        // let mut unicode_path = UnicodeString::new();
+        // unicode_path.init(path_utf16_string.as_ptr());
+
         let full_path_length = rtl_get_full_path_name_ustr(
-            unicode_path,
+            &unicode_path,
             full_path.maximum_length as usize,
             full_path.buffer,
             None,
@@ -752,511 +757,507 @@ pub fn change_directory(path: &str) -> i32 {
     rtl_set_current_directory(path)
 }
 
-// #[cfg(test)]
-// mod tests {
-// use alloc::vec::Vec;
-// use core::ptr::null_mut;
-//
-// use libc_print::libc_println;
-//
-// use super::*;
-// use crate::{
-// nt_peb::get_current_directory,
-// utils::{ptr_to_str, unicodestring_to_string},
-// };
-//
-// #[test]
-// #[ignore]
-// fn test_rtl_dos_path_name_to_nt_path_name() {
-// let mut test_cases = Vec::new();
-//
-// test_cases.push((
-// str_to_unicode_string("\\??\\C:\\Windows\\file.txt"),
-// "\\??\\C:\\Windows\\file.txt",
-// RtlPathType::RtlPathTypeRelative,
-// ));
-//
-// // Test case 1: UNC absolute path
-// test_cases.push((
-// str_to_unicode_string("\\\\server\\share\\file.txt"),
-// "\\??\\UNC\\server\\share\\file.txt",
-// RtlPathType::RtlPathTypeUncAbsolute,
-// ));
-//
-// // Test case 2: Local device path
-// test_cases.push((
-// str_to_unicode_string("\\\\.\\C:\\file.txt"),
-// "\\??\\C:\\file.txt",
-// RtlPathType::RtlPathTypeLocalDevice,
-// ));
-//
-// Test case 3: Drive absolute path
-// test_cases.push((
-//     str_to_unicode_string("C:\\Windows\\System32"),
-//     "\\??\\C:\\Windows\\System32",
-//     RtlPathType::RtlPathTypeDriveAbsolute,
-// ));
-//
-// // Test case 4: Drive relative path
-// test_cases.push((
-//     str_to_unicode_string("C:file.txt"),
-//     "\\??\\C:file.txt",
-//     RtlPathType::RtlPathTypeDriveRelative,
-// ));
-//
-// Test case 5: Rooted path
-// test_cases.push((
-// str_to_unicode_string("\\Windows\\System32\\file.txt"),
-// "\\??\\\\Windows\\System32\\file.txt",
-// RtlPathType::RtlPathTypeRooted,
-// ));
-//
-// Test case 6: Relative path
-// test_cases.push((
-// str_to_unicode_string("file.txt"),
-// "\\??\\file.txt",
-// RtlPathType::RtlPathTypeRelative,
-// ));
-//
-// for (input, expected_nt_path, path_type) in test_cases {
-// let original_path_type = rtl_determine_dos_path_name_type_ustr(&input);
-//
-// let mut nt_path = UnicodeString::new();
-// let mut part_name: *mut u16 = null_mut();
-// let mut relative_name = RtlRelativeNameU::new();
-//
-// libc_println!(
-// "\n\nTesting path: {:?}",
-// unicodestring_to_string(&input).unwrap()
-// );
-//
-// let status = rtl_dos_path_name_to_nt_path_name(
-// &input,
-// &mut nt_path,
-// Some(&mut part_name),
-// Some(&mut relative_name),
-// );
-//
-// Verifica che la funzione abbia avuto successo
-// libc_println!("Status: 0x{:X}", status);
-// assert_eq!(
-// status,
-// STATUS_SUCCESS,
-// "Unexpected status for path: {:?}",
-// unicodestring_to_string(&input).unwrap()
-// );
-//
-// Verifica che il percorso NT risultante sia corretto
-// let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
-// libc_println!("Expected NT Path: {}", expected_nt_path);
-// libc_println!("Result NT Path:   {}", nt_path_str);
-// assert_eq!(
-// nt_path_str,
-// expected_nt_path,
-// "Mismatch in NT Path for input: {:?}",
-// unicodestring_to_string(&input).unwrap()
-// );
-//
-// Verifica che part_name e relative_name siano impostati correttamente
-// if let Some(part_name_ptr) = unsafe { part_name.as_mut() } {
-// let part_name_str = unsafe { ptr_to_str(part_name_ptr) };
-// libc_println!("Part Name: {}", part_name_str);
-// assert!(
-// !part_name_str.is_empty(),
-// "PartName was expected but is empty"
-// );
-// }
-// else {
-// libc_println!("Part Name is null");
-// }
-//
-// Se il percorso era relativo, verifica che relative_name sia corretto
-// if path_type as i32 == RtlPathType::RtlPathTypeRelative as i32 {
-// libc_println!(
-// "Relative Name Buffer: {:?}",
-// relative_name.relative_name.buffer
-// );
-// assert!(
-// !relative_name.relative_name.buffer.is_null(),
-// "RelativeName should not be null for relative paths"
-// );
-// }
-//
-// libc_println!(
-// "Test passed for: {:?}",
-// unicodestring_to_string(&input).unwrap()
-// );
-// }
-// }
-//
-// #[test]
-// #[ignore]
-// fn test_determine_path_type() {
-// let mut test_cases = Vec::new();
-// test_cases.push((str_to_unicode_string("\\"), RtlPathType::RtlPathTypeRooted));
-// test_cases.push((
-// str_to_unicode_string("\\\\"),
-// RtlPathType::RtlPathTypeUncAbsolute,
-// ));
-// test_cases.push((
-// str_to_unicode_string("\\\\?\\C:\\path"),
-// RtlPathType::RtlPathTypeLocalDevice,
-// ));
-// test_cases.push((
-// str_to_unicode_string("\\\\.\\C:\\path"),
-// RtlPathType::RtlPathTypeLocalDevice,
-// ));
-// test_cases.push((
-// str_to_unicode_string("C:\\Windows\\System32"),
-// RtlPathType::RtlPathTypeDriveAbsolute,
-// ));
-// test_cases.push((
-// str_to_unicode_string("C:"),
-// RtlPathType::RtlPathTypeDriveRelative,
-// ));
-// test_cases.push((
-// str_to_unicode_string("path"),
-// RtlPathType::RtlPathTypeRelative,
-// ));
-//
-// for (input, expected) in test_cases {
-// let result = rtl_determine_dos_path_name_type_ustr(&input);
-// assert_eq!(
-// result as i32,
-// expected as i32,
-// "Failed for input: {:?}",
-// unicodestring_to_string(&input)
-// );
-// }
-// }
-//
-// #[test]
-// #[ignore]
-// fn test_dos_path_to_nt_path() {
-// libc_println!("Test 1: Basic DOS path to NT path conversion");
-// let dos_path = str_to_unicode_string("C:\\Windows\\System32");
-// let mut nt_path = UnicodeString::new();
-// let mut part_name: *mut u16 = null_mut();
-// let status = rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name),
-// None);
-//
-// assert_eq!(status, STATUS_SUCCESS);
-// let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
-// libc_println!("NT Path: {}", nt_path_str);
-// assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32");
-//
-// if !part_name.is_null() {
-// let part_name_str = unsafe { ptr_to_str(part_name) };
-// libc_println!("Part Name: {}", part_name_str);
-// assert_eq!(part_name_str, "System32");
-// }
-// else {
-// assert!(false, "PartName was expected but is null");
-// }
-// }
-//
-// #[test]
-// #[ignore]
-// fn test_dos_path_to_nt_path_ending_with_separator() {
-// libc_println!("Test 2: DOS path ending with a separator");
-// let dos_path = str_to_unicode_string("C:\\Windows\\System32\\");
-// let mut nt_path = UnicodeString::new();
-// let mut part_name: *mut u16 = null_mut();
-// let status = rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name),
-// None);
-//
-// assert_eq!(status, STATUS_SUCCESS);
-// let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
-// libc_println!("NT Path: {}", nt_path_str);
-// assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32\\");
-//
-// Since the path ends with a separator, part_name should be null
-// assert!(
-// part_name.is_null(),
-// "PartName was not expected but is non-null"
-// );
-// }
-//
-// #[test]
-// #[ignore]
-// fn test_dos_path_to_nt_path_with_relative_name() {
-// libc_println!("Test 3: DOS path with a relative name");
-// let dos_path = str_to_unicode_string("\\??\\C:\\Windows\\System32\\file.txt");
-// let mut nt_path: UnicodeString = UnicodeString::new();
-// let mut part_name: *mut u16 = null_mut();
-// let mut relative_name = RtlRelativeNameU::new();
-// let status = rtl_dos_path_name_to_nt_path_name(
-// &dos_path,
-// &mut nt_path,
-// Some(&mut part_name),
-// Some(&mut relative_name),
-// );
-//
-// assert_eq!(status, STATUS_SUCCESS);
-// let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
-// libc_println!("NT Path: {}", nt_path_str);
-// assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32\\file.txt");
-//
-// if !part_name.is_null() {
-// let part_name_str = unsafe { ptr_to_str(part_name) };
-// libc_println!("Part Name: {}", part_name_str);
-// assert_eq!(part_name_str, "file.txt");
-// }
-// else {
-// assert!(false, "PartName was expected but is null");
-// }
-// }
-//
-// #[test]
-// fn test_rtl_get_full_path_name() {
-// unsafe {
-// Test 1: Resolve a relative path to an absolute path
-// let relative_path = &str_to_unicode_string("Folder\\File.txt");
-// let mut buffer: Vec<u16> = Vec::with_capacity(512);
-// buffer.set_len(512);
-// let mut full_path = UnicodeString {
-// length:         0,
-// maximum_length: (buffer.capacity() * 2) as u16,
-// buffer:         buffer.as_mut_ptr(),
-// };
-//
-// let full_path_length = rtl_get_full_path_name_ustr(
-// relative_path,
-// full_path.maximum_length as usize,
-// full_path.buffer,
-// None,
-// None,
-// );
-//
-// libc_println!("Test 1: Relative Path");
-// libc_println!(
-// "Relative Path: {}",
-// unicodestring_to_string(relative_path).unwrap()
-// );
-// if full_path_length > 0 {
-// full_path.length = full_path_length as u16;
-// libc_println!(
-// "Full Path: {}",
-// unicodestring_to_string(&full_path).unwrap()
-// );
-// }
-// else {
-// libc_println!("Failed to get the full path");
-// }
-//
-// Test 2: Resolve an absolute path
-// let absolute_path = &str_to_unicode_string("C:\\Windows\\System32\\cmd.exe");
-// let mut buffer: Vec<u16> = Vec::with_capacity(512);
-// buffer.set_len(512);
-// let mut full_path = UnicodeString {
-// length:         0,
-// maximum_length: (buffer.capacity() * 2) as u16,
-// buffer:         buffer.as_mut_ptr(),
-// };
-//
-// let full_path_length = rtl_get_full_path_name_ustr(
-// absolute_path,
-// full_path.maximum_length as usize,
-// full_path.buffer,
-// None,
-// None,
-// );
-//
-// libc_println!("Test 2: Absolute Path");
-// libc_println!(
-// "Absolute Path: {:?}",
-// unicodestring_to_string(absolute_path).unwrap()
-// );
-// if full_path_length > 0 {
-// full_path.length = full_path_length as u16;
-// libc_println!(
-// "Full Path: {}",
-// unicodestring_to_string(&full_path).unwrap()
-// );
-// }
-// else {
-// libc_println!("Failed to get the full path");
-// }
-//
-// Test 3: Resolve a path with an invalid format
-// let invalid_path = &str_to_unicode_string("::InvalidPath::");
-// let mut buffer: Vec<u16> = Vec::with_capacity(512);
-// buffer.set_len(512);
-// let mut full_path = UnicodeString {
-// length:         0,
-// maximum_length: (buffer.capacity() * 2) as u16,
-// buffer:         buffer.as_mut_ptr(),
-// };
-//
-// let full_path_length = rtl_get_full_path_name_ustr(
-// invalid_path,
-// full_path.maximum_length as usize,
-// full_path.buffer,
-// None,
-// None,
-// );
-//
-// libc_println!("Test 3: Invalid Path");
-// libc_println!(
-// "Invalid Path: {:?}",
-// unicodestring_to_string(invalid_path).unwrap()
-// );
-// if full_path_length > 0 {
-// full_path.length = full_path_length as u16;
-// libc_println!(
-// "Full Path: {}",
-// unicodestring_to_string(&full_path).unwrap()
-// );
-// }
-// else {
-// libc_println!("Failed to get the full path");
-// }
-//
-// Test 4: Empty path
-// let empty_path = &str_to_unicode_string("");
-// let mut buffer: Vec<u16> = Vec::with_capacity(512);
-// buffer.set_len(512);
-// let mut full_path = UnicodeString {
-// length:         0,
-// maximum_length: (buffer.capacity() * 2) as u16,
-// buffer:         buffer.as_mut_ptr(),
-// };
-//
-// let full_path_length = rtl_get_full_path_name_ustr(
-// empty_path,
-// full_path.maximum_length as usize,
-// full_path.buffer,
-// None,
-// None,
-// );
-//
-// libc_println!("Test 4: Empty Path");
-// if full_path_length > 0 {
-// full_path.length = full_path_length as u16;
-// libc_println!(
-// "Full Path: {}",
-// unicodestring_to_string(&full_path).unwrap()
-// );
-// }
-// else {
-// libc_println!("Failed to get the full path");
-// }
-// }
-// }
-//
-// #[test]
-// fn test_change_directory() {
-// Test changing to a subdirectory
-// let target_directory = "C:\\Windows\\System32";
-// let result = change_directory(target_directory);
-// assert_eq!(
-// result, 0,
-// "Failed to change to directory: {}",
-// target_directory
-// );
-//
-// Verify that the directory has changed
-// let current_directory = get_current_directory();
-// assert!(
-// current_directory.ends_with(target_directory),
-// "Expected directory: {}, but got: {}",
-// target_directory,
-// current_directory
-// );
-//
-// Test changing to the parent directory with "cd .."
-// let result = change_directory("..");
-// assert_eq!(result, 0, "Failed to change to parent directory");
-// libc_println!("[+] Directory changed: {}", current_directory);
-//
-// Verify that the directory has moved up one level
-// let parent_directory = "C:\\";
-// let current_directory = get_current_directory();
-// assert!(
-// current_directory.starts_with(parent_directory),
-// "Expected parent directory: {}, but got: {}",
-// parent_directory,
-// current_directory
-// );
-// libc_println!("[+] Directory changed: {}", current_directory);
-//
-// Test changing to a subdirectory
-// let target_directory = "C:\\Windows\\System32\\drivers";
-// let result = change_directory(target_directory);
-// assert_eq!(
-// result, 0,
-// "Failed to change to directory: {}",
-// target_directory
-// );
-//
-// Verify that the directory has changed
-// let current_directory = get_current_directory();
-// assert!(
-// current_directory.ends_with(target_directory),
-// "Expected directory: {}, but got: {}",
-// target_directory,
-// current_directory
-// );
-//
-// Test changing to the parent directory with "cd .."
-// let result = change_directory("..\\..");
-// assert_eq!(result, 0, "Failed to change to parent directory");
-// libc_println!("[+] Directory changed: {}", current_directory);
-//
-// Verify that the directory has moved up one level
-// let parent_directory = "C:\\Windows";
-// let current_directory = get_current_directory();
-// assert!(
-// current_directory.starts_with(parent_directory),
-// "Expected parent directory: {}, but got: {}",
-// parent_directory,
-// current_directory
-// );
-// libc_println!("[+] Directory changed: {}", current_directory);
-// }
-//
-// #[test]
-// fn test_rtl_set_current_directory_w() {
-// Define the target directory for the test
-// let target_directory = "C:\\Windows";
-//
-// Call the function to set the current directory
-// let result = rtl_set_current_directory(target_directory);
-//
-// Verify the function returned success
-// assert_eq!(
-// result, 0,
-// "Failed to set the current directory to '{}'",
-// target_directory
-// );
-//
-// Retrieve the current directory to verify if it was actually changed
-// let current_directory = unsafe {
-// let peb = instance().teb.as_ref().unwrap().process_environment_block;
-// if !peb.is_null() {
-// let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
-// let cur_dir = &mut process_parameters.as_mut().unwrap().current_directory;
-// unicodestring_to_string(&(*cur_dir).dos_path)
-// }
-// else {
-// None
-// }
-// };
-//
-// Check if the current directory matches the target directory
-// match current_directory {
-// Some(current_dir) => {
-// libc_println!("Current directory is: {}", current_dir);
-// assert!(
-// current_dir.ends_with(target_directory),
-// "Expected current directory to be '{}', but got '{}'",
-// target_directory,
-// current_dir
-// );
-// },
-// None => {
-// panic!("Failed to retrieve the current directory after setting it.");
-// },
-// }
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use alloc::vec::Vec;
+    use core::ptr::null_mut;
+
+    use libc_print::libc_println;
+
+    use super::*;
+    use crate::{
+        nt_peb::get_current_directory,
+        utils::{ptr_to_str, unicodestring_to_string},
+    };
+
+    #[test]
+    #[ignore]
+    fn test_rtl_dos_path_name_to_nt_path_name() {
+        let mut test_cases = Vec::new();
+
+        test_cases.push((
+            str_to_unicode_string("\\??\\C:\\Windows\\file.txt"),
+            "\\??\\C:\\Windows\\file.txt",
+            RtlPathType::RtlPathTypeRelative,
+        ));
+
+        // Test case 1: UNC absolute path
+        test_cases.push((
+            str_to_unicode_string("\\\\server\\share\\file.txt"),
+            "\\??\\UNC\\server\\share\\file.txt",
+            RtlPathType::RtlPathTypeUncAbsolute,
+        ));
+
+        // Test case 2: Local device path
+        test_cases.push((
+            str_to_unicode_string("\\\\.\\C:\\file.txt"),
+            "\\??\\C:\\file.txt",
+            RtlPathType::RtlPathTypeLocalDevice,
+        ));
+
+        // Test case 3: Drive absolute path
+        test_cases.push((
+            str_to_unicode_string("C:\\Windows\\System32"),
+            "\\??\\C:\\Windows\\System32",
+            RtlPathType::RtlPathTypeDriveAbsolute,
+        ));
+
+        // Test case 4: Drive relative path
+        test_cases.push((
+            str_to_unicode_string("C:file.txt"),
+            "\\??\\C:file.txt",
+            RtlPathType::RtlPathTypeDriveRelative,
+        ));
+
+        // Test case 5: Rooted path
+        test_cases.push((
+            str_to_unicode_string("\\Windows\\System32\\file.txt"),
+            "\\??\\\\Windows\\System32\\file.txt",
+            RtlPathType::RtlPathTypeRooted,
+        ));
+
+        // Test case 6: Relative path
+        test_cases.push((
+            str_to_unicode_string("file.txt"),
+            "\\??\\file.txt",
+            RtlPathType::RtlPathTypeRelative,
+        ));
+
+        for (input, expected_nt_path, path_type) in test_cases {
+            // let original_path_type = rtl_determine_dos_path_name_type_ustr(&input);
+
+            let mut nt_path = UnicodeString::new();
+            let mut part_name: *mut u16 = null_mut();
+            let mut relative_name = RtlRelativeNameU::new();
+
+            libc_println!(
+                "\n\nTesting path: {:?}",
+                unicodestring_to_string(&input).unwrap()
+            );
+
+            let status = rtl_dos_path_name_to_nt_path_name(
+                &input,
+                &mut nt_path,
+                Some(&mut part_name),
+                Some(&mut relative_name),
+            );
+
+            // Verifica che la funzione abbia avuto successo
+            libc_println!("Status: 0x{:X}", status);
+            assert_eq!(
+                status,
+                STATUS_SUCCESS,
+                "Unexpected status for path: {:?}",
+                unicodestring_to_string(&input).unwrap()
+            );
+
+            // Verifica che il percorso NT risultante sia corretto
+            let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
+            libc_println!("Expected NT Path: {}", expected_nt_path);
+            libc_println!("Result NT Path:   {}", nt_path_str);
+            assert_eq!(
+                nt_path_str,
+                expected_nt_path,
+                "Mismatch in NT Path for input: {:?}",
+                unicodestring_to_string(&input).unwrap()
+            );
+
+            // Verifica che part_name e relative_name siano impostati correttamente
+            if let Some(part_name_ptr) = unsafe { part_name.as_mut() } {
+                let part_name_str = unsafe { ptr_to_str(part_name_ptr) };
+                libc_println!("Part Name: {}", part_name_str);
+                assert!(
+                    !part_name_str.is_empty(),
+                    "PartName was expected but is empty"
+                );
+            }
+            else {
+                libc_println!("Part Name is null");
+            }
+
+            // Se il percorso era relativo, verifica che relative_name sia corretto
+            if path_type as i32 == RtlPathType::RtlPathTypeRelative as i32 {
+                libc_println!(
+                    "Relative Name Buffer: {:?}",
+                    relative_name.relative_name.buffer
+                );
+                assert!(
+                    !relative_name.relative_name.buffer.is_null(),
+                    "RelativeName should not be null for relative paths"
+                );
+            }
+
+            libc_println!(
+                "Test passed for: {:?}",
+                unicodestring_to_string(&input).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_determine_path_type() {
+        let mut test_cases = Vec::new();
+        test_cases.push((str_to_unicode_string("\\"), RtlPathType::RtlPathTypeRooted));
+        test_cases.push((
+            str_to_unicode_string("\\\\"),
+            RtlPathType::RtlPathTypeUncAbsolute,
+        ));
+        test_cases.push((
+            str_to_unicode_string("\\\\?\\C:\\path"),
+            RtlPathType::RtlPathTypeLocalDevice,
+        ));
+        test_cases.push((
+            str_to_unicode_string("\\\\.\\C:\\path"),
+            RtlPathType::RtlPathTypeLocalDevice,
+        ));
+        test_cases.push((
+            str_to_unicode_string("C:\\Windows\\System32"),
+            RtlPathType::RtlPathTypeDriveAbsolute,
+        ));
+        test_cases.push((
+            str_to_unicode_string("C:"),
+            RtlPathType::RtlPathTypeDriveRelative,
+        ));
+        test_cases.push((
+            str_to_unicode_string("path"),
+            RtlPathType::RtlPathTypeRelative,
+        ));
+
+        for (input, expected) in test_cases {
+            let result = rtl_determine_dos_path_name_type_ustr(&input);
+            assert_eq!(
+                result as i32,
+                expected as i32,
+                "Failed for input: {:?}",
+                unicodestring_to_string(&input)
+            );
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_dos_path_to_nt_path() {
+        libc_println!("Test 1: Basic DOS path to NT path conversion");
+        let dos_path = str_to_unicode_string("C:\\Windows\\System32");
+        let mut nt_path = UnicodeString::new();
+        let mut part_name: *mut u16 = null_mut();
+        let status = rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name), None);
+
+        assert_eq!(status, STATUS_SUCCESS);
+        let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
+        libc_println!("NT Path: {}", nt_path_str);
+        assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32");
+
+        if !part_name.is_null() {
+            let part_name_str = unsafe { ptr_to_str(part_name) };
+            libc_println!("Part Name: {}", part_name_str);
+            assert_eq!(part_name_str, "System32");
+        }
+        else {
+            assert!(false, "PartName was expected but is null");
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_dos_path_to_nt_path_ending_with_separator() {
+        libc_println!("Test 2: DOS path ending with a separator");
+        let dos_path = str_to_unicode_string("C:\\Windows\\System32\\");
+        let mut nt_path = UnicodeString::new();
+        let mut part_name: *mut u16 = null_mut();
+        let status = rtl_dos_path_name_to_nt_path_name(&dos_path, &mut nt_path, Some(&mut part_name), None);
+
+        assert_eq!(status, STATUS_SUCCESS);
+        let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
+        libc_println!("NT Path: {}", nt_path_str);
+        assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32\\");
+
+        // Since the path ends with a separator, part_name should be null
+        assert!(
+            part_name.is_null(),
+            "PartName was not expected but is non-null"
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_dos_path_to_nt_path_with_relative_name() {
+        libc_println!("Test 3: DOS path with a relative name");
+        let dos_path = str_to_unicode_string("\\??\\C:\\Windows\\System32\\file.txt");
+        let mut nt_path: UnicodeString = UnicodeString::new();
+        let mut part_name: *mut u16 = null_mut();
+        let mut relative_name = RtlRelativeNameU::new();
+        let status = rtl_dos_path_name_to_nt_path_name(
+            &dos_path,
+            &mut nt_path,
+            Some(&mut part_name),
+            Some(&mut relative_name),
+        );
+
+        assert_eq!(status, STATUS_SUCCESS);
+        let nt_path_str = unicodestring_to_string(&nt_path).unwrap();
+        libc_println!("NT Path: {}", nt_path_str);
+        assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32\\file.txt");
+
+        if !part_name.is_null() {
+            let part_name_str = unsafe { ptr_to_str(part_name) };
+            libc_println!("Part Name: {}", part_name_str);
+            assert_eq!(part_name_str, "file.txt");
+        }
+        else {
+            assert!(false, "PartName was expected but is null");
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_rtl_get_full_path_name() {
+        unsafe {
+            // Test 1: Resolve a relative path to an absolute path
+            let relative_path = &str_to_unicode_string("Folder\\File.txt");
+            let mut buffer: Vec<u16> = Vec::with_capacity(512);
+            buffer.set_len(512);
+            let mut full_path = UnicodeString {
+                length:         0,
+                maximum_length: (buffer.capacity() * 2) as u16,
+                buffer:         buffer.as_mut_ptr(),
+            };
+
+            let full_path_length = rtl_get_full_path_name_ustr(
+                relative_path,
+                full_path.maximum_length as usize,
+                full_path.buffer,
+                None,
+                None,
+            );
+
+            libc_println!("Test 1: Relative Path");
+            libc_println!(
+                "Relative Path: {}",
+                unicodestring_to_string(relative_path).unwrap()
+            );
+            if full_path_length > 0 {
+                full_path.length = full_path_length as u16;
+                libc_println!(
+                    "Full Path: {}",
+                    unicodestring_to_string(&full_path).unwrap()
+                );
+            }
+            else {
+                libc_println!("Failed to get the full path");
+            }
+
+            // Test 2: Resolve an absolute path
+            let absolute_path = &str_to_unicode_string("C:\\Windows\\System32\\cmd.exe");
+            let mut buffer: Vec<u16> = Vec::with_capacity(512);
+            buffer.set_len(512);
+            let mut full_path = UnicodeString {
+                length:         0,
+                maximum_length: (buffer.capacity() * 2) as u16,
+                buffer:         buffer.as_mut_ptr(),
+            };
+
+            let full_path_length = rtl_get_full_path_name_ustr(
+                absolute_path,
+                full_path.maximum_length as usize,
+                full_path.buffer,
+                None,
+                None,
+            );
+
+            libc_println!("Test 2: Absolute Path");
+            libc_println!(
+                "Absolute Path: {:?}",
+                unicodestring_to_string(absolute_path).unwrap()
+            );
+            if full_path_length > 0 {
+                full_path.length = full_path_length as u16;
+                libc_println!(
+                    "Full Path: {}",
+                    unicodestring_to_string(&full_path).unwrap()
+                );
+            }
+            else {
+                libc_println!("Failed to get the full path");
+            }
+
+            // Test 3: Resolve a path with an invalid format
+            let invalid_path = &str_to_unicode_string("::InvalidPath::");
+            let mut buffer: Vec<u16> = Vec::with_capacity(512);
+            buffer.set_len(512);
+            let mut full_path = UnicodeString {
+                length:         0,
+                maximum_length: (buffer.capacity() * 2) as u16,
+                buffer:         buffer.as_mut_ptr(),
+            };
+
+            let full_path_length = rtl_get_full_path_name_ustr(
+                invalid_path,
+                full_path.maximum_length as usize,
+                full_path.buffer,
+                None,
+                None,
+            );
+
+            libc_println!("Test 3: Invalid Path");
+            libc_println!(
+                "Invalid Path: {:?}",
+                unicodestring_to_string(invalid_path).unwrap()
+            );
+            if full_path_length > 0 {
+                full_path.length = full_path_length as u16;
+                libc_println!(
+                    "Full Path: {}",
+                    unicodestring_to_string(&full_path).unwrap()
+                );
+            }
+            else {
+                libc_println!("Failed to get the full path");
+            }
+
+            // Test 4: Empty path
+            let empty_path = &str_to_unicode_string("");
+            let mut buffer: Vec<u16> = Vec::with_capacity(512);
+            buffer.set_len(512);
+            let mut full_path = UnicodeString {
+                length:         0,
+                maximum_length: (buffer.capacity() * 2) as u16,
+                buffer:         buffer.as_mut_ptr(),
+            };
+
+            let full_path_length = rtl_get_full_path_name_ustr(
+                empty_path,
+                full_path.maximum_length as usize,
+                full_path.buffer,
+                None,
+                None,
+            );
+
+            libc_println!("Test 4: Empty Path");
+            if full_path_length > 0 {
+                full_path.length = full_path_length as u16;
+                libc_println!(
+                    "Full Path: {}",
+                    unicodestring_to_string(&full_path).unwrap()
+                );
+            }
+            else {
+                libc_println!("Failed to get the full path");
+            }
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_change_directory() {
+        // Test changing to a subdirectory
+        let target_directory = "C:\\Windows\\System32\\drivers\\etc";
+        let result = change_directory(target_directory);
+        assert_eq!(
+            result, 0,
+            "Failed to change to directory: {}",
+            target_directory
+        );
+
+        // Verify that the directory has changed
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.ends_with(target_directory),
+            "Expected directory: {}, but got: {}",
+            target_directory,
+            current_directory
+        );
+
+        // Test changing to the parent directory with "cd .."
+        let result = change_directory("..");
+        assert_eq!(result, 0, "Failed to change to parent directory");
+
+        // Verify that the directory has moved up one level
+        let parent_directory = "C:\\";
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.starts_with(parent_directory),
+            "Expected parent directory: {}, but got: {}",
+            parent_directory,
+            current_directory
+        );
+
+        // Test changing to a subdirectory
+        let target_directory = "C:\\Windows\\System32\\drivers";
+        let result = change_directory(target_directory);
+        assert_eq!(
+            result, 0,
+            "Failed to change to directory: {}",
+            target_directory
+        );
+
+        // Verify that the directory has changed
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.ends_with(target_directory),
+            "Expected directory: {}, but got: {}",
+            target_directory,
+            current_directory
+        );
+
+        // Test changing to the parent directory with "cd .."
+        let result = change_directory("..\\..");
+        assert_eq!(result, 0, "Failed to change to parent directory");
+
+        // Verify that the directory has moved up one level
+        let parent_directory = "C:\\Windows";
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.starts_with(parent_directory),
+            "Expected parent directory: {}, but got: {}",
+            parent_directory,
+            current_directory
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn test_rtl_set_current_directory_w() {
+        // Define the target directory for the test
+        let target_directory = "C:\\Windows";
+
+        // Call the function to set the current directory
+        let result = rtl_set_current_directory(target_directory);
+
+        // Verify the function returned success
+        assert_eq!(
+            result, 0,
+            "Failed to set the current directory to '{}'",
+            target_directory
+        );
+
+        // Retrieve the current directory to verify if it was actually changed
+        let current_directory = unsafe {
+            let peb = instance().teb.as_ref().unwrap().process_environment_block;
+            if !peb.is_null() {
+                let process_parameters = (*peb).process_parameters as *mut RtlUserProcessParameters;
+                let cur_dir = &mut process_parameters.as_mut().unwrap().current_directory;
+                unicodestring_to_string(&(*cur_dir).dos_path)
+            }
+            else {
+                None
+            }
+        };
+
+        // Check if the current directory matches the target directory
+        match current_directory {
+            Some(current_dir) => {
+                assert!(
+                    current_dir.ends_with(target_directory),
+                    "Expected current directory to be '{}', but got '{}'",
+                    target_directory,
+                    current_dir
+                );
+            },
+            None => {
+                panic!("Failed to retrieve the current directory after setting it.");
+            },
+        }
+    }
+}

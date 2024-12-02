@@ -1,5 +1,64 @@
 #![no_std]
-
+//! # nt_heap_alloc
+//!
+//! This crate provides a custom memory allocator for `no_std` environments using the NT Heap API.
+//! It implements the `GlobalAlloc` trait and relies on low-level Windows APIs such as
+//! `RtlCreateHeap`, `RtlAllocateHeap`, and `RtlFreeHeap`. The allocator enables dynamic memory
+//! management while maintaining a lightweight footprint suitable for specialized applications.
+//!
+//! ## Features
+//! - **Custom Heap Management:** Provides a `GlobalAlloc` implementation using Windows NT Heap
+//!   APIs.
+//! - **Dynamic Allocation:** Supports memory allocation, reallocation, and deallocation with
+//!   options for zeroed memory.
+//! - **Thread Safety:** Ensures safe access and initialization of heap functions with atomic flags
+//!   and mutexes.
+//!
+//! ## Examples
+//!
+//! ### Allocating and Deallocating Memory
+//! ```rust ignore
+//! use core::alloc::Layout;
+//!
+//! use nt_heap_alloc::NT_HEAPALLOCATOR;
+//!
+//! fn main() {
+//!     let layout = Layout::from_size_align(1024, 8).unwrap();
+//!
+//!     unsafe {
+//!         let ptr = NT_HEAPALLOCATOR.alloc(layout);
+//!         assert!(!ptr.is_null(), "Allocation failed");
+//!
+//!         // Use the allocated memory...
+//!
+//!         NT_HEAPALLOCATOR.dealloc(ptr, layout);
+//!     }
+//! }
+//! ```
+//!
+//! ### Using a Global Allocator
+//! ```rust ignore
+//! use nt_heap_alloc::NT_HEAPALLOCATOR;
+//!
+//! fn main() {
+//!     NT_HEAPALLOCATOR.initialize();
+//!
+//!     let boxed = Box::new(42);
+//!     assert_eq!(*boxed, 42, "Box contains incorrect value");
+//! }
+//! ```
+//!
+//! ## Safety
+//! The crate performs direct interactions with low-level Windows APIs and includes unsafe
+//! operations, such as:
+//! - Raw pointer manipulations
+//! - Heap creation and destruction
+//! - Memory management at the system level
+//!
+//! ## Testing
+//! Includes comprehensive tests for allocation, deallocation, and reallocation to ensure the
+//! allocator works as intended. The tests validate compatibility with various data structures like
+//! `Vec`, `Box`, and `String`.
 extern crate alloc;
 
 pub mod nt_heapalloc_def;

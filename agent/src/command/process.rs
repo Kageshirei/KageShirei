@@ -18,11 +18,6 @@ use mod_win32::{nt_ps_api::nt_create_process_w_piped, nt_time::current_timestamp
 ///     non-zero for failure).
 ///   - `started_at` and `ended_at`: Timestamps marking the start and end of the operation.
 ///   - Additional metadata captured during the execution.
-///
-/// # Safety
-/// - This function is marked `unsafe` because it interacts with the NT API through
-///   `nt_create_process_w_piped`, which involves low-level process creation and direct interaction
-///   with the system's process environment.
 pub fn command_shell(cmdline: &str) -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
@@ -34,7 +29,7 @@ pub fn command_shell(cmdline: &str) -> TaskOutput {
     // This returns a `Vec<u8>` containing the output.
     let result = unsafe {
         nt_create_process_w_piped(
-            &target_process,                                // Path to cmd.exe
+            target_process,                                 // Path to cmd.exe
             format!("{} {}", cmd_prefix, cmdline).as_str(), // Full command to execute
         )
     };
@@ -56,53 +51,28 @@ pub fn command_shell(cmdline: &str) -> TaskOutput {
     output
 }
 
-// #[cfg(test)]
-// mod tests {
-//
-// use kageshirei_communication_protocol::Metadata;
-// use libc_print::libc_println;
-// use mod_win32::nt_time::timestamp_to_datetime;
-//
-// use super::*;
-//
-// #[test]
-// fn test_shell() {
-// let metadata = Metadata {
-// request_id: format!("req-{}", 1),
-// command_id: format!("cmd-{}", 1),
-// agent_id:   "agent-1234".to_string(),
-// path:       None,
-// };
-//
-// Test executing a simple command
-// let cmd = "set";
-// let result = command_shell(cmd);
-//
-// Print all elements of TaskOutput for visibility
-// libc_println!("TaskOutput for shell command");
-// libc_println!(
-// "Started At: {:?}",
-// timestamp_to_datetime(result.started_at.unwrap())
-// );
-// libc_println!(
-// "Ended At: {:?}",
-// timestamp_to_datetime(result.ended_at.unwrap())
-// );
-// libc_println!("Exit Code: {:?}", result.exit_code);
-// libc_println!("Output: {:?}", result.output.clone().unwrap());
-//
-// Ensure the command was successful (exit_code == 0)
-// assert!(
-// result.exit_code == Some(0),
-// "Expected exit_code = 0, but got: {:?}",
-// result.exit_code
-// );
-//
-// Ensure the output is not empty
-// let output_str = result.output.as_ref().unwrap();
-// assert!(
-// !output_str.is_empty(),
-// "Expected non-empty output, but got an empty string"
-// );
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_shell() {
+        // Test executing a simple command
+        let cmd = "whoami";
+        let result = command_shell(cmd);
+
+        // Ensure the command was successful (exit_code == 0)
+        assert!(
+            result.exit_code == Some(0),
+            "Expected exit_code = 0, but got: {:?}",
+            result.exit_code
+        );
+
+        // Ensure the output is not empty
+        let output_str = result.output.as_ref().unwrap();
+        assert!(
+            !output_str.is_empty(),
+            "Expected non-empty output, but got an empty string"
+        );
+    }
+}

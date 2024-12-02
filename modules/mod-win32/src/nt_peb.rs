@@ -312,69 +312,69 @@ pub fn get_current_directory() -> String {
     String::new()
 }
 
-// #[cfg(test)]
-// mod tests {
-// use libc_print::libc_println;
-//
-// use super::*;
-//
-// #[test]
-// fn test_get_process_name() {
-// let process_name = unsafe { get_process_name() };
-// libc_println!("Process Name: {:?}", process_name);
-// assert!(!process_name.is_empty(), "Process name should not be empty");
-// }
-//
-// #[test]
-// fn test_nt_rtl_get_version() {
-// let mut version_info = OSVersionInfo::new();
-//
-// let status = unsafe { nt_rtl_get_version(&mut version_info) };
-// libc_println!("Major version: {:?}", version_info.dw_major_version);
-// libc_println!("Minor version: {:?}", version_info.dw_minor_version);
-// libc_println!("Build number: {:?}", version_info.dw_build_number);
-// libc_println!("Platform id: {:?}", version_info.dw_platform_id);
-// assert_eq!(status, 0, "Status should be STATUS_SUCCESS");
-// }
-//
-// #[test]
-// fn test_get_user_name() {
-// let user_name = unsafe { get_username() };
-// libc_println!("User Name: {:?}", user_name);
-// assert!(!user_name.is_empty(), "User name should not be empty");
-// }
-//
-// #[test]
-// fn test_get_os() {
-// let os = unsafe { get_os() };
-// libc_println!("OS: {:?}", os);
-// assert!(!os.is_empty(), "OS should not be empty");
-// }
-//
-// #[test]
-// fn test_get_computer_name() {
-// let computer_name = unsafe { get_computer_name() };
-// libc_println!("Computer Name: {:?}", computer_name);
-// assert!(
-// !computer_name.is_empty(),
-// "Computer name should not be empty"
-// );
-// }
-//
-// #[test]
-// fn test_get_user_domain() {
-// let user_domain = unsafe { get_user_domain() };
-// libc_println!("User Domain: {:?}", user_domain);
-// assert!(!user_domain.is_empty(), "User domain should not be empty");
-// }
-//
-// #[test]
-// fn test_get_current_directory() {
-// let current_directory = get_current_directory();
-// libc_println!("Current Directory: {:?}", current_directory);
-// assert!(
-// !current_directory.is_empty(),
-// "Current directory should not be empty"
-// );
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use libc_print::libc_println;
+
+    use super::*;
+
+    #[test]
+    fn test_get_process_name() {
+        let process_name = unsafe { get_process_name() };
+        libc_println!("Process Name: {:?}", process_name);
+        assert!(!process_name.is_empty(), "Process name should not be empty");
+    }
+
+    #[test]
+    fn test_nt_rtl_get_version() {
+        let mut version_info = OSVersionInfo::new();
+
+        let status = unsafe { nt_rtl_get_version(&mut version_info) };
+        libc_println!("Major version: {:?}", version_info.dw_major_version);
+        libc_println!("Minor version: {:?}", version_info.dw_minor_version);
+        libc_println!("Build number: {:?}", version_info.dw_build_number);
+        libc_println!("Platform id: {:?}", version_info.dw_platform_id);
+        assert_eq!(status, 0, "Status should be STATUS_SUCCESS");
+    }
+
+    #[test]
+    fn test_get_user_name() {
+        let user_name = unsafe { get_username() };
+        libc_println!("User Name: {:?}", user_name);
+        assert!(!user_name.is_empty(), "User name should not be empty");
+    }
+
+    #[test]
+    fn test_get_os() {
+        let os = unsafe { get_os() };
+        libc_println!("OS: {:?}", os);
+        assert!(!os.is_empty(), "OS should not be empty");
+    }
+
+    #[test]
+    fn test_get_computer_name() {
+        let computer_name = unsafe { get_computer_name() };
+        libc_println!("Computer Name: {:?}", computer_name);
+        assert!(
+            !computer_name.is_empty(),
+            "Computer name should not be empty"
+        );
+    }
+
+    #[test]
+    fn test_get_user_domain() {
+        let user_domain = unsafe { get_user_domain() };
+        libc_println!("User Domain: {:?}", user_domain);
+        assert!(!user_domain.is_empty(), "User domain should not be empty");
+    }
+
+    #[test]
+    fn test_get_current_directory() {
+        let current_directory = get_current_directory();
+        libc_println!("Current Directory: {:?}", current_directory);
+        assert!(
+            !current_directory.is_empty(),
+            "Current directory should not be empty"
+        );
+    }
+}

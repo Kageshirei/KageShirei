@@ -1,6 +1,7 @@
-// Set a custom global allocator
 #[cfg(feature = "nt-virtualalloc")]
 use mod_nt_virtualalloc::NtVirtualAlloc;
+
+/// Set the global allocator to the custom NT VirtualAlloc allocator
 #[cfg(feature = "nt-virtualalloc")]
 #[global_allocator]
 static GLOBAL: NtVirtualAlloc = NtVirtualAlloc;

@@ -249,128 +249,66 @@ pub unsafe fn get_computer_name_ex(name_type: ComputerNameFormat, lp_buffer: &mu
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-// use alloc::string::String;
-//
-// use libc_print::libc_println;
-//
-// use super::*;
-//
-// #[test]
-// fn test_get_computer_name_from_registry() {
-// unsafe {
-// let registry_key =
-// "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\ComputerName\\ActiveComputerName\0";
-// let value_name_str = "ComputerName\0";
-// let mut lp_buffer = Vec::new();
-// let mut n_size: ULONG = 0;
-// let success = get_computer_name_from_registry(registry_key, value_name_str, &mut lp_buffer, &mut
-// n_size);
-//
-// libc_println!("Success: {:?}", success);
-// libc_println!("Computer Name: {:?}", String::from_utf16_lossy(&lp_buffer));
-// libc_println!("Size: {:?}", n_size);
-// }
-// }
-//
-// #[test]
-// fn test_get_computer_name_netbios() {
-// unsafe {
-// let mut buffer = Vec::new();
-// let mut size: u32 = 0;
-// let success = get_computer_name_ex(
-// ComputerNameFormat::ComputerNameNetBIOS,
-// &mut buffer,
-// &mut size,
-// );
-//
-// assert!(success, "Failed to get ComputerNameNetBIOS");
-// libc_println!(
-// "ComputerNameNetBIOS: {:?}, Size: {}",
-// String::from_utf16_lossy(&buffer),
-// size
-// );
-// }
-// }
-//
-// #[test]
-// fn test_get_computer_name_dns_domain() {
-// unsafe {
-// let mut buffer = Vec::new();
-// let mut size: u32 = 0;
-// let success = get_computer_name_ex(
-// ComputerNameFormat::ComputerNameDnsDomain,
-// &mut buffer,
-// &mut size,
-// );
-//
-// assert!(success, "Failed to get ComputerNameDnsDomain");
-// libc_println!(
-// "ComputerNameDnsDomain: {:?}, Size: {}",
-// String::from_utf16_lossy(&buffer),
-// size
-// );
-// }
-// }
-//
-// #[test]
-// fn test_get_computer_name_dns_hostname() {
-// unsafe {
-// let mut buffer = Vec::new();
-// let mut size: u32 = 0;
-// let success = get_computer_name_ex(
-// ComputerNameFormat::ComputerNameDnsHostname,
-// &mut buffer,
-// &mut size,
-// );
-//
-// assert!(success, "Failed to get ComputerNameDnsHostname");
-// libc_println!(
-// "ComputerNameDnsHostname: {:?}, Size: {}",
-// String::from_utf16_lossy(&buffer),
-// size
-// );
-// }
-// }
-//
-// #[test]
-// fn test_get_computer_name_physical_dns_domain() {
-//     unsafe {
-//         let mut buffer = Vec::new();
-//         let mut size: u32 = 0;
-//         let success = nt_get_computer_name_ex(
-//             ComputerNameFormat::ComputerNamePhysicalDnsDomain,
-//             &mut buffer,
-//             &mut size,
-//         );
-//
-//         assert!(success, "Failed to get ComputerNamePhysicalDnsDomain");
-//         libc_println!(
-//             "ComputerNamePhysicalDnsDomain: {:?}, Size: {}",
-//             String::from_utf16_lossy(&buffer),
-//             size
-//         );
-//     }
-// }
-//
-// #[test]
-// fn test_get_computer_name_physical_dns_hostname() {
-// unsafe {
-// let mut buffer = Vec::new();
-// let mut size: u32 = 0;
-// let success = get_computer_name_ex(
-// ComputerNameFormat::ComputerNamePhysicalDnsHostname,
-// &mut buffer,
-// &mut size,
-// );
-//
-// assert!(success, "Failed to get ComputerNamePhysicalDnsHostname");
-// libc_println!(
-// "ComputerNamePhysicalDnsHostname: {:?}, Size: {}",
-// String::from_utf16_lossy(&buffer),
-// size
-// );
-// }
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_computer_name_from_registry() {
+        unsafe {
+            let registry_key =
+                "\\Registry\\Machine\\System\\CurrentControlSet\\Control\\ComputerName\\ActiveComputerName\0";
+            let value_name_str = "ComputerName\0";
+            let mut lp_buffer = Vec::new();
+            let mut n_size: ULONG = 0;
+            let success = get_computer_name_from_registry(registry_key, value_name_str, &mut lp_buffer, &mut n_size);
+
+            assert!(success, "Failed to get computer name from registry");
+        }
+    }
+
+    #[test]
+    fn test_get_computer_name_netbios() {
+        unsafe {
+            let mut buffer = Vec::new();
+            let mut size: u32 = 0;
+            let success = get_computer_name_ex(
+                ComputerNameFormat::ComputerNameNetBIOS,
+                &mut buffer,
+                &mut size,
+            );
+
+            assert!(success, "Failed to get ComputerNameNetBIOS");
+        }
+    }
+
+    #[test]
+    fn test_get_computer_name_dns_domain() {
+        unsafe {
+            let mut buffer = Vec::new();
+            let mut size: u32 = 0;
+            let success = get_computer_name_ex(
+                ComputerNameFormat::ComputerNameDnsDomain,
+                &mut buffer,
+                &mut size,
+            );
+
+            assert!(success, "Failed to get ComputerNameDnsDomain");
+        }
+    }
+
+    #[test]
+    fn test_get_computer_name_dns_hostname() {
+        unsafe {
+            let mut buffer = Vec::new();
+            let mut size: u32 = 0;
+            let success = get_computer_name_ex(
+                ComputerNameFormat::ComputerNameDnsHostname,
+                &mut buffer,
+                &mut size,
+            );
+
+            assert!(success, "Failed to get ComputerNameDnsHostname");
+        }
+    }
+}

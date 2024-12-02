@@ -251,151 +251,135 @@ pub fn is_working_hours(working_hours: &Option<Vec<Option<i64>>>) -> bool {
     true // Return true if hours are not defined or we are within working hours
 }
 
-// #[cfg(test)]
-// mod tests {
-// use alloc::vec;
-//
-// use chrono::DateTime;
-// use libc_print::libc_println;
-//
-// use super::*;
-//
-// #[test]
-// fn test_current_timestamp() {
-// let timestamp = current_timestamp();
-// libc_println!("Current timestamp: {}", timestamp);
-//
-// Check if the timestamp is a reasonable value (greater than the Unix epoch start)
-// assert!(timestamp > 0);
-//
-// Convert the timestamp to a readable format
-// let datetime = DateTime::from_timestamp(timestamp, 0);
-// libc_println!("Current datetime: {}", datetime.unwrap());
-// }
-//
-// #[test]
-// fn test_timestamp_to_datetime() {
-// let timestamp = current_timestamp();
-// libc_println!("Current timestamp: {}", timestamp);
-//
-// let datetime = timestamp_to_datetime(timestamp);
-// libc_println!(
-// "Current datetime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-// datetime.0,
-// datetime.1,
-// datetime.2,
-// datetime.3,
-// datetime.4,
-// datetime.5
-// );
-//
-// Basic assertion to check if year is reasonable
-// assert!(datetime.0 >= 1970);
-// }
-//
-// #[test]
-// fn test_check_kill_date() {
-// Set a kill date in the future
-// let future_kill_date = current_timestamp() + 10000;
-// libc_println!("Future kill date: {}", future_kill_date);
-//
-// This should not cause an exit
-// let should_exit = check_kill_date(Some(future_kill_date));
-// let future_datetime = DateTime::from_timestamp(future_kill_date, 0);
-// libc_println!("Future datetime: {}", future_datetime.unwrap());
-// assert!(!should_exit);
-//
-// Set a kill date in the past
-// let past_kill_date = current_timestamp() - 10000;
-// libc_println!("Past kill date: {}", past_kill_date);
-//
-// let past_datetime = DateTime::from_timestamp(past_kill_date, 0);
-// libc_println!("Past datetime: {}", past_datetime.unwrap());
-//
-// This should print "Exit..."
-// let should_exit = check_kill_date(Some(past_kill_date));
-// if should_exit {
-// libc_println!("Exit...");
-// }
-// assert!(should_exit);
-// }
-//
-// #[test]
-// fn test_delay_execution() {
-// libc_println!("Starting delay...");
-//
-// Esegui un ritardo di 2 secondi
-// delay(2);
-//
-// libc_println!("Delay of 2 seconds completed");
-//
-// Esegui un ritardo di 5 secondi
-// delay(15);
-//
-// libc_println!("Delay of 15 seconds completed");
-// }
-//
-// #[test]
-// fn test_wait_until() {
-// let seconds_to_wait = 10;
-//
-// libc_println!("Starting wait_until for {} seconds...", seconds_to_wait);
-//
-// let start_time = current_timestamp();
-//
-// Call wait_until and pass the number of seconds to wait
-// wait_until(seconds_to_wait);
-//
-// let end_time = current_timestamp();
-// let elapsed_time = end_time - start_time;
-//
-// libc_println!("Wait completed. Elapsed time: {} seconds", elapsed_time);
-//
-// Check that at least `seconds_to_wait` have passed
-// assert!(
-// elapsed_time >= seconds_to_wait,
-// "Expected at least {} seconds to have passed, but only {} seconds passed",
-// seconds_to_wait,
-// elapsed_time
-// );
-// }
-//
-// #[test]
-// fn test_is_working_hours() {
-// let current_time = current_timestamp();
-//
-// Case: Current time is within working hours
-// let start_time = current_time - 1000; // Start is in the past
-// let end_time = current_time + 1000; // End is in the future
-// let working_hours = Some(vec![Some(start_time), Some(end_time)]);
-// assert!(
-// is_working_hours(&working_hours),
-// "Expected to be within working hours"
-// );
-//
-// Case: Current time is outside working hours (before)
-// let start_time = current_time + 1000; // Start is in the future
-// let end_time = current_time + 2000;
-// let working_hours = Some(vec![Some(start_time), Some(end_time)]);
-// assert!(
-// !is_working_hours(&working_hours),
-// "Expected to be outside working hours"
-// );
-//
-// Case: Current time is outside working hours (after)
-// let start_time = current_time - 2000;
-// let end_time = current_time - 1000; // End is in the past
-// let working_hours = Some(vec![Some(start_time), Some(end_time)]);
-// assert!(
-// !is_working_hours(&working_hours),
-// "Expected to be outside working hours"
-// );
-//
-// Case: No working hours defined
-// let working_hours: Option<Vec<Option<i64>>> = None;
-// assert!(
-// is_working_hours(&working_hours),
-// "Expected to be within working hours due to no definition"
-// );
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use chrono::DateTime;
+    use libc_print::libc_println;
+
+    use super::*;
+
+    #[test]
+    fn test_current_timestamp() {
+        let timestamp = current_timestamp();
+        libc_println!("Current timestamp: {}", timestamp);
+
+        // Check if the timestamp is a reasonable value (greater than the Unix epoch start)
+        assert!(timestamp > 0);
+
+        // Convert the timestamp to a readable format
+        let datetime = DateTime::from_timestamp(timestamp, 0);
+        assert!(datetime.is_some());
+    }
+
+    #[test]
+    fn test_timestamp_to_datetime() {
+        let timestamp = current_timestamp();
+
+        let datetime = timestamp_to_datetime(timestamp);
+        // libc_println!(
+        //     "Current datetime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+        //     datetime.0,
+        //     datetime.1,
+        //     datetime.2,
+        //     datetime.3,
+        //     datetime.4,
+        //     datetime.5
+        // );
+
+        // Basic assertion to check if year is reasonable
+        assert!(datetime.0 >= 1970);
+    }
+
+    #[test]
+    fn test_check_kill_date() {
+        // Set a kill date in the future
+        let future_kill_date = current_timestamp() + 10000;
+        libc_println!("Future kill date: {}", future_kill_date);
+
+        // This should not cause an exit
+        let should_exit = check_kill_date(Some(future_kill_date));
+        let future_datetime = DateTime::from_timestamp(future_kill_date, 0);
+        libc_println!("Future datetime: {}", future_datetime.unwrap());
+        assert!(!should_exit);
+
+        // Set a kill date in the past
+        let past_kill_date = current_timestamp() - 10000;
+        libc_println!("Past kill date: {}", past_kill_date);
+
+        let past_datetime = DateTime::from_timestamp(past_kill_date, 0);
+        libc_println!("Past datetime: {}", past_datetime.unwrap());
+
+        // This should print "Exit..."
+        let should_exit = check_kill_date(Some(past_kill_date));
+        if should_exit {
+            libc_println!("Exit...");
+        }
+        assert!(should_exit);
+    }
+
+    #[test]
+    fn test_wait_until() {
+        let seconds_to_wait = 10;
+
+        libc_println!("Starting wait_until for {} seconds...", seconds_to_wait);
+
+        let start_time = current_timestamp();
+
+        // Call wait_until and pass the number of seconds to wait
+        wait_until(seconds_to_wait);
+
+        let end_time = current_timestamp();
+        let elapsed_time = end_time - start_time;
+
+        libc_println!("Wait completed. Elapsed time: {} seconds", elapsed_time);
+
+        // Check that at least `seconds_to_wait` have passed
+        assert!(
+            elapsed_time >= seconds_to_wait,
+            "Expected at least {} seconds to have passed, but only {} seconds passed",
+            seconds_to_wait,
+            elapsed_time
+        );
+    }
+
+    #[test]
+    fn test_is_working_hours() {
+        let current_time = current_timestamp();
+
+        // Case: Current time is within working hours
+        let start_time = current_time - 1000; // Start is in the past
+        let end_time = current_time + 1000; // End is in the future
+        let working_hours = Some(vec![Some(start_time), Some(end_time)]);
+        assert!(
+            is_working_hours(&working_hours),
+            "Expected to be within working hours"
+        );
+
+        // Case: Current time is outside working hours (before)
+        let start_time = current_time + 1000; // Start is in the future
+        let end_time = current_time + 2000;
+        let working_hours = Some(vec![Some(start_time), Some(end_time)]);
+        assert!(
+            !is_working_hours(&working_hours),
+            "Expected to be outside working hours"
+        );
+
+        // Case: Current time is outside working hours (after)
+        let start_time = current_time - 2000;
+        let end_time = current_time - 1000; // End is in the past
+        let working_hours = Some(vec![Some(start_time), Some(end_time)]);
+        assert!(
+            !is_working_hours(&working_hours),
+            "Expected to be outside working hours"
+        );
+
+        // Case: No working hours defined
+        let working_hours: Option<Vec<Option<i64>>> = None;
+        assert!(
+            is_working_hours(&working_hours),
+            "Expected to be within working hours due to no definition"
+        );
+    }
+}

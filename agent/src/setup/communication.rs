@@ -5,10 +5,9 @@ use std::collections::BTreeMap;
 use kageshirei_communication_protocol::{
     communication::CheckinResponse,
     error::{Format as FormatError, Protocol as ProtocolError},
-    Format,
-    Protocol,
+    Format as _,
+    Protocol as _,
 };
-use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
 use kageshirei_format_json::FormatJson;
 use kageshirei_runtime::Runtime;
 use libc_print::libc_eprintln;
@@ -25,7 +24,7 @@ where
 {
     #[cfg(feature = "proto-http-winhttp")]
     {
-        let boxed_protocol: Box<HttpProtocol> = Box::new(HttpProtocol::new("http://localhost".to_string()));
+        let boxed_protocol: Box<HttpProtocol> = Box::new(HttpProtocol::new("http://localhost".to_owned()));
         let boxed_formatter: Box<FormatJson> = Box::new(FormatJson);
 
         unsafe {
@@ -53,7 +52,7 @@ where
                         match result {
                             Ok(response) => {
                                 match formatter.read::<CheckinResponse, FormatError>(
-                                    &response.as_slice(),
+                                    response.as_slice(),
                                     None::<BTreeMap<&str, FormatError>>,
                                 ) {
                                     Ok(checkin_response) => {
@@ -91,10 +90,13 @@ where
 #[cfg(feature = "proto-http-winhttp")]
 /// Function to retrieve a mutable reference to a JsonProtocl<IdentEncryptor> struct from a raw
 /// pointer.
+///
+/// # Safety
+/// - This function is marked `unsafe` because it dereferences a raw pointer.
 pub unsafe fn protocol_from_raw(ptr: *mut c_void) -> &'static mut HttpProtocol { &mut *(ptr as *mut HttpProtocol) }
 
-/// Function to retrieve a mutable reference to a IdentEncryptor struct from a raw pointer.
-pub unsafe fn encryptor_from_raw(ptr: *mut c_void) -> &'static mut IdentEncryptor { &mut *(ptr as *mut IdentEncryptor) }
-
 /// Function to retrieve a mutable reference to a FormatJson struct from a raw pointer.
+///
+/// # Safety
+/// - This function is marked `unsafe` because it dereferences a raw pointer.
 pub unsafe fn formatter_from_raw(ptr: *mut c_void) -> &'static mut FormatJson { &mut *(ptr as *mut FormatJson) }

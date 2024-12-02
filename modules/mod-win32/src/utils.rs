@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned as _, format, string::String, vec::Vec};
+use alloc::{borrow::ToOwned as _, boxed::Box, format, string::String, vec, vec::Vec};
 use core::{ops::Div as _, str};
 
 use kageshirei_win32::{ntdef::UnicodeString, ntstatus::*};
@@ -244,14 +244,24 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     unicode_string.maximum_length = unicode_string.length.overflowing_add(2).0; // +2 for the null terminator
 
     // Clone the UTF-16 vector and append a null terminator
-    let mut utf16_with_null = utf16;
-    utf16_with_null.push(0); // Add null terminator
+    let mut utf16_with_null: Box<[u16]> = vec![0; utf16.len()].into_boxed_slice();
 
-    // Assign the buffer pointer to the UnicodeString
-    unicode_string.buffer = utf16_with_null.as_mut_ptr();
+    for (i, &value) in utf16.iter().enumerate() {
+        if let Some(dest) = utf16_with_null.get_mut(i) {
+            *dest = value;
+        }
+    }
+
+    // Add null terminator
+    if let Some(last) = utf16_with_null.get_mut(utf16.len()) {
+        *last = 0;
+    }
 
     // Prevent Vec from deallocating the buffer when it goes out of scope
-    // core::mem::forget(utf16_with_null);
+    unicode_string.buffer = utf16_with_null.as_mut_ptr();
+
+    // Prevent Box from deallocating the buffer when it goes out of scope
+    Box::leak(utf16_with_null);
 
     unicode_string
 }
