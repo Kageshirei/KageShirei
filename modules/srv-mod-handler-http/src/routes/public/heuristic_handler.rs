@@ -5,7 +5,7 @@ use axum::{
     body::{Body, Bytes},
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
-    response::Response,
+    response::{IntoResponse, Response},
     routing::post,
     Router,
 };
@@ -67,7 +67,7 @@ async fn handle_get_request(State(state): State<HandlerSharedState>, id: String)
 /// - 4: decoy string, unused
 /// - 5: last fragment of the id, to be concatenated
 /// - 6+: other decoy strings, unused
-pub fn heuristic_variant_1(Path((id_position, path)): Path<(String, String)>) -> String {
+pub fn heuristic_variant_1(Path((id_position, path)): Path<(String, String)>) -> Option<String> {
     // Split the id_position string by allowed separators
     let separators = [',', ';', ':', '.', '-', '_', ' ', '|', '$'];
     let id_positions = id_position
@@ -82,7 +82,7 @@ pub fn heuristic_variant_1(Path((id_position, path)): Path<(String, String)>) ->
         warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
         // always return OK to avoid leaking information
-        return "".to_owned();
+        return None;
     }
 
     // Unwrap the id_positions
@@ -92,11 +92,17 @@ pub fn heuristic_variant_1(Path((id_position, path)): Path<(String, String)>) ->
     let parts: Vec<&str> = path.split('/').collect();
 
     // Concatenate the fragments of the ID, appending an empty string for undefined positions
-    id_positions
+    let id = id_positions
         .iter()
         .map(|&pos| parts.get(pos).unwrap_or(&"").as_str())
         .collect::<Vec<&str>>()
-        .join("")
+        .join("");
+
+    if id.len() != 32 {
+        return None;
+    }
+
+    Some(id)
 }
 
 /// This kind of route automatically takes the first string matching the ID length (32) as the
@@ -110,7 +116,7 @@ pub fn heuristic_variant_1(Path((id_position, path)): Path<(String, String)>) ->
 /// - 0 to 2: decoy strings, unused
 /// - 3: the actual id of the request to parse
 /// - 4+: other decoy strings, unused
-pub fn heuristic_handler_variant_2(Path(path): Path<String>) -> String {
+pub fn heuristic_handler_variant_2(Path(path): Path<String>) -> Option<String> {
     // Extract the ID by finding the first 32-character segment
     let id = path
         .split('/')
@@ -123,44 +129,69 @@ pub fn heuristic_handler_variant_2(Path(path): Path<String>) -> String {
         warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
         // always return OK to avoid leaking information
-        return "".to_owned();
+        return None;
     }
 
     // Unwrap the id
-    id.unwrap().to_owned()
+    Some(id.unwrap().to_owned())
 }
 
-/// The handler for the agent command response with heuristic variant 1
-async fn post_handler_v1(
-    path: Path<(String, String)>,
-    state: State<HandlerSharedState>,
-    headers: HeaderMap,
-    body: Bytes,
-) -> Response<Body> {
-    let id = heuristic_variant_1(path);
-    handle_post_request(state, headers, body, id).await
-}
-
-/// The handler for the agent command retrieval with heuristic variant 1
-async fn get_handler_v1(path: Path<(String, String)>, state: State<HandlerSharedState>) -> Response<Body> {
-    let id = heuristic_variant_1(path);
-    handle_get_request(state, id).await
-}
-
-/// The handler for the agent command response with heuristic variant 2
-async fn post_handler_v2(
+/// This route handles a generic path and uses heuristics to determine the ID and handle the request
+async fn unified_post_handler(
     path: Path<String>,
     state: State<HandlerSharedState>,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response<Body> {
+    let pieces = path.split('/').collect::<Vec<&str>>();
+
+    if pieces.len() >= 2 &&
+        let Some(id) = heuristic_variant_1(Path((
+            pieces.get(0).unwrap_or(&"").to_string(),
+            pieces.iter().skip(1).map(|v| *v).collect::<String>(),
+        )))
+    {
+        return handle_post_request(state, headers, body, id).await;
+    }
+
     let id = heuristic_handler_variant_2(path);
+
+    if id.is_none() {
+        warn!("Unknown format for heuristic handling of requests, request refused");
+
+        // always return OK to avoid leaking information
+        return (StatusCode::OK, "").into_response();
+    }
+
+    // handle the request
+    let id = id.unwrap();
     handle_post_request(state, headers, body, id).await
 }
 
-/// The handler for the agent command retrieval with heuristic variant 2
-async fn get_handler_v2(path: Path<String>, state: State<HandlerSharedState>) -> Response<Body> {
+/// This route handles a generic path and uses heuristics to determine the ID and handle the request
+async fn unified_get_handler(path: Path<String>, state: State<HandlerSharedState>) -> Response<Body> {
+    let pieces = path.split('/').collect::<Vec<&str>>();
+
+    if pieces.len() >= 2 &&
+        let Some(id) = heuristic_variant_1(Path((
+            pieces.get(0).unwrap_or(&"").to_string(),
+            pieces.iter().skip(1).map(|v| *v).collect::<String>(),
+        )))
+    {
+        return handle_get_request(state, id).await;
+    }
+
     let id = heuristic_handler_variant_2(path);
+
+    if id.is_none() {
+        warn!("Unknown format for heuristic handling of requests, request refused");
+
+        // always return OK to avoid leaking information
+        return (StatusCode::OK, "").into_response();
+    }
+
+    // handle the request
+    let id = id.unwrap();
     handle_get_request(state, id).await
 }
 
@@ -168,10 +199,9 @@ async fn get_handler_v2(path: Path<String>, state: State<HandlerSharedState>) ->
 pub fn route(state: HandlerSharedState) -> Router<HandlerSharedState> {
     Router::new()
         .route(
-            "/:id_position/*path",
-            post(post_handler_v1).get(get_handler_v1),
+            "/*path",
+            post(unified_post_handler).get(unified_get_handler),
         )
-        .route("/*path", post(post_handler_v2).get(get_handler_v2))
         .with_state(state)
 }
 
@@ -195,7 +225,7 @@ mod test {
         let expected_id = "dd1g8uw209me6bin2unm9u38mhmp23ic";
 
         // Assert result
-        assert_eq!(result, expected_id);
+        assert_eq!(result.unwrap(), expected_id);
     }
 
     #[test]
@@ -211,7 +241,7 @@ mod test {
         let result = heuristic_variant_1(path_params);
 
         // Expect empty response due to invalid id_position
-        assert_eq!(result, "");
+        assert!(result.is_none());
     }
 
     #[test]
@@ -227,7 +257,7 @@ mod test {
         let result = heuristic_variant_1(path_params);
 
         // Expect empty string since the position is out of bounds
-        assert_eq!(result, "");
+        assert!(result.is_none());
     }
 
     #[test]
@@ -245,7 +275,7 @@ mod test {
         let expected_id = "dd1g8uw209me6bin2unm9u38mhmp23ic";
 
         // Assert result
-        assert_eq!(result, expected_id);
+        assert_eq!(result.unwrap(), expected_id);
     }
 
     #[test]
@@ -260,7 +290,7 @@ mod test {
         let result = heuristic_handler_variant_2(path_param);
 
         // Expect empty string since no valid ID is found
-        assert_eq!(result, "");
+        assert!(result.is_none());
     }
 
     #[test]
@@ -278,6 +308,6 @@ mod test {
         let expected_id = "dd1g8uw209me6bin2unm9u38mhmp23ic";
 
         // Assert result
-        assert_eq!(result, expected_id);
+        assert_eq!(result.unwrap(), expected_id);
     }
 }

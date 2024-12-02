@@ -1,6 +1,7 @@
 //! Server module for handling callback using http requests
 
 #![feature(str_as_str)]
+#![feature(let_chains)]
 #![allow(
     clippy::integer_division_remainder_used,
     reason = "mostly present in macros"

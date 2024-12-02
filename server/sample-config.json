@@ -32,7 +32,7 @@
         {
             "enabled":   true,
             "type":      "http",
-            "protocols": [
+            "formats": [
                 "json"
             ],
             "port":      8081,
