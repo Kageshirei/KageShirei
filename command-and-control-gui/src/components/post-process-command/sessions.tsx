@@ -43,8 +43,6 @@ interface HistoryLineProps {
 }
 
 const SessionLine: FC<HistoryLineProps> = ({session_line}) => {
-    const integrity_level = useMemo(() => getTextualIntegrityLevel(session_line.integrity_level), [session_line.integrity_level]);
-
     return (
         <TableTr>
             <TableTd className="font-semibold break-keep whitespace-nowrap select-all">
@@ -60,7 +58,7 @@ const SessionLine: FC<HistoryLineProps> = ({session_line}) => {
                 {session_line.operating_system.toLowerCase()}
             </TableTd>
             <TableTd className="break-all whitespace-pre-wrap">
-                {integrity_level}
+                {session_line.integrity}
             </TableTd>
         </TableTr>
     );

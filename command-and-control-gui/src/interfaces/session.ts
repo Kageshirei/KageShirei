@@ -6,6 +6,6 @@ export interface SessionRecord {
     domain: string,
     username: string,
     network_interfaces: NetworkInterfaceArray,
-    integrity_level: number,
+    integrity: string,
     operating_system: string,
 }
