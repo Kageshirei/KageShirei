@@ -1,4 +1,4 @@
-use core::slice;
+use core::{ops::Div as _, slice};
 
 extern crate alloc;
 
@@ -16,8 +16,8 @@ use crate::nt_reg_api::{nt_open_key, nt_query_value_key};
 ///
 /// # Returns
 ///
-/// * `Result<Vec<(String, String, String)>, i32>` - A result containing a vector of tuples with the interface name, IP
-///   address, and DHCP server.
+/// * `Result<Vec<(String, String, String)>, i32>` - A result containing a vector of tuples with the
+///   interface name, IP address, and DHCP server.
 ///
 /// # Safety
 ///
@@ -27,10 +27,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
     let registry_key = "\\Registry\\Machine\\System\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces";
 
     // Open the registry key and obtain a handle
-    let key_handle = match nt_open_key(registry_key) {
-        Ok(handle) => handle,
-        Err(status) => return Err(status),
-    };
+    let key_handle = nt_open_key(registry_key)?;
 
     let mut ip_addresses = Vec::new();
 
@@ -45,7 +42,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
             index,
             0,
             result_buffer.as_mut_ptr() as *mut _,
-            result_buffer.len() as u32 * 2,
+            result_buffer.len().overflowing_mul(2).0 as u32,
             &mut result_length,
         );
 
@@ -66,15 +63,15 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
         // Extract the name of the subkey
         let name_length = key_info_ref.name_length as usize;
-        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length / 2);
-        let key_name_str: String = String::from_utf16_lossy(name_slice);
+        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length.div(2));
+        let key_name_str = String::from_utf16_lossy(name_slice);
         let sub_key_path = format!("{}\\{}", registry_key, key_name_str);
 
         // Open the subkey to access its values
         let sub_key_handle = match nt_open_key(&sub_key_path) {
             Ok(handle) => handle,
             Err(_) => {
-                index += 1;
+                index = index.overflowing_add(1).0;
                 continue;
             },
         };
@@ -96,7 +93,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
         // If no IP address is found, skip to the next key
         if ip_address.is_empty() {
-            index += 1;
+            index = index.overflowing_add(1).0;
             instance().ntdll.nt_close.run(sub_key_handle);
             continue;
         }
@@ -112,7 +109,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         let name_key_handle = match nt_open_key(&name_key_path) {
             Ok(handle) => handle,
             Err(_) => {
-                index += 1;
+                index = index.overflowing_add(1).0;
                 continue;
             },
         };
@@ -128,7 +125,7 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
         // Close the handles to the subkey and name key
         instance().ntdll.nt_close.run(sub_key_handle);
         instance().ntdll.nt_close.run(name_key_handle);
-        index += 1;
+        index = index.overflowing_add(1).0;
     }
 
     // Close the handle to the main registry key
@@ -138,27 +135,28 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
 
 #[cfg(test)]
 mod tests {
-    use libc_print::libc_println;
 
     use super::*;
 
     #[test]
     fn test_get_adapters_info() {
         unsafe {
-            let ip_addresses = match get_adapters_info() {
-                Ok(ip_addresses) => ip_addresses,
-                Err(status) => {
-                    libc_println!("NtOpenKey failed with NT STATUS: {:#X}", status);
-                    return;
-                },
-            };
+            let ip_addresses = get_adapters_info();
+
+            assert!(
+                ip_addresses.is_ok(),
+                "GetAdaptersInfo failed with NT STATUS: {:#X}",
+                ip_addresses.unwrap_err()
+            );
+
+            let ip_addresses = ip_addresses.unwrap();
+            assert!(
+                !ip_addresses.is_empty(),
+                "Expected at least one network adapter, but found none."
+            );
 
             let test_one = &ip_addresses[0].1;
-
-            libc_println!("test_one: {}", test_one);
-            for (name, ip, dhcp) in ip_addresses {
-                libc_println!("Name: {}, IP Address: {}, Dhcp Server: {}", name, ip, dhcp);
-            }
+            assert!(!test_one.is_empty(), "Expected IP address to be non-empty.");
         }
     }
 }

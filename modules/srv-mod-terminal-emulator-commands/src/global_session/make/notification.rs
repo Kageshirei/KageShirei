@@ -1,18 +1,19 @@
-use clap::{Args, Subcommand};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
+//! This module contains the command handler for the `notification` command
+
+use clap::Args;
+use serde::Serialize;
 use srv_mod_config::sse::common_server_state::{EventType, SseEvent};
 use srv_mod_entity::{
     active_enums::LogLevel,
     entities::logs,
-    sea_orm::{ActiveModelTrait, ActiveValue::Set},
+    sea_orm::{ActiveModelTrait as _, ActiveValue::Set},
 };
 use tracing::{debug, instrument};
 
-use crate::{command_handler::CommandHandlerArguments, post_process_result::PostProcessResult};
+use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionMakeNotificationArguments {
     /// The level of the notification to send
     #[arg(short, long)]
@@ -55,75 +56,88 @@ pub async fn handle(
         })
         .map_err(|e| e.to_string())?;
 
-    Ok("Notification sent".to_string())
+    Ok("Notification sent".to_owned())
 }
 
 #[cfg(test)]
 mod tests {
-    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
-    use serial_test::serial;
-    use srv_mod_database::models::command::CreateCommand;
+    use std::sync::Arc;
+
+    use srv_mod_entity::sea_orm::{prelude::*, Database, DatabaseConnection, DbErr, TransactionTrait};
+    use tokio::sync::broadcast;
 
     use super::*;
-    use crate::session_terminal_emulator::history::TerminalSessionHistoryArguments;
+    use crate::command_handler::{HandleArguments, HandleArgumentsSession, HandleArgumentsUser};
+
+    async fn cleanup(db: DatabaseConnection) {
+        db.transaction::<_, (), DbErr>(|txn| {
+            Box::pin(async move {
+                logs::Entity::delete_many().exec(txn).await.unwrap();
+
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+    }
+
+    async fn init() -> DatabaseConnection {
+        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
+            .await
+            .unwrap();
+
+        cleanup(db_pool.clone()).await;
+
+        db_pool
+    }
 
     #[tokio::test]
-    #[serial]
-    async fn test_handle_history_display() {
-        drop_database().await;
-        let db_pool = make_pool().await;
+    #[serial_test::serial]
+    async fn test_handle_success() {
+        use srv_mod_config::sse::common_server_state::EventType;
+        use srv_mod_entity::active_enums::LogLevel;
+        // Mock database setup
+        let db = init().await;
 
-        let user = generate_test_user(db_pool.clone()).await;
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
 
-        let session_id_v = "global";
-        let args = TerminalSessionHistoryArguments {
-            command: None,
+        // Create command handler arguments
+        let config = Arc::new(HandleArguments {
+            session:          HandleArgumentsSession {
+                session_id: "test".to_owned(),
+                hostname:   "test".to_owned(),
+            },
+            user:             HandleArgumentsUser {
+                user_id:  "test".to_owned(),
+                username: "test".to_owned(),
+            },
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
+
+        // Define arguments for the notification
+        let args = TerminalSessionMakeNotificationArguments {
+            level:   LogLevel::Info,
+            title:   "Test Notification".to_owned(),
+            message: "This is a test".to_owned(),
         };
 
-        let binding = db_pool.clone();
+        // Call the function
+        let result = handle(config, &args).await;
 
-        // open a scope to automatically drop the connection once exited
-        {
-            let mut connection = binding.get().await.unwrap();
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "ls".to_string();
-
-            // Insert a dummy command
-            let inserted_command_0 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_0.deleted_at, None);
-            assert_eq!(inserted_command_0.restored_at, None);
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "pwd".to_string();
-
-            let inserted_command_1 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_1.deleted_at, None);
-            assert_eq!(inserted_command_1.restored_at, None);
-        }
-
-        let result = handle(session_id_v, db_pool, &args).await;
-
+        // Assert the function succeeded
         assert!(result.is_ok());
-        let result = result.unwrap();
-        let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
+        assert_eq!(result.unwrap(), "Notification sent");
 
-        assert_eq!(deserialized.len(), 2);
-        assert_eq!(deserialized[0].command, "ls");
-        assert_eq!(deserialized[1].command, "pwd");
-
-        drop_database().await;
+        // Verify the broadcast message
+        if let Ok(event) = receiver.recv().await {
+            assert_eq!(event.event, EventType::Log);
+            assert!(event.data.contains("Test Notification"));
+            assert!(event.data.contains("This is a test"));
+        }
+        else {
+            panic!("Broadcast message was not received");
+        }
     }
 }

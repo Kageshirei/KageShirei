@@ -5,15 +5,20 @@ use nostd_mpsc::{Receiver, Sender};
 use spin::Mutex;
 
 /// The `NoStdThreadPool` struct manages a pool of worker threads that execute jobs.
-/// It provides a simple implementation of a thread pool that uses a custom MPSC
-/// (multiple-producer, single-consumer) channel for job distribution among workers.
+///
+/// This thread pool provides a simple implementation for managing concurrent tasks.
+/// It uses a custom MPSC (multiple-producer, single-consumer) channel for distributing jobs
+/// among worker threads.
 pub struct NoStdThreadPool {
-    workers: Vec<Worker>,                     // Vector holding the worker threads in the pool.
-    sender:  Option<Arc<Mutex<Sender<Job>>>>, // Channel sender used to dispatch jobs to the workers.
+    /// Vector holding the worker threads in the pool.
+    workers: Vec<Worker>,
+    /// Channel sender used to dispatch jobs to the workers.
+    sender:  Option<Arc<Mutex<Sender<Job>>>>,
 }
 
 /// Type alias for a job, which is represented as a boxed closure. The closure takes no arguments,
-/// returns nothing, and must implement `Send` and `'static`, allowing it to be safely sent across threads.
+/// returns nothing, and must implement `Send` and `'static`, allowing it to be safely sent across
+/// threads.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl NoStdThreadPool {
@@ -26,8 +31,13 @@ impl NoStdThreadPool {
     /// # Returns
     ///
     /// * A new `NoStdThreadPool` instance with the specified number of workers.
-    pub fn new(size: usize) -> NoStdThreadPool {
-        assert!(size > 0); // Ensure that the size of the pool is greater than 0.
+    pub fn new(size: usize) -> Self {
+        let size = if size == 0 {
+            1 // Set the pool size to 1 if the specified size is 0.
+        }
+        else {
+            size // Set the pool size to the specified size.
+        };
 
         // Create a custom MPSC channel for sending jobs to workers.
         // `sender` is used to send jobs, and `receiver` is used by workers to receive jobs.
@@ -43,7 +53,7 @@ impl NoStdThreadPool {
         }
 
         // Return a new `NoStdThreadPool` instance containing the worker threads and the sender channel.
-        NoStdThreadPool {
+        Self {
             workers,
             sender: Some(sender),
         }
@@ -53,20 +63,21 @@ impl NoStdThreadPool {
     ///
     /// # Arguments
     ///
-    /// * `f` - A closure representing the job to be executed. The closure must implement `FnOnce`, `Send`, and
-    ///   `'static` to be safely executed across threads.
+    /// * `f` - A closure representing the job to be executed. The closure must implement `FnOnce`,
+    ///   `Send`, and `'static` to be safely executed across threads.
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
     {
-        if let Some(sender) = &self.sender {
+        if let Some(sender) = self.sender.as_ref() {
             let job = Box::new(f); // Box the job (closure) to make it a heap-allocated trait object.
             sender.lock().send(job).unwrap(); // Send the job to the workers via the channel.
         }
     }
 
     /// Gracefully shuts down the thread pool by dropping the sender and joining all worker threads.
-    /// This ensures that all worker threads have completed their jobs before the pool is terminated.
+    /// This ensures that all worker threads have completed their jobs before the pool is
+    /// terminated.
     pub fn shutdown(&mut self) {
         // Drop the sender to close the channel and signal that no more jobs will be sent.
         drop(self.sender.take());
@@ -79,10 +90,12 @@ impl NoStdThreadPool {
 }
 
 /// The `Worker` struct represents a single thread in the thread pool.
-/// Each worker continuously listens for jobs on the receiver channel and executes them when available.
+/// Each worker continuously listens for jobs on the receiver channel and executes them when
+/// available.
 #[derive(Debug)]
 struct Worker {
-    handle: Option<nostd_thread::NoStdThread>, // Handle to the thread, allowing it to be joined later.
+    /// Handle to the thread, allowing it to be joined later.
+    handle: Option<nostd_thread::NoStdThread>,
 }
 
 impl Worker {
@@ -95,7 +108,7 @@ impl Worker {
     /// # Returns
     ///
     /// * A `Worker` instance wrapping the thread handle.
-    fn new(receiver: Arc<Mutex<Receiver<Job>>>) -> Worker {
+    fn new(receiver: Arc<Mutex<Receiver<Job>>>) -> Self {
         let handle = nostd_thread::NoStdThread::spawn(move || {
             loop {
                 // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the
@@ -113,8 +126,8 @@ impl Worker {
             }
         });
 
-        Worker {
-            handle: Some(handle), // Store the thread handle for later joining.
+        Self {
+            handle: Some(handle.unwrap()), // Store the thread handle for later joining.
         }
     }
 

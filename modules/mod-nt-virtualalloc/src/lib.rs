@@ -1,5 +1,51 @@
 #![no_std]
-
+//! # nt_virtual_alloc
+//!
+//! This crate provides a custom memory allocator for `no_std` environments using Windows NT system
+//! calls. It implements the `GlobalAlloc` trait, leveraging low-level Windows APIs such as
+//! `NtAllocateVirtualMemory` and `NtFreeVirtualMemory` for memory allocation and deallocation. This
+//! enables efficient and direct control of memory in constrained or specialized environments.
+//!
+//! ## Features
+//! - **Custom Memory Allocator:** Provides a `GlobalAlloc` implementation using the Windows NT
+//!   Virtual Memory API.
+//! - **Low-Level Control:** Uses `kageshirei_indirect_syscall` to call system functions indirectly
+//!   for enhanced stealth and flexibility.
+//! - **Thread Safety:** Ensures safe usage of system resources with atomic initialization and mutex
+//!   protection.
+//!
+//! ## Examples
+//!
+//! ### Allocating and Deallocating Memory
+//! ```rust ignore
+//! use core::alloc::Layout;
+//!
+//! use nt_virtual_alloc::NtVirtualAlloc;
+//!
+//! // Example of a global allocator
+//! #[global_allocator]
+//! static GLOBAL_ALLOCATOR: NtVirtualAlloc = NtVirtualAlloc;
+//!
+//! fn main() {
+//!     let layout = Layout::from_size_align(1024, 8).unwrap();
+//!
+//!     unsafe {
+//!         let ptr = GLOBAL_ALLOCATOR.alloc(layout);
+//!         assert!(!ptr.is_null(), "Allocation failed");
+//!
+//!         // Use the allocated memory...
+//!
+//!         GLOBAL_ALLOCATOR.dealloc(ptr, layout);
+//!     }
+//! }
+//! ```
+//!
+//! ## Safety
+//! The crate interacts directly with low-level Windows system calls and includes unsafe operations,
+//! such as:
+//! - Raw pointer manipulations
+//! - System resource management
+//! - Indirect syscall handling
 use core::{
     alloc::{GlobalAlloc, Layout},
     cell::UnsafeCell,
@@ -8,52 +54,67 @@ use core::{
     sync::atomic::{AtomicBool, AtomicIsize, Ordering},
 };
 
-use kageshirei_indirect_syscall::run_syscall;
-use kageshirei_win32::ntapi::NtSyscall;
-use mod_agentcore::ldr::{ldr_function_addr, ldr_module_peb};
+use kageshirei_indirect_syscall::run;
+use mod_agentcore::ldr::{peb_get_function_addr, peb_get_module};
 use mod_hhtgates::get_syscall_number;
 use spin::Mutex;
 
-// Atomic flag contains the last status of an NT syscall.
+/// Structure to hold information about an NT syscall.
+pub struct NtAllocSyscall {
+    /// Address of the syscall function.
+    pub address: *mut u8,
+    /// Number of the syscall.
+    pub number:  u16,
+    /// Hash of the syscall function name.
+    pub hash:    usize,
+}
+
+/// Atomic flag contains the last status of an NT syscall.
 pub static NT_ALLOCATOR_STATUS: AtomicIsize = AtomicIsize::new(0);
 
-// Atomic flag to ensure initialization happens only once.
+/// Atomic flag to ensure initialization happens only once.
 static INIT: AtomicBool = AtomicBool::new(false);
 
-// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for interior mutability.
-static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
+/// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for
+/// interior mutability.
+static mut NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscall>>> =
+    Mutex::new(UnsafeCell::new(None));
 
-static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtSyscall>>> = Mutex::new(UnsafeCell::new(None));
+/// Static variables to hold the configuration and syscall information, wrapped in UnsafeCell for
+/// interior mutability.
+static mut NT_FREE_VIRTUAL_MEMORY_SYSCALL: Mutex<UnsafeCell<Option<NtAllocSyscall>>> =
+    Mutex::new(UnsafeCell::new(None));
 
 /// Unsafe function to perform the initialization of the static variables.
-/// This includes locating and storing the addresses and syscall numbers for `NtAllocateVirtualMemory` and
-/// `NtFreeVirtualMemory`.
+/// This includes locating and storing the addresses and syscall numbers for
+/// `NtAllocateVirtualMemory` and `NtFreeVirtualMemory`.
+///
+/// # Safety
+///
+/// This function is unsafe because it performs memory operations that can lead to undefined
+/// behavior if not handled correctly.
 pub unsafe fn initialize() {
     // Check if initialization has already occurred.
     if !INIT.load(Ordering::Acquire) {
-        const NTDLL_HASH: u32 = 0x1edab0ed;
-        const NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2: usize = 0xf783b8ec;
-        const NT_FREE_VIRTUAL_MEMORY_DBJ2: usize = 0x2802c609;
-
         // Get the address of ntdll module in memory.
-        let ntdll_address = ldr_module_peb(NTDLL_HASH);
+        let ntdll_address = peb_get_module(0x1edab0ed);
 
         // Initialize the syscall for NtAllocateVirtualMemory.
-        let alloc_syscall_address = ldr_function_addr(ntdll_address, NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2);
-        let alloc_syscall = NtSyscall {
+        let alloc_syscall_address = peb_get_function_addr(ntdll_address, 0xf783b8ec);
+        let alloc_syscall = NtAllocSyscall {
             address: alloc_syscall_address,
             number:  get_syscall_number(alloc_syscall_address),
-            hash:    NT_ALLOCATE_VIRTUAL_MEMORY_DBJ2,
+            hash:    0xf783b8ec,
         };
 
         *NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(alloc_syscall);
 
         // Initialize the syscall for NtFreeVirtualMemory.
-        let free_syscall_address = ldr_function_addr(ntdll_address, NT_FREE_VIRTUAL_MEMORY_DBJ2);
-        let free_syscall = NtSyscall {
+        let free_syscall_address = peb_get_function_addr(ntdll_address, 0x2802c609);
+        let free_syscall = NtAllocSyscall {
             address: free_syscall_address,
             number:  get_syscall_number(free_syscall_address),
-            hash:    NT_FREE_VIRTUAL_MEMORY_DBJ2,
+            hash:    0x2802c609,
         };
 
         *NT_FREE_VIRTUAL_MEMORY_SYSCALL.lock().get() = Some(free_syscall);
@@ -73,8 +134,9 @@ fn ensure_initialized() {
     }
 }
 
-/// Function to get a reference to the NtAllocateVirtualMemory syscall, ensuring initialization first.
-fn get_nt_allocate_virtual_memory_syscall() -> &'static NtSyscall {
+/// Function to get a reference to the NtAllocateVirtualMemory syscall, ensuring initialization
+/// first.
+fn get_nt_allocate_virtual_memory_syscall() -> &'static NtAllocSyscall {
     ensure_initialized();
     unsafe {
         NT_ALLOCATE_VIRTUAL_MEMORY_SYSCALL
@@ -88,7 +150,7 @@ fn get_nt_allocate_virtual_memory_syscall() -> &'static NtSyscall {
 }
 
 /// Function to get a reference to the NtFreeVirtualMemory syscall, ensuring initialization first.
-fn get_nt_free_virtual_memory_syscall() -> &'static NtSyscall {
+fn get_nt_free_virtual_memory_syscall() -> &'static NtAllocSyscall {
     ensure_initialized();
     unsafe {
         NT_FREE_VIRTUAL_MEMORY_SYSCALL
@@ -132,19 +194,19 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         // Size of the memory to allocate.
         let region_size = layout.size();
         // Handle to the current process (-1).
-        let h_process: *mut u8 = -1isize as _;
+        let h_process: *mut u8 = -1isize as *mut u8;
 
         // Retrieve the syscall information.
         let alloc_syscall = get_nt_allocate_virtual_memory_syscall();
 
         // Perform the system call to allocate virtual memory.
-        let ntstatus = run_syscall!(
-            (*alloc_syscall).number,
-            (*alloc_syscall).address as usize,
+        let ntstatus = run!(
+            alloc_syscall.number,
+            alloc_syscall.address as usize,
             h_process,
             &mut p_address,
             0,
-            &mut (region_size as usize) as *mut usize,
+            &mut { region_size } as *mut usize,
             0x3000, // MEM_COMMIT | MEM_RESERVE
             0x04    // PAGE_READWRITE
         );
@@ -155,7 +217,8 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
         p_address as *mut u8
     }
 
-    /// Deallocates the block of memory at the given `ptr` pointer with the given `layout` using NT system calls.
+    /// Deallocates the block of memory at the given `ptr` pointer with the given `layout` using NT
+    /// system calls.
     ///
     /// This function uses the `NtFreeVirtualMemory` system call to deallocate memory.
     ///
@@ -168,20 +231,21 @@ unsafe impl GlobalAlloc for NtVirtualAlloc {
     ///
     /// * `layout` must be the same layout that was used to allocate that block of memory.
     ///
-    /// Note: `NtFreeVirtualMemory` will deallocate memory in multiples of the page size (usually 4096 bytes).
+    /// Note: `NtFreeVirtualMemory` will deallocate memory in multiples of the page size (usually
+    /// 4096 bytes).
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         // Size of the memory to deallocate.
         let mut region_size = layout.size();
         // Handle to the current process (-1).
-        let h_process: *mut u8 = -1isize as _;
+        let h_process: *mut u8 = -1isize as *mut u8;
 
         // Retrieve the syscall information.
         let free_syscall = get_nt_free_virtual_memory_syscall();
 
         // Perform the system call to free virtual memory.
-        let ntstatus = run_syscall!(
-            (*free_syscall).number,
-            (*free_syscall).address as usize,
+        let ntstatus = run!(
+            free_syscall.number,
+            free_syscall.address as usize,
             h_process,
             &mut (ptr as *mut c_void),
             &mut region_size,

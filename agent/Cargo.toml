@@ -2,6 +2,12 @@
 name = "kageshirei-agent"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "The KageShirei agent."
+readme = "README.md"
 
 [profile.release]
 opt-level = "z"
@@ -17,14 +23,14 @@ incremental = false
 kageshirei-communication-protocol = {path = "../libs/kageshirei-communication-protocol"}
 kageshirei-crypt = {path = "../libs/kageshirei-crypt"}
 kageshirei-runtime = {path = "../libs/kageshirei-runtime"}
+kageshirei-format-json = {path = "../libs/kageshirei-format-json"}
 mod-agentcore = {path = "../modules/mod-agentcore" }
 mod-hhtgates = {path = "../modules/mod-hhtgates"}
 mod-win32 = {path = "../modules/mod-win32" }
 mod-nostd = {path = "../modules/mod-nostd"}
 mod-nt-virtualalloc = {path = "../modules/mod-nt-virtualalloc", optional = true }
 mod-nt-heapalloc = {path = "../modules/mod-nt-heapalloc", optional = true }
-mod-protocol-json = {path = "../modules/mod-protocol-json", optional = true}
-mod-protocol-winhttp = {path = "../modules/mod-protocol-winhttp", optional = true}
+mod-protocol-http = {path = "../modules/mod-protocol-http", optional = true, default-features = false}
 mod-std-runtime = {path = "../modules/mod-std-runtime", optional = true}
 mod-nostd-nt-runtime = {path = "../modules/mod-nostd-nt-runtime", optional = true}
 libc-print = "0.1.23"
@@ -36,11 +42,14 @@ chrono = "0.4.38"
 futures = "0.3.31"
 
 [features]
-default = ["protocol-winhttp", "nt-virtualalloc", "nostd-nt-runtime"]
-protocol-json = ["dep:mod-protocol-json"]
-protocol-winhttp = ["dep:mod-protocol-winhttp"]
+default = ["proto-http-winhttp", "nt-virtualalloc", "nostd-nt-runtime"]
+proto-http-std = ["mod-protocol-http/std"]
+proto-http-winhttp = ["mod-protocol-http/winhttp"]
 nt-virtualalloc = ["dep:mod-nt-virtualalloc"]
 nt-heapalloc = ["dep:mod-nt-heapalloc"]
 std-runtime = ["dep:mod-std-runtime"]
 nostd-nt-runtime = ["dep:mod-nostd-nt-runtime"]
 ltest = []
+
+[lints]
+workspace = true

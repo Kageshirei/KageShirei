@@ -2,5 +2,14 @@
 name = "mod-hhtgates"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "module", "gates", "windows-nt"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A module for the KageShirei agent that provides low-level gates access."
+readme = "README.md"
 
 [dependencies]
+
+[lints]
+workspace = true

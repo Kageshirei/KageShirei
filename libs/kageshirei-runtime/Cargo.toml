@@ -2,5 +2,14 @@
 name = "kageshirei-runtime"
 version = "0.1.0"
 edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "library", "runtime"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A library for the KageShirei agent that provides runtime basics."
+readme = "README.md"
 
 [dependencies]
+
+[lints]
+workspace = true

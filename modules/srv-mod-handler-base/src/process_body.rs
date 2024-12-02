@@ -1,39 +1,37 @@
-use std::fmt::Debug;
+//! This module contains the logic to process the body of the request, this is a protocol agnostic
+//! module that will try to match the magic numbers of the body to the appropriate format and then
+//! handle the command by executing it and returning the response if any
 
-use axum::{
-    body::{Body, Bytes},
-    http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Response},
-    Json,
-};
+use std::num::NonZeroU16;
+
+use axum::http::{HeaderMap, StatusCode};
 use kageshirei_communication_protocol::{
-    communication_structs::{
-        agent_commands::{AgentCommands, AgentCommands::Checkin},
-        basic_agent_response::BasicAgentResponse,
-        checkin::Checkin as CheckinStruct,
-    },
+    communication::{AgentCommands, BasicAgentResponse, Checkin as CheckinStruct},
     magic_numbers,
-    protocol::Protocol,
+    Format,
 };
-use kageshirei_crypt::encryption_algorithm::ident_algorithm::IdentEncryptor;
-use kageshirei_utils::duration_extension::DurationExt;
-use mod_protocol_json::protocol::JsonProtocol;
+use kageshirei_format_json::FormatJson;
+use kageshirei_utils::duration_extension::DurationExt as _;
 use serde::Deserialize;
 use srv_mod_config::handlers;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use tracing::{instrument, warn};
 
-use crate::{callback_handlers, state::HandlerSharedState};
+use crate::{callback_handlers, error, response::BaseHandlerResponse};
 
 /// Ensure that the body is not empty by returning a response if it is
 #[instrument(skip_all)]
-pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
+pub fn ensure_is_not_empty(body: Vec<u8>) -> Option<BaseHandlerResponse> {
     if body.is_empty() {
         warn!("Empty checking request received, request refused");
         warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
         // always return OK to avoid leaking information
-        return Some((StatusCode::OK, "").into_response());
+        return Some(BaseHandlerResponse {
+            status:    NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
+            body:      vec![],
+            formatter: None,
+        });
     }
 
     None
@@ -41,39 +39,44 @@ pub fn ensure_is_not_empty(body: Bytes) -> Option<Response<Body>> {
 
 /// Match the magic numbers of the body to the appropriate protocol
 #[instrument(skip_all)]
-fn match_magic_numbers(body: Bytes) -> Result<handlers::Protocol, String> {
-    if body.len() >= magic_numbers::JSON.len() && body[.. magic_numbers::JSON.len()] == magic_numbers::JSON {
-        return Ok(handlers::Protocol::Json);
+fn match_magic_numbers(body: &[u8]) -> Result<handlers::Format, String> {
+    if body.len() >= magic_numbers::JSON.len() &&
+        body.get(.. magic_numbers::JSON.len())
+            .eq(&Some(&magic_numbers::JSON))
+    {
+        return Ok(handlers::Format::Json);
     }
 
-    Err("Unknown protocol".to_string())
+    Err("Unknown format".to_owned())
 }
 
 /// Handle the command by executing it and returning the response if any
-#[instrument(skip(raw_body, protocol))]
-async fn handle_command<P>(
+#[instrument(skip(raw_body, format))]
+async fn handle_command<F>(
     db_pool: DatabaseConnection,
     basic_response: BasicAgentResponse,
-    protocol: P,
-    raw_body: Bytes,
+    format: F,
+    raw_body: Vec<u8>,
     headers: HeaderMap,
     cmd_request_id: String,
-) -> Result<Bytes, String>
+) -> Result<Vec<u8>, error::CommandHandling>
 where
-    P: Protocol<IdentEncryptor>,
+    F: Format + Send,
 {
     match AgentCommands::from(basic_response.metadata.command_id) {
         AgentCommands::Terminate => callback_handlers::terminate::handle_terminate(db_pool, cmd_request_id).await,
         AgentCommands::Checkin => {
-            let checkin = protocol.read::<CheckinStruct>(raw_body, None);
-            callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool).await
+            let checkin = format
+                .read::<CheckinStruct, &str>(raw_body.as_slice(), None)
+                .map_err(error::CommandHandling::Format)?;
+            callback_handlers::checkin::process_body::handle_checkin(checkin, db_pool, format).await
         },
         AgentCommands::INVALID => {
             // if the command is not recognized, return an empty response
             warn!("Unknown command, request refused");
             warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
 
-            Ok(Bytes::new())
+            Ok(Vec::<u8>::new())
         },
     }
 }
@@ -82,62 +85,61 @@ where
 #[instrument(skip_all)]
 pub async fn process_body(
     db_pool: DatabaseConnection,
-    body: Bytes,
+    body: Vec<u8>,
     headers: HeaderMap,
     cmd_request_id: String,
-) -> Response<Body> {
+) -> BaseHandlerResponse {
     // ensure that the body is not empty or return a response
     let is_empty = ensure_is_not_empty(body.clone());
     if is_empty.is_some() {
         return is_empty.unwrap();
     }
 
-    match match_magic_numbers(body.clone()) {
-        Ok(protocol) => {
-            match protocol {
-                handlers::Protocol::Json => {
-                    let data = process_json(body.clone()).unwrap();
-                    let response = handle_command(
-                        db_pool,
-                        data,
-                        make_json_protocol_instance(),
-                        body.clone(),
-                        headers,
-                        cmd_request_id,
-                    )
-                    .await
-                    .unwrap_or(Bytes::new());
+    match match_magic_numbers(body.as_slice()) {
+        Ok(format) => {
+            match format {
+                handlers::Format::Json => {
+                    let data = process_json(body.as_slice()).unwrap();
+                    let response = handle_command(db_pool, data, FormatJson, body, headers, cmd_request_id)
+                        .await
+                        .unwrap_or(Vec::<u8>::new());
 
-                    Json(response.to_vec()).into_response()
+                    BaseHandlerResponse {
+                        status:    NonZeroU16::try_from(StatusCode::OK.as_u16())
+                            .unwrap_or(NonZeroU16::new(200).unwrap()),
+                        body:      response,
+                        formatter: Some(handlers::Format::Json),
+                    }
                 },
             }
         },
         Err(_) => {
             // if no protocol matches, drop the request
-            warn!("Unknown protocol, request refused");
-            warn!("Internal status code: {}", StatusCode::BAD_REQUEST);
+            warn!(
+                "Unknown format, request refused. Internal status code: {}",
+                StatusCode::BAD_REQUEST
+            );
 
             // always return OK to avoid leaking information
-            (StatusCode::OK, "").into_response()
+            BaseHandlerResponse {
+                status:    NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap()),
+                body:      vec![],
+                formatter: None,
+            }
         },
     }
 }
 
-fn make_json_protocol_instance() -> JsonProtocol<IdentEncryptor> { JsonProtocol::<IdentEncryptor>::new("".to_string()) }
-
 /// Process the body as a JSON protocol
 #[instrument(name = "JSON protocol", skip(body), fields(latency = tracing::field::Empty))]
-fn process_json<T>(body: Bytes) -> Result<T, String>
+fn process_json<T>(body: &[u8]) -> Result<T, kageshirei_communication_protocol::error::Format>
 where
     T: for<'a> Deserialize<'a>,
 {
     let now = std::time::Instant::now();
 
-    // initialize the protocol implementation
-    let protocol = make_json_protocol_instance();
-
     // try to read the body as a checkin struct
-    let result = protocol.read::<T>(body, None);
+    let result = FormatJson.read::<T, &str>(body, None);
 
     // record the latency of the operation
     let latency = now.elapsed();
@@ -151,257 +153,65 @@ where
 
 #[cfg(test)]
 mod test {
-    use std::sync::Arc;
+    use axum::http::StatusCode;
+    use kageshirei_communication_protocol::magic_numbers;
+    use serde::Serialize;
+    use srv_mod_config::handlers;
 
-    use axum::{body::Bytes, http::StatusCode};
-    use bytes::{BufMut, BytesMut};
-    use kageshirei_communication_protocol::{
-        communication_structs::checkin::{Checkin, PartialCheckin},
-        magic_numbers,
-    };
-    use serial_test::serial;
-    use srv_mod_config::{
-        handlers,
-        handlers::{EncryptionScheme, HandlerConfig, HandlerSecurityConfig, HandlerType},
-    };
-    use srv_mod_database::{
-        bb8,
-        diesel::{Connection, PgConnection},
-        diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection},
-        diesel_migrations::MigrationHarness,
-        migration::MIGRATIONS,
-        Pool,
-    };
-    use srv_mod_handler_base::state::HttpHandlerState;
-
-    fn make_config() -> HandlerConfig {
-        let config = HandlerConfig {
-            enabled:   true,
-            r#type:    HandlerType::Http,
-            protocols: vec![handlers::Protocol::Json],
-            port:      8081,
-            host:      "127.0.0.1".to_string(),
-            tls:       None,
-            security:  HandlerSecurityConfig {
-                encryption_scheme: EncryptionScheme::Plain,
-                algorithm:         None,
-                encoder:           None,
-            },
-        };
-
-        config
-    }
-
-    async fn drop_database(url: String) {
-        let mut connection = PgConnection::establish(url.as_str()).unwrap();
-
-        connection.revert_all_migrations(MIGRATIONS).unwrap();
-        connection.run_pending_migrations(MIGRATIONS).unwrap();
-    }
-
-    async fn make_pool(url: String) -> Pool {
-        let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(url);
-        Arc::new(
-            bb8::Pool::builder()
-                .max_size(1u32)
-                .build(connection_manager)
-                .await
-                .unwrap(),
-        )
-    }
+    use super::*;
 
     #[test]
     fn test_ensure_is_not_empty() {
-        use axum::{body::Bytes, http::StatusCode};
-
-        use crate::routes::public::checkin::process_body::ensure_is_not_empty;
-
-        let empty_body = Bytes::new();
+        let empty_body = Vec::<u8>::new();
         let response = ensure_is_not_empty(empty_body);
         assert_eq!(response.is_some(), true);
 
         let unwrapped_response = response.unwrap();
-        assert_eq!(unwrapped_response.status(), StatusCode::OK);
+        assert_eq!(
+            unwrapped_response.status,
+            NonZeroU16::try_from(StatusCode::OK.as_u16()).unwrap_or(NonZeroU16::new(200).unwrap())
+        );
+        assert_eq!(unwrapped_response.body, Vec::<u8>::new());
+        assert_eq!(unwrapped_response.formatter, None);
     }
 
     #[test]
     fn test_match_magic_numbers() {
-        use axum::body::Bytes;
-
-        use crate::routes::public::checkin::process_body::match_magic_numbers;
-
-        let json_magic_numbers = Bytes::from(magic_numbers::JSON.to_vec());
-        let result = match_magic_numbers(json_magic_numbers);
+        let json_magic_numbers = magic_numbers::JSON.to_vec();
+        let result = match_magic_numbers(json_magic_numbers.as_slice());
         assert_eq!(result.is_ok(), true);
-        assert_eq!(result.unwrap(), handlers::Protocol::Json);
+        assert_eq!(result.unwrap(), handlers::Format::Json);
+    }
 
-        let unknown_magic_numbers = Bytes::from("unknown".as_bytes());
+    #[test]
+    fn test_do_not_match_magic_numbers() {
+        let unknown_magic_numbers = "unknown".as_bytes();
         let result = match_magic_numbers(unknown_magic_numbers);
         assert_eq!(result.is_err(), true);
     }
 
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    struct Sample {
+        val: u8,
+    }
+
     #[test]
     fn test_process_json() {
-        let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system:  "Windows".to_string(),
-            hostname:          "DESKTOP-PC".to_string(),
-            domain:            "WORKGROUP".to_string(),
-            username:          "user".to_string(),
-            ip:                "10.2.123.45".to_string(),
-            process_id:        1234,
-            parent_process_id: 5678,
-            process_name:      "agent.exe".to_string(),
-            elevated:          true,
-        });
-        let checkin = serde_json::to_string(&obj_checkin).unwrap();
+        let sample = Sample {
+            val: 42,
+        };
+        let mut serialized_sample = magic_numbers::JSON.to_vec();
+        let json = serde_json::to_string(&sample).unwrap();
 
-        let mut bytes = BytesMut::with_capacity(checkin.len() + magic_numbers::JSON.len());
-        for b in magic_numbers::JSON.iter() {
-            bytes.put_u8(*b);
-        }
-        for b in checkin.as_bytes() {
-            bytes.put_u8(*b);
+        serialized_sample.resize(serialized_sample.len() + json.len(), 0);
+        for (i, b) in json.as_bytes().iter().enumerate() {
+            serialized_sample[magic_numbers::JSON.len() + i] = *b;
         }
 
-        let result = super::process_json(bytes.freeze());
+        let result = process_json::<Sample>(serialized_sample.as_slice());
         assert_eq!(result.is_ok(), true);
+
         let processed_checkin = result.unwrap();
-        assert_eq!(processed_checkin, obj_checkin);
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_persist() {
-        let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system:  "Windows".to_string(),
-            hostname:          "DESKTOP-PC".to_string(),
-            domain:            "WORKGROUP".to_string(),
-            username:          "user".to_string(),
-            ip:                "10.2.123.45".to_string(),
-            process_id:        1234,
-            parent_process_id: 5678,
-            process_name:      "agent.exe".to_string(),
-            elevated:          true,
-        });
-
-        let shared_config = make_config();
-        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-
-        // Ensure the database is clean
-        drop_database(connection_string.clone()).await;
-        let pool = make_pool(connection_string.clone()).await;
-
-        let route_state = Arc::new(HttpHandlerState {
-            config:  Arc::new(shared_config),
-            db_pool: pool,
-        });
-
-        let agent = super::persist(Ok(obj_checkin), &route_state).await;
-
-        assert_eq!(agent.operative_system, "Windows");
-        assert_eq!(agent.hostname, "DESKTOP-PC");
-        assert_eq!(agent.domain, "WORKGROUP");
-        assert_eq!(agent.username, "user");
-        assert_eq!(agent.ip, "10.2.123.45");
-        assert_eq!(agent.process_id, 1234);
-        assert_eq!(agent.parent_process_id, 5678);
-        assert_eq!(agent.process_name, "agent.exe");
-        assert_eq!(agent.elevated, true);
-        assert_ne!(agent.server_secret_key, "");
-        assert_ne!(agent.secret_key, "");
-        assert_eq!(
-            agent.signature,
-            "YdkxtuNA9_78BiX7Oe_445oEr_Rktlcve1k73kBQ9pvoq_04qXVVcRfenXjy5Sc6947p9dn_YSiLGFw6YVXp0g"
-        );
-
-        // Ensure the database is clean
-        drop_database(connection_string.clone()).await;
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_process_body() {
-        let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system:  "Windows".to_string(),
-            hostname:          "DESKTOP-PC".to_string(),
-            domain:            "WORKGROUP".to_string(),
-            username:          "user".to_string(),
-            ip:                "10.2.123.45".to_string(),
-            process_id:        1234,
-            parent_process_id: 5678,
-            process_name:      "agent.exe".to_string(),
-            elevated:          true,
-        });
-        let checkin = serde_json::to_string(&obj_checkin).unwrap();
-
-        let mut bytes = BytesMut::with_capacity(checkin.len() + magic_numbers::JSON.len());
-        for b in magic_numbers::JSON.iter() {
-            bytes.put_u8(*b);
-        }
-        for b in checkin.as_bytes() {
-            bytes.put_u8(*b);
-        }
-
-        let shared_config = make_config();
-        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-
-        // Ensure the database is clean
-        drop_database(connection_string.clone()).await;
-        let pool = make_pool(connection_string.clone()).await;
-
-        let route_state = Arc::new(HttpHandlerState {
-            config:  Arc::new(shared_config),
-            db_pool: pool,
-        });
-
-        let response = super::process_body(route_state, bytes.freeze()).await;
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        assert_eq!(body.is_empty(), false);
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_process_body_with_invalid_magic_numbers() {
-        let obj_checkin = Checkin::new(PartialCheckin {
-            operative_system:  "Windows".to_string(),
-            hostname:          "DESKTOP-PC".to_string(),
-            domain:            "WORKGROUP".to_string(),
-            username:          "user".to_string(),
-            ip:                "10.2.123.45".to_string(),
-            process_id:        1234,
-            parent_process_id: 5678,
-            process_name:      "agent.exe".to_string(),
-            elevated:          true,
-        });
-        let checkin = serde_json::to_string(&obj_checkin).unwrap();
-
-        let mut bytes = BytesMut::with_capacity(checkin.len());
-        for b in checkin.as_bytes() {
-            bytes.put_u8(*b);
-        }
-
-        let shared_config = make_config();
-        let connection_string = "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string();
-
-        // Ensure the database is clean
-        drop_database(connection_string.clone()).await;
-        let pool = make_pool(connection_string.clone()).await;
-
-        let route_state = Arc::new(HttpHandlerState {
-            config:  Arc::new(shared_config),
-            db_pool: pool,
-        });
-
-        let response = super::process_body(route_state, bytes.freeze()).await;
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        assert_eq!(body.is_empty(), true);
+        assert_eq!(processed_checkin, sample);
     }
 }

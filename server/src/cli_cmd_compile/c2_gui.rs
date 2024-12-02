@@ -1,6 +1,16 @@
+//! This module contains the command line logic for compiling the command and control GUI.
+#![allow(
+    clippy::expect_used,
+    reason = "The expect is used to panic if the command fails when building the GUI"
+)]
+#![allow(
+    unused,
+    reason = "Currently compiling the agent in windows is not supported but it is on debian systems"
+)]
+
 use std::{env, process::Command};
 
-use colored::Colorize;
+use colored::Colorize as _;
 use log::{error, info, warn};
 
 /// List of required Debian packages
@@ -27,7 +37,7 @@ const REQUIRED_PACKAGES: [&str; 15] = [
 fn check_root() -> Result<(), String> {
     if !nix::unistd::Uid::effective().is_root() {
         error!("This command must be run as root.");
-        return Err(anyhow::anyhow!("This command must be run as root"));
+        return Err("This command must be run as root".to_owned());
     }
 
     Ok(())
@@ -47,7 +57,7 @@ fn install_packages() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to install one or more packages. Exiting.",);
-        return Err("Failed to install package".to_string());
+        return Err("Failed to install package".to_owned());
     }
 
     Ok(())
@@ -64,7 +74,7 @@ fn update_apt() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to update apt. Exiting.");
-        return Err("Failed to update apt".to_string());
+        return Err("Failed to update apt".to_owned());
     }
 
     Ok(())
@@ -81,7 +91,7 @@ fn upgrade_apt() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to upgrade apt. Exiting.");
-        return Err("Failed to upgrade apt".to_string());
+        return Err("Failed to upgrade apt".to_owned());
     }
 
     Ok(())
@@ -98,7 +108,7 @@ fn autoremove_apt() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to run apt autoremove. Exiting.");
-        return Err("Failed to run apt autoremove".to_string());
+        return Err("Failed to run apt autoremove".to_owned());
     }
 
     let status = Command::new("apt")
@@ -109,7 +119,7 @@ fn autoremove_apt() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to run apt autoremove. Exiting.");
-        return Err("Failed to run apt autoremove".to_string());
+        return Err("Failed to run apt autoremove".to_owned());
     }
 
     Ok(())
@@ -133,7 +143,7 @@ fn source_rust_environment() -> Result<(), String> {
     }
     else {
         error!("Failed to source Rust environment. Exiting.");
-        return Err("Failed to source Rust environment".to_string());
+        return Err("Failed to source Rust environment".to_owned());
     }
 
     Ok(())
@@ -151,7 +161,7 @@ fn install_rust() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to install Rust. Exiting.");
-            return Err("Failed to install Rust".to_string());
+            return Err("Failed to install Rust".to_owned());
         }
 
         source_rust_environment()?;
@@ -164,7 +174,7 @@ fn install_rust() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to set the default Rust version. Exiting.");
-            return Err("Failed to set the default Rust version".to_string());
+            return Err("Failed to set the default Rust version".to_owned());
         }
 
         let status = Command::new("rustup")
@@ -176,7 +186,7 @@ fn install_rust() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to add the Windows target. Exiting.");
-            return Err("Failed to add the Windows target".to_string());
+            return Err("Failed to add the Windows target".to_owned());
         }
 
         let status = Command::new("rustup")
@@ -188,7 +198,7 @@ fn install_rust() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to add the Linux target. Exiting.");
-            return Err("Failed to add the Linux target".to_string());
+            return Err("Failed to add the Linux target".to_owned());
         }
     }
 
@@ -207,7 +217,7 @@ fn install_nvm() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to install NVM. Exiting.");
-            return Err("Failed to install NVM".to_string());
+            return Err("Failed to install NVM".to_owned());
         }
 
         let home = env::var("HOME").unwrap();
@@ -220,7 +230,7 @@ fn install_nvm() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to install the latest LTS Node.js version. Exiting.");
-            return Err("Failed to install the latest LTS Node.js version".to_string());
+            return Err("Failed to install the latest LTS Node.js version".to_owned());
         }
     }
 
@@ -240,7 +250,7 @@ fn install_pnpm() -> Result<(), String> {
 
         if !status.success() {
             error!("Failed to install PNPM. Exiting.");
-            return Err("Failed to install PNPM".to_string());
+            return Err("Failed to install PNPM".to_owned());
         }
     }
 
@@ -258,7 +268,7 @@ fn install_xwin() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to install XWin. Exiting.");
-        return Err("Failed to install XWin".to_string());
+        return Err("Failed to install XWin".to_owned());
     }
 
     Ok(())
@@ -276,7 +286,7 @@ fn build_command_and_control() -> Result<(), String> {
 
     if !status.success() {
         error!("Failed to build the client application. Exiting.");
-        return Err("Failed to build the client application".to_string());
+        return Err("Failed to build the client application".to_owned());
     }
 
     info!("Cross compiling for windows ...");
@@ -295,7 +305,7 @@ fn build_command_and_control() -> Result<(), String> {
 
     info!("Client application built successfully.");
     info!(
-        r"Find the compiled clients at:
+        "Find the compiled clients at:
 {}
     - target/release/kageshirei-command-and-control
     - target/release/bundle/deb/kageshirei-command-and-control_<version>_<arch>.deb
@@ -310,6 +320,7 @@ fn build_command_and_control() -> Result<(), String> {
     Ok(())
 }
 
+/// Compiles the command and control GUI
 pub fn compile() -> Result<(), String> {
     #[cfg(unix)]
     {
@@ -341,7 +352,7 @@ pub fn compile() -> Result<(), String> {
         let command_and_control_gui = "command-and-control-gui";
         if env::set_current_dir(command_and_control_gui).is_err() {
             error!("Failed to change directory to {}", command_and_control_gui);
-            return Err("Failed to change directory".to_string());
+            return Err("Failed to change directory".to_owned());
         }
 
         // Install XWin
@@ -354,6 +365,6 @@ pub fn compile() -> Result<(), String> {
     #[cfg(windows)]
     {
         error!("This command is only available on Unix systems");
-        Err("This command is only available on Unix systems".to_string())
+        Err("This command is only available on Unix systems".to_owned())
     }
 }

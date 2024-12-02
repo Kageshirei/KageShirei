@@ -79,18 +79,26 @@ impl MigrationTrait for Migration {
         // sequence_counter for the session_id
 
         db.execute_unprepared(
-            r#"
+            "
             create or replace function set_terminal_history_sequence_counter()
                 returns trigger as
             $$
             declare
                 current_max bigint;
             begin
-                -- Get the current max session_command_id for this session_id
-                select coalesce(max(sequence_counter), -1) + 1
-                into current_max
-                from commands
-                where session_id = new.session_id;
+                if new.session_id is null then
+                    -- If session_id is NULL, calculate the max sequence_counter globally
+                    select coalesce(max(sequence_counter), 0) + 1
+                    into current_max
+                    from terminal_history
+                    where session_id is null;
+                else
+                    -- If session_id is not NULL, calculate the max sequence_counter for that session_id
+                    select coalesce(max(sequence_counter), 0) + 1
+                    into current_max
+                    from terminal_history
+                    where session_id = new.session_id;
+                end if;
 
                 -- Set the session_command_id for the new row
                 new.sequence_counter = current_max;
@@ -98,18 +106,18 @@ impl MigrationTrait for Migration {
                 return new;
             end;
             $$ language plpgsql;
-            "#,
+            ",
         )
         .await?;
 
         db.execute_unprepared(
-            r#"
+            "
             create trigger before_insert_terminal_history
                 before insert
                 on terminal_history
                 for each row
             execute function set_terminal_history_sequence_counter();
-            "#,
+            ",
         )
         .await?;
 
@@ -120,16 +128,16 @@ impl MigrationTrait for Migration {
         let db = manager.get_connection();
 
         db.execute_unprepared(
-            r#"
+            "
             drop trigger before_insert_terminal_history on terminal_history;
-            "#,
+            ",
         )
         .await?;
 
         db.execute_unprepared(
-            r#"
+            "
             drop function set_terminal_history_sequence_counter;
-            "#,
+            ",
         )
         .await?;
 

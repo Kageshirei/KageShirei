@@ -24,7 +24,7 @@ impl TokioRuntimeWrapper {
             .enable_all()
             .build()
             .unwrap();
-        TokioRuntimeWrapper {
+        Self {
             runtime: Arc::new(runtime),
         }
     }
@@ -50,7 +50,7 @@ impl Runtime for TokioRuntimeWrapper {
 
 impl Clone for TokioRuntimeWrapper {
     fn clone(&self) -> Self {
-        TokioRuntimeWrapper {
+        Self {
             runtime: Arc::clone(&self.runtime),
         }
     }

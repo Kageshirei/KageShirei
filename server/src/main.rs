@@ -1,7 +1,10 @@
+//! The main entry point for the server application.
+
 #![feature(duration_constructors)]
 
-use clap::Parser;
+use clap::Parser as _;
 use log::trace;
+use rustls::{crypto, crypto::CryptoProvider};
 use srv_mod_config::RootConfig;
 
 use crate::{
@@ -21,15 +24,19 @@ mod cli_cmd_compile;
 mod cli_cmd_generate;
 mod servers;
 
+/// Sets up the logging for the application.
 fn setup_logging(debug_level: u8) -> Result<(), String> {
     let mut base_config = fern::Dispatch::new()
         .format(|out, message, record| {
             let level_padding = if record.level().to_string().len() < 5 {
-                " ".repeat(5 - record.level().to_string().len() + 1)
-                    .to_string()
+                " ".repeat(
+                    5usize
+                        .saturating_sub(record.level().to_string().len())
+                        .saturating_add(1),
+                )
             }
             else {
-                " ".to_string()
+                " ".to_owned()
             };
 
             let colors = fern::colors::ColoredLevelConfig::new()
@@ -47,7 +54,7 @@ fn setup_logging(debug_level: u8) -> Result<(), String> {
                 )
             }
             else {
-                "".to_string()
+                "".to_owned()
             };
 
             out.finish(format_args!(
@@ -78,11 +85,14 @@ fn main() -> Result<(), String> {
     setup_logging(args.debug)?;
     trace!("Parsed arguments: {:?}", args);
 
+    // Install the default AWS LC provider
+    let _ = crypto::aws_lc_rs::default_provider().install_default();
+
     match args.command {
         Commands::Compile(compile_args) => {
             match compile_args.command {
                 cli::compile::CompileSubcommands::Agent => {
-                    todo!("Agent compilation not implemented yet");
+                    // TODO: Implement agent compilation
                 },
                 cli::compile::CompileSubcommands::Gui => {
                     cli_cmd_compile::c2_gui::compile()?;
@@ -95,7 +105,7 @@ fn main() -> Result<(), String> {
                     cli_cmd_generate::jwt::generate_jwt()?;
                 },
                 GenerateSubcommands::Operator(generate_args) => {
-                    let config = RootConfig::load(&args.config)?;
+                    let config = RootConfig::load(&args.config).map_err(|e| e.to_string())?;
 
                     // requires async context to consume the configuration
                     async_ctx::enter(cli_cmd_generate::operator::generate_operator(
@@ -107,18 +117,18 @@ fn main() -> Result<(), String> {
                     cli_cmd_generate::certificate::make_tls(&generate_args)?;
                 },
                 GenerateSubcommands::DummyData => {
-                    let config = RootConfig::load(&args.config)?;
+                    let config = RootConfig::load(&args.config).map_err(|e| e.to_string())?;
                     async_ctx::enter(make_dummy_data(config))?;
                 },
             }
         },
         Commands::Run(_run_args) => {
-            let config = RootConfig::load(&args.config)?;
+            let config = RootConfig::load(&args.config).map_err(|e| e.to_string())?;
 
             async_ctx::enter(async_ctx::init_context(
                 args.debug,
                 config.clone(),
-                async_main(config.clone()),
+                async_main(config),
             ))?;
         },
     }

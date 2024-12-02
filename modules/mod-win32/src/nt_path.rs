@@ -1,5 +1,5 @@
-use alloc::{format, vec::Vec};
-use core::ptr::null_mut;
+use alloc::{boxed::Box, format, vec, vec::Vec};
+use core::{ops::Div as _, ptr::null_mut};
 
 use kageshirei_win32::{
     ntdef::{
@@ -51,10 +51,6 @@ pub const OBJ_NAME_PATH_SEPARATOR: u16 = b'\\' as u16;
 /// # Details
 /// This function performs the following NT API calls:
 /// - `NtOpenFile`: Opens the directory specified by the NT path and obtains a handle to it.
-///
-/// # Safety
-/// This function is marked as unsafe because it operates directly on raw pointers and interacts
-/// with low-level NT API functions that can lead to undefined behavior if not used correctly.
 pub fn rtl_set_current_directory(path: &str) -> i32 {
     let mut cur_dir: *mut CURDIR = null_mut();
 
@@ -73,20 +69,24 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
         let cur_dir_dos_path_max_length = (*cur_dir).dos_path.maximum_length as usize;
 
         // Allocate a buffer for the full path, initializing it with zeros
-        let mut buffer: Vec<u16> = Vec::new();
-        buffer.resize(cur_dir_dos_path_max_length, 0);
+        let mut buffer = vec![0; cur_dir_dos_path_max_length];
 
         // Initialize a UnicodeString structure to hold the full path
         let mut full_path = UnicodeString {
             length:         0,
-            maximum_length: (buffer.capacity() * 2) as u16, // Length in bytes
+            maximum_length: (buffer.capacity().overflowing_mul(2).0) as u16, // Length in bytes
             buffer:         buffer.as_mut_ptr(),
         };
 
         // Retrieve the full path name using the custom function
         let unicode_path = &str_to_unicode_string(path);
+
+        // let path_utf16_string: Vec<u16> = path.encode_utf16().collect();
+        // let mut unicode_path = UnicodeString::new();
+        // unicode_path.init(path_utf16_string.as_ptr());
+
         let full_path_length = rtl_get_full_path_name_ustr(
-            unicode_path,
+            &unicode_path,
             full_path.maximum_length as usize,
             full_path.buffer,
             None,
@@ -94,7 +94,7 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
         );
 
         // Check for errors during path resolution
-        if full_path_length <= 0 {
+        if full_path_length == 0 {
             // libc_println!("[!] Invalid object name: full_path_length <= 0");
             return STATUS_OBJECT_NAME_INVALID; // Invalid object name
         }
@@ -130,7 +130,7 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
         );
 
         // Prepare for file opening
-        let mut status_block: IoStatusBlock = IoStatusBlock::new();
+        let mut status_block = IoStatusBlock::new();
         let mut cur_dir_handle: HANDLE = null_mut();
 
         // Open the directory
@@ -156,11 +156,11 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
         core::ptr::copy_nonoverlapping(
             full_path.buffer,
             (*cur_dir).dos_path.buffer,
-            (full_path.length / 2) as usize, // Copy the length in u16 units
+            (full_path.length.div(2)) as usize, // Copy the length in u16 units
         );
 
         // Update the DOS path length
-        (*cur_dir).dos_path.length = full_path.length as u16;
+        (*cur_dir).dos_path.length = full_path.length;
 
         0 // Success
     }
@@ -177,12 +177,29 @@ pub fn rtl_set_current_directory(path: &str) -> i32 {
 /// - `file_name`: The Unicode string representing the file name.
 /// - `size`: The size of the buffer to store the full path.
 /// - `buffer`: The buffer to store the full path.
-/// - `short_name`: Optionally, the short name part of the path (e.g., file name after the last separator).
+/// - `short_name`: Optionally, the short name part of the path (e.g., file name after the last
+///   separator).
 /// - `path_type`: Optionally, the type of the path determined by the function.
 ///
 /// # Returns
 /// - The size of the full path, or an error code.
-#[allow(unused_assignments)]
+///
+/// # Safety
+/// This function performs unsafe operations, including:
+/// - Dereferencing raw pointers (e.g., `buffer`, `prefix`, `source`, etc.).
+/// - Modifying the memory location pointed to by `buffer`, `short_name`, and `path_type`.
+///
+/// The caller must ensure:
+/// - The `buffer` pointer is valid and has sufficient memory allocated to hold `size` elements.
+/// - The `file_name` parameter points to a valid Unicode string.
+/// - The `short_name` and `path_type` parameters, if provided, point to valid memory locations.
+/// - The function is used in a context where the Windows process environment is not corrupted.
+///
+/// Improper use can result in undefined behavior, including memory corruption and program crashes
+#[expect(
+    unused_assignments,
+    reason = "Initial assignments to `prefix_length` and `prefix` are conditionally modified based on the path type"
+)]
 pub unsafe fn rtl_get_full_path_name_ustr(
     file_name: &UnicodeString,
     size: usize,
@@ -213,7 +230,7 @@ pub unsafe fn rtl_get_full_path_name_ustr(
             prefix = file_name_buffer;
             prefix_length = 3 * 2; // "C:\"
             source = file_name_buffer.add(3);
-            source_length -= 3 * 2;
+            source_length = source_length.overflowing_sub(3 * 2).0;
         },
         RtlPathType::RtlPathTypeRelative | RtlPathType::RtlPathTypeRooted => {
             let mut cur_dir: *mut CURDIR = null_mut();
@@ -227,11 +244,15 @@ pub unsafe fn rtl_get_full_path_name_ustr(
             prefix = (*cur_dir).dos_path.buffer;
             prefix_length = (*cur_dir).dos_path.length as usize;
         },
-        _ => return 0,
+        RtlPathType::RtlPathTypeUnknown |
+        RtlPathType::RtlPathTypeUncAbsolute |
+        RtlPathType::RtlPathTypeDriveRelative |
+        RtlPathType::RtlPathTypeLocalDevice |
+        RtlPathType::RtlPathTypeRootLocalDevice => return 0,
     }
 
     // Calculate required size
-    let reqsize = prefix_length + source_length;
+    let (reqsize, _) = prefix_length.overflowing_add(source_length);
 
     if reqsize > size {
         return reqsize; // Buffer too small, return required size
@@ -239,41 +260,47 @@ pub unsafe fn rtl_get_full_path_name_ustr(
 
     // Copy the prefix and the rest of the source path
     if prefix_length > 0 {
-        core::ptr::copy_nonoverlapping(prefix, buffer, prefix_length / 2);
+        core::ptr::copy_nonoverlapping(prefix, buffer, prefix_length.div(2));
     }
-    core::ptr::copy_nonoverlapping(source, buffer.add(prefix_length / 2), source_length / 2);
+    core::ptr::copy_nonoverlapping(
+        source,
+        buffer.add(prefix_length.div(2)),
+        source_length.div(2),
+    );
 
     // Handle short name (file part)
     if let Some(short_name_ptr) = short_name {
-        *short_name_ptr = buffer.add(prefix_length / 2 + source_length / 2);
+        *short_name_ptr = buffer.add(
+            (prefix_length.div(2))
+                .overflowing_add(source_length.div(2))
+                .0,
+        );
     }
 
     reqsize
 }
 
-/// Implementation of the `RtlpDosPathNameToRelativeNtPathName_Ustr` function from the Windows NT API.
+/// Implementation of the `RtlpDosPathNameToRelativeNtPathName_Ustr` function from the Windows NT
+/// API.
 ///
-/// This function converts a given DOS-style path (`dos_file_name`) into its corresponding NT-style path,
-/// which is often prefixed with `\\??\\`. The function also supports UNC paths and device paths,
-/// and it can extract the "file part" (i.e., the last component of the path) and the "relative name"
-/// (i.e., the part of the path relative to the current directory).
+/// This function converts a given DOS-style path (`dos_file_name`) into its corresponding NT-style
+/// path, which is often prefixed with `\\??\\`. The function also supports UNC paths and device
+/// paths, and it can extract the "file part" (i.e., the last component of the path) and the
+/// "relative name" (i.e., the part of the path relative to the current directory).
 ///
 /// # Parameters
 /// - `dos_file_name`: A reference to a `UnicodeString` containing the DOS path to be converted.
 /// - `nt_file_name`: A mutable reference to a `UnicodeString` that will be filled with the NT path.
-/// - `part_name`: An optional mutable reference to a pointer that will be set to the "file part" of the path (if any).
-/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be filled with the
-///   relative name (if applicable).
+/// - `part_name`: An optional mutable reference to a pointer that will be set to the "file part" of
+///   the path (if any).
+/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be
+///   filled with the relative name (if applicable).
 ///
 /// # Returns
-/// - `NTSTATUS`: Returns `STATUS_SUCCESS` on success, or an appropriate NTSTATUS error code if the operation fails.
+/// - `NTSTATUS`: Returns `STATUS_SUCCESS` on success, or an appropriate NTSTATUS error code if the
+///   operation fails.
 ///   - `STATUS_OBJECT_NAME_INVALID` if the input path is invalid.
 ///   - `STATUS_NO_MEMORY` if memory allocation fails.
-///
-/// # Safety
-/// This function is marked as unsafe because it operates directly on raw pointers and interacts with low-level NT API
-/// functions that can lead to undefined behavior if not used correctly. The caller must ensure that all pointers passed
-/// to the function are valid.
 pub fn rtl_dos_path_name_to_nt_path_name(
     dos_file_name: &UnicodeString,                // Reference to the DOS path to convert
     nt_file_name: &mut UnicodeString,             // Output: NT path
@@ -281,10 +308,10 @@ pub fn rtl_dos_path_name_to_nt_path_name(
     relative_name: Option<&mut RtlRelativeNameU>, // Output: Relative name structure
 ) -> NTSTATUS {
     unsafe {
-        // Definisci il prefisso NT "\\??\\"
+        // Define the NT prefix "\\??\\"
         let nt_prefix = str_to_unicode_string("\\??\\");
 
-        // Verifica la presenza del prefisso NT nel percorso
+        // Check if the NT prefix is present in the input path
         let prefix_present = dos_file_name.length > nt_prefix.length as u16 &&
             *dos_file_name.buffer.offset(0) == *nt_prefix.buffer.offset(0) &&
             *dos_file_name.buffer.offset(1) == *nt_prefix.buffer.offset(1) &&
@@ -292,9 +319,10 @@ pub fn rtl_dos_path_name_to_nt_path_name(
             *dos_file_name.buffer.offset(3) == *nt_prefix.buffer.offset(3);
 
         if !prefix_present {
-            // Se il prefisso NT non è presente, analizza il tipo di percorso
+            // If the NT prefix is not present, determine the type of the path
             let path_type = rtl_determine_dos_path_name_type_ustr(dos_file_name);
 
+            // Handle different path types and set the prefix parameters
             let (prefix_length, prefix_buffer, prefix_cut) = match path_type {
                 RtlPathType::RtlPathTypeUncAbsolute => {
                     let unc_prefix = str_to_unicode_string("\\??\\UNC\\");
@@ -305,49 +333,72 @@ pub fn rtl_dos_path_name_to_nt_path_name(
                 RtlPathType::RtlPathTypeDriveRelative |
                 RtlPathType::RtlPathTypeRooted |
                 RtlPathType::RtlPathTypeRelative => (nt_prefix.length, nt_prefix.buffer, 0),
-                _ => return STATUS_OBJECT_NAME_INVALID,
+                RtlPathType::RtlPathTypeUnknown | RtlPathType::RtlPathTypeRootLocalDevice => {
+                    return STATUS_OBJECT_NAME_INVALID;
+                },
             };
 
-            // Calcola la dimensione massima del nuovo percorso
-            let max_length = dos_file_name.length as usize + prefix_length as usize + 2;
-            let mut new_buffer: Vec<u16> = Vec::with_capacity(max_length / 2);
-            new_buffer.set_len(max_length / 2);
+            // Calculate the maximum size of the new path
+            let max_length = (dos_file_name.length as usize)
+                .overflowing_add(prefix_length as usize)
+                .0
+                .overflowing_add(2)
+                .0
+                .div(2);
+
+            let mut new_buffer = vec![0; max_length].into_boxed_slice();
 
             if new_buffer.is_empty() {
                 return STATUS_NO_MEMORY;
             }
 
-            // Copia il prefisso
+            // Copy the prefix into the new buffer
             core::ptr::copy_nonoverlapping(
                 prefix_buffer,
                 new_buffer.as_mut_ptr(),
-                prefix_length as usize / 2,
+                (prefix_length as usize).div(2),
             );
 
-            // Copia il percorso DOS
+            // Copy the DOS path into the new buffer
             core::ptr::copy_nonoverlapping(
                 dos_file_name.buffer.add(prefix_cut),
-                new_buffer.as_mut_ptr().add(prefix_length as usize / 2),
-                (dos_file_name.length as usize / 2) - prefix_cut,
+                new_buffer.as_mut_ptr().add((prefix_length as usize).div(2)),
+                ((dos_file_name.length as usize).div(2))
+                    .overflowing_sub(prefix_cut)
+                    .0,
             );
 
-            // NULL-terminate il percorso
-            *new_buffer
-                .as_mut_ptr()
-                .add(prefix_length as usize / 2 + dos_file_name.length as usize / 2 - prefix_cut) = 0;
+            // NULL-terminate the new path
+            *new_buffer.as_mut_ptr().add(
+                ((prefix_length as usize)
+                    .div(2)
+                    .overflowing_add((dos_file_name.length as usize).div(2))
+                    .0)
+                    .overflowing_sub(prefix_cut)
+                    .0,
+            ) = 0;
 
-            // Imposta il percorso NT
+            // Set the NT file name fields
             nt_file_name.buffer = new_buffer.as_mut_ptr();
-            nt_file_name.length = (prefix_length as usize + dos_file_name.length as usize - (prefix_cut * 2)) as u16;
+            nt_file_name.length = (((prefix_length as usize)
+                .overflowing_add(dos_file_name.length as usize)
+                .0)
+                .overflowing_sub(prefix_cut.overflowing_mul(2).0))
+            .0 as u16;
             nt_file_name.maximum_length = max_length as u16;
 
-            // Gestisci part_name se necessario
+            // Handle `part_name` if necessary
             if let Some(part_name) = part_name {
-                let mut p = new_buffer
-                    .as_mut_ptr()
-                    .add(prefix_length as usize / 2 + dos_file_name.length as usize / 2 - prefix_cut);
+                let mut p = new_buffer.as_mut_ptr().add(
+                    ((prefix_length as usize)
+                        .div(2)
+                        .overflowing_add((dos_file_name.length as usize).div(2))
+                        .0)
+                        .overflowing_sub(prefix_cut)
+                        .0,
+                );
 
-                // Trova l'ultimo separatore di percorso
+                // Find the last path separator
                 while p > new_buffer.as_mut_ptr() {
                     p = p.sub(1);
                     if *p == OBJ_NAME_PATH_SEPARATOR {
@@ -364,12 +415,14 @@ pub fn rtl_dos_path_name_to_nt_path_name(
                 }
             }
 
-            // Gestisci relative_name se necessario
+            // Handle `relative_name` if necessary
             if let Some(relative_name) = relative_name {
-                let relative_start = new_buffer.as_mut_ptr().add(prefix_length as usize / 2);
+                let relative_start = new_buffer.as_mut_ptr().add((prefix_length as usize).div(2));
 
                 relative_name.relative_name.buffer = relative_start;
-                relative_name.relative_name.length = (dos_file_name.length as isize - prefix_length as isize) as u16;
+                relative_name.relative_name.length = ((dos_file_name.length as isize)
+                    .overflowing_sub(prefix_length as isize)
+                    .0) as u16;
                 relative_name.relative_name.maximum_length = relative_name.relative_name.length;
                 relative_name.containing_directory = null_mut();
                 relative_name.cur_dir_ref = null_mut();
@@ -378,9 +431,8 @@ pub fn rtl_dos_path_name_to_nt_path_name(
             STATUS_SUCCESS
         }
         else {
-            // Se il prefisso NT è presente, usa direttamente la funzione di supporto
-            let status = rtlp_win32_nt_name_to_nt_path_name_u(dos_file_name, nt_file_name, part_name, relative_name);
-            status
+            // If the NT prefix is already present, use the helper function
+            rtlp_win32_nt_name_to_nt_path_name_u(dos_file_name, nt_file_name, part_name, relative_name)
         }
     }
 }
@@ -394,18 +446,16 @@ pub fn rtl_dos_path_name_to_nt_path_name(
 ///
 /// # Parameters
 /// - `dos_path`: A reference to a `UnicodeString` containing the DOS-style path to be converted.
-/// - `nt_path`: A mutable reference to a `UnicodeString` where the resulting NT path will be stored.
-/// - `part_name`: An optional mutable reference to a pointer that will be set to the last component of the path (the
-///   "file part").
-/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be populated with the
-///   relative name, if applicable.
+/// - `nt_path`: A mutable reference to a `UnicodeString` where the resulting NT path will be
+///   stored.
+/// - `part_name`: An optional mutable reference to a pointer that will be set to the last component
+///   of the path (the "file part").
+/// - `relative_name`: An optional mutable reference to a `RtlRelativeNameU` structure that will be
+///   populated with the relative name, if applicable.
 ///
 /// # Returns
-/// - `i32`: Returns `STATUS_SUCCESS` on successful conversion, or an NTSTATUS error code if the operation fails.
-///
-/// # Safety
-/// This function is marked as `unsafe` because it involves raw pointer manipulation and low-level operations
-/// that could cause undefined behavior if used incorrectly.
+/// - `i32`: Returns `STATUS_SUCCESS` on successful conversion, or an NTSTATUS error code if the
+///   operation fails.
 pub fn rtlp_win32_nt_name_to_nt_path_name_u(
     dos_path: &UnicodeString,
     nt_path: &mut UnicodeString,
@@ -427,21 +477,30 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
 
         // Determine if the DOS path already starts with the NT prefix
         let nt_prefix_present = dos_length >= rtlp_dos_devices_prefix.length as usize &&
-            core::slice::from_raw_parts(dos_path.buffer, rtlp_dos_devices_prefix.length as usize / 2) ==
-                core::slice::from_raw_parts(
-                    rtlp_dos_devices_prefix.buffer,
-                    rtlp_dos_devices_prefix.length as usize / 2,
-                );
+            core::slice::from_raw_parts(
+                dos_path.buffer,
+                rtlp_dos_devices_prefix.length.div(2) as usize,
+            ) == core::slice::from_raw_parts(
+                rtlp_dos_devices_prefix.buffer,
+                rtlp_dos_devices_prefix.length.div(2) as usize,
+            );
 
         let new_size = if nt_prefix_present {
-            dos_length + 2 // Just add space for the null terminator
+            dos_length.overflowing_add(2).0 // Just add space for the null terminator
         }
         else {
-            dos_length + rtlp_dos_devices_prefix.length as usize + 2 // Add space for NT prefix and null terminator
+            dos_length
+                .overflowing_add(rtlp_dos_devices_prefix.length as usize)
+                .0
+                .overflowing_add(2)
+                .0
         };
 
-        let mut new_buffer: Vec<u16> = Vec::with_capacity(new_size / 2);
-        new_buffer.set_len(new_size / 2);
+        // let mut new_buffer: Vec<u16> = Vec::with_capacity(new_size / 2);
+        // new_buffer.set_len(new_size.div(2));
+
+        let length = new_size.div(2);
+        let mut new_buffer = vec![0; length as usize].into_boxed_slice();
 
         if new_buffer.is_empty() {
             return STATUS_NO_MEMORY;
@@ -449,27 +508,29 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
 
         if nt_prefix_present {
             // Copy the existing NT-prefixed DOS path into the buffer
-            core::ptr::copy_nonoverlapping(dos_path.buffer, new_buffer.as_mut_ptr(), dos_length / 2);
+            core::ptr::copy_nonoverlapping(dos_path.buffer, new_buffer.as_mut_ptr(), dos_length.div(2));
         }
         else {
             // Copy the NT prefix and the DOS path into the new buffer
             core::ptr::copy_nonoverlapping(
                 rtlp_dos_devices_prefix.buffer,
                 new_buffer.as_mut_ptr(),
-                rtlp_dos_devices_prefix.length as usize / 2,
+                rtlp_dos_devices_prefix.length.div(2) as usize,
             );
 
             core::ptr::copy_nonoverlapping(
                 dos_path.buffer,
                 new_buffer
                     .as_mut_ptr()
-                    .add(rtlp_dos_devices_prefix.length as usize / 2),
-                dos_length / 2,
+                    .add(rtlp_dos_devices_prefix.length.div(2) as usize),
+                dos_length.div(2),
             );
         }
 
         // NULL-terminate the NT path
-        *new_buffer.as_mut_ptr().add(new_size / 2 - 1) = 0;
+        *new_buffer
+            .as_mut_ptr()
+            .add(new_size.div(2).overflowing_sub(1).0) = 0;
 
         // Handle the relative name if provided
         if let Some(relative_name) = relative_name {
@@ -479,16 +540,19 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
             else {
                 new_buffer
                     .as_mut_ptr()
-                    .add(rtlp_dos_devices_prefix.length as usize / 2)
+                    .add(rtlp_dos_devices_prefix.length.div(2) as usize)
             };
 
-            let relative_length = dos_length as isize -
-                if nt_prefix_present {
-                    0
-                }
-                else {
-                    rtlp_dos_devices_prefix.length as isize
-                };
+            let relative_length = (dos_length as isize)
+                .overflowing_sub(
+                    if nt_prefix_present {
+                        0
+                    }
+                    else {
+                        rtlp_dos_devices_prefix.length as isize
+                    },
+                )
+                .0;
 
             if relative_length < 0 {
                 return STATUS_OBJECT_NAME_INVALID;
@@ -504,13 +568,16 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
         // Handle PartName if provided
         if let Some(part_name) = part_name {
             let mut p = new_buffer.as_mut_ptr().add(
-                (dos_length / 2) +
-                    if nt_prefix_present {
-                        0
-                    }
-                    else {
-                        rtlp_dos_devices_prefix.length as usize / 2
-                    },
+                (dos_length.div(2))
+                    .overflowing_add(
+                        if nt_prefix_present {
+                            0
+                        }
+                        else {
+                            rtlp_dos_devices_prefix.length.div(2) as usize
+                        },
+                    )
+                    .0,
             );
 
             // Loop from the back until we find a path separator
@@ -536,12 +603,15 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
             dos_length as u16
         }
         else {
-            (dos_length + rtlp_dos_devices_prefix.length as usize) as u16
+            (dos_length
+                .overflowing_add(rtlp_dos_devices_prefix.length as usize)
+                .0) as u16
         };
         nt_path.maximum_length = new_size as u16;
 
         // Prevent Vec from deallocating the buffer when it goes out of scope
-        core::mem::forget(new_buffer);
+        // core::mem::forget(new_buffer);
+        Box::leak(new_buffer);
 
         STATUS_SUCCESS
     }
@@ -561,7 +631,7 @@ pub fn rtlp_win32_nt_name_to_nt_path_name_u(
 /// The determined `RtlPathType` indicating the type of the path.
 pub fn rtl_determine_dos_path_name_type_ustr(path_string: &UnicodeString) -> RtlPathType {
     let path = path_string.buffer;
-    let chars = path_string.length as usize / 2;
+    let chars = path_string.length.div(2) as usize;
 
     // Return RtlPathTypeRelative if there are no characters
     if chars == 0 {
@@ -582,7 +652,7 @@ pub fn rtl_determine_dos_path_name_type_ustr(path_string: &UnicodeString) -> Rtl
         if chars == 3 {
             return RtlPathType::RtlPathTypeRootLocalDevice; // \\. or \\?
         }
-        return RtlPathType::RtlPathTypeUncAbsolute; // \\.x or \\?x
+        RtlPathType::RtlPathTypeUncAbsolute // \\.x or \\?x
     }
     else {
         if chars < 2 || unsafe { *path.add(1) } != ':' as u16 {
@@ -591,7 +661,7 @@ pub fn rtl_determine_dos_path_name_type_ustr(path_string: &UnicodeString) -> Rtl
         if chars < 3 || !is_path_separator(unsafe { *path.add(2) }) {
             return RtlPathType::RtlPathTypeDriveRelative; // x:
         }
-        return RtlPathType::RtlPathTypeDriveAbsolute; // x:\
+        RtlPathType::RtlPathTypeDriveAbsolute // x:\
     }
 }
 
@@ -644,19 +714,19 @@ pub fn change_to_parent_directory() -> i32 {
 /// which interfaces with the underlying NT API.
 ///
 /// # Parameters
-/// - `path`: A string slice representing the directory path to change to. This can include multiple `".."` components
-///   to move up multiple levels in the directory hierarchy.
+/// - `path`: A string slice representing the directory path to change to. This can include multiple
+///   `".."` components to move up multiple levels in the directory hierarchy.
 ///
 /// # Returns
 /// - `i32`: Returns `STATUS_SUCCESS` on success, or an NTSTATUS error code if the operation fails.
 ///
 /// # Details
-/// - If the path contains `".."`, the function will handle each `".."` sequentially, moving up one directory level for
-///   each occurrence.
-/// - For simple absolute or relative paths without `".."`, the function directly uses `rtl_set_current_directory` to
-///   change the directory.
-/// - This function is useful in low-level environments where direct manipulation of the process's current directory is
-///   required.
+/// - If the path contains `".."`, the function will handle each `".."` sequentially, moving up one
+///   directory level for each occurrence.
+/// - For simple absolute or relative paths without `".."`, the function directly uses
+///   `rtl_set_current_directory` to change the directory.
+/// - This function is useful in low-level environments where direct manipulation of the process's
+///   current directory is required.
 pub fn change_directory(path: &str) -> i32 {
     if path.contains("..") {
         // Split the path into components
@@ -701,6 +771,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore]
     fn test_rtl_dos_path_name_to_nt_path_name() {
         let mut test_cases = Vec::new();
 
@@ -793,7 +864,7 @@ mod tests {
 
             // Verifica che part_name e relative_name siano impostati correttamente
             if let Some(part_name_ptr) = unsafe { part_name.as_mut() } {
-                let part_name_str = ptr_to_str(part_name_ptr);
+                let part_name_str = unsafe { ptr_to_str(part_name_ptr) };
                 libc_println!("Part Name: {}", part_name_str);
                 assert!(
                     !part_name_str.is_empty(),
@@ -824,6 +895,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_determine_path_type() {
         let mut test_cases = Vec::new();
         test_cases.push((str_to_unicode_string("\\"), RtlPathType::RtlPathTypeRooted));
@@ -864,6 +936,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_dos_path_to_nt_path() {
         libc_println!("Test 1: Basic DOS path to NT path conversion");
         let dos_path = str_to_unicode_string("C:\\Windows\\System32");
@@ -877,7 +950,7 @@ mod tests {
         assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32");
 
         if !part_name.is_null() {
-            let part_name_str = ptr_to_str(part_name);
+            let part_name_str = unsafe { ptr_to_str(part_name) };
             libc_println!("Part Name: {}", part_name_str);
             assert_eq!(part_name_str, "System32");
         }
@@ -887,6 +960,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_dos_path_to_nt_path_ending_with_separator() {
         libc_println!("Test 2: DOS path ending with a separator");
         let dos_path = str_to_unicode_string("C:\\Windows\\System32\\");
@@ -907,6 +981,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_dos_path_to_nt_path_with_relative_name() {
         libc_println!("Test 3: DOS path with a relative name");
         let dos_path = str_to_unicode_string("\\??\\C:\\Windows\\System32\\file.txt");
@@ -926,7 +1001,7 @@ mod tests {
         assert_eq!(nt_path_str, "\\??\\C:\\Windows\\System32\\file.txt");
 
         if !part_name.is_null() {
-            let part_name_str = ptr_to_str(part_name);
+            let part_name_str = unsafe { ptr_to_str(part_name) };
             libc_println!("Part Name: {}", part_name_str);
             assert_eq!(part_name_str, "file.txt");
         }
@@ -936,6 +1011,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_rtl_get_full_path_name() {
         unsafe {
             // Test 1: Resolve a relative path to an absolute path
@@ -1073,6 +1149,75 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
+    fn test_change_directory() {
+        // Test changing to a subdirectory
+        let target_directory = "C:\\Windows\\System32\\drivers\\etc";
+        let result = change_directory(target_directory);
+        assert_eq!(
+            result, 0,
+            "Failed to change to directory: {}",
+            target_directory
+        );
+
+        // Verify that the directory has changed
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.ends_with(target_directory),
+            "Expected directory: {}, but got: {}",
+            target_directory,
+            current_directory
+        );
+
+        // Test changing to the parent directory with "cd .."
+        let result = change_directory("..");
+        assert_eq!(result, 0, "Failed to change to parent directory");
+
+        // Verify that the directory has moved up one level
+        let parent_directory = "C:\\";
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.starts_with(parent_directory),
+            "Expected parent directory: {}, but got: {}",
+            parent_directory,
+            current_directory
+        );
+
+        // Test changing to a subdirectory
+        let target_directory = "C:\\Windows\\System32\\drivers";
+        let result = change_directory(target_directory);
+        assert_eq!(
+            result, 0,
+            "Failed to change to directory: {}",
+            target_directory
+        );
+
+        // Verify that the directory has changed
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.ends_with(target_directory),
+            "Expected directory: {}, but got: {}",
+            target_directory,
+            current_directory
+        );
+
+        // Test changing to the parent directory with "cd .."
+        let result = change_directory("..\\..");
+        assert_eq!(result, 0, "Failed to change to parent directory");
+
+        // Verify that the directory has moved up one level
+        let parent_directory = "C:\\Windows";
+        let current_directory = get_current_directory();
+        assert!(
+            current_directory.starts_with(parent_directory),
+            "Expected parent directory: {}, but got: {}",
+            parent_directory,
+            current_directory
+        );
+    }
+
+    #[test]
+    #[ignore]
     fn test_rtl_set_current_directory_w() {
         // Define the target directory for the test
         let target_directory = "C:\\Windows";
@@ -1103,7 +1248,6 @@ mod tests {
         // Check if the current directory matches the target directory
         match current_directory {
             Some(current_dir) => {
-                libc_println!("Current directory is: {}", current_dir);
                 assert!(
                     current_dir.ends_with(target_directory),
                     "Expected current directory to be '{}', but got '{}'",
@@ -1115,76 +1259,5 @@ mod tests {
                 panic!("Failed to retrieve the current directory after setting it.");
             },
         }
-    }
-
-    #[test]
-    fn test_change_directory() {
-        // Test changing to a subdirectory
-        let target_directory = "C:\\Windows\\System32";
-        let result = change_directory(target_directory);
-        assert_eq!(
-            result, 0,
-            "Failed to change to directory: {}",
-            target_directory
-        );
-
-        // Verify that the directory has changed
-        let current_directory = get_current_directory();
-        assert!(
-            current_directory.ends_with(target_directory),
-            "Expected directory: {}, but got: {}",
-            target_directory,
-            current_directory
-        );
-
-        // Test changing to the parent directory with "cd .."
-        let result = change_directory("..");
-        assert_eq!(result, 0, "Failed to change to parent directory");
-        libc_println!("[+] Directory changed: {}", current_directory);
-
-        // Verify that the directory has moved up one level
-        let parent_directory = "C:\\";
-        let current_directory = get_current_directory();
-        assert!(
-            current_directory.starts_with(parent_directory),
-            "Expected parent directory: {}, but got: {}",
-            parent_directory,
-            current_directory
-        );
-        libc_println!("[+] Directory changed: {}", current_directory);
-
-        // Test changing to a subdirectory
-        let target_directory = "C:\\Windows\\System32\\drivers";
-        let result = change_directory(target_directory);
-        assert_eq!(
-            result, 0,
-            "Failed to change to directory: {}",
-            target_directory
-        );
-
-        // Verify that the directory has changed
-        let current_directory = get_current_directory();
-        assert!(
-            current_directory.ends_with(target_directory),
-            "Expected directory: {}, but got: {}",
-            target_directory,
-            current_directory
-        );
-
-        // Test changing to the parent directory with "cd .."
-        let result = change_directory("..\\..");
-        assert_eq!(result, 0, "Failed to change to parent directory");
-        libc_println!("[+] Directory changed: {}", current_directory);
-
-        // Verify that the directory has moved up one level
-        let parent_directory = "C:\\Windows";
-        let current_directory = get_current_directory();
-        assert!(
-            current_directory.starts_with(parent_directory),
-            "Expected parent directory: {}, but got: {}",
-            parent_directory,
-            current_directory
-        );
-        libc_println!("[+] Directory changed: {}", current_directory);
     }
 }

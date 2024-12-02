@@ -1,4 +1,6 @@
-use axum::{debug_handler, extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
+//! The public authentication route for the API server
+
+use axum::{extract::State, routing::post, Json, Router};
 use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
     active_enums::LogLevel,
@@ -15,26 +17,32 @@ use crate::{
     state::ApiServerSharedState,
 };
 
-#[derive(Debug, Deserialize)]
-struct AuthenticatePostPayload {
+/// The payload for the public authentication route
+#[derive(Debug, Deserialize, Serialize)]
+struct PostPayload {
+    /// The username for the user
     pub username: String,
+    /// The password for the user
     pub password: String,
 }
 
+/// The response for the public authentication route
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AuthenticatePostResponse {
+pub struct PostResponse {
+    /// The access token type
     pub access_token: String,
+    /// The time in seconds until the JWT token expires
     pub expires_in:   u64,
+    /// The JWT token
     pub token:        String,
 }
 
 /// The handler for the public authentication route
-#[debug_handler]
 #[instrument(name = "POST /authenticate", skip_all)]
 async fn post_handler(
     State(state): State<ApiServerSharedState>,
-    InferBody(payload): InferBody<AuthenticatePostPayload>,
-) -> Result<Json<AuthenticatePostResponse>, ApiServerError> {
+    InferBody(payload): InferBody<PostPayload>,
+) -> Result<Json<PostResponse>, ApiServerError> {
     // Ensure the username and password are not empty
     if payload.username.is_empty() || payload.password.is_empty() {
         return Err(ApiServerError::MissingCredentials);
@@ -47,11 +55,11 @@ async fn post_handler(
         .filter(user::Column::Username.eq(&payload.username))
         .one(&db)
         .await
-        .map_err(|_| ApiServerError::WrongCredentials)?
+        .map_err(|_silenced| ApiServerError::WrongCredentials)?
         .ok_or(ApiServerError::WrongCredentials)?;
 
     // Verify the password
-    if !kageshirei_crypt::argon::Argon2::verify_password(&payload.password, &usr.password) {
+    if !kageshirei_crypt::hash::argon::Hash::verify_password(&payload.password, &usr.password) {
         return Err(ApiServerError::WrongCredentials);
     }
 
@@ -64,22 +72,22 @@ async fn post_handler(
         &claims,
         &API_SERVER_JWT_KEYS.get().unwrap().encoding,
     )
-    .map_err(|_| ApiServerError::TokenCreation)?;
+    .map_err(|_silenced| ApiServerError::TokenCreation)?;
 
     // Log the authentication on the cli and db
     info!("User {} authenticated", usr.username);
     logs::ActiveModel {
         level: Set(LogLevel::Info),
         message: Set(Some(format!("User {} authenticated", usr.username))),
-        title: Set("User Authenticated".to_string()),
+        title: Set("User Authenticated".to_owned()),
         ..Default::default()
     }
     .insert(&db)
     .await
-    .map_err(|e| ApiServerError::InternalServerError)?;
+    .map_err(|_e| ApiServerError::InternalServerError)?;
 
-    Ok(Json(AuthenticatePostResponse {
-        access_token: "bearer".to_string(),
+    Ok(Json(PostResponse {
+        access_token: "bearer".to_owned(),
         expires_in: token_lifetime.num_seconds() as u64,
         token,
     }))
@@ -94,132 +102,175 @@ pub fn route(state: ApiServerSharedState) -> Router<ApiServerSharedState> {
 
 #[cfg(test)]
 mod tests {
-    use std::{path::PathBuf, sync::Arc};
+    use std::sync::Arc;
 
     use axum::{
-        body::{to_bytes, Body},
+        body::Body,
+        extract::State,
         http::{Request, StatusCode},
-        response::Response,
     };
-    use serde_json::json;
-    use srv_mod_config::{database::DatabaseConfig, RootConfig, SharedConfig};
-    use srv_mod_database::{
-        bb8,
-        diesel,
-        diesel::{Connection, PgConnection},
-        diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl},
-        diesel_migrations::MigrationHarness,
-        migration::MIGRATIONS,
-        models::user::CreateUser,
-        schema::users,
-        Pool,
+    use chrono::Utc;
+    use serde::Deserialize;
+    use srv_mod_entity::{
+        entities::{agent, terminal_history},
+        sea_orm::{Database, TransactionTrait},
     };
-    use tokio::sync::RwLock;
-    use tower::ServiceExt;
+    use tokio::sync::broadcast;
 
     use super::*;
     use crate::{jwt_keys::Keys, state::ApiServerState};
 
-    fn make_shared_config() -> SharedConfig {
-        let config = RootConfig {
-            database: DatabaseConfig {
-                url: "postgresql://kageshirei:kageshirei@localhost/kageshirei".to_string(),
-                ..DatabaseConfig::default()
-            },
-            ..RootConfig::default()
-        };
+    async fn cleanup(db: DatabaseConnection) {
+        db.transaction::<_, (), DbErr>(|txn| {
+            Box::pin(async move {
+                terminal_history::Entity::delete_many()
+                    .exec(txn)
+                    .await
+                    .unwrap();
+                user::Entity::delete_many().exec(txn).await.unwrap();
 
-        Arc::new(RwLock::new(config))
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
     }
 
-    async fn generate_test_user(pool: Pool) {
-        let mut connection = pool.get().await.unwrap();
-        diesel::insert_into(users::table)
-            .values(CreateUser::new("test".to_string(), "test".to_string()))
-            .execute(&mut connection)
+    async fn init() -> DatabaseConnection {
+        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
             .await
             .unwrap();
-    }
 
-    async fn drop_database(shared_config: SharedConfig) {
-        let readonly_config = shared_config.read().await;
-        let mut connection = PgConnection::establish(readonly_config.database.url.as_str()).unwrap();
+        cleanup(db_pool.clone()).await;
 
-        connection.revert_all_migrations(MIGRATIONS).unwrap();
-        connection.run_pending_migrations(MIGRATIONS).unwrap();
-    }
+        user::Entity::insert(user::ActiveModel {
+            id:         Set("user_id".to_string()),
+            username:   Set("valid_user".to_string()),
+            password:   Set(kageshirei_crypt::hash::argon::Hash::make_password("valid_password").unwrap()),
+            created_at: Set(Utc::now().naive_utc()),
+            updated_at: Set(Utc::now().naive_utc()),
+        })
+        .exec(&db_pool)
+        .await
+        .unwrap();
 
-    async fn make_pool(shared_config: SharedConfig) -> Pool {
-        let readonly_config = shared_config.read().await;
+        // First initialization should succeed
+        let secret: &[u8] = b"my_secret_key";
+        let keys = Keys::new(secret);
+        if API_SERVER_JWT_KEYS.get().is_none() {
+            assert!(API_SERVER_JWT_KEYS.set(keys).is_ok());
+        }
 
-        let connection_manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(&readonly_config.database.url);
-        Arc::new(
-            bb8::Pool::builder()
-                .max_size(1u32)
-                .build(connection_manager)
-                .await
-                .unwrap(),
-        )
+        db_pool
     }
 
     #[tokio::test]
-    async fn test_authenticate_post() {
-        API_SERVER_JWT_KEYS.get_or_init(|| {
-            // This is a randomly generated key, it is not secure and should not be used in production,
-            // copied from the sample configuration
-            Keys::new(
-                "TlwDBT0AKR+eRhG0s8nWCWZqggT3/ZNyFXZsOJBISH4u+t6Vs9wof7nAGzerhRmtm51u02rQ4yd3uIRDLxvwzw==".as_bytes(),
-            )
+    #[serial_test::serial]
+    async fn test_successful_authentication() {
+        // Mock database setup with specific agent records
+        let db = init().await;
+
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
+
+        let state = Arc::new(ApiServerState {
+            config:           Arc::new(Default::default()),
+            db_pool:          db,
+            broadcast_sender: sender,
         });
 
-        let shared_config = make_shared_config();
-        // Ensure the database is clean
-        drop_database(shared_config.clone()).await;
-        let pool = make_pool(shared_config.clone()).await;
-        // Generate a test user
-        generate_test_user(pool.clone()).await;
+        // Mock the payload
+        let payload = PostPayload {
+            username: "valid_user".to_string(),
+            password: "valid_password".to_string(),
+        };
 
-        let route_state = Arc::new(ApiServerState {
-            config:  shared_config.clone(),
-            db_pool: pool.clone(),
-        });
-        // init the app router
-        let app = route(route_state.clone());
-
-        // create the request
-        let request_body = Body::from(
-            json!({
-                "username": "test",
-                "password": "test"
-            })
-            .to_string(),
-        );
-        let request = Request::post("/authenticate")
+        let request = Request::builder()
+            .method("POST")
+            .uri("/authenticate")
             .header("Content-Type", "application/json")
-            .body(request_body)
+            .body(Body::from(serde_json::to_string(&payload).unwrap()))
             .unwrap();
 
-        // send the request
-        let response = app
-            .with_state(route_state.clone())
-            .oneshot(request)
-            .await
+        // Mock the InferBody extractor for the payload
+        let infer_body = InferBody(payload);
+        let result = post_handler(State(state), infer_body).await;
+
+        // Verify the response
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        let post_response = response.0;
+
+        assert_eq!(post_response.access_token, "bearer");
+        assert_eq!(post_response.token.len(), 255); // check JWT token length
+        assert_eq!(post_response.expires_in, 900); // 15 minutes in seconds
+    }
+
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_invalid_credentials_user_not_found() {
+        // Mock database setup with specific agent records
+        let db = init().await;
+
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
+
+        let state = Arc::new(ApiServerState {
+            config:           Arc::new(Default::default()),
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
+
+        // Mock the payload
+        let payload = PostPayload {
+            username: "invalid_user".to_string(),
+            password: "invalid_password".to_string(),
+        };
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/authenticate")
+            .header("Content-Type", "application/json")
+            .body(Body::from(serde_json::to_string(&payload).unwrap()))
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        // Mock the InferBody extractor for the payload
+        let infer_body = InferBody(payload);
+        let result = post_handler(State(state), infer_body).await;
 
-        // unpack the response
-        let body = serde_json::from_slice::<AuthenticatePostResponse>(
-            to_bytes(response.into_body(), usize::MAX)
-                .await
-                .unwrap()
-                .as_ref(),
-        )
-        .unwrap();
-        assert_eq!(body.access_token, "bearer");
-        println!("Token: {}", body.token);
+        // Assert the result is an error (wrong credentials)
+        assert!(result.is_err());
+        let response = result.err().unwrap();
+        assert_eq!(response, ApiServerError::WrongCredentials);
+    }
 
-        // cleanup after test
-        drop_database(shared_config.clone()).await;
+    #[tokio::test]
+    #[serial_test::serial]
+    async fn test_missing_credentials() {
+        // Mock database setup with specific agent records
+        let db = init().await;
+
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
+
+        let state = Arc::new(ApiServerState {
+            config:           Arc::new(Default::default()),
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
+
+        // Mock the payload
+        let payload = PostPayload {
+            username: "".to_string(),
+            password: "".to_string(),
+        };
+
+        let infer_body = InferBody(payload);
+        let result = post_handler(State(state), infer_body).await;
+
+        // Assert the result is an error (missing credentials)
+        assert!(result.is_err());
+        let response = result.err().unwrap();
+        assert_eq!(response, ApiServerError::MissingCredentials);
     }
 }

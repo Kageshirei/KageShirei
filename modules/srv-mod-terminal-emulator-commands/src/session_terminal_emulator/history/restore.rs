@@ -1,3 +1,5 @@
+//! Restore terminal session history commands
+
 use clap::Args;
 use serde::Serialize;
 use serde_json::json;
@@ -12,7 +14,7 @@ use tracing::{debug, instrument};
 use crate::command_handler::CommandHandlerArguments;
 
 /// Terminal session arguments for the global session terminal
-#[derive(Args, Debug, PartialEq, Serialize)]
+#[derive(Args, Debug, PartialEq, Eq, Serialize)]
 pub struct TerminalSessionHistoryRestoreArguments {
     /// The list of command ids to restore
     pub command_ids: Vec<i64>,
@@ -39,8 +41,18 @@ pub async fn handle(
     let db = config.db_pool.clone();
 
     // clear commands marking them as deleted (soft delete)
-    let result = terminal_history::Entity::update_many()
-        .filter(terminal_history::Column::SessionId.eq(&config.session.session_id))
+    let mut query = terminal_history::Entity::update_many();
+
+    if config.session.session_id == "global" {
+        query = query
+            .filter(terminal_history::Column::IsGlobal.eq(true))
+            .filter(terminal_history::Column::SessionId.is_null());
+    }
+    else {
+        query = query.filter(terminal_history::Column::SessionId.eq(&config.session.session_id));
+    }
+
+    let result = query
         .filter(make_sequence_counter_condition(args.command_ids.clone()))
         .col_expr(
             terminal_history::Column::RestoredAt,
@@ -55,7 +67,7 @@ pub async fn handle(
     // create a log entry and save it
     let log = logs::ActiveModel {
         level: Set(LogLevel::Info),
-        title: Set("Command(s) restored".to_string()),
+        title: Set("Command(s) restored".to_owned()),
         message: Set(Some(message.clone())),
         extra: Set(Some(json!({
             "session": config.session.hostname,
@@ -83,114 +95,169 @@ pub async fn handle(
 
 #[cfg(test)]
 mod tests {
-    use chrono::SubsecRound;
-    use kageshirei_srv_test_helper::tests::{drop_database, generate_test_user, make_pool};
-    use serial_test::serial;
-    use srv_mod_database::models::command::CreateCommand;
+    use std::sync::Arc;
+
+    use chrono::Utc;
+    use srv_mod_entity::{
+        entities::user,
+        sea_orm::{Database, DatabaseConnection, DbErr, TransactionTrait},
+    };
+    use tokio::sync::broadcast;
 
     use super::*;
-    use crate::session_terminal_emulator::history::{HistoryRecord, TerminalSessionHistoryArguments};
+    use crate::command_handler::{HandleArguments, HandleArgumentsSession, HandleArgumentsUser};
+
+    async fn cleanup(db: DatabaseConnection) {
+        db.transaction::<_, (), DbErr>(|txn| {
+            Box::pin(async move {
+                terminal_history::Entity::delete_many()
+                    .exec(txn)
+                    .await
+                    .unwrap();
+
+                user::Entity::delete_many().exec(txn).await.unwrap();
+
+                Ok(())
+            })
+        })
+        .await
+        .unwrap();
+    }
+
+    async fn init() -> DatabaseConnection {
+        let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
+            .await
+            .unwrap();
+
+        cleanup(db_pool.clone()).await;
+
+        let usr = user::Entity::insert(user::ActiveModel {
+            id:         Set("test".to_owned()),
+            username:   Set("test".to_owned()),
+            password:   Set("test".to_owned()),
+            created_at: Set(Utc::now().naive_utc()),
+            updated_at: Set(Utc::now().naive_utc()),
+        })
+        .exec_with_returning(&db_pool)
+        .await
+        .unwrap();
+
+        terminal_history::Entity::insert_many(vec![
+            terminal_history::ActiveModel {
+                id:               Set("1".to_owned()),
+                ran_by:           Set(usr.id.clone()),
+                command:          Set("test".to_owned()),
+                session_id:       Set(None),
+                is_global:        Set(true),
+                output:           Set(Some("test".to_owned())),
+                exit_code:        Set(Some(1)),
+                sequence_counter: Default::default(),
+                deleted_at:       Set(Some(Utc::now().naive_utc())),
+                restored_at:      Set(None),
+                created_at:       Set(Utc::now().naive_utc()),
+                updated_at:       Set(Utc::now().naive_utc()),
+            },
+            terminal_history::ActiveModel {
+                id:               Set("2".to_owned()),
+                ran_by:           Set(usr.id.clone()),
+                command:          Set("test".to_owned()),
+                session_id:       Set(None),
+                is_global:        Set(true),
+                output:           Set(Some("test".to_owned())),
+                exit_code:        Set(Some(1)),
+                sequence_counter: Default::default(),
+                deleted_at:       Set(Some(Utc::now().naive_utc())),
+                restored_at:      Set(None),
+                created_at:       Set(Utc::now().naive_utc()),
+                updated_at:       Set(Utc::now().naive_utc()),
+            },
+            terminal_history::ActiveModel {
+                id:               Set("3".to_owned()),
+                ran_by:           Set(usr.id.clone()),
+                command:          Set("test".to_owned()),
+                session_id:       Set(None),
+                is_global:        Set(true),
+                output:           Set(Some("test".to_owned())),
+                exit_code:        Set(Some(1)),
+                sequence_counter: Default::default(),
+                deleted_at:       Set(Some(Utc::now().naive_utc())),
+                restored_at:      Set(None),
+                created_at:       Set(Utc::now().naive_utc()),
+                updated_at:       Set(Utc::now().naive_utc()),
+            },
+        ])
+        .exec(&db_pool)
+        .await
+        .unwrap();
+
+        db_pool
+    }
 
     #[tokio::test]
-    #[serial]
-    async fn test_handle_history_display() {
-        drop_database().await;
-        let db_pool = make_pool().await;
+    #[serial_test::serial]
+    async fn test_handle_success() {
+        // Mock database setup
+        let db = init().await;
 
-        let user = generate_test_user(db_pool.clone()).await;
+        // Mock broadcast channel
+        let (sender, mut receiver) = broadcast::channel(1);
 
-        let session_id_v = "global";
-        let args = TerminalSessionHistoryArguments {
-            command: None,
-        };
+        // Create command handler arguments
+        let config = Arc::new(HandleArguments {
+            session:          HandleArgumentsSession {
+                session_id: "global".to_owned(),
+                hostname:   "kageshirei".to_owned(),
+            },
+            user:             HandleArgumentsUser {
+                user_id:  "test".to_owned(),
+                username: "test".to_owned(),
+            },
+            db_pool:          db,
+            broadcast_sender: sender,
+        });
 
-        let binding = db_pool.clone();
-
-        let mut to_restore = vec![];
-
-        // open a scope to automatically drop the connection once exited
-        {
-            let mut connection = binding.get().await.unwrap();
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "ls".to_string();
-            cmd.deleted_at = Some(chrono::Utc::now().trunc_subsecs(6));
-            to_restore.push(cmd.id.clone());
-
-            // Insert a dummy command
-            let inserted_command_0 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_0.deleted_at, cmd.deleted_at);
-            assert_eq!(inserted_command_0.restored_at, None);
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "pwd".to_string();
-            cmd.deleted_at = Some(chrono::Utc::now().trunc_subsecs(6));
-            to_restore.push(cmd.id.clone());
-
-            let inserted_command_1 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_1.deleted_at, cmd.deleted_at);
-            assert_eq!(inserted_command_1.restored_at, None);
-
-            let mut cmd = CreateCommand::new(user.id.clone(), session_id_v.to_string());
-            cmd.command = "cd ..".to_string();
-
-            let inserted_command_2 = diesel::insert_into(commands::table)
-                .values(&cmd)
-                .returning(Command::as_select())
-                .get_result(&mut connection)
-                .await
-                .unwrap();
-
-            assert_eq!(inserted_command_2.deleted_at, None);
-            assert_eq!(inserted_command_2.restored_at, None);
-        }
-
-        assert_eq!(to_restore.len(), 2);
-
-        let result = crate::session_terminal_emulator::history::handle(session_id_v, db_pool.clone(), &args).await;
-
-        assert!(result.is_ok());
-        let result = result.unwrap();
-        let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
-
-        assert_eq!(deserialized.len(), 1);
-        assert_eq!(deserialized[0].command, "cd ..");
-
+        // Define input arguments
         let args = TerminalSessionHistoryRestoreArguments {
-            command_ids: to_restore,
+            command_ids: vec![1, 2, 3],
         };
-        let restored = handle(session_id_v, db_pool.clone(), &args).await;
 
-        assert!(restored.is_ok());
-        let restored = restored.unwrap();
-        assert_eq!(restored, "Restored 2 commands");
+        // Call the function
+        let result = handle(config, &args).await;
 
-        let args = TerminalSessionHistoryArguments {
-            command: None,
-        };
-        let result = crate::session_terminal_emulator::history::handle(session_id_v, db_pool.clone(), &args).await;
-
+        // Assert success
         assert!(result.is_ok());
-        let result = result.unwrap();
-        let deserialized = serde_json::from_str::<Vec<HistoryRecord>>(result.as_str()).unwrap();
+        assert_eq!(result.unwrap(), "Restored 3 command(s)");
 
-        assert_eq!(deserialized.len(), 3);
-        assert_eq!(deserialized[0].command, "ls");
-        assert_eq!(deserialized[1].command, "pwd");
-        assert_eq!(deserialized[2].command, "cd ..");
+        // Verify the broadcasted message
+        if let Ok(event) = receiver.recv().await {
+            assert_eq!(event.event, EventType::Log);
+            assert!(event.data.contains("Restored 3 command(s)"));
+        }
+    }
 
-        drop_database().await;
+    #[test]
+    fn test_make_sequence_counter_condition() {
+        use srv_mod_entity::{
+            entities::terminal_history,
+            sea_orm::{ColumnTrait, Condition},
+        };
+
+        // Define test input
+        let ids = vec![1, 2, 3];
+
+        // Generate condition
+        let condition = make_sequence_counter_condition(ids);
+
+        // Expected condition
+        let expected_condition = Condition::any()
+            .add(terminal_history::Column::SequenceCounter.eq(1i64))
+            .add(terminal_history::Column::SequenceCounter.eq(2i64))
+            .add(terminal_history::Column::SequenceCounter.eq(3i64));
+
+        // Assert the conditions match
+        assert_eq!(
+            format!("{:?}", condition),
+            format!("{:?}", expected_condition)
+        );
     }
 }

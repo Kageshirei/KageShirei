@@ -17,7 +17,9 @@ pub struct Model {
     pub name:             String,
     pub kill_date:        Option<DateTime>,
     pub working_hours:    Option<Vec<Time>>,
+    #[sea_orm(select_as = "text", save_as = "interval")]
     pub polling_interval: String,
+    #[sea_orm(select_as = "text", save_as = "interval")]
     pub polling_jitter:   String,
     pub created_at:       DateTime,
     pub updated_at:       DateTime,
@@ -42,14 +44,28 @@ impl Model {
         let working_hours = self.working_hours.as_ref().unwrap();
 
         // Check if the working hours are in pairs, e.g. 09:00-17:00
-        if working_hours.len() % 2 != 0 {
+        // Barrett reduction, equivalent to working_hours.len() % 2 != 0
+        if working_hours.len() & 1 != 0 {
             return false;
         }
 
+        // Barrett reduction, equivalent to working_hours.len() / 2
+        let upper_bound = working_hours.len() >> 1;
         // Check if the working hours are ordered (each start time is before the end time)
-        for i in 0 .. working_hours.len() / 2 {
-            let start = working_hours[i * 2];
-            let end = working_hours[i * 2 + 1];
+        for i in 0 .. upper_bound {
+            let start_index = i.saturating_mul(2);
+            let end_index = start_index.saturating_add(1);
+
+            let start = working_hours.get(start_index);
+            if start.is_none() {
+                return false;
+            }
+
+            let end = working_hours.get(end_index);
+            if end.is_none() {
+                return false;
+            }
+
             if start >= end {
                 return false;
             }
@@ -64,7 +80,17 @@ impl Model {
     ///
     /// The polling interval as a `Duration` if it is valid, an error message otherwise
     pub fn get_polling_interval(&self) -> Result<Duration, String> {
-        let interval = humantime::parse_duration(&self.polling_interval);
+        let fragments = self.polling_interval.split(":").collect::<Vec<&str>>();
+        let interval = humantime::parse_duration(
+            format!(
+                "{}h {}m {}s",
+                fragments.first().unwrap_or(&"0"),
+                fragments.get(1).unwrap_or(&"0"),
+                fragments.last().unwrap_or(&"0")
+            )
+            .as_ref(),
+        );
+
         match interval {
             Ok(interval) => Ok(interval),
             Err(e) => Err(format!("Invalid polling interval: {}", e)),
@@ -77,7 +103,17 @@ impl Model {
     ///
     /// The polling jitter as a `Duration` if it is valid, an error message otherwise
     pub fn get_polling_jitter(&self) -> Result<Duration, String> {
-        let jitter = humantime::parse_duration(&self.polling_jitter);
+        let fragments = self.polling_jitter.split(":").collect::<Vec<&str>>();
+        let jitter = humantime::parse_duration(
+            format!(
+                "{}h {}m {}s",
+                fragments.first().unwrap_or(&"0"),
+                fragments.get(1).unwrap_or(&"0"),
+                fragments.last().unwrap_or(&"0")
+            )
+            .as_ref(),
+        );
+
         match jitter {
             Ok(jitter) => Ok(jitter),
             Err(e) => Err(format!("Invalid polling jitter: {}", e)),
@@ -174,14 +210,29 @@ impl ActiveModel {
         let working_hours = working_hours.as_ref().unwrap();
 
         // Check if the working hours are in pairs, e.g. 09:00-17:00
-        if working_hours.len() % 2 != 0 {
+        // Barrett reduction, equivalent to working_hours.len() % 2 != 0
+        if working_hours.len() & 1 != 0 {
             return false;
         }
 
+        // Barrett reduction, equivalent to working_hours.len() / 2
+        let upper_bound = working_hours.len() >> 1;
+
         // Check if the working hours are ordered (each start time is before the end time)
-        for i in 0 .. working_hours.len() / 2 {
-            let start = working_hours[i * 2];
-            let end = working_hours[i * 2 + 1];
+        for i in 0 .. upper_bound {
+            let start_index = i.saturating_mul(2);
+            let end_index = start_index.saturating_add(1);
+
+            let start = working_hours.get(start_index);
+            if start.is_none() {
+                return false;
+            }
+
+            let end = working_hours.get(end_index);
+            if end.is_none() {
+                return false;
+            }
+
             if start >= end {
                 return false;
             }

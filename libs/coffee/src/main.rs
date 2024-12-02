@@ -28,7 +28,8 @@ struct Args {
     #[clap(default_value = "1")]
     verbosity: Option<u8>,
 
-    /// Arguments to the BOF passed after the "--" delimiter, supported types are: str, wstr, int, short
+    /// Arguments to the BOF passed after the "--" delimiter, supported types are: str, wstr, int,
+    /// short
     #[clap(last = true)]
     args: Vec<String>,
 }
@@ -117,7 +118,7 @@ fn main() -> Result<()> {
         .args
         .split(|arg| arg == "--")
         .flat_map(|args| args.iter())
-        .map(|arg| arg.clone())
+        .cloned()
         .collect();
 
     debug!("Arguments: {:?}", after_delimiter_args);

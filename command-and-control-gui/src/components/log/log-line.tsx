@@ -34,7 +34,7 @@ export const LogLine: FC<{
             </div>
             <div className="flex flex-nowrap">
                 {
-                    Object.entries(log.extra).map(([ key, value ], index) => (
+                    log.extra && Object.entries(log.extra).map(([ key, value ], index) => (
                         <div key={ key }
                              className={ "flex items-center" }
                         >

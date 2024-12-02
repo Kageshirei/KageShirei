@@ -1,3 +1,5 @@
+/// A crate for performing indirect syscalls on x86 and x86_64 architectures.
+/// It provides macros and functions to execute syscalls with dynamic syscall numbers and addresses.
 use core::arch::global_asm;
 
 /// Macro to run a syscall with a given syscall number (`ssn`) and address (`addr`).
@@ -17,7 +19,7 @@ use core::arch::global_asm;
 /// and syscall address are valid and that the syscall is safe to execute.
 #[cfg(target_arch = "x86_64")]
 #[macro_export]
-macro_rules! run_syscall {
+macro_rules! run {
     ($ssn:expr, $addr:expr, $($y:expr), +) => {
         {
             // Initialize the argument count to zero

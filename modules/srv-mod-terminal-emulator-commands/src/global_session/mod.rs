@@ -1,0 +1,73 @@
+use clap::{Parser, Subcommand};
+use serde::Serialize;
+
+use crate::{
+    command_handler::{CommandHandler, CommandHandlerArguments},
+    global_session::{make::TerminalSessionMakeArguments, session::GlobalSessionTerminalSessionsArguments},
+    session_terminal_emulator::{
+        clear,
+        clear::TerminalSessionClearArguments,
+        exit,
+        history,
+        history::TerminalSessionHistoryArguments,
+    },
+};
+mod make;
+mod session;
+
+#[derive(Parser, Debug, PartialEq, Eq, Serialize)]
+#[command(about, long_about = None, no_binary_name(true), bin_name = "")]
+#[expect(
+    clippy::module_name_repetitions,
+    reason = "Module name repeated to avoid confusion with the session context"
+)]
+pub struct GlobalSessionTerminalEmulatorCommands {
+    /// Turn debugging information on
+    #[arg(
+		short,
+		long,
+		action = clap::ArgAction::Count,
+		global = true,
+		long_help = r#"Turn debugging information on.
+
+The more occurrences increase the verbosity level
+- 0: No debugging information
+- 1: Debugging information
+- 2: Debug and trace information"#)]
+    pub debug: u8,
+
+    #[command(subcommand)]
+    pub command: Commands,
+}
+
+#[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
+pub enum Commands {
+    /// Clear the terminal screen
+    #[serde(rename = "clear")]
+    Clear(TerminalSessionClearArguments),
+    /// Exit the terminal session, closing the terminal emulator
+    #[serde(rename = "exit")]
+    Exit,
+    /// Get the history of the terminal session and operate on it
+    #[serde(rename = "history")]
+    History(TerminalSessionHistoryArguments),
+    /// List terminal sessions or open the terminal session for the provided hostnames
+    #[serde(rename = "sessions")]
+    Sessions(GlobalSessionTerminalSessionsArguments),
+    /// Generate something
+    #[serde(rename = "make")]
+    Make(TerminalSessionMakeArguments),
+}
+
+impl CommandHandler for GlobalSessionTerminalEmulatorCommands {
+    async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
+        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
+        match &self.command {
+            Commands::Clear(args) => clear::handle(config, args).await,
+            Commands::Exit => exit::handle(config).await,
+            Commands::History(args) => history::handle(config, args).await,
+            Commands::Sessions(args) => session::handle(config, args).await,
+            Commands::Make(args) => make::handle(config, args).await,
+        }
+    }
+}

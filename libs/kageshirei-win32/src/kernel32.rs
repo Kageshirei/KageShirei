@@ -53,25 +53,31 @@ pub type GetConsoleWindow = unsafe extern "system" fn() -> *mut c_void;
 
 pub struct Kernel32 {
     pub module_base:        *mut u8,
-    pub create_pipe:        CreatePipe,
-    pub write_file:         WriteFile,
-    pub read_file:          ReadFile,
-    pub create_process_w:   CreateProcessW,
-    pub get_console_window: GetConsoleWindow,
+    pub create_pipe:        Option<CreatePipe>,
+    pub write_file:         Option<WriteFile>,
+    pub read_file:          Option<ReadFile>,
+    pub create_process_w:   Option<CreateProcessW>,
+    pub get_console_window: Option<GetConsoleWindow>,
+}
+
+impl Default for Kernel32 {
+    fn default() -> Self { Self::new() }
 }
 
 impl Kernel32 {
     pub fn new() -> Self {
-        Kernel32 {
+        Self {
             module_base:        null_mut(),
-            create_pipe:        unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            write_file:         unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            read_file:          unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            create_process_w:   unsafe { core::mem::transmute(null_mut::<c_void>()) },
-            get_console_window: unsafe { core::mem::transmute(null_mut::<c_void>()) },
+            create_pipe:        None,
+            write_file:         None,
+            read_file:          None,
+            create_process_w:   None,
+            get_console_window: None,
         }
     }
 }
 
+// Safety: Kernel32 is a safe wrapper around the Windows API.
 unsafe impl Sync for Kernel32 {}
+// Safety: Kernel32 is a safe wrapper around the Windows API.
 unsafe impl Send for Kernel32 {}

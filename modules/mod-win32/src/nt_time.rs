@@ -17,7 +17,7 @@ use mod_agentcore::instance;
 ///     The current timestamp in Unix format (i64).
 pub fn current_timestamp() -> i64 {
     unsafe {
-        let mut system_time: LargeInteger = LargeInteger::new();
+        let mut system_time = LargeInteger::new();
 
         // Loop to ensure consistent read of system time
         // The loop reads high1_time and low_part, and checks if high1_time is equal to high2_time
@@ -39,13 +39,17 @@ pub fn current_timestamp() -> i64 {
         // Convert the system time from 100-nanosecond intervals since January 1, 1601 (UTC)
         // to seconds since January 1, 1970 (Unix epoch time).
         // 11644473600 seconds is the difference between the two epochs.
-        let unix_epoch_time: i64 = (system_time_100ns / 10_000_000) as i64 - 11_644_473_600;
+        let (seconds_from_1601, _) = system_time_100ns.overflowing_div(10_000_000);
+
+        // Subtract the difference between the two epochs (11644473600 seconds)
+        let (unix_epoch_time, _) = (seconds_from_1601 as i64).overflowing_sub(11_644_473_600);
 
         unix_epoch_time
     }
 }
 
-/// Checks the provided kill date against the current timestamp and exits if the current time exceeds the kill date.
+/// Checks the provided kill date against the current timestamp and exits if the current time
+/// exceeds the kill date.
 ///
 /// Args:
 ///     opt_timestamp (Option<i64>): The optional Unix timestamp representing the kill date.
@@ -71,7 +75,8 @@ pub fn check_kill_date(opt_timestamp: Option<i64>) -> bool {
 ///     seconds (i64): The duration to delay in seconds.
 pub fn delay(seconds: i64) {
     // Convert seconds to 100-nanosecond intervals
-    let delay_interval = -seconds * 10_000_000;
+    let (interval, _) = seconds.overflowing_mul(10_000_000);
+    let (delay_interval, _) = interval.overflowing_neg();
 
     // Call NtDelayExecution
     unsafe {
@@ -82,9 +87,11 @@ pub fn delay(seconds: i64) {
     }
 }
 
-/// Converts a Unix timestamp (seconds since January 1, 1970) to a human-readable date and time format.
+/// Converts a Unix timestamp (seconds since January 1, 1970) to a human-readable date and time
+/// format.
 ///
-/// The function returns a tuple representing the date and time in the format (year, month, day, hour, minute, second).
+/// The function returns a tuple representing the date and time in the format (year, month, day,
+/// hour, minute, second).
 ///
 /// # Arguments
 ///
@@ -93,42 +100,65 @@ pub fn delay(seconds: i64) {
 /// # Returns
 ///
 /// * A tuple (year, month, day, hour, minute, second) representing the corresponding date and time.
-pub fn timestamp_to_datetime(timestamp: i64) -> (i64, u8, u8, u8, u8, u8) {
+pub const fn timestamp_to_datetime(timestamp: i64) -> (i64, u8, u8, u8, u8, u8) {
     // Number of days since Unix epoch (January 1, 1970)
-    let days = timestamp / 86_400;
-    let mut seconds = timestamp % 86_400;
+    let (days, _) = timestamp.overflowing_div(86_400);
+    let (mut seconds, _) = timestamp.overflowing_sub(days.overflowing_mul(86_400).0);
 
     // Calculate hour, minute, and second
-    let hour = (seconds / 3_600) as u8;
-    seconds %= 3_600;
-    let minute = (seconds / 60) as u8;
-    let second = (seconds % 60) as u8;
+    let (hours, _) = seconds.overflowing_div(3_600);
+    seconds = seconds.overflowing_sub(hours.overflowing_mul(3_600).0).0;
+    let (minutes, _) = seconds.overflowing_div(60);
+    let second = seconds.overflowing_sub(minutes.overflowing_mul(60).0).0 as u8;
+
+    let hour = hours as u8;
+    let minute = minutes as u8;
 
     // Calculate year, month, and day
     let mut year = 1970;
     let mut remaining_days = days;
 
     while remaining_days >= days_in_year(year) {
-        remaining_days -= days_in_year(year);
-        year += 1;
+        remaining_days = remaining_days.overflowing_sub(days_in_year(year)).0;
+        year = year.overflowing_add(1).0;
     }
 
     let mut month = 0;
     while remaining_days >= days_in_month(year, month) {
-        remaining_days -= days_in_month(year, month);
-        month += 1;
+        remaining_days = remaining_days.overflowing_sub(days_in_month(year, month)).0;
+        month = month.overflowing_add(1).0;
     }
 
-    let day = remaining_days + 1; // day starts from 1
+    let day = remaining_days.overflowing_add(1).0; // day starts from 1
 
-    (year, (month + 1) as u8, day as u8, hour, minute, second)
+    (
+        year,
+        (month.overflowing_add(1).0) as u8,
+        day as u8,
+        hour,
+        minute,
+        second,
+    )
 }
 
+// const fn is_leap_year(year: i64) -> bool { (year % 4 == 0 && year % 100 != 0) || (year % 400 ==
+// 0) }
 /// Helper function to determine if a year is a leap year.
-fn is_leap_year(year: i64) -> bool { (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) }
+/// Helper function to determine if a year is a leap year.
+const fn is_leap_year(year: i64) -> bool {
+    let (div_by_4, _) = year.overflowing_div(4);
+    let (div_by_100, _) = year.overflowing_div(100);
+    let (div_by_400, _) = year.overflowing_div(400);
+
+    let (mul_4, _) = div_by_4.overflowing_mul(4);
+    let (mul_100, _) = div_by_100.overflowing_mul(100);
+    let (mul_400, _) = div_by_400.overflowing_mul(400);
+
+    (mul_4 == year && mul_100 != year) || (mul_400 == year)
+}
 
 /// Helper function to return the number of days in a year.
-fn days_in_year(year: i64) -> i64 {
+const fn days_in_year(year: i64) -> i64 {
     if is_leap_year(year) {
         366
     }
@@ -138,7 +168,7 @@ fn days_in_year(year: i64) -> i64 {
 }
 
 /// Helper function to return the number of days in a specific month of a year.
-fn days_in_month(year: i64, month: usize) -> i64 {
+const fn days_in_month(year: i64, month: usize) -> i64 {
     match month {
         0 => 31, // January
         1 => {
@@ -173,7 +203,7 @@ fn days_in_month(year: i64, month: usize) -> i64 {
 /// * `seconds_to_wait` - The number of seconds to wait.
 pub fn wait_until(seconds_to_wait: i64) {
     let start_time = current_timestamp(); // Get the current time
-    let target_time = start_time + seconds_to_wait; // Calculate the target timestamp
+    let target_time = start_time.overflowing_add(seconds_to_wait).0; // Calculate the target timestamp
 
     // Loop until the current timestamp reaches or exceeds the target timestamp
     loop {
@@ -195,8 +225,8 @@ pub fn wait_until(seconds_to_wait: i64) {
 /// to trigger a `continue` in the caller.
 ///
 /// # Arguments
-/// * `working_hours` - A reference to a vector containing the start and end times as Unix timestamps. The vector should
-///   have two elements: `Some(start)` and `Some(end)`.
+/// * `working_hours` - A reference to a vector containing the start and end times as Unix
+///   timestamps. The vector should have two elements: `Some(start)` and `Some(end)`.
 ///
 /// # Returns
 /// * `bool` - Returns `true` if the current time is within working hours, otherwise `false`.
@@ -205,9 +235,12 @@ pub fn is_working_hours(working_hours: &Option<Vec<Option<i64>>>) -> bool {
     let current_time = current_timestamp();
 
     // Check if working hours are defined
-    if let Some(hours) = working_hours {
+    if let Some(hours) = working_hours.as_ref() {
         // Ensure that both start and end are present
-        if let (Some(start), Some(end)) = (hours.get(0).and_then(|&s| s), hours.get(1).and_then(|&e| e)) {
+        if let (Some(start), Some(end)) = (
+            hours.first().and_then(|&s| s),
+            hours.get(1).and_then(|&e| e),
+        ) {
             // Check if the current time is outside the working hours
             if current_time < start || current_time > end {
                 return false; // We are outside working hours
@@ -237,24 +270,23 @@ mod tests {
 
         // Convert the timestamp to a readable format
         let datetime = DateTime::from_timestamp(timestamp, 0);
-        libc_println!("Current datetime: {}", datetime.unwrap());
+        assert!(datetime.is_some());
     }
 
     #[test]
     fn test_timestamp_to_datetime() {
         let timestamp = current_timestamp();
-        libc_println!("Current timestamp: {}", timestamp);
 
         let datetime = timestamp_to_datetime(timestamp);
-        libc_println!(
-            "Current datetime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-            datetime.0,
-            datetime.1,
-            datetime.2,
-            datetime.3,
-            datetime.4,
-            datetime.5
-        );
+        // libc_println!(
+        //     "Current datetime: {:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+        //     datetime.0,
+        //     datetime.1,
+        //     datetime.2,
+        //     datetime.3,
+        //     datetime.4,
+        //     datetime.5
+        // );
 
         // Basic assertion to check if year is reasonable
         assert!(datetime.0 >= 1970);
@@ -285,21 +317,6 @@ mod tests {
             libc_println!("Exit...");
         }
         assert!(should_exit);
-    }
-
-    #[test]
-    fn test_delay_execution() {
-        libc_println!("Starting delay...");
-
-        // Esegui un ritardo di 2 secondi
-        delay(2);
-
-        libc_println!("Delay of 2 seconds completed");
-
-        // Esegui un ritardo di 5 secondi
-        delay(15);
-
-        libc_println!("Delay of 5 seconds completed");
     }
 
     #[test]

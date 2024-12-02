@@ -1,10 +1,7 @@
 extern crate alloc;
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
-use core::{ptr::null_mut, slice};
+use alloc::{borrow::ToOwned as _, string::String, vec::Vec};
+use core::{ops::Div as _, ptr::null_mut, slice};
 
 use kageshirei_win32::{
     ntdef::{
@@ -31,8 +28,8 @@ use mod_agentcore::instance;
 /// - `key`: A string slice containing the path to the registry key that needs to be opened.
 ///
 /// # Returns
-/// - `Result<HANDLE, i32>`: A result containing the handle to the opened registry key if successful, otherwise an error
-///   code (`NTSTATUS`) indicating the reason for failure.
+/// - `Result<HANDLE, i32>`: A result containing the handle to the opened registry key if
+///   successful, otherwise an error code (`NTSTATUS`) indicating the reason for failure.
 ///
 /// # Details
 /// This function uses the following NT API function:
@@ -79,20 +76,20 @@ pub unsafe fn nt_open_key(key: &str) -> Result<HANDLE, i32> {
 ///
 /// This function initializes a `UnicodeString` for the value name,
 /// and then calls the `NtQueryValueKey` syscall to retrieve the value data.
-/// If the initial buffer size is insufficient, the function reallocates the buffer based on the required length
-/// and retries the call until it either succeeds or fails with a different error.
+/// If the initial buffer size is insufficient, the function reallocates the buffer based on the
+/// required length and retries the call until it either succeeds or fails with a different error.
 ///
 /// # Parameters
 /// - `key_handle`: The handle to the open registry key from which the value will be read.
 /// - `value_name`: A string slice that specifies the name of the registry value to be read.
 ///
 /// # Returns
-/// - `Result<String, i32>`: A result containing the value content as a string if successful, or an error code
-///   (`NTSTATUS`) if the operation fails.
+/// - `Result<String, i32>`: A result containing the value content as a string if successful, or an
+///   error code (`NTSTATUS`) if the operation fails.
 ///
 /// # Safety
-/// This function is marked as unsafe because it directly interacts with raw pointers and performs low-level
-/// system calls, which can result in undefined behavior if not handled correctly.
+/// This function is marked as unsafe because it directly interacts with raw pointers and performs
+/// low-level system calls, which can result in undefined behavior if not handled correctly.
 pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result<String, i32> {
     // Convert the value name to a UTF-16 encoded string
     let value_utf16_string: Vec<u16> = value_name.encode_utf16().chain(Some(0)).collect();
@@ -141,12 +138,15 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
     let data_length = value_info_ref.data_length as usize;
 
     // Extract the data as a UTF-16 string
-    let data_slice = slice::from_raw_parts(value_info_ref.data.as_ptr() as *const u16, data_length / 2);
+    let data_slice = slice::from_raw_parts(
+        value_info_ref.data.as_ptr() as *const u16,
+        data_length.div(2),
+    );
 
     // Convert the UTF-16 string to a Rust string and remove trailing null characters
-    let value = String::from_utf16_lossy(&data_slice)
+    let value = String::from_utf16_lossy(data_slice)
         .trim_end_matches('\0')
-        .to_string();
+        .to_owned();
 
     Ok(value) // Return the value as a string
 }
@@ -161,12 +161,12 @@ pub unsafe fn nt_query_value_key(key_handle: HANDLE, value_name: &str) -> Result
 /// - `key`: A string slice that specifies the path to the registry key to be enumerated.
 ///
 /// # Returns
-/// - `Result<Vec<String>, i32>`: A result containing a vector of sub-key names if successful, or an error code
-///   (`NTSTATUS`) if the operation fails.
+/// - `Result<Vec<String>, i32>`: A result containing a vector of sub-key names if successful, or an
+///   error code (`NTSTATUS`) if the operation fails.
 ///
 /// # Safety
-/// This function is marked as unsafe because it directly interacts with raw pointers and performs low-level
-/// system calls, which can result in undefined behavior if not handled correctly.
+/// This function is marked as unsafe because it directly interacts with raw pointers and performs
+/// low-level system calls, which can result in undefined behavior if not handled correctly.
 pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
     // Open the registry key
     let key_handle = nt_open_key(key)?;
@@ -181,11 +181,11 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
         // Call NtEnumerateKey to retrieve the next sub-key name
         let status = instance().ntdll.nt_enumerate_key.run(
             key_handle,
-            index,                                // Index of the sub-key to enumerate
-            0,                                    // Key information class (0 for KeyBasicInformation)
-            result_buffer.as_mut_ptr() as *mut _, // Buffer to receive the sub-key information
-            result_buffer.len() as u32 * 2,       // Buffer length in bytes
-            &mut result_length,                   // Variable to receive the length of the result
+            index,                                           // Index of the sub-key to enumerate
+            0,                                               // Key information class (0 for KeyBasicInformation)
+            result_buffer.as_mut_ptr() as *mut _,            // Buffer to receive the sub-key information
+            result_buffer.len().overflowing_mul(2).0 as u32, // Buffer length in bytes
+            &mut result_length,                              // Variable to receive the length of the result
         );
 
         // Check the status of the operation
@@ -207,12 +207,12 @@ pub unsafe fn nt_enumerate_key(key: &str) -> Result<Vec<String>, i32> {
 
         // Extract the name of the sub-key
         let name_length = key_info_ref.name_length as usize;
-        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length / 2);
-        let sub_key_name: String = String::from_utf16_lossy(name_slice);
+        let name_slice = slice::from_raw_parts(key_info_ref.name.as_ptr(), name_length.div(2));
+        let sub_key_name = String::from_utf16_lossy(name_slice);
 
         // Store the sub-key name in the vector
         sub_keys.push(sub_key_name);
-        index += 1; // Increment the index to enumerate the next sub-key
+        index = index.overflowing_add(1).0; // Increment the index to enumerate the next sub-key
     }
 
     // Close the registry key handle
@@ -235,15 +235,10 @@ mod tests {
             let registry_key = r"\Registry\Machine\Software\Microsoft\Windows\CurrentVersion";
             match nt_open_key(registry_key) {
                 Ok(handle) => {
-                    libc_println!("Successfully opened registry key: {}\n", registry_key);
+                    libc_println!("Successfully opened registry key, handle: {:p}\n", handle);
                     instance().ntdll.nt_close.run(handle);
                 },
                 Err(status) => {
-                    libc_println!(
-                        "Failed to open registry key: {}. NTSTATUS: {}",
-                        registry_key,
-                        NT_STATUS(status)
-                    );
                     assert!(
                         NT_SUCCESS(status),
                         "Expected success, but got NTSTATUS: {}",

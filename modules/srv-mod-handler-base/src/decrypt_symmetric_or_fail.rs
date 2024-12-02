@@ -1,9 +1,14 @@
-use axum::response::Response;
-use bytes::Bytes;
+//! Decrypt the provided body using the symmetric encryption scheme or fail if the decryption fails
+
 use srv_mod_config::handlers::EncryptionAlgorithm;
 
+use crate::response::BaseHandlerResponse;
+
 /// Decrypt the provided body using the symmetric encryption scheme or fail if the decryption fails
-pub fn decrypt_symmetric_or_fail(algorithm: Option<&EncryptionAlgorithm>, body: Bytes) -> Result<Bytes, Response> {
+pub const fn decrypt_symmetric_or_fail(
+    algorithm: Option<&EncryptionAlgorithm>,
+    body: Vec<u8>,
+) -> Result<Vec<u8>, BaseHandlerResponse> {
     // TODO: Implement the symmetric decryption
     Ok(body)
 }

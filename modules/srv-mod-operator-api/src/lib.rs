@@ -1,18 +1,26 @@
+//! # Operator API Server
+//! Provides an API server for operators.
+
 #![feature(let_chains)]
+#![allow(
+    clippy::integer_division_remainder_used,
+    reason = "mostly present in macros"
+)]
+#![allow(clippy::redundant_pub_crate, reason = "mostly present in macros")]
+extern crate core;
 
 use std::{iter::once, sync::Arc, time::Duration};
 
 use axum::{
     extract::{DefaultBodyLimit, Host, MatchedPath},
-    handler::HandlerWithoutStateExt,
-    http::{header::AUTHORIZATION, Method, Request, StatusCode, Uri},
+    http::{header::AUTHORIZATION, Request, StatusCode, Uri},
     response::{Redirect, Response},
     routing::post,
     Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
 use jwt_keys::{Keys, API_SERVER_JWT_KEYS};
-use kageshirei_utils::{duration_extension::DurationExt, unrecoverable_error::unrecoverable_error};
+use kageshirei_utils::{duration_extension::DurationExt as _, unrecoverable_error::unrecoverable_error};
 use srv_mod_config::SharedConfig;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use state::ApiServerSharedState;
@@ -20,13 +28,12 @@ use tokio::select;
 use tokio_util::sync::CancellationToken;
 use tower_http::{
     catch_panic::CatchPanicLayer,
-    compression::{predicate::NotForContentType, CompressionLayer, DefaultPredicate, Predicate},
-    cors::{Any, Cors, CorsLayer},
+    compression::{predicate::NotForContentType, CompressionLayer, DefaultPredicate, Predicate as _},
+    cors::CorsLayer,
     limit::RequestBodyLimitLayer,
     normalize_path::NormalizePathLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::TraceLayer,
-    validate_request::ValidateRequestHeaderLayer,
 };
 use tracing::{debug, error, info, info_span, warn, Span};
 
@@ -51,8 +58,8 @@ pub async fn start(
         "JWT keys initialized successfully!"
     );
 
-    // create a broadcast channel for the server this is where events will be broadcasted to and retrieved by the sse
-    // endpoint
+    // create a broadcast channel for the server this is where events will be broadcasted to and
+    // retrieved by the sse endpoint
     let (broadcast_sender, _) = tokio::sync::broadcast::channel(128);
 
     // create a shared state for the server
@@ -71,16 +78,11 @@ pub async fn start(
             // add log tracing
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
-                    let matched_path = if let Some(path) = request
+                    let matched_path = request
                         .extensions()
                         .get::<MatchedPath>()
                         .map(MatchedPath::as_str)
-                    {
-                        path
-                    }
-                    else {
-                        "None"
-                    };
+                        .unwrap_or("None");
 
                     info_span!(
                         "http_request",
@@ -144,12 +146,10 @@ pub async fn start(
 
         let listener = tokio::net::TcpListener::bind(format!(
             "{}:{}",
-            if let Some(tls_host) = tls_config.host {
-                tls_host
-            }
-            else {
-                readonly_config.api_server.host.clone()
-            },
+            tls_config.host.map_or_else(
+                || readonly_config.api_server.host.clone(),
+                |tls_host| tls_host
+            ),
             tls_config.port
         ))
         .await;
@@ -182,6 +182,7 @@ pub async fn start(
         readonly_config.api_server.port,
         listener,
     );
+    drop(readonly_config);
 
     info!(address = %listener.local_addr().unwrap(), "Api server listening");
 
@@ -208,7 +209,8 @@ fn unwrap_listener_or_fail(
     listener.unwrap()
 }
 
-/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to complete
+/// Handle the shutdown signal gracefully closing all connections and waiting for all requests to
+/// complete
 async fn handle_graceful_shutdown(context: &str, cancellation_token: CancellationToken) {
     cancellation_token.cancelled().await;
     warn!("{context} api server shutting down");
@@ -272,7 +274,11 @@ fn make_https(host: String, uri: Uri, http_port: u16, https_port: u16) -> Result
     }
 
     let https_host = host.replace(&http_port.to_string(), &https_port.to_string());
-    parts.authority = Some(https_host.parse().map_err(|_| "Invalid authority")?);
+    parts.authority = Some(
+        https_host
+            .parse()
+            .map_err(|_silenced| "Invalid authority")?,
+    );
 
-    Ok(Uri::from_parts(parts).map_err(|_| "Invalid URI")?)
+    Ok(Uri::from_parts(parts).map_err(|_silenced| "Invalid URI")?)
 }

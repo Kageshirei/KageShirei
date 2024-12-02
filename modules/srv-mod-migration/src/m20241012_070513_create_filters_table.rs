@@ -4,31 +4,44 @@ use crate::{
     extension::postgres::Type,
     m20241012_041618_create_agents_table::AgentFieldVariants,
     m20241012_070459_create_agent_profiles_table::AgentProfile,
-    sea_orm::{EnumIter, Iterable},
+    sea_orm::{EnumIter, Iterable as _},
 };
 
+/// The possible fields of an agent
 #[derive(DeriveIden)]
 struct AgentField;
 
+/// The possible filtering operations
 #[derive(DeriveIden)]
 struct FilterOperation;
 
+/// The possible logical operator of filters
 #[derive(DeriveIden)]
 struct LogicalOperator;
 
+/// The possible filtering operations
 #[derive(DeriveIden, EnumIter)]
 enum FilterOperationVariants {
+    /// The filter operation equals
     Equals,
+    /// The filter operation not equals
     NotEquals,
+    /// The filter operation contains
     Contains,
+    /// The filter operation not contains
     NotContains,
+    /// The filter operation starts with
     StartsWith,
+    /// The filter operation ends with
     EndsWith,
 }
 
+/// The possible logical operator of filters
 #[derive(DeriveIden, EnumIter)]
 enum LogicalOperatorVariants {
+    /// The logical operator AND
     And,
+    /// The logical operator OR
     Or,
 }
 
@@ -132,26 +145,44 @@ impl MigrationTrait for Migration {
     }
 }
 
+/// The filters table columns + the table name
 #[derive(DeriveIden)]
 enum Filter {
+    /// The table name
     Table,
+    /// The primary key
     Id,
+    /// The agent profile id
     #[sea_orm(iden = "agent_profile_id")]
+    /// The agent field
     AgentProfileId,
+    /// The agent field
     #[sea_orm(iden = "agent_field")]
     AgentField,
+    /// The filter operation
     #[sea_orm(iden = "filter_op")]
+    #[expect(
+        clippy::enum_variant_names,
+        reason = "The variant names are used as identifiers"
+    )]
     FilterOp,
+    /// The filter value
     Value,
+    /// The filter sequence
     Sequence,
+    /// The next hop relation (and, or)
     #[sea_orm(iden = "next_hop_relation")]
     NextHopRelation,
+    /// Whether this filter is the start of a grouping (parenthesis open)
     #[sea_orm(iden = "grouping_start")]
     GroupingStart,
+    /// Whether this filter is the end of a grouping (parenthesis close)
     #[sea_orm(iden = "grouping_end")]
     GroupingEnd,
+    /// The created at timestamp
     #[sea_orm(iden = "created_at")]
     CreatedAt,
+    /// The updated at timestamp
     #[sea_orm(iden = "updated_at")]
     UpdatedAt,
 }

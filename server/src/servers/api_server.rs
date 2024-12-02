@@ -1,3 +1,5 @@
+//! The API server module.
+
 use srv_mod_config::SharedConfig;
 use srv_mod_entity::sea_orm::DatabaseConnection;
 use srv_mod_operator_api::start;
@@ -20,15 +22,13 @@ pub fn spawn(
     cancellation_token: CancellationToken,
     db: DatabaseConnection,
 ) -> tokio::task::JoinHandle<()> {
-    let api_server_task = start(config.clone(), cancellation_token.clone(), db);
+    let api_server_task = start(config, cancellation_token, db);
 
-    let api_server_thread = tokio::spawn(async move {
+    tokio::spawn(async move {
         let exit_status = api_server_task.await;
 
         if exit_status.is_err() {
             error!("Api server died with error: {}", exit_status.err().unwrap())
         }
-    });
-
-    api_server_thread
+    })
 }
