@@ -1,12 +1,9 @@
-//! Validators for the configuration module
-
 use std::borrow::Cow;
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 use validator::ValidationError;
 
-/// Regular expression to validate an IPv4 address or `localhost`
 pub static IP_V4_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(?:(?:[0-9]{1,3}\.){3}[0-9]{1,3}|localhost)$").unwrap());
 
@@ -36,8 +33,6 @@ pub fn validate_port(port: u16) -> Result<(), ValidationError> {
                 },
             };
 
-            // Safety: OpenProcessToken and GetTokenInformation are unsafe, anyway here we are
-            // only reading the token elevation status
             unsafe {
                 let mut token_handle = ptr::null_mut();
                 if OpenProcessToken(
@@ -55,16 +50,17 @@ pub fn validate_port(port: u16) -> Result<(), ValidationError> {
                         &mut elevation as *mut _ as *mut _,
                         length,
                         &mut length,
-                    ) != 0 &&
-                        elevation.TokenIsElevated != 0
+                    ) != 0
                     {
-                        return Ok(()); // User has administrative privileges
+                        if elevation.TokenIsElevated != 0 {
+                            return Ok(()); // User has administrative privileges
+                        }
                     }
                 }
 
                 // If the process is not elevated, return an error
                 return Err(ValidationError::new("__internal__").with_message(Cow::from(
-                    "Ports below 1024 require administrative privileges to bind",
+                    "Ports below 1024 require administrative privileges on Windows",
                 )));
             }
         }

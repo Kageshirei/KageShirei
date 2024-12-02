@@ -1,5 +1,9 @@
-use alloc::{borrow::ToOwned as _, boxed::Box, format, string::String, vec, vec::Vec};
-use core::{ops::Div as _, str};
+use alloc::{
+    format,
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::str;
 
 use kageshirei_win32::{ntdef::UnicodeString, ntstatus::*};
 
@@ -35,8 +39,7 @@ pub struct ParseUrlResult {
 impl ParseUrlResult {
     /// Creates a new `ParseUrlResult`.
     ///
-    /// This method initializes a new instance of the `ParseUrlResult` struct with the provided
-    /// values.
+    /// This method initializes a new instance of the `ParseUrlResult` struct with the provided values.
     ///
     /// # Arguments
     /// * `scheme` - The scheme of the URL (0x01 for HTTP, 0x02 for HTTPS).
@@ -46,8 +49,8 @@ impl ParseUrlResult {
     ///
     /// # Returns
     /// A new `ParseUrlResult` instance with the provided scheme, hostname, port, and path.
-    pub const fn new(scheme: u16, hostname: String, port: u16, path: String) -> Self {
-        Self {
+    pub fn new(scheme: u16, hostname: String, port: u16, path: String) -> Self {
+        ParseUrlResult {
             scheme,
             hostname,
             port,
@@ -81,37 +84,31 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
         (0x01, url)
     };
 
-    let (hostname, port, path) = rest.find(':').map_or_else(
-        || {
-            rest.find('/').map_or_else(
-                || {
-                    (
-                        rest.to_owned(),
-                        if scheme == 0x01 { 80 } else { 443 },
-                        "/".to_owned(),
-                    )
-                },
-                |pos| {
-                    let (host, path) = rest.split_at(pos);
-                    (
-                        host.to_owned(),
-                        if scheme == 0x01 { 80 } else { 443 },
-                        path.to_owned(),
-                    )
-                },
-            )
-        },
-        |pos| {
-            let (host, port_and_path) = rest.split_at(pos);
-            let mut parts = port_and_path.splitn(2, '/');
-            let port_str = parts.next().unwrap().trim_start_matches(':');
-            let port = port_str
-                .parse()
-                .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
-            let path = parts.next().unwrap_or("");
-            (host.to_owned(), port, format!("/{}", path))
-        },
-    );
+    let (hostname, port, path) = if let Some(pos) = rest.find(':') {
+        let (host, port_and_path) = rest.split_at(pos);
+        let mut parts = port_and_path.splitn(2, '/');
+        let port_str = parts.next().unwrap().trim_start_matches(':');
+        let port = port_str
+            .parse()
+            .unwrap_or(if scheme == 0x01 { 80 } else { 443 });
+        let path = parts.next().unwrap_or("");
+        (host.to_string(), port, format!("/{}", path))
+    }
+    else if let Some(pos) = rest.find('/') {
+        let (host, path) = rest.split_at(pos);
+        (
+            host.to_string(),
+            if scheme == 0x01 { 80 } else { 443 },
+            path.to_string(),
+        )
+    }
+    else {
+        (
+            rest.to_string(),
+            if scheme == 0x01 { 80 } else { 443 },
+            "/".to_string(),
+        )
+    };
 
     ParseUrlResult::new(scheme, hostname, port, path)
 }
@@ -120,6 +117,10 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
 ///
 /// This function takes a `UnicodeString` and converts it into an `Option<String>`.
 /// If the `UnicodeString` is empty or its buffer is null, it returns `None`.
+///
+/// # Safety
+/// This function performs unsafe operations, such as dereferencing raw pointers.
+/// Ensure that the input `UnicodeString` is valid and properly initialized.
 ///
 /// # Parameters
 /// - `unicode_string`: A reference to the `UnicodeString` that needs to be converted.
@@ -133,22 +134,13 @@ pub fn unicodestring_to_string(unicode_string: &UnicodeString) -> Option<String>
     }
 
     // Convert the raw UTF-16 buffer into a Rust slice.
-    // SAFETY: The buffer is assumed to be valid and properly null-terminated.
-    let slice = unsafe {
-        core::slice::from_raw_parts(
-            unicode_string.buffer,
-            (unicode_string.length.div(2)) as usize,
-        )
-    };
+    let slice = unsafe { core::slice::from_raw_parts(unicode_string.buffer, (unicode_string.length / 2) as usize) };
 
     // Attempt to convert the UTF-16 slice into a Rust String.
     String::from_utf16(slice).ok()
 }
 
-#[expect(
-    non_snake_case,
-    reason = "This function is named after the Windows API function."
-)]
+#[allow(non_snake_case)]
 pub fn NT_STATUS(status: i32) -> String {
     match status {
         STATUS_SUCCESS => format!("STATUS_SUCCESS [0x{:08X}]", status),
@@ -230,6 +222,11 @@ pub fn format_named_pipe_string(process_id: usize, pipe_id: u32) -> Vec<u16> {
 ///
 /// # Returns
 /// - A `UnicodeString` containing the UTF-16 encoded version of the input string.
+///
+/// # Safety
+/// This function allocates a buffer for the UTF-16 string and transfers ownership to the `UnicodeString`.
+/// The buffer is not deallocated when `Vec<u16>` goes out of scope, so care must be taken to free the memory if
+/// necessary.
 pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     // Convert the Rust &str to a Vec<u16> (UTF-16 encoding)
     let utf16: Vec<u16> = source.encode_utf16().collect();
@@ -238,30 +235,20 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
     let mut unicode_string = UnicodeString::new();
 
     // Set the length of the UnicodeString (in bytes)
-    unicode_string.length = (utf16.len().overflowing_mul(2).0) as u16;
+    unicode_string.length = (utf16.len() * 2) as u16;
 
     // Set the maximum length, accounting for a null terminator
-    unicode_string.maximum_length = unicode_string.length.overflowing_add(2).0; // +2 for the null terminator
+    unicode_string.maximum_length = unicode_string.length + 2; // +2 for the null terminator
 
     // Clone the UTF-16 vector and append a null terminator
-    let mut utf16_with_null: Box<[u16]> = vec![0; utf16.len()].into_boxed_slice();
+    let mut utf16_with_null = utf16.clone();
+    utf16_with_null.push(0); // Add null terminator
 
-    for (i, &value) in utf16.iter().enumerate() {
-        if let Some(dest) = utf16_with_null.get_mut(i) {
-            *dest = value;
-        }
-    }
-
-    // Add null terminator
-    if let Some(last) = utf16_with_null.get_mut(utf16.len()) {
-        *last = 0;
-    }
-
-    // Prevent Vec from deallocating the buffer when it goes out of scope
+    // Assign the buffer pointer to the UnicodeString
     unicode_string.buffer = utf16_with_null.as_mut_ptr();
 
-    // Prevent Box from deallocating the buffer when it goes out of scope
-    Box::leak(utf16_with_null);
+    // Prevent Vec from deallocating the buffer when it goes out of scope
+    core::mem::forget(utf16_with_null);
 
     unicode_string
 }
@@ -278,18 +265,18 @@ pub fn str_to_unicode_string(source: &str) -> UnicodeString {
 /// - A `String` containing the decoded characters. Returns an empty string if the pointer is null.
 ///
 /// # Safety
-/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a
-/// valid, null-terminated UTF-16 string.
-pub unsafe fn ptr_to_str(ptr: *mut u16) -> String {
+/// This function is unsafe because it operates on raw pointers. It assumes that `ptr` points to a valid,
+/// null-terminated UTF-16 string.
+pub fn ptr_to_str(ptr: *mut u16) -> String {
     if ptr.is_null() {
         return String::new();
     }
 
     // Calculate the length of the string by finding the null terminator
-    let len = (0 ..).take_while(|&i| *ptr.add(i) != 0).count();
+    let len = (0 ..).take_while(|&i| unsafe { *ptr.add(i) } != 0).count();
 
     // Create a slice from the pointer and the calculated length
-    let slice = core::slice::from_raw_parts(ptr, len);
+    let slice = unsafe { core::slice::from_raw_parts(ptr, len) };
 
     // Convert the UTF-16 slice to a Rust String
     String::from_utf16_lossy(slice)
@@ -302,4 +289,4 @@ pub unsafe fn ptr_to_str(ptr: *mut u16) -> String {
 ///
 /// # Returns
 /// `true` if the character is a path separator, `false` otherwise.
-pub const fn is_path_separator(ch: u16) -> bool { ch == '\\' as u16 || ch == '/' as u16 }
+pub fn is_path_separator(ch: u16) -> bool { ch == '\\' as u16 || ch == '/' as u16 }

@@ -13,12 +13,12 @@ pub struct Task {
 }
 
 // Simulated asynchronous task that takes 2 seconds to complete.
-async fn task_type_a() -> String { "Result from task type A".to_owned() }
+async fn task_type_a() -> String { "Result from task type A".to_string() }
 
 // Simulated asynchronous task that takes 3 seconds to complete.
 async fn task_type_b() -> String {
     tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-    "Result from task type B".to_owned()
+    "Result from task type B".to_string()
 }
 
 // Function to handle a task based on its name.
@@ -38,7 +38,7 @@ pub struct TaskSpawner {
 
 impl TaskSpawner {
     // Creates a new TaskSpawner with a given Tokio runtime handle.
-    pub fn new(rt: Handle) -> Self {
+    pub fn new(rt: Handle) -> TaskSpawner {
         let (send, mut recv) = mpsc::channel(16);
 
         rt.spawn(async move {
@@ -47,7 +47,7 @@ impl TaskSpawner {
             }
         });
 
-        Self {
+        TaskSpawner {
             spawn: send,
         }
     }
@@ -106,7 +106,7 @@ mod tests {
         // Spawn 100 tasks with logic for alternating long and short tasks.
         for i in 0 .. 100 {
             let task_name = if i % 2 == 0 {
-                "Long Task".to_owned()
+                "Long Task".to_string()
             }
             else {
                 format!("Test Task {}", i)
@@ -126,7 +126,6 @@ mod tests {
         }
 
         drop(result_tx); // Close the result channel, indicating no more tasks will send results.
-        result_handler.join().unwrap(); // Wait for the result handler to finish processing all
-                                        // results.
+        result_handler.join().unwrap(); // Wait for the result handler to finish processing all results.
     }
 }

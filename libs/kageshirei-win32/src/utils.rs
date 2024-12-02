@@ -1,50 +1,25 @@
-/// Get the length of a string.
-///
-/// # Safety
-///
-/// This function is unsafe because it dereferences a raw pointer.
-/// It's up to the caller to ensure that the pointer is valid.
-///
-/// # Arguments
-///
-/// * `string` - A pointer to a string.
-///
-/// # Returns
-///
-/// The length of the string.
-pub unsafe fn string_length_a(string: *const u8) -> usize {
-    let mut string2 = string;
-    while !(*string2).is_null() {
-        string2 = string2.add(1);
+pub fn string_length_a(string: *const u8) -> usize {
+    unsafe {
+        let mut string2 = string;
+        while !(*string2).is_null() {
+            string2 = string2.add(1);
+        }
+        string2.offset_from(string) as usize
     }
-    string2.offset_from(string) as usize
 }
 
-/// Get the length of a wide string.
-///
-/// # Safety
-///
-/// This function is unsafe because it dereferences a raw pointer.
-/// It's up to the caller to ensure that the pointer is valid.
-///
-/// # Arguments
-///
-/// * `string` - A pointer to a wide string.
-///
-/// # Returns
-///
-/// The length of the wide string.
-pub unsafe fn string_length_w(string: *const u16) -> usize {
-    let mut string2 = string;
-    while !(*string2).is_null() {
-        string2 = string2.add(1);
+pub fn string_length_w(string: *const u16) -> usize {
+    unsafe {
+        let mut string2 = string;
+        while !(*string2).is_null() {
+            string2 = string2.add(1);
+        }
+        string2.offset_from(string) as usize
     }
-    string2.offset_from(string) as usize
 }
 
-/// Trait for checking null terminator.
+// Utility function for checking null terminator for u8 and u16
 trait IsNull {
-    /// Utility function for checking null terminator for u8 and u16
     fn is_null(&self) -> bool;
 }
 
@@ -64,7 +39,7 @@ mod tests {
     #[test]
     fn test_string_length_a() {
         let string = b"hello\0";
-        let length = unsafe { string_length_a(string.as_ptr()) };
+        let length = string_length_a(string.as_ptr());
         assert_eq!(length, 5);
     }
 
@@ -78,7 +53,7 @@ mod tests {
             b'o' as u16,
             0,
         ];
-        let length = unsafe { string_length_w(string.as_ptr()) };
+        let length = string_length_w(string.as_ptr());
         assert_eq!(length, 5);
     }
 }

@@ -1,5 +1,3 @@
-//! Terminal emulator commands handling logic for the terminal emulator on the client side
-
 pub use clap::builder::StyledStr;
 use clap::Parser;
 use serde::{Serialize, Serializer};
@@ -15,7 +13,7 @@ pub mod global_session;
 mod post_process_result;
 pub mod session_terminal_emulator;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Command {
     SessionTerminalEmulatorCommands(SessionTerminalEmulatorCommands),
     GlobalSessionTerminalEmulatorCommands(GlobalSessionTerminalEmulatorCommands),
@@ -26,7 +24,6 @@ impl Serialize for Command {
     where
         S: Serializer,
     {
-        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
         match self {
             Self::SessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
             Self::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.serialize(serializer),
@@ -60,7 +57,7 @@ impl Command {
 
     /// Parse the command from the raw string
     pub fn from_raw(session_id: &str, value: &str) -> Result<Box<Self>, StyledStr> {
-        match session_id {
+        return match session_id {
             // if the session_id is "global", parse the command as a GlobalSessionTerminalEmulatorCommands
             "global" => {
                 let cmd = Self::internal_parse::<GlobalSessionTerminalEmulatorCommands>(value);
@@ -71,16 +68,15 @@ impl Command {
                 let cmd = Self::internal_parse::<SessionTerminalEmulatorCommands>(value);
                 make_result_from_cmd!(cmd, Command::SessionTerminalEmulatorCommands)
             },
-        }
+        };
     }
 }
 
 impl CommandHandler for Command {
     async fn handle_command(&self, config: CommandHandlerArguments) -> Result<String, String> {
-        #[expect(clippy::pattern_type_mismatch, reason = "Cannot move out of self")]
         match self {
-            Self::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
-            Self::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
+            Command::SessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
+            Command::GlobalSessionTerminalEmulatorCommands(cmd) => cmd.handle_command(config).await,
         }
     }
 }

@@ -1,17 +1,13 @@
-//! Generate/make certificate arguments
-
 use std::path::PathBuf;
 
 use clap::{ArgAction::Append, Args};
 use once_cell::sync::Lazy;
 
-/// The default value for the `not before` date
 static NOT_BEFORE: Lazy<String> = Lazy::new(|| -> String {
     let duration = chrono::Utc::now().format("%Y-%m-%d").to_string();
     duration
 });
 
-/// The default value for the `not after` date
 static NOT_AFTER: Lazy<String> = Lazy::new(|| -> String {
     let duration = (chrono::Utc::now() + chrono::Duration::days(365))
         .format("%Y-%m-%d")
@@ -20,7 +16,7 @@ static NOT_AFTER: Lazy<String> = Lazy::new(|| -> String {
 });
 
 /// Generate/make certificate arguments
-#[derive(Args, Debug, PartialEq, Eq)]
+#[derive(Args, Debug, PartialEq)]
 pub struct GenerateCertificateArguments {
     /// Domain names for the certificate, can be specified multiple times
     #[arg(short = 'D', long, action = Append)]

@@ -1,6 +1,6 @@
 use core::{ffi::c_void, fmt};
 
-// WinHTTP access types and flags
+/// WinHTTP access types and flags
 
 /// Indicates that no proxy should be used.
 pub const WINHTTP_ACCESS_TYPE_NO_PROXY: u32 = 1;
@@ -30,14 +30,12 @@ pub const HTTP_QUERY_STATUS_CODE: u32 = 19;
 ///
 /// # Parameters
 /// - `pwszUserAgent`: A string that specifies the name of the application or entity using WinHTTP.
-/// - `dwAccessType`: An unsigned integer that specifies the type of access to the Internet. Can be
-///   one of the following values: `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY` or
-///   `WINHTTP_ACCESS_TYPE_NO_PROXY`.
-/// - `pwszProxyName`: A string that specifies the proxy server to use (ignored if `dwAccessType` is
-///   not `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`).
-/// - `pwszProxyBypass`: A string that specifies an optional list of host names or IP addresses, or
-///   both, that should not be routed through the proxy when `dwAccessType` is
-///   `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`.
+/// - `dwAccessType`: An unsigned integer that specifies the type of access to the Internet. Can be one of the following
+///   values: `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY` or `WINHTTP_ACCESS_TYPE_NO_PROXY`.
+/// - `pwszProxyName`: A string that specifies the proxy server to use (ignored if `dwAccessType` is not
+///   `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`).
+/// - `pwszProxyBypass`: A string that specifies an optional list of host names or IP addresses, or both, that should
+///   not be routed through the proxy when `dwAccessType` is `WINHTTP_ACCESS_TYPE_DEFAULT_PROXY`.
 /// - `dwFlags`: An unsigned integer that can be set to 0 (reserved for future use).
 ///
 /// # Returns
@@ -57,8 +55,7 @@ pub type WinHttpOpenFunc = unsafe extern "system" fn(
 /// # Parameters
 /// - `hSession`: A handle to an HTTP session returned by `WinHttpOpen`.
 /// - `pswzServerName`: A string that specifies the host name of an HTTP server.
-/// - `nServerPort`: An unsigned short that specifies the TCP/IP port number to connect to on the
-///   server.
+/// - `nServerPort`: An unsigned short that specifies the TCP/IP port number to connect to on the server.
 /// - `dwReserved`: An unsigned integer that is reserved and must be 0.
 ///
 /// # Returns
@@ -80,10 +77,10 @@ pub type WinHttpConnectFunc = unsafe extern "system" fn(
 /// - `pwszObjectName`: A string that specifies the target object of the request.
 /// - `pwszVersion`: A string that specifies the HTTP version (can be `NULL` to use HTTP/1.1).
 /// - `pwszReferrer`: A string that specifies the referrer URL (can be `NULL`).
-/// - `ppwszAcceptTypes`: A pointer to a null-terminated array of strings that specify media types
-///   accepted by the client (can be `NULL`).
-/// - `dwFlags`: An unsigned integer that specifies the flags for the request, such as
-///   `WINHTTP_FLAG_BYPASS_PROXY_CACHE` and `WINHTTP_FLAG_SECURE`.
+/// - `ppwszAcceptTypes`: A pointer to a null-terminated array of strings that specify media types accepted by the
+///   client (can be `NULL`).
+/// - `dwFlags`: An unsigned integer that specifies the flags for the request, such as `WINHTTP_FLAG_BYPASS_PROXY_CACHE`
+///   and `WINHTTP_FLAG_SECURE`.
 ///
 /// # Returns
 /// - A handle to the HTTP request if successful, or `NULL` if the function fails.
@@ -133,16 +130,14 @@ pub type WinHttpCloseHandleFunc = unsafe extern "system" fn(hInternet: *mut c_vo
 ///
 /// # Parameters
 /// - `hRequest`: A handle to an HTTP request returned by `WinHttpOpenRequest`.
-/// - `pwszHeaders`: A string that specifies additional headers to append to the request (can be
-///   `NULL`).
-/// - `dwHeadersLength`: An unsigned integer that specifies the length of the additional headers
-///   (use `-1` to specify that the headers are null-terminated).
-/// - `lpOptional`: A pointer to an optional data buffer to send immediately after the request
-///   headers (can be `NULL`).
+/// - `pwszHeaders`: A string that specifies additional headers to append to the request (can be `NULL`).
+/// - `dwHeadersLength`: An unsigned integer that specifies the length of the additional headers (use `-1` to specify
+///   that the headers are null-terminated).
+/// - `lpOptional`: A pointer to an optional data buffer to send immediately after the request headers (can be `NULL`).
 /// - `dwOptionalLength`: An unsigned integer that specifies the length of the optional data.
 /// - `dwTotalLength`: An unsigned integer that specifies the total length of the request.
-/// - `dwContext`: An unsigned integer that specifies an application-defined value that is passed to
-///   the callback function.
+/// - `dwContext`: An unsigned integer that specifies an application-defined value that is passed to the callback
+///   function.
 ///
 /// # Returns
 /// - `TRUE` if successful, or `FALSE` if the function fails.
@@ -163,8 +158,8 @@ pub type WinHttpSendRequestFunc = unsafe extern "system" fn(
 /// # Parameters
 /// - `hRequest`: A handle to an HTTP request returned by `WinHttpOpenRequest`.
 /// - `pwszHeaders`: A string that specifies the headers to append.
-/// - `dwHeadersLength`: An integer that specifies the length of the headers (use `-1` to specify
-///   that the headers are null-terminated).
+/// - `dwHeadersLength`: An integer that specifies the length of the headers (use `-1` to specify that the headers are
+///   null-terminated).
 /// - `dwModifiers`: An unsigned integer that specifies modifiers controlling the action.
 ///
 /// # Returns
@@ -196,8 +191,7 @@ pub type WinHttpReceiveResponseFunc = unsafe extern "system" fn(hRequest: *mut c
 /// - `hRequest`: A handle to an HTTP request returned by `WinHttpOpenRequest`.
 /// - `lpBuffer`: A pointer to a buffer that receives the data.
 /// - `dwNumberOfBytesToRead`: An unsigned integer that specifies the number of bytes to read.
-/// - `lpdwNumberOfBytesRead`: A pointer to an unsigned integer that receives the number of bytes
-///   read.
+/// - `lpdwNumberOfBytesRead`: A pointer to an unsigned integer that receives the number of bytes read.
 ///
 /// # Returns
 /// - `TRUE` if successful, or `FALSE` if the function fails.
@@ -219,8 +213,8 @@ pub type WinHttpReadDataFunc = unsafe extern "system" fn(
 /// - `pwszName`: A string that specifies the header name to query (can be `NULL`).
 /// - `lpBuffer`: A pointer to a buffer that receives the header information.
 /// - `lpdwBufferLength`: A pointer to an unsigned integer that specifies the length of the buffer.
-/// - `lpdwIndex`: A pointer to an unsigned integer that specifies the header index (use `NULL` for
-///   the first occurrence).
+/// - `lpdwIndex`: A pointer to an unsigned integer that specifies the header index (use `NULL` for the first
+///   occurrence).
 ///
 /// # Returns
 /// - `TRUE` if successful, or `FALSE` if the function fails.
@@ -246,8 +240,7 @@ pub type WinHttpGetIEProxyConfigForCurrentUserFunc = unsafe extern "system" fn(p
 
 /// Type definition for the WinHttpGetProxyForUrl function.
 ///
-/// Retrieves the proxy configuration for a specified URL using the WPAD protocol or the URL
-/// provided.
+/// Retrieves the proxy configuration for a specified URL using the WPAD protocol or the URL provided.
 ///
 /// # Parameters
 /// - `hSession`: A handle to an HTTP session returned by `WinHttpOpen`.
@@ -269,22 +262,18 @@ pub type WinHttpGetProxyForUrlFunc = unsafe extern "system" fn(
 /// This structure contains function pointers to the various WinHTTP functions. It allows dynamic
 /// loading of the functions from the WinHTTP library at runtime.
 pub struct WinHttp {
-    pub win_http_open: Option<WinHttpOpenFunc>,
-    pub win_http_connect: Option<WinHttpConnectFunc>,
-    pub win_http_open_request: Option<WinHttpOpenRequestFunc>,
-    pub win_http_set_option: Option<WinHttpSetOptionFunc>,
-    pub win_http_close_handle: Option<WinHttpCloseHandleFunc>,
-    pub win_http_send_request: Option<WinHttpSendRequestFunc>,
-    pub win_http_add_request_headers: Option<WinHttpAddRequestHeadersFunc>,
-    pub win_http_receive_response: Option<WinHttpReceiveResponseFunc>,
-    pub win_http_read_data: Option<WinHttpReadDataFunc>,
-    pub win_http_query_headers: Option<WinHttpQueryHeadersFunc>,
-    pub win_http_get_ie_proxy_config_for_current_user: Option<WinHttpGetIEProxyConfigForCurrentUserFunc>,
-    pub win_http_get_proxy_for_url: Option<WinHttpGetProxyForUrlFunc>,
-}
-
-impl Default for WinHttp {
-    fn default() -> Self { Self::new() }
+    pub win_http_open: WinHttpOpenFunc,
+    pub win_http_connect: WinHttpConnectFunc,
+    pub win_http_open_request: WinHttpOpenRequestFunc,
+    pub win_http_set_option: WinHttpSetOptionFunc,
+    pub win_http_close_handle: WinHttpCloseHandleFunc,
+    pub win_http_send_request: WinHttpSendRequestFunc,
+    pub win_http_add_request_headers: WinHttpAddRequestHeadersFunc,
+    pub win_http_receive_response: WinHttpReceiveResponseFunc,
+    pub win_http_read_data: WinHttpReadDataFunc,
+    pub win_http_query_headers: WinHttpQueryHeadersFunc,
+    pub win_http_get_ie_proxy_config_for_current_user: WinHttpGetIEProxyConfigForCurrentUserFunc,
+    pub win_http_get_proxy_for_url: WinHttpGetProxyForUrlFunc,
 }
 
 impl WinHttp {
@@ -296,19 +285,21 @@ impl WinHttp {
     /// # Returns
     /// A new `WinHttp` instance with uninitialized function pointers.
     pub fn new() -> Self {
-        Self {
-            win_http_open: None,
-            win_http_connect: None,
-            win_http_open_request: None,
-            win_http_set_option: None,
-            win_http_close_handle: None,
-            win_http_send_request: None,
-            win_http_add_request_headers: None,
-            win_http_receive_response: None,
-            win_http_read_data: None,
-            win_http_query_headers: None,
-            win_http_get_ie_proxy_config_for_current_user: None,
-            win_http_get_proxy_for_url: None,
+        WinHttp {
+            win_http_open: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_connect: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_open_request: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_set_option: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_close_handle: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_send_request: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_add_request_headers: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_receive_response: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_read_data: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_query_headers: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
+            win_http_get_ie_proxy_config_for_current_user: unsafe {
+                core::mem::transmute(core::ptr::null::<core::ffi::c_void>())
+            },
+            win_http_get_proxy_for_url: unsafe { core::mem::transmute(core::ptr::null::<core::ffi::c_void>()) },
         }
     }
 }
@@ -318,8 +309,7 @@ impl WinHttp {
 pub enum WinHttpError {
     /// The requested operation requires a connection to the server.
     ErrorWinhttpCannotConnect        = 12029,
-    /// The connection with the server has been reset or terminated, or an incompatible SSL protocol
-    /// was encountered.
+    /// The connection with the server has been reset or terminated, or an incompatible SSL protocol was encountered.
     ErrorWinhttpConnectionError      = 12030,
     /// The data being supplied is of wrong type.
     ErrorWinhttpIncorrectHandleState = 12019,
@@ -331,8 +321,7 @@ pub enum WinHttpError {
     ErrorWinhttpInvalidOption        = 12009,
     /// The specified option is not supported.
     ErrorWinhttpOptionNotSettable    = 12011,
-    /// The application requested an operation that is not allowed when the current operation is
-    /// asynchronous.
+    /// The application requested an operation that is not allowed when the current operation is asynchronous.
     ErrorWinhttpShutdown             = 12012,
     /// The operation timed out.
     ErrorWinhttpTimeout              = 12002,
@@ -356,22 +345,22 @@ impl WinHttpError {
     ///
     /// # Returns
     /// * A `WinHttpError` corresponding to the error code.
-    pub const fn from_code(code: i32) -> Self {
+    pub fn from_code(code: i32) -> Self {
         match code {
-            12029 => Self::ErrorWinhttpCannotConnect,
-            12030 => Self::ErrorWinhttpConnectionError,
-            12019 => Self::ErrorWinhttpIncorrectHandleState,
-            12018 => Self::ErrorWinhttpIncorrectHandleType,
-            12004 => Self::ErrorWinhttpInternalError,
-            12009 => Self::ErrorWinhttpInvalidOption,
-            12011 => Self::ErrorWinhttpOptionNotSettable,
-            12012 => Self::ErrorWinhttpShutdown,
-            12002 => Self::ErrorWinhttpTimeout,
-            12006 => Self::ErrorWinhttpUnrecognizedScheme,
-            12017 => Self::ErrorWinhttpOperationCancelled,
-            12175 => Self::ErrorWinhttpSecureFailure,
-            12169 => Self::ErrorWinhttpSecureInvalidCert,
-            _ => Self::ErrorWinhttpUnknownError,
+            12029 => WinHttpError::ErrorWinhttpCannotConnect,
+            12030 => WinHttpError::ErrorWinhttpConnectionError,
+            12019 => WinHttpError::ErrorWinhttpIncorrectHandleState,
+            12018 => WinHttpError::ErrorWinhttpIncorrectHandleType,
+            12004 => WinHttpError::ErrorWinhttpInternalError,
+            12009 => WinHttpError::ErrorWinhttpInvalidOption,
+            12011 => WinHttpError::ErrorWinhttpOptionNotSettable,
+            12012 => WinHttpError::ErrorWinhttpShutdown,
+            12002 => WinHttpError::ErrorWinhttpTimeout,
+            12006 => WinHttpError::ErrorWinhttpUnrecognizedScheme,
+            12017 => WinHttpError::ErrorWinhttpOperationCancelled,
+            12175 => WinHttpError::ErrorWinhttpSecureFailure,
+            12169 => WinHttpError::ErrorWinhttpSecureInvalidCert,
+            _ => WinHttpError::ErrorWinhttpUnknownError,
         }
     }
 
@@ -379,32 +368,28 @@ impl WinHttpError {
     ///
     /// # Returns
     /// * The integer value of the error code.
-    pub const fn code(&self) -> i32 { *self as i32 }
+    pub fn code(&self) -> i32 { *self as i32 }
 }
 
 impl fmt::Display for WinHttpError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[expect(
-            clippy::pattern_type_mismatch,
-            reason = "Cannot dereference into the Display trait implementation"
-        )]
         match self {
-            Self::ErrorWinhttpCannotConnect => write!(f, "Cannot connect"),
-            Self::ErrorWinhttpConnectionError => write!(f, "Connection error"),
-            Self::ErrorWinhttpIncorrectHandleState => {
+            WinHttpError::ErrorWinhttpCannotConnect => write!(f, "Cannot connect"),
+            WinHttpError::ErrorWinhttpConnectionError => write!(f, "Connection error"),
+            WinHttpError::ErrorWinhttpIncorrectHandleState => {
                 write!(f, "Incorrect handle state")
             },
-            Self::ErrorWinhttpIncorrectHandleType => write!(f, "Incorrect handle type"),
-            Self::ErrorWinhttpInternalError => write!(f, "Internal error"),
-            Self::ErrorWinhttpInvalidOption => write!(f, "Invalid option"),
-            Self::ErrorWinhttpOptionNotSettable => write!(f, "Option not settable"),
-            Self::ErrorWinhttpShutdown => write!(f, "Shutdown error"),
-            Self::ErrorWinhttpTimeout => write!(f, "Operation timed out"),
-            Self::ErrorWinhttpUnrecognizedScheme => write!(f, "Unrecognized scheme"),
-            Self::ErrorWinhttpOperationCancelled => write!(f, "Operation cancelled"),
-            Self::ErrorWinhttpSecureFailure => write!(f, "Secure failure"),
-            Self::ErrorWinhttpSecureInvalidCert => write!(f, "Invalid SSL certificate"),
-            Self::ErrorWinhttpUnknownError => write!(f, "Unknown error"),
+            WinHttpError::ErrorWinhttpIncorrectHandleType => write!(f, "Incorrect handle type"),
+            WinHttpError::ErrorWinhttpInternalError => write!(f, "Internal error"),
+            WinHttpError::ErrorWinhttpInvalidOption => write!(f, "Invalid option"),
+            WinHttpError::ErrorWinhttpOptionNotSettable => write!(f, "Option not settable"),
+            WinHttpError::ErrorWinhttpShutdown => write!(f, "Shutdown error"),
+            WinHttpError::ErrorWinhttpTimeout => write!(f, "Operation timed out"),
+            WinHttpError::ErrorWinhttpUnrecognizedScheme => write!(f, "Unrecognized scheme"),
+            WinHttpError::ErrorWinhttpOperationCancelled => write!(f, "Operation cancelled"),
+            WinHttpError::ErrorWinhttpSecureFailure => write!(f, "Secure failure"),
+            WinHttpError::ErrorWinhttpSecureInvalidCert => write!(f, "Invalid SSL certificate"),
+            WinHttpError::ErrorWinhttpUnknownError => write!(f, "Unknown error"),
         }
     }
 }

@@ -3,25 +3,19 @@ use sea_orm_migration::{prelude::*, schema::*};
 use crate::{
     extension::postgres::Type,
     m20241012_035559_create_users_table::User,
-    sea_orm::{EnumIter, Iterable as _},
+    m20241012_041618_create_agents_table::AgentFieldVariants,
+    sea_orm::{EnumIter, Iterable},
 };
 
-/// The level of a log
 #[derive(DeriveIden)]
 struct LogLevel;
 
-/// The possible levels of a log
 #[derive(DeriveIden, EnumIter)]
 enum LogLevelVariants {
-    /// The log is an error
     Error,
-    /// The log is a warning
     Warning,
-    /// The log is an information
     Info,
-    /// The log is a debug
     Debug,
-    /// The log is a trace
     Trace,
 }
 
@@ -114,43 +108,28 @@ impl MigrationTrait for Migration {
     }
 }
 
-/// The columns for the `logs` table + the table name
 #[derive(DeriveIden)]
 pub enum Logs {
-    /// The table name
     Table,
-    /// The log id
     Id,
-    /// The log level
     Level,
-    /// The log title
     Title,
-    /// The log message
     Message,
-    /// Any log extra information as json
     Extra,
-    /// The log creation timestamp
     #[sea_orm(ident = "created_at")]
     CreatedAt,
-    /// The log update timestamp
     #[sea_orm(ident = "updated_at")]
     UpdatedAt,
 }
 
-/// The columns for the `read_logs` table + the table name
 #[derive(DeriveIden)]
 pub enum ReadLogs {
-    /// The table name
     Table,
-    /// The read log id
     Id,
-    /// The log id
     #[sea_orm(ident = "log_id")]
     LogId,
-    /// The user id that read the log
     #[sea_orm(ident = "read_by")]
     ReadBy,
-    /// The timestamp when the log was read
     #[sea_orm(ident = "read_at")]
     ReadAt,
 }

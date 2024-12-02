@@ -2,12 +2,6 @@
 name = "srv-mod-handler-http"
 version = "0.1.0"
 edition = "2021"
-categories = ["simulation"]
-keywords = ["kageshirei", "server", "module", "handler", "HTTP"]
-repository = "https://github.com/Kageshirei/KageShirei"
-license-file = "../../LICENSE"
-description = "A module for the KageShirei server that provides HTTP handlers."
-readme = "README.md"
 
 [dependencies]
 srv-mod-operator-api = { path = "../srv-mod-operator-api" }
@@ -31,7 +25,7 @@ tower-http = { version = "0.6.1", features = [
 ] }
 tokio = { version = "1.40.0", features = ["full", "tracing", "test-util"] }
 tokio-util = { version = "0.7.12", features = ["full"] }
-mod-protocol-http = { path = "../mod-protocol-http" }
+mod-protocol-json = { path = "../mod-protocol-json" }
 kageshirei-crypt = { path = "../../libs/kageshirei-crypt", features = [
     "sha3",
     "hex-encoding",
@@ -43,11 +37,7 @@ bytes = "1.7.2"
 srv-mod-handler-base = { path = "../srv-mod-handler-base" }
 srv-mod-entity = { path = "../srv-mod-entity" }
 humantime = "2.1.0"
-kageshirei-format-json = { path = "../../libs/kageshirei-format-json" }
 
 [dev-dependencies]
 serde_json = "1.0.128"
 serial_test = "3.1.1"
-
-[lints]
-workspace = true
