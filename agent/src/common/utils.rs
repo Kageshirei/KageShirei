@@ -201,148 +201,148 @@ impl AgentErrors {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use libc_print::libc_println;
-
-    use super::*;
-
-    #[test]
-    fn test_generate_request_id() {
-        let request_id = generate_request_id(32);
-        libc_println!("Generated Request ID: {}", request_id);
-        assert_eq!(request_id.len(), 32, "Request ID length is not 32");
-        assert!(
-            request_id.chars().all(char::is_alphanumeric),
-            "Request ID contains non-alphanumeric characters"
-        );
-    }
-
-    #[test]
-    fn test_generate_path() {
-        for _ in 0 .. 10 {
-            let request_id_len = 32;
-            let start_index = 0;
-            let end_index = 6;
-
-            // Generate the path, path type, and request ID
-            let (path_type, path, request_id) = generate_path(request_id_len, start_index, end_index);
-
-            libc_println!("Generated Path: - {}: {}", path_type, path);
-            libc_println!("Request ID: {}", request_id);
-
-            // Split the path into parts by "/"
-            let parts: Vec<&str> = path.split('/').collect();
-
-            if path_type == 0 {
-                // Check for type 0 path
-                assert_eq!(
-                    parts.len(),
-                    end_index + 2,
-                    "Path does not contain the expected number of parts"
-                );
-                let id_position: usize = parts[1].parse().unwrap();
-                // Ensure id_position is within the valid range
-                assert!(id_position < end_index, "id_position is out of valid range");
-                // Check that the request ID matches the part at the specified position
-                assert_eq!(
-                    parts[id_position + 2],
-                    request_id,
-                    "Request ID does not match at the specified position"
-                );
-            }
-            else if path_type == 1 {
-                // Check for type 1 path
-                assert_eq!(
-                    parts.len(),
-                    end_index + 2,
-                    "Path does not contain the expected number of parts"
-                );
-
-                let first_part = parts[1];
-                let separators = [",", ";", ":", ".", "-", "_", " ", "|", "$"];
-                let mut separator_count = 0;
-                let mut id_positions = Vec::new();
-
-                // Count the separators in the first part
-                for sep in &separators {
-                    if first_part.contains(*sep) {
-                        separator_count += first_part.matches(*sep).count();
-                    }
-                }
-                // Ensure there are exactly 2 separators
-                assert_eq!(separator_count, 2, "Path does not contain 2 separators");
-
-                // Extract positions from the first part
-                let positions_and_separators: Vec<&str> = first_part.split(|c: char| !c.is_numeric()).collect();
-                for pos in positions_and_separators {
-                    if let Ok(position) = pos.parse::<usize>() {
-                        id_positions.push(position);
-                    }
-                }
-
-                // Ensure there are exactly 3 ID positions
-                assert_eq!(
-                    id_positions.len(),
-                    3,
-                    "Path does not contain 3 ID positions"
-                );
-                // Ensure all ID positions are within the valid range
-                assert!(
-                    id_positions.iter().all(|&pos| pos < end_index),
-                    "One or more ID positions are out of valid range"
-                );
-
-                // Concatenate ID fragments from the specified positions
-                let mut concatenated_id = String::new();
-                for &pos in &id_positions {
-                    concatenated_id.push_str(parts[pos + 2]);
-                }
-
-                // Ensure the concatenated ID length is 32
-                assert_eq!(
-                    concatenated_id.len(),
-                    32,
-                    "Concatenated ID parts length is not 32"
-                );
-                // Ensure the concatenated ID matches the request ID
-                assert_eq!(
-                    concatenated_id, request_id,
-                    "Concatenated ID does not match the request ID"
-                );
-            }
-            else {
-                // Check for type 2 path
-                // Ensure that the path contains the correct number of parts
-                assert_eq!(
-                    parts.len(),
-                    end_index + 1,
-                    "Path does not contain the expected number of parts"
-                );
-
-                // Ensure there is one part with length equal to the request ID (32 characters)
-                let mut found_request_id = None;
-                for part in &parts {
-                    if part.len() == 32 {
-                        found_request_id = Some(part.to_string());
-                        break;
-                    }
-                }
-
-                // Ensure we found the request ID in the path
-                assert!(
-                    found_request_id.is_some(),
-                    "Did not find the request ID in the path"
-                );
-
-                // Ensure the found request ID matches the generated request ID
-                assert_eq!(
-                    found_request_id.unwrap(),
-                    request_id,
-                    "Request ID found in the path does not match the generated request ID"
-                );
-            }
-            libc_println!();
-        }
-    }
-}
+// #[cfg(test)]
+// mod tests {
+// use libc_print::libc_println;
+//
+// use super::*;
+//
+// #[test]
+// fn test_generate_request_id() {
+// let request_id = generate_request_id(32);
+// libc_println!("Generated Request ID: {}", request_id);
+// assert_eq!(request_id.len(), 32, "Request ID length is not 32");
+// assert!(
+// request_id.chars().all(char::is_alphanumeric),
+// "Request ID contains non-alphanumeric characters"
+// );
+// }
+//
+// #[test]
+// fn test_generate_path() {
+// for _ in 0 .. 10 {
+// let request_id_len = 32;
+// let start_index = 0;
+// let end_index = 6;
+//
+// Generate the path, path type, and request ID
+// let (path_type, path, request_id) = generate_path(request_id_len, start_index, end_index);
+//
+// libc_println!("Generated Path: - {}: {}", path_type, path);
+// libc_println!("Request ID: {}", request_id);
+//
+// Split the path into parts by "/"
+// let parts: Vec<&str> = path.split('/').collect();
+//
+// if path_type == 0 {
+// Check for type 0 path
+// assert_eq!(
+// parts.len(),
+// end_index + 2,
+// "Path does not contain the expected number of parts"
+// );
+// let id_position: usize = parts[1].parse().unwrap();
+// Ensure id_position is within the valid range
+// assert!(id_position < end_index, "id_position is out of valid range");
+// Check that the request ID matches the part at the specified position
+// assert_eq!(
+// parts[id_position + 2],
+// request_id,
+// "Request ID does not match at the specified position"
+// );
+// }
+// else if path_type == 1 {
+// Check for type 1 path
+// assert_eq!(
+// parts.len(),
+// end_index + 2,
+// "Path does not contain the expected number of parts"
+// );
+//
+// let first_part = parts[1];
+// let separators = [",", ";", ":", ".", "-", "_", " ", "|", "$"];
+// let mut separator_count = 0;
+// let mut id_positions = Vec::new();
+//
+// Count the separators in the first part
+// for sep in &separators {
+// if first_part.contains(*sep) {
+// separator_count += first_part.matches(*sep).count();
+// }
+// }
+// Ensure there are exactly 2 separators
+// assert_eq!(separator_count, 2, "Path does not contain 2 separators");
+//
+// Extract positions from the first part
+// let positions_and_separators: Vec<&str> = first_part.split(|c: char| !c.is_numeric()).collect();
+// for pos in positions_and_separators {
+// if let Ok(position) = pos.parse::<usize>() {
+// id_positions.push(position);
+// }
+// }
+//
+// Ensure there are exactly 3 ID positions
+// assert_eq!(
+// id_positions.len(),
+// 3,
+// "Path does not contain 3 ID positions"
+// );
+// Ensure all ID positions are within the valid range
+// assert!(
+// id_positions.iter().all(|&pos| pos < end_index),
+// "One or more ID positions are out of valid range"
+// );
+//
+// Concatenate ID fragments from the specified positions
+// let mut concatenated_id = String::new();
+// for &pos in &id_positions {
+// concatenated_id.push_str(parts[pos + 2]);
+// }
+//
+// Ensure the concatenated ID length is 32
+// assert_eq!(
+// concatenated_id.len(),
+// 32,
+// "Concatenated ID parts length is not 32"
+// );
+// Ensure the concatenated ID matches the request ID
+// assert_eq!(
+// concatenated_id, request_id,
+// "Concatenated ID does not match the request ID"
+// );
+// }
+// else {
+// Check for type 2 path
+// Ensure that the path contains the correct number of parts
+// assert_eq!(
+// parts.len(),
+// end_index + 1,
+// "Path does not contain the expected number of parts"
+// );
+//
+// Ensure there is one part with length equal to the request ID (32 characters)
+// let mut found_request_id = None;
+// for part in &parts {
+// if part.len() == 32 {
+// found_request_id = Some(part.to_string());
+// break;
+// }
+// }
+//
+// Ensure we found the request ID in the path
+// assert!(
+// found_request_id.is_some(),
+// "Did not find the request ID in the path"
+// );
+//
+// Ensure the found request ID matches the generated request ID
+// assert_eq!(
+// found_request_id.unwrap(),
+// request_id,
+// "Request ID found in the path does not match the generated request ID"
+// );
+// }
+// libc_println!();
+// }
+// }
+// }

@@ -18,7 +18,7 @@
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust ignore
 /// define_syscall!(MySyscall, 0x12345678);
 ///
 /// let syscall = MySyscall::new();

@@ -114,6 +114,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_get_handler_sessions() {
         let db = init().await;
         // Mock broadcast channel

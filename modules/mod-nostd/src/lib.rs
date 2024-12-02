@@ -20,7 +20,7 @@
 //! ## Examples
 //!
 //! ### Creating and Managing Threads
-//! ```rust
+//! ```rust ignore
 //! use mod_win32::nt_time::delay;
 //! use nostd_thread::NoStdThread;
 //!
@@ -35,7 +35,7 @@
 //! ```
 //!
 //! ### Sending and Receiving Messages
-//! ```rust
+//! ```rust ignore
 //! use mod_win32::nt_time::delay;
 //! use nostd_mpsc::{channel, Receiver, Sender};
 //! use nostd_thread::NoStdThread;

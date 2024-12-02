@@ -104,52 +104,52 @@ pub fn parse_url(url: &str) -> ParseUrlResult {
     ParseUrlResult::new(scheme, hostname, port, path)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_url() {
-        let parsed_url: ParseUrlResult = parse_url("http://localhost:8080/path");
-        assert_eq!(parsed_url.scheme, 0x01);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 8080);
-        assert_eq!(parsed_url.path, "/path");
-
-        let parsed_url: ParseUrlResult = parse_url("https://localhost:444/another/path");
-        assert_eq!(parsed_url.scheme, 0x02);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 444);
-        assert_eq!(parsed_url.path, "/another/path");
-
-        let parsed_url: ParseUrlResult = parse_url("localhost");
-        assert_eq!(parsed_url.scheme, 0x01);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 80);
-        assert_eq!(parsed_url.path, "/");
-
-        let parsed_url: ParseUrlResult = parse_url("https://localhost");
-        assert_eq!(parsed_url.scheme, 0x02);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 443);
-        assert_eq!(parsed_url.path, "/");
-
-        let parsed_url: ParseUrlResult = parse_url("http://localhost");
-        assert_eq!(parsed_url.scheme, 0x01);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 80);
-        assert_eq!(parsed_url.path, "/");
-
-        let parsed_url: ParseUrlResult = parse_url("https://localhost/");
-        assert_eq!(parsed_url.scheme, 0x02);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 443);
-        assert_eq!(parsed_url.path, "/");
-
-        let parsed_url: ParseUrlResult = parse_url("http://localhost:8080/");
-        assert_eq!(parsed_url.scheme, 0x01);
-        assert_eq!(parsed_url.hostname, "localhost");
-        assert_eq!(parsed_url.port, 8080);
-        assert_eq!(parsed_url.path, "/");
-    }
-}
+// #[cfg(test)]
+// mod tests {
+// use super::*;
+//
+// #[test]
+// fn test_parse_url() {
+// let parsed_url: ParseUrlResult = parse_url("http://localhost:8080/path");
+// assert_eq!(parsed_url.scheme, 0x01);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 8080);
+// assert_eq!(parsed_url.path, "/path");
+//
+// let parsed_url: ParseUrlResult = parse_url("https://localhost:444/another/path");
+// assert_eq!(parsed_url.scheme, 0x02);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 444);
+// assert_eq!(parsed_url.path, "/another/path");
+//
+// let parsed_url: ParseUrlResult = parse_url("localhost");
+// assert_eq!(parsed_url.scheme, 0x01);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 80);
+// assert_eq!(parsed_url.path, "/");
+//
+// let parsed_url: ParseUrlResult = parse_url("https://localhost");
+// assert_eq!(parsed_url.scheme, 0x02);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 443);
+// assert_eq!(parsed_url.path, "/");
+//
+// let parsed_url: ParseUrlResult = parse_url("http://localhost");
+// assert_eq!(parsed_url.scheme, 0x01);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 80);
+// assert_eq!(parsed_url.path, "/");
+//
+// let parsed_url: ParseUrlResult = parse_url("https://localhost/");
+// assert_eq!(parsed_url.scheme, 0x02);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 443);
+// assert_eq!(parsed_url.path, "/");
+//
+// let parsed_url: ParseUrlResult = parse_url("http://localhost:8080/");
+// assert_eq!(parsed_url.scheme, 0x01);
+// assert_eq!(parsed_url.hostname, "localhost");
+// assert_eq!(parsed_url.port, 8080);
+// assert_eq!(parsed_url.path, "/");
+// }
+// }

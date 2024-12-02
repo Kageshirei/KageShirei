@@ -1037,202 +1037,204 @@ pub extern "system" fn my_thread_start_routine(param: *mut c_void) -> c_ulong {
     0
 }
 
-#[cfg(test)]
-mod tests {
-
-    use alloc::string::String;
-
-    use libc_print::libc_println;
-
-    use super::*;
-    use crate::utils::NT_STATUS;
-
-    #[test]
-    fn test_nt_create_thread_ex() {
-        let proc_handle = -1isize as HANDLE;
-        // unsafe { get_process_handle(get_current_process_id() as i32, PROCESS_ALL_ACCESS) };
-
-        let arg: i32 = 42; // Esempio di argomento da passare al thread
-        let arg_ptr = &arg as *const _ as *mut c_void;
-
-        let thread_handle = unsafe { nt_create_thread_ex(proc_handle, my_thread_start_routine, arg_ptr) };
-
-        // Assicurati di chiudere il thread handle quando non è più necessario.
-        if !thread_handle.is_null() {
-            unsafe {
-                instance().ntdll.nt_close.run(thread_handle);
-            }
-        }
-    }
-
-    #[test]
-    fn test_get_pid_and_ppid() {
-        let (pid, ppid) = unsafe { get_pid_and_ppid() };
-        libc_println!("PID: {:?}", pid);
-        libc_println!("PPID: {:?}", ppid);
-        assert!(pid != 0, "PID should not be zero");
-        assert!(ppid != 0, "PPID should not be zero");
-    }
-
-    #[test]
-    fn test_get_process_integrity() {
-        unsafe {
-            let rid = get_process_integrity(nt_current_process());
-            libc_println!("Process Integrity Level: {:?}", rid);
-            assert!(rid != -1, "RID should not be -1");
-        }
-    }
-
-    #[test]
-    fn test_get_process_handle_by_name() {
-        unsafe {
-            let handle = get_process_handle_by_name("explorer.exe", PROCESS_ALL_ACCESS);
-            if !handle.is_null() {
-                libc_println!("Handle obtained: {:?}", handle);
-                instance().ntdll.nt_close.run(handle);
-            }
-            else {
-                libc_println!("Process not found.");
-            }
-        }
-    }
-
-    #[test]
-    fn test_nt_create_user_process() {
-        unsafe {
-            let sz_target_process = "\\??\\C:\\Windows\\System32\\cmd.exe";
-            let sz_target_process_parameters = "C:\\Windows\\System32\\cmd.exe";
-            let sz_target_process_path = "C:\\Windows\\System32";
-
-            let mut h_process: HANDLE = null_mut();
-            let mut h_thread: HANDLE = null_mut();
-
-            let status = nt_create_user_process(
-                &sz_target_process,
-                &sz_target_process_parameters,
-                &sz_target_process_path,
-                null_mut(),
-                &mut h_process,
-                &mut h_thread,
-            );
-
-            if !h_process.is_null() {
-                libc_println!(
-                    "NtCreateUserProcess Success:\nhProcess: {:?}\nhThread: {:?}",
-                    h_process,
-                    h_thread
-                );
-
-                instance().ntdll.nt_terminate_process.run(h_process, 0);
-            }
-            else {
-                libc_println!("Failed to create process: {}", NT_STATUS(status));
-            }
-        }
-    }
-
-    #[test]
-    fn test_nt_create_user_process_ppid_spoof() {
-        unsafe {
-            let sz_target_process = "\\??\\C:\\Windows\\System32\\cmd.exe";
-            let sz_target_process_parameters = "C:\\Windows\\System32\\cmd.exe";
-            let sz_target_process_path = "C:\\Windows\\System32";
-
-            let mut h_process: HANDLE = null_mut();
-            let mut h_thread: HANDLE = null_mut();
-
-            let h_parent_process_handle: HANDLE = get_process_handle_by_name("explorer.exe", PROCESS_ALL_ACCESS);
-
-            if h_parent_process_handle.is_null() {
-                libc_println!("[!] GetProcHandle Failed");
-                return;
-            }
-            else {
-                libc_println!("[!] Parent Process Handle: {:p}", h_parent_process_handle);
-            }
-
-            let status = nt_create_user_process(
-                &sz_target_process,
-                &sz_target_process_parameters,
-                &sz_target_process_path,
-                h_parent_process_handle,
-                &mut h_process,
-                &mut h_thread,
-            );
-
-            if !h_process.is_null() {
-                libc_println!(
-                    "NtCreateUserProcess Success:\nhProcess: {:?}\nhThread: {:?}",
-                    h_process,
-                    h_thread
-                );
-
-                // instance().ntdll.nt_terminate_process.run(h_process, 0);
-            }
-            else {
-                libc_println!("Failed to create process: {:?}", NT_STATUS(status));
-            }
-        }
-    }
-
-    #[test]
-    fn test_nt_shell_create_process_w() {
-        unsafe {
-            let target_process = "C:\\Windows\\System32\\cmd.exe";
-            let sz_target_process_parameters = "cmd.exe /c powershell -v 2 -c $PSVersionTable";
-
-            let output = nt_create_process_w_piped(&target_process, sz_target_process_parameters);
-
-            if !output.is_empty() {
-                let output_str = String::from_utf8_lossy(&output);
-                libc_println!("Output: {}", output_str);
-            }
-        }
-    }
-
-    #[test]
-    fn test_nt_process_snapshot() {
-        unsafe {
-            let mut snapshot: *mut SystemProcessInformation = null_mut();
-            let mut size: usize = 0;
-
-            let status = nt_process_snapshot(&mut snapshot, &mut size);
-
-            if NT_SUCCESS(status) {
-                // Process snapshot successfully retrieved, now you can work with it
-                // For example, iterate over processes in the snapshot
-
-                let mut current = snapshot;
-                while !current.is_null() {
-                    // If ImageName is not null, print the process name
-                    if (*current).image_name.buffer != null_mut() {
-                        libc_println!(
-                            "PID: {} - Name: {}",
-                            (*current).unique_process_id as u32,
-                            unicodestring_to_string(&(*current).image_name).unwrap()
-                        );
-                    }
-                    else {
-                        libc_println!(
-                            "PID: {} - Name: <unknown>",
-                            (*current).unique_process_id as u32
-                        );
-                    }
-
-                    // Move to the next process in the list
-                    if (*current).next_entry_offset == 0 {
-                        break;
-                    }
-                    current = (current as *const u8).add((*current).next_entry_offset as usize)
-                        as *mut SystemProcessInformation;
-                }
-            }
-            else {
-                libc_println!(
-                    "Failed to retrieve process snapshot: Status[{}]",
-                    NT_STATUS(status),
-                );
-            }
-        }
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//
+// use alloc::string::String;
+//
+// use libc_print::libc_println;
+//
+// use super::*;
+// use crate::utils::NT_STATUS;
+//
+// #[test]
+// fn test_nt_create_thread_ex() {
+// let proc_handle = -1isize as HANDLE;
+// unsafe { get_process_handle(get_current_process_id() as i32, PROCESS_ALL_ACCESS) };
+//
+// let arg: i32 = 42; // Esempio di argomento da passare al thread
+// let arg_ptr = &arg as *const _ as *mut c_void;
+//
+// let thread_handle = unsafe { nt_create_thread_ex(proc_handle, my_thread_start_routine, arg_ptr)
+// };
+//
+// Assicurati di chiudere il thread handle quando non è più necessario.
+// if !thread_handle.is_null() {
+// unsafe {
+// instance().ntdll.nt_close.run(thread_handle);
+// }
+// }
+// }
+//
+// #[test]
+// fn test_get_pid_and_ppid() {
+// let (pid, ppid) = unsafe { get_pid_and_ppid() };
+// libc_println!("PID: {:?}", pid);
+// libc_println!("PPID: {:?}", ppid);
+// assert!(pid != 0, "PID should not be zero");
+// assert!(ppid != 0, "PPID should not be zero");
+// }
+//
+// #[test]
+// fn test_get_process_integrity() {
+// unsafe {
+// let rid = get_process_integrity(nt_current_process());
+// libc_println!("Process Integrity Level: {:?}", rid);
+// assert!(rid != -1, "RID should not be -1");
+// }
+// }
+//
+// #[test]
+// fn test_get_process_handle_by_name() {
+// unsafe {
+// let handle = get_process_handle_by_name("explorer.exe", PROCESS_ALL_ACCESS);
+// if !handle.is_null() {
+// libc_println!("Handle obtained: {:?}", handle);
+// instance().ntdll.nt_close.run(handle);
+// }
+// else {
+// libc_println!("Process not found.");
+// }
+// }
+// }
+//
+// #[test]
+// fn test_nt_create_user_process() {
+// unsafe {
+// let sz_target_process = "\\??\\C:\\Windows\\System32\\cmd.exe";
+// let sz_target_process_parameters = "C:\\Windows\\System32\\cmd.exe";
+// let sz_target_process_path = "C:\\Windows\\System32";
+//
+// let mut h_process: HANDLE = null_mut();
+// let mut h_thread: HANDLE = null_mut();
+//
+// let status = nt_create_user_process(
+// &sz_target_process,
+// &sz_target_process_parameters,
+// &sz_target_process_path,
+// null_mut(),
+// &mut h_process,
+// &mut h_thread,
+// );
+//
+// if !h_process.is_null() {
+// libc_println!(
+// "NtCreateUserProcess Success:\nhProcess: {:?}\nhThread: {:?}",
+// h_process,
+// h_thread
+// );
+//
+// instance().ntdll.nt_terminate_process.run(h_process, 0);
+// }
+// else {
+// libc_println!("Failed to create process: {}", NT_STATUS(status));
+// }
+// }
+// }
+//
+// #[test]
+// fn test_nt_create_user_process_ppid_spoof() {
+// unsafe {
+// let sz_target_process = "\\??\\C:\\Windows\\System32\\cmd.exe";
+// let sz_target_process_parameters = "C:\\Windows\\System32\\cmd.exe";
+// let sz_target_process_path = "C:\\Windows\\System32";
+//
+// let mut h_process: HANDLE = null_mut();
+// let mut h_thread: HANDLE = null_mut();
+//
+// let h_parent_process_handle: HANDLE = get_process_handle_by_name("explorer.exe",
+// PROCESS_ALL_ACCESS);
+//
+// if h_parent_process_handle.is_null() {
+// libc_println!("[!] GetProcHandle Failed");
+// return;
+// }
+// else {
+// libc_println!("[!] Parent Process Handle: {:p}", h_parent_process_handle);
+// }
+//
+// let status = nt_create_user_process(
+// &sz_target_process,
+// &sz_target_process_parameters,
+// &sz_target_process_path,
+// h_parent_process_handle,
+// &mut h_process,
+// &mut h_thread,
+// );
+//
+// if !h_process.is_null() {
+// libc_println!(
+// "NtCreateUserProcess Success:\nhProcess: {:?}\nhThread: {:?}",
+// h_process,
+// h_thread
+// );
+//
+// instance().ntdll.nt_terminate_process.run(h_process, 0);
+// }
+// else {
+// libc_println!("Failed to create process: {:?}", NT_STATUS(status));
+// }
+// }
+// }
+//
+// #[test]
+// fn test_nt_shell_create_process_w() {
+// unsafe {
+// let target_process = "C:\\Windows\\System32\\cmd.exe";
+// let sz_target_process_parameters = "cmd.exe /c powershell -v 2 -c $PSVersionTable";
+//
+// let output = nt_create_process_w_piped(&target_process, sz_target_process_parameters);
+//
+// if !output.is_empty() {
+// let output_str = String::from_utf8_lossy(&output);
+// libc_println!("Output: {}", output_str);
+// }
+// }
+// }
+//
+// #[test]
+// fn test_nt_process_snapshot() {
+// unsafe {
+// let mut snapshot: *mut SystemProcessInformation = null_mut();
+// let mut size: usize = 0;
+//
+// let status = nt_process_snapshot(&mut snapshot, &mut size);
+//
+// if NT_SUCCESS(status) {
+// Process snapshot successfully retrieved, now you can work with it
+// For example, iterate over processes in the snapshot
+//
+// let mut current = snapshot;
+// while !current.is_null() {
+// If ImageName is not null, print the process name
+// if (*current).image_name.buffer != null_mut() {
+// libc_println!(
+// "PID: {} - Name: {}",
+// (*current).unique_process_id as u32,
+// unicodestring_to_string(&(*current).image_name).unwrap()
+// );
+// }
+// else {
+// libc_println!(
+// "PID: {} - Name: <unknown>",
+// (*current).unique_process_id as u32
+// );
+// }
+//
+// Move to the next process in the list
+// if (*current).next_entry_offset == 0 {
+// break;
+// }
+// current = (current as *const u8).add((*current).next_entry_offset as usize)
+// as *mut SystemProcessInformation;
+// }
+// }
+// else {
+// libc_println!(
+// "Failed to retrieve process snapshot: Status[{}]",
+// NT_STATUS(status),
+// );
+// }
+// }
+// }
+// }

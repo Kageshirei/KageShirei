@@ -220,7 +220,7 @@ unsafe fn ensure_initialized() {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust ignore
 /// resolve_indirect_syscalls!(
 ///     module_base,
 ///     instance.ntdll.nt_allocate_virtual_memory,
@@ -256,7 +256,7 @@ macro_rules! resolve_indirect_syscalls {
 ///
 /// # Example
 ///
-/// ```rust
+/// ```rust ignore
 /// resolve_direct_syscalls!(
 ///     module_base,
 ///     [

@@ -138,6 +138,7 @@ mod test {
     use crate::state::HandlerState;
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_handle_command_retrieval() {
         let db_pool = Database::connect("postgresql://kageshirei:kageshirei@localhost/kageshirei")
             .await

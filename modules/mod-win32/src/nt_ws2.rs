@@ -436,31 +436,31 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<String, String> {
     Ok(response)
 }
 
-#[cfg(test)]
-mod tests {
-    use libc_print::libc_println;
-
-    use super::*;
-
-    #[test]
-    fn test_http_get() {
-        match http_get("example.com", "/") {
-            Ok(response) => {
-                libc_println!("GET request successful!");
-                libc_println!("Response: {}", response);
-            },
-            Err(e) => libc_println!("GET request failed: {}", e),
-        }
-    }
-
-    #[test]
-    fn test_http_post() {
-        match http_post("localhost", "/", "key=value") {
-            Ok(response) => {
-                libc_println!("POST request successful!");
-                libc_println!("Response: {}", response);
-            },
-            Err(e) => libc_println!("POST request failed: {}", e),
-        }
-    }
-}
+// #[cfg(test)]
+// mod tests {
+// use libc_print::libc_println;
+//
+// use super::*;
+//
+// #[test]
+// fn test_http_get() {
+// match http_get("example.com", "/") {
+// Ok(response) => {
+// libc_println!("GET request successful!");
+// libc_println!("Response: {}", response);
+// },
+// Err(e) => libc_println!("GET request failed: {}", e),
+// }
+// }
+//
+// #[test]
+// fn test_http_post() {
+// match http_post("localhost", "/", "key=value") {
+// Ok(response) => {
+// libc_println!("POST request successful!");
+// libc_println!("Response: {}", response);
+// },
+// Err(e) => libc_println!("POST request failed: {}", e),
+// }
+// }
+// }

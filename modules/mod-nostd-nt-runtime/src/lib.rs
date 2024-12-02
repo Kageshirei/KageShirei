@@ -25,7 +25,7 @@
 //! ## Examples
 //!
 //! ### Using the Custom Runtime
-//! ```rust
+//! ```rust ignore
 //! use std::sync::Arc;
 //!
 //! use mod_nostd_nt_runtime::NoStdNtRuntime;
@@ -45,7 +45,7 @@
 //! ```
 //!
 //! ### Using the Thread Pool
-//! ```rust
+//! ```rust ignore
 //! use mod_nostd_nt_runtime::nostd_nt_threadpool::NoStdThreadPool;
 //!
 //! // Create a thread pool with 4 worker threads

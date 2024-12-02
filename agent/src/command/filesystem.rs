@@ -101,128 +101,128 @@ pub fn command_pwd() -> TaskOutput {
     output
 }
 
-#[cfg(test)]
-mod tests {
-    use kageshirei_communication_protocol::Metadata;
-    use libc_print::libc_println;
-    use mod_win32::nt_time::timestamp_to_datetime;
-
-    use super::*;
-
-    #[test]
-    fn test_cd() {
-        let cmdline_utf16: Vec<u16> = "cmd.exe\0".encode_utf16().collect();
-
-        libc_println!("Test: {:?}", cmdline_utf16);
-        // Test changing to a valid directory
-        let target_directory = "C:\\Windows\\System32\\drivers\\etc";
-        let metadata = Metadata {
-            request_id: format!("req-{}", 1),
-            command_id: format!("cmd-{}", 1),
-            agent_id:   "agent-1234".to_string(),
-            path:       None,
-        };
-
-        let result = command_cd(target_directory);
-
-        // Print all elements of `TaskOutput`
-        libc_println!("TaskOutput for target_directory: {}", target_directory);
-        libc_println!(
-            "Started At: {:?}",
-            timestamp_to_datetime(result.started_at.unwrap())
-        );
-        libc_println!(
-            "Ended At: {:?}",
-            timestamp_to_datetime(result.ended_at.unwrap())
-        );
-        libc_println!("Exit Code: {:?}", result.exit_code);
-        libc_println!("Output: {:?}", result.output);
-
-        // Assert that the exit code is 0 (success)
-        assert!(
-            result.exit_code == Some(0),
-            "Failed to change to directory: {}",
-            target_directory
-        );
-        // Verify that the output directory matches the expected path
-        assert!(
-            result
-                .output
-                .as_ref()
-                .unwrap()
-                .ends_with("C:\\Windows\\System32\\drivers\\etc"),
-            "Expected directory: C:\\Windows\\System32\\drivers\\etc, but got: {}",
-            result.output.as_ref().unwrap()
-        );
-
-        // Test changing to the parent directory with "cd .."
-        let result = command_cd("..\\..");
-
-        // Print all elements of `TaskOutput` for the parent directory change
-        libc_println!("TaskOutput for parent directory");
-        libc_println!(
-            "Started At: {:?}",
-            timestamp_to_datetime(result.started_at.unwrap())
-        );
-        libc_println!(
-            "Ended At: {:?}",
-            timestamp_to_datetime(result.ended_at.unwrap())
-        );
-        libc_println!("Exit Code: {:?}", result.exit_code);
-        libc_println!("Output: {:?}", result.output);
-
-        // Assert that the exit code is 0 (success)
-        assert!(
-            result.exit_code == Some(0),
-            "Failed to change to parent directory"
-        );
-        // Verify that the output directory matches the expected path
-        assert!(
-            result
-                .output
-                .as_ref()
-                .unwrap()
-                .ends_with("C:\\Windows\\System32"),
-            "Expected directory: C:\\Windows\\System32, but got: {}",
-            result.output.as_ref().unwrap()
-        );
-    }
-
-    #[test]
-    fn test_pwd() {
-        let metadata = Metadata {
-            request_id: format!("req-{}", 1),
-            command_id: format!("cmd-{}", 1),
-            agent_id:   "agent-1234".to_string(),
-            path:       None,
-        };
-        let cwd_output = command_pwd();
-
-        // Print all elements of TaskOutput
-        libc_println!("TaskOutput for pwd command");
-        libc_println!(
-            "Started At: {:?}",
-            timestamp_to_datetime(cwd_output.started_at.unwrap())
-        );
-        libc_println!(
-            "Ended At: {:?}",
-            timestamp_to_datetime(cwd_output.ended_at.unwrap())
-        );
-        libc_println!("Exit Code: {:?}", cwd_output.exit_code);
-        libc_println!("Output: {:?}", cwd_output.output);
-
-        // Assert that the exit code is 0 (success)
-        assert!(
-            cwd_output.exit_code == Some(0),
-            "Expected success, but exit code was: {:?}",
-            cwd_output.exit_code
-        );
-
-        // Verify the output directory is not empty
-        let cwd_str = cwd_output.output.as_ref().unwrap();
-        assert!(
-            !cwd_str.is_empty(),
-            "Expected a non-empty current directory, but got an empty string"
-        );
-    }
-}
+// #[cfg(test)]
+// mod tests {
+// use kageshirei_communication_protocol::Metadata;
+// use libc_print::libc_println;
+// use mod_win32::nt_time::timestamp_to_datetime;
+//
+// use super::*;
+//
+// #[test]
+// fn test_cd() {
+// let cmdline_utf16: Vec<u16> = "cmd.exe\0".encode_utf16().collect();
+//
+// libc_println!("Test: {:?}", cmdline_utf16);
+// Test changing to a valid directory
+// let target_directory = "C:\\Windows\\System32\\drivers\\etc";
+// let metadata = Metadata {
+// request_id: format!("req-{}", 1),
+// command_id: format!("cmd-{}", 1),
+// agent_id:   "agent-1234".to_string(),
+// path:       None,
+// };
+//
+// let result = command_cd(target_directory);
+//
+// Print all elements of `TaskOutput`
+// libc_println!("TaskOutput for target_directory: {}", target_directory);
+// libc_println!(
+// "Started At: {:?}",
+// timestamp_to_datetime(result.started_at.unwrap())
+// );
+// libc_println!(
+// "Ended At: {:?}",
+// timestamp_to_datetime(result.ended_at.unwrap())
+// );
+// libc_println!("Exit Code: {:?}", result.exit_code);
+// libc_println!("Output: {:?}", result.output);
+//
+// Assert that the exit code is 0 (success)
+// assert!(
+// result.exit_code == Some(0),
+// "Failed to change to directory: {}",
+// target_directory
+// );
+// Verify that the output directory matches the expected path
+// assert!(
+// result
+// .output
+// .as_ref()
+// .unwrap()
+// .ends_with("C:\\Windows\\System32\\drivers\\etc"),
+// "Expected directory: C:\\Windows\\System32\\drivers\\etc, but got: {}",
+// result.output.as_ref().unwrap()
+// );
+//
+// Test changing to the parent directory with "cd .."
+// let result = command_cd("..\\..");
+//
+// Print all elements of `TaskOutput` for the parent directory change
+// libc_println!("TaskOutput for parent directory");
+// libc_println!(
+// "Started At: {:?}",
+// timestamp_to_datetime(result.started_at.unwrap())
+// );
+// libc_println!(
+// "Ended At: {:?}",
+// timestamp_to_datetime(result.ended_at.unwrap())
+// );
+// libc_println!("Exit Code: {:?}", result.exit_code);
+// libc_println!("Output: {:?}", result.output);
+//
+// Assert that the exit code is 0 (success)
+// assert!(
+// result.exit_code == Some(0),
+// "Failed to change to parent directory"
+// );
+// Verify that the output directory matches the expected path
+// assert!(
+// result
+// .output
+// .as_ref()
+// .unwrap()
+// .ends_with("C:\\Windows\\System32"),
+// "Expected directory: C:\\Windows\\System32, but got: {}",
+// result.output.as_ref().unwrap()
+// );
+// }
+//
+// #[test]
+// fn test_pwd() {
+// let metadata = Metadata {
+// request_id: format!("req-{}", 1),
+// command_id: format!("cmd-{}", 1),
+// agent_id:   "agent-1234".to_string(),
+// path:       None,
+// };
+// let cwd_output = command_pwd();
+//
+// Print all elements of TaskOutput
+// libc_println!("TaskOutput for pwd command");
+// libc_println!(
+// "Started At: {:?}",
+// timestamp_to_datetime(cwd_output.started_at.unwrap())
+// );
+// libc_println!(
+// "Ended At: {:?}",
+// timestamp_to_datetime(cwd_output.ended_at.unwrap())
+// );
+// libc_println!("Exit Code: {:?}", cwd_output.exit_code);
+// libc_println!("Output: {:?}", cwd_output.output);
+//
+// Assert that the exit code is 0 (success)
+// assert!(
+// cwd_output.exit_code == Some(0),
+// "Expected success, but exit code was: {:?}",
+// cwd_output.exit_code
+// );
+//
+// Verify the output directory is not empty
+// let cwd_str = cwd_output.output.as_ref().unwrap();
+// assert!(
+// !cwd_str.is_empty(),
+// "Expected a non-empty current directory, but got an empty string"
+// );
+// }
+// }

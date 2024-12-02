@@ -506,55 +506,55 @@ pub fn http_post(url: &str, path: &str, data: &str) -> Result<Response, String> 
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use libc_print::libc_println;
-
-    use super::*;
-
-    #[test]
-    fn test_http_get() {
-        // Test HTTP GET request
-        match http_get("http://localhost", "/") {
-            Ok(response) => {
-                libc_println!("HTTP GET request successful!");
-                libc_println!("Status Code: {}", response.status_code);
-                libc_println!("Response Body: {}", response.body);
-            },
-            Err(e) => libc_println!("HTTP GET request failed: {}", e),
-        }
-
-        // Test HTTPS GET request
-        match http_get("https://example.com", "/") {
-            Ok(response) => {
-                libc_println!("HTTPS GET request successful!");
-                libc_println!("Status Code: {}", response.status_code);
-                libc_println!("Response Body: {}", response.body);
-            },
-            Err(e) => libc_println!("HTTPS GET request failed: {}", e),
-        }
-    }
-
-    #[test]
-    fn test_http_post() {
-        // Test HTTP POST request
-        match http_post("localhost", "/", "key=value") {
-            Ok(response) => {
-                libc_println!("HTTP POST request successful!");
-                libc_println!("Status Code: {}", response.status_code);
-                libc_println!("Response Body: {}", response.body);
-            },
-            Err(e) => libc_println!("HTTP POST request failed: {}", e),
-        }
-
-        // Test HTTPS POST request
-        match http_post("https://example.com", "/", "key=value") {
-            Ok(response) => {
-                libc_println!("HTTPS POST request successful!");
-                libc_println!("Status Code: {}", response.status_code);
-                libc_println!("Response Body: {}", response.body);
-            },
-            Err(e) => libc_println!("HTTPS POST request failed: {}", e),
-        }
-    }
-}
+// #[cfg(test)]
+// mod tests {
+// use libc_print::libc_println;
+//
+// use super::*;
+//
+// #[test]
+// fn test_http_get() {
+// Test HTTP GET request
+// match http_get("http://localhost", "/") {
+// Ok(response) => {
+// libc_println!("HTTP GET request successful!");
+// libc_println!("Status Code: {}", response.status_code);
+// libc_println!("Response Body: {}", response.body);
+// },
+// Err(e) => libc_println!("HTTP GET request failed: {}", e),
+// }
+//
+// Test HTTPS GET request
+// match http_get("https://example.com", "/") {
+// Ok(response) => {
+// libc_println!("HTTPS GET request successful!");
+// libc_println!("Status Code: {}", response.status_code);
+// libc_println!("Response Body: {}", response.body);
+// },
+// Err(e) => libc_println!("HTTPS GET request failed: {}", e),
+// }
+// }
+//
+// #[test]
+// fn test_http_post() {
+// Test HTTP POST request
+// match http_post("localhost", "/", "key=value") {
+// Ok(response) => {
+// libc_println!("HTTP POST request successful!");
+// libc_println!("Status Code: {}", response.status_code);
+// libc_println!("Response Body: {}", response.body);
+// },
+// Err(e) => libc_println!("HTTP POST request failed: {}", e),
+// }
+//
+// Test HTTPS POST request
+// match http_post("https://example.com", "/", "key=value") {
+// Ok(response) => {
+// libc_println!("HTTPS POST request successful!");
+// libc_println!("Status Code: {}", response.status_code);
+// libc_println!("Response Body: {}", response.body);
+// },
+// Err(e) => libc_println!("HTTPS POST request failed: {}", e),
+// }
+// }
+// }

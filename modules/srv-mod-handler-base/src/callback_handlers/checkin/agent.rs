@@ -164,6 +164,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_prepare() {
         let checkin_data = mock_checkin();
 

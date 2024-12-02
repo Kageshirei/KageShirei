@@ -114,6 +114,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_post_handler_refresh_token() {
         let db = init().await;
         // Mock broadcast channel

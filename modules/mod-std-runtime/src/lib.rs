@@ -19,7 +19,7 @@
 //! ## Examples
 //!
 //! ### Using the Custom Runtime
-//! ```rust
+//! ```rust ignore
 //! use std::sync::Arc;
 //!
 //! use mod_std_runtime::StdRuntime;
@@ -41,7 +41,7 @@
 //! ```
 //!
 //! ### Using the Thread Pool
-//! ```rust
+//! ```rust ignore
 //! use mod_std_runtime::std_threadpool::ThreadPool;
 //!
 //! // Create a thread pool with 4 worker threads

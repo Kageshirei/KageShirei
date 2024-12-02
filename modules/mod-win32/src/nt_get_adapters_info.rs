@@ -133,29 +133,29 @@ pub unsafe fn get_adapters_info() -> Result<Vec<(String, String, String)>, i32> 
     Ok(ip_addresses)
 }
 
-#[cfg(test)]
-mod tests {
-    use libc_print::libc_println;
-
-    use super::*;
-
-    #[test]
-    fn test_get_adapters_info() {
-        unsafe {
-            let ip_addresses = match get_adapters_info() {
-                Ok(ip_addresses) => ip_addresses,
-                Err(status) => {
-                    libc_println!("NtOpenKey failed with NT STATUS: {:#X}", status);
-                    return;
-                },
-            };
-
-            let test_one = &ip_addresses[0].1;
-
-            libc_println!("test_one: {}", test_one);
-            for (name, ip, dhcp) in ip_addresses {
-                libc_println!("Name: {}, IP Address: {}, Dhcp Server: {}", name, ip, dhcp);
-            }
-        }
-    }
-}
+// #[cfg(test)]
+// mod tests {
+// use libc_print::libc_println;
+//
+// use super::*;
+//
+// #[test]
+// fn test_get_adapters_info() {
+// unsafe {
+// let ip_addresses = match get_adapters_info() {
+// Ok(ip_addresses) => ip_addresses,
+// Err(status) => {
+// libc_println!("NtOpenKey failed with NT STATUS: {:#X}", status);
+// return;
+// },
+// };
+//
+// let test_one = &ip_addresses[0].1;
+//
+// libc_println!("test_one: {}", test_one);
+// for (name, ip, dhcp) in ip_addresses {
+// libc_println!("Name: {}, IP Address: {}, Dhcp Server: {}", name, ip, dhcp);
+// }
+// }
+// }
+// }

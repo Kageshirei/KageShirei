@@ -180,7 +180,7 @@ mod tests {
             ppid:               ActiveValue::Set(1),
             username:           ActiveValue::Set("test".to_owned()),
             process_name:       ActiveValue::Set("test".to_owned()),
-            signature:          ActiveValue::Set("test".to_owned()),
+            signature:          ActiveValue::Set("test339".to_owned()),
             terminated_at:      ActiveValue::Set(None),
             created_at:         ActiveValue::Set(Utc::now().naive_utc()),
         })

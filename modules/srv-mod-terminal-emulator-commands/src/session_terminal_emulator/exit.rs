@@ -54,6 +54,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_handle_exit() {
         // Mock database setup
         let db = init().await;
