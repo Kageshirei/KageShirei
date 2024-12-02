@@ -1,18 +1,7 @@
-import { getTextualIntegrityLevel } from "@/helpers/textual-integrity-level";
-import { SessionRecord } from "@/interfaces/session";
-import {
-    Table,
-    TableScrollContainer,
-    TableTbody,
-    TableTd,
-    TableTh,
-    TableThead,
-    TableTr,
-} from "@mantine/core";
-import {
-    FC,
-    useMemo,
-} from "react";
+import {getTextualIntegrityLevel} from "@/helpers/textual-integrity-level";
+import {SessionRecord} from "@/interfaces/session";
+import {Table, TableScrollContainer, TableTbody, TableTd, TableTh, TableThead, TableTr,} from "@mantine/core";
+import {FC, useMemo,} from "react";
 
 interface PostParseHistoryProps {
     sessions: SessionRecord[];
@@ -65,10 +54,10 @@ const SessionLine: FC<HistoryLineProps> = ({session_line}) => {
                 {session_line.domain}\{session_line.username}
             </TableTd>
             <TableTd className="break-keep whitespace-nowrap">
-                {session_line.ip}
+                {session_line.network_interfaces.network_interfaces.map(v => v.address).join(", ")}
             </TableTd>
             <TableTd className="break-keep whitespace-nowrap">
-                {session_line.operative_system.toLowerCase()}
+                {session_line.operating_system.toLowerCase()}
             </TableTd>
             <TableTd className="break-all whitespace-pre-wrap">
                 {integrity_level}

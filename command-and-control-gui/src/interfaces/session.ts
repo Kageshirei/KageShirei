@@ -1,9 +1,11 @@
+import {NetworkInterfaceArray} from "@/interfaces/agent";
+
 export interface SessionRecord {
     id: string,
     hostname: string,
     domain: string,
     username: string,
-    ip: string,
+    network_interfaces: NetworkInterfaceArray,
     integrity_level: number,
-    operative_system: string,
+    operating_system: string,
 }
