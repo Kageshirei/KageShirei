@@ -1,5 +1,5 @@
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
-#![feature(lint_reasons)]
+#![allow(clippy::all)]
 
 pub mod loader;
