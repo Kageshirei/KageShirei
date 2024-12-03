@@ -1,0 +1,17 @@
+[package]
+name = "kageshirei-extensions"
+version = "0.1.0"
+edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "library", "terminal", "emulator"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A library for the KageShirei agent that provides Win32 functionality."
+readme = "README.md"
+
+[dependencies]
+glob = {version = "0.3.1"}
+libloading = {version = "0.8.6"}
+
+[lints]
+workspace = true

@@ -27,7 +27,7 @@ members = [
     "modules/srv-mod-operator-api",
     "modules/srv-mod-terminal-emulator-commands",
     "server",
-    "libs/kageshirei-format-json",
+    "libs/kageshirei-format-json", "libs/kageshirei-extensions",
 ]
 resolver = "2"
 
