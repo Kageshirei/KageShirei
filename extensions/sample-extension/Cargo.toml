@@ -1,0 +1,17 @@
+[package]
+name = "sample-extension"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+
+[dependencies]
+kageshirei-extensions = { path = "../../libs/kageshirei-extensions" }
+kageshirei-extensions-macros = { path = "../../libs/kageshirei-extensions-macros" }
+
+[lib]
+crate-type = ["cdylib"]
+
+[lints]
+workspace = true

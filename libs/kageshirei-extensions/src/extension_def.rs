@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::dependency_injection::DependencyInjector;
 
+#[async_trait::async_trait]
 pub trait KageshireiExtension {
     /// Get the name of the extension
     fn name(&self) -> &'static str;
@@ -21,8 +22,20 @@ pub trait KageshireiExtension {
     fn compatibility(&self) -> &'static str;
 
     /// Initialize the extension
-    fn initialize(&self, dependencies: Arc<DependencyInjector>);
+    async fn initialize(&self, dependencies: Arc<DependencyInjector>);
 
     /// Terminate the extension
-    fn terminate(&self);
+    async fn terminate(&self);
+
+    /// Describe the extension
+    fn describe(&self) -> String {
+        format!(
+            "Name: {}\nVersion: {}\nAuthor: {}\nDescription: {}\nCompatibility: {}",
+            self.name(),
+            self.version(),
+            self.author(),
+            self.description(),
+            self.compatibility()
+        )
+    }
 }

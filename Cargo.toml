@@ -29,7 +29,7 @@ members = [
     "server",
     "libs/kageshirei-format-json",
     "libs/kageshirei-extensions",
-    "libs/kageshirei-extensions-macros",
+    "libs/kageshirei-extensions-macros", "extensions/sample-extension",
 ]
 resolver = "2"
 

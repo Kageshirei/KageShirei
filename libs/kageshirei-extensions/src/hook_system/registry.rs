@@ -21,9 +21,9 @@ type HookFn =
 #[derive(Debug, Clone)]
 pub struct HookMetadata {
     /// The priority of the hook, lower runs first (0 is the highest priority)
-    priority:    u8,
+    pub priority:    u8,
     /// The hook description
-    description: String,
+    pub description: String,
 }
 
 /// The structured representation of a hook

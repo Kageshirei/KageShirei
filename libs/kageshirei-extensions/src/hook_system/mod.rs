@@ -1,3 +1,3 @@
 mod registry;
 
-pub use registry::HookRegistry;
+pub use registry::{HookMetadata, HookRegistry};

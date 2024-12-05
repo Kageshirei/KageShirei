@@ -4996,6 +4996,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sample-extension"
+version = "0.1.0"
+dependencies = [
+ "kageshirei-extensions",
+ "kageshirei-extensions-macros",
+]
+
+[[package]]
 name = "scc"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
