@@ -1,20 +1,24 @@
 //! The extension manager is responsible for loading and managing extensions.
 
+use std::sync::Arc;
+
 use libloading::Library;
 
-use crate::extension_def::KageshireiExtension;
+use crate::{dependency_injection::DependencyInjector, KageshireiExtension};
 
 pub struct ExtensionManager {
-    libraries:  Vec<Library>,
-    extensions: Vec<Box<dyn KageshireiExtension>>,
+    libraries:           Vec<Library>,
+    extensions:          Vec<Box<dyn KageshireiExtension>>,
+    dependency_injector: Arc<Box<DependencyInjector>>,
 }
 
 impl ExtensionManager {
     /// Create a new extension manager
-    pub fn new() -> Self {
+    pub fn new(dependency_injector: DependencyInjector) -> Self {
         Self {
-            libraries:  Vec::new(),
-            extensions: Vec::new(),
+            libraries:           Vec::new(),
+            extensions:          Vec::new(),
+            dependency_injector: Arc::new(Box::new(dependency_injector)),
         }
     }
 
@@ -61,7 +65,7 @@ impl ExtensionManager {
     /// Initialize all extensions
     pub fn initialize(&self) {
         for extension in &self.extensions {
-            extension.initialize();
+            extension.initialize(self.dependency_injector.clone());
         }
     }
 

@@ -1,5 +1,5 @@
 [package]
-name = "kageshirei-extensions"
+name = "kageshirei-extensions-macros"
 version = "0.1.0"
 edition = "2021"
 categories = ["simulation"]
@@ -9,13 +9,13 @@ license-file = "../../LICENSE"
 description = "A library for the KageShirei agent that provides Win32 functionality."
 readme = "README.md"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-glob = {version = "0.3.1"}
-libloading = {version = "0.8.6"}
-tokio = {version = "1.41.1", features = ["full"]}
-async-trait = "0.1.83"
-itertools = "0.13.0"
-kageshirei-extensions-macros = {path = "../kageshirei-extensions-macros"}
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
 
 [lints]
 workspace = true
