@@ -1,3 +1,5 @@
+//! The hook registry module provides a way to register and trigger hooks with metadata.
+
 use std::{
     any::Any,
     collections::HashMap,
@@ -7,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use itertools::Itertools;
+use itertools::Itertools as _;
 use tokio::sync::RwLock;
 
 /// The type of hook function, this is a boxed function that takes a boxed `Any` and returns a
@@ -48,7 +50,7 @@ impl Hook {
     }
 
     /// Get the priority of the hook
-    pub fn priority(&self) -> u8 { self.metadata.priority }
+    pub const fn priority(&self) -> u8 { self.metadata.priority }
 
     /// Get the description of the hook
     pub fn description(&self) -> String { self.metadata.description.clone() }
@@ -70,6 +72,10 @@ pub struct HookRegistry {
     hooks: RwLock<HashMap<String, Vec<Hook>>>,
 }
 
+impl Default for HookRegistry {
+    fn default() -> Self { Self::new() }
+}
+
 impl HookRegistry {
     /// Create a new hook registry
     pub fn new() -> Self {
@@ -85,13 +91,19 @@ impl HookRegistry {
         F: Fn(&C) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<(), String>> + Send + 'static,
     {
+        #![expect(
+            clippy::significant_drop_tightening,
+            reason = "The hooks cannot be dropped as they are used below and the vector must stay writable until the \
+                      end of the function. ref to line: `let mut hooks = ...`"
+        )]
+
         let hook = Arc::new(hook);
 
         // Lock the hooks map
         let mut hooks = self.hooks.write().await;
 
         // If the entry doesn't exist, create it
-        let entry = hooks.entry(hook_id.to_string()).or_insert_with(Vec::new);
+        let entry = hooks.entry(hook_id.to_owned()).or_insert_with(Vec::new);
 
         // Push the hook into the registry
         entry.push(Hook {
@@ -117,8 +129,12 @@ impl HookRegistry {
     where
         C: 'static + Any + Send + Sync,
     {
-        let hooks = self.hooks.read().await;
-        if let Some(hooks) = hooks.get(hood_id) {
+        #![expect(
+            clippy::significant_drop_tightening,
+            reason = "The hooks are not dropped as they are used into the if-let construct below"
+        )]
+        let rw_locked_hooks = self.hooks.read().await;
+        if let Some(hooks) = rw_locked_hooks.get(hood_id) {
             // Type-erase the context
             let context = Arc::new(Box::new(context) as Box<dyn Any + Send + Sync>);
 
@@ -150,7 +166,6 @@ mod tests {
     use tokio::sync::Mutex;
 
     use super::*;
-    use crate::hook_system::context::ContextType;
 
     #[tokio::test]
     async fn test_hook_creation_and_execution() {
@@ -234,8 +249,6 @@ mod tests {
                 HookMetadata {
                     priority:    0,
                     description: "Add 1 to state".to_string(),
-                    filename:    file!(),
-                    line:        line!(),
                 },
                 {
                     let state = Arc::clone(&state);

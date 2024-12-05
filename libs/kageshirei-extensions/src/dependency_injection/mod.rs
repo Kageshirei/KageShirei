@@ -12,29 +12,29 @@ pub use server_deps::ServerDependencies;
 
 pub struct DependencyInjector {
     /// The dependencies for the agent
-    agent_deps:  Arc<Box<AgentDependencies>>,
+    agent_deps:  Arc<AgentDependencies>,
     /// The dependencies for the GUI
-    gui_deps:    Arc<Box<GuiDependencies>>,
+    gui_deps:    Arc<GuiDependencies>,
     /// The dependencies for the server
-    server_deps: Arc<Box<ServerDependencies>>,
+    server_deps: Arc<ServerDependencies>,
 }
 
 impl DependencyInjector {
     /// Create a new dependency injector
     pub fn new(agent_deps: AgentDependencies, gui_deps: GuiDependencies, server_deps: ServerDependencies) -> Self {
         Self {
-            agent_deps:  Arc::new(Box::new(agent_deps)),
-            gui_deps:    Arc::new(Box::new(gui_deps)),
-            server_deps: Arc::new(Box::new(server_deps)),
+            agent_deps:  Arc::new(agent_deps),
+            gui_deps:    Arc::new(gui_deps),
+            server_deps: Arc::new(server_deps),
         }
     }
 
     /// Get the agent dependencies
-    pub fn agent_deps(&self) -> Arc<Box<AgentDependencies>> { self.agent_deps.clone() }
+    pub fn agent_deps(&self) -> Arc<AgentDependencies> { self.agent_deps.clone() }
 
     /// Get the GUI dependencies
-    pub fn gui_deps(&self) -> Arc<Box<GuiDependencies>> { self.gui_deps.clone() }
+    pub fn gui_deps(&self) -> Arc<GuiDependencies> { self.gui_deps.clone() }
 
     /// Get the server dependencies
-    pub fn server_deps(&self) -> Arc<Box<ServerDependencies>> { self.server_deps.clone() }
+    pub fn server_deps(&self) -> Arc<ServerDependencies> { self.server_deps.clone() }
 }

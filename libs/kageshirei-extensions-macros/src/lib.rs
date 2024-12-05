@@ -1,11 +1,33 @@
+//! # Kageshirei Extensions Macros
+//! This crate provides a set of custom procedural macros for use in the Kageshirei project and its
+//! extensions.
+
+#![allow(
+    clippy::panic,
+    reason = "The macro is used for code generation and panics are used for error handling, it is expected a macro \
+              fails to compile if something goes wrong"
+)]
+#![allow(
+    clippy::wildcard_enum_match_arm,
+    reason = "Simple matches have been used for simplicity, adding all cases would make the code more complex and \
+              difficult to read"
+)]
+#![allow(
+    clippy::pattern_type_mismatch,
+    reason = "Ok as in this case simplifies the code"
+)]
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, FnArg, GenericArgument, ItemFn, Pat, PatType, PathArguments, Type};
 
 /// A helper function to debug types at runtime (not used in this macro but can be handy for
 /// development).
-#[allow(dead_code)]
-fn print_type<T>(_: T) -> String { format!("{}", std::any::type_name::<T>()) }
+#[allow(
+    dead_code,
+    reason = "Not used in the macro but can be handy for development"
+)]
+fn print_type<T>(_: T) -> String { std::any::type_name::<T>().to_owned() }
 
 /// Attribute macro for generating hook registration functionality.
 ///

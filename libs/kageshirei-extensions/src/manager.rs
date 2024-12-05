@@ -6,10 +6,15 @@ use libloading::Library;
 
 use crate::{dependency_injection::DependencyInjector, KageshireiExtension};
 
+/// The extension manager is responsible for loading and managing extensions.
+//#[expect(clippy::module_name_repetitions, reason = "The name is descriptive and is exported from the crate root")]
 pub struct ExtensionManager {
+    /// Shared libraries loaded by the extension manager
     libraries:           Vec<Library>,
+    /// Extensions loaded by the extension manager
     extensions:          Vec<Box<dyn KageshireiExtension>>,
-    dependency_injector: Arc<Box<DependencyInjector>>,
+    /// Dependency injector used to inject dependencies into extensions
+    dependency_injector: Arc<DependencyInjector>,
 }
 
 impl ExtensionManager {
@@ -18,7 +23,7 @@ impl ExtensionManager {
         Self {
             libraries:           Vec::new(),
             extensions:          Vec::new(),
-            dependency_injector: Arc::new(Box::new(dependency_injector)),
+            dependency_injector: Arc::new(dependency_injector),
         }
     }
 
@@ -51,7 +56,8 @@ impl ExtensionManager {
 
         // Get the extension from the shared library and track it
         let extension = unsafe {
-            let lib = self.libraries.get(index).unwrap();
+            #[expect(clippy::indexing_slicing, reason = "The library was just added")]
+            let lib = &self.libraries[index];
             let get_extension = lib
                 .get::<extern "C" fn() -> *mut dyn KageshireiExtension>(b"get_extension")
                 .map_err(|e| e.to_string())?;

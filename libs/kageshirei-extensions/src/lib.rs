@@ -4,8 +4,9 @@
 pub mod dependency_injection;
 mod extension_def;
 pub mod hook_system;
-pub mod manager;
+mod manager;
 
 // Re-export async_trait
 pub use async_trait::async_trait;
 pub use extension_def::KageshireiExtension;
+pub use manager::ExtensionManager;

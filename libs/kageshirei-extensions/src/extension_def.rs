@@ -21,7 +21,7 @@ pub trait KageshireiExtension {
     fn compatibility(&self) -> &'static str;
 
     /// Initialize the extension
-    fn initialize(&self, dependencies: Arc<Box<DependencyInjector>>);
+    fn initialize(&self, dependencies: Arc<DependencyInjector>);
 
     /// Terminate the extension
     fn terminate(&self);
