@@ -10,6 +10,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use kageshirei_utils::unrecoverable_error::unrecoverable_error;
 use log::error;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLock, RwLockReadGuard};
 use validator::{Validate, ValidationErrors};
@@ -25,9 +26,13 @@ pub mod sse;
 mod validators;
 
 pub use errors::Configuration;
+use kageshirei_extensions::ExtensionManager;
 
 pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;
+
+/// The extension manager for the server
+pub static EXTENSIONS_MANAGER: Lazy<ExtensionManager> = Lazy::new(|| ExtensionManager::default());
 
 /// Root server configuration
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]
