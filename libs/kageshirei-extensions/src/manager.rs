@@ -1,6 +1,9 @@
 //! The extension manager is responsible for loading and managing extensions.
 
-use std::sync::Arc;
+use std::{
+    fmt::{Debug, Formatter, Write},
+    sync::Arc,
+};
 
 use libloading::Library;
 use tracing::{debug, field::debug};
@@ -30,8 +33,21 @@ impl LoadedExtension {
     fn extension(&self) -> &Box<dyn KageshireiExtension> { &self.extension }
 }
 
+impl Debug for LoadedExtension {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // Get the address of the Box<dyn Trait>
+        let extension_ptr = &*self.extension as *const dyn KageshireiExtension as *const ();
+
+        f.debug_struct("LoadedExtension")
+            .field("path", &self.path)
+            .field("extension", &format!("{:p}", extension_ptr))
+            .field("extension.name", &self.extension.name())
+            .finish()
+    }
+}
+
 /// The extension manager is responsible for loading and managing extensions.
-//#[expect(clippy::module_name_repetitions, reason = "The name is descriptive and is exported from the crate root")]
+#[derive(Debug, Default)]
 pub struct ExtensionManager {
     /// Shared libraries loaded by the extension manager
     libraries:           Vec<Library>,

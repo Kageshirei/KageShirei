@@ -5926,6 +5926,7 @@ dependencies = [
 name = "srv-mod-config"
 version = "0.1.0"
 dependencies = [
+ "kageshirei-extensions",
  "kageshirei-utils",
  "log",
  "nix",

@@ -1,9 +1,17 @@
 //! GUI dependencies
 
+use std::sync::Arc;
+
 use crate::hook_system::HookRegistry;
 
 /// Container of dependencies for GUI DI (dependency injection).
+///
+/// All dependencies except for the hook registry **must** be `Option`s to allow for optional
+/// dependencies and lazy initialization.
+///
+/// All dependencies must also be `Arc`s to allow for shared ownership.
+#[derive(Debug, Default)]
 pub struct GuiDependencies {
     /// A registry of GUI related hooks
-    pub registry: HookRegistry,
+    pub registry: Arc<HookRegistry>,
 }

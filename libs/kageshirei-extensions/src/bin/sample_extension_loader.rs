@@ -17,17 +17,7 @@ use kageshirei_extensions::{
 async fn main() {
     println!("[::main] Example of loading extensions from a folder named `./extensions`");
 
-    let mut manager = ExtensionManager::new(DependencyInjector::new(
-        AgentDependencies {
-            registry: HookRegistry::new(),
-        },
-        GuiDependencies {
-            registry: HookRegistry::new(),
-        },
-        ServerDependencies {
-            registry: HookRegistry::new(),
-        },
-    ));
+    let mut manager = ExtensionManager::new(DependencyInjector::default());
 
     let suffix = if cfg!(windows) { ".dll" } else { ".so" };
     for path in glob(format!("./extensions/*{}", suffix).as_str())

@@ -10,6 +10,7 @@ pub use agent_deps::AgentDependencies;
 pub use gui_deps::GuiDependencies;
 pub use server_deps::ServerDependencies;
 
+#[derive(Debug, Default)]
 pub struct DependencyInjector {
     /// The dependencies for the agent
     agent_deps:  Arc<AgentDependencies>,
