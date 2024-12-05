@@ -6,7 +6,6 @@ use libloading::Library;
 
 use crate::{
     dependency_injection::{AgentDependencies, DependencyInjector, GuiDependencies, ServerDependencies},
-    hook_system::HookRegistry,
     KageshireiExtension,
 };
 
@@ -23,6 +22,10 @@ impl LoadedExtension {
     fn path(&self) -> String { self.path.clone() }
 
     /// Get the extension
+    #[expect(
+        clippy::borrowed_box,
+        reason = "The type is dynamic and cannot be referenced directly"
+    )]
     fn extension(&self) -> &Box<dyn KageshireiExtension> { &self.extension }
 }
 
@@ -58,6 +61,9 @@ impl ExtensionManager {
 
     /// Get the number of extensions loaded by the extension manager
     pub fn len(&self) -> usize { self.extensions.len() }
+
+    /// Check if the extension manager is empty
+    pub fn is_empty(&self) -> bool { self.len() == 0 }
 
     /// Load an extension from a shared library
     ///
@@ -97,7 +103,7 @@ impl ExtensionManager {
         };
 
         self.extensions.push(LoadedExtension {
-            path: path.to_string(),
+            path: path.to_owned(),
             extension,
         });
 
@@ -134,26 +140,26 @@ impl ExtensionManager {
     }
 
     /// Get an extension by its name
+    #[expect(
+        clippy::borrowed_box,
+        reason = "The type is dynamic and cannot be referenced directly"
+    )]
     pub fn get_by_name(&self, name: &str) -> Option<&Box<dyn KageshireiExtension>> {
-        if let Some(ext) = self
-            .extensions
+        self.extensions
             .iter()
             .find(|ext| ext.extension().name() == name)
-        {
-            Some(ext.extension())
-        }
-        else {
-            None
-        }
+            .map(|ext| ext.extension())
     }
 
     /// Get an extension by its path
+    #[expect(
+        clippy::borrowed_box,
+        reason = "The type is dynamic and cannot be referenced directly"
+    )]
     pub fn get_by_path(&self, path: &str) -> Option<&Box<dyn KageshireiExtension>> {
-        if let Some(ext) = self.extensions.iter().find(|ext| ext.path() == path) {
-            Some(ext.extension())
-        }
-        else {
-            None
-        }
+        self.extensions
+            .iter()
+            .find(|ext| ext.path() == path)
+            .map(|ext| ext.extension())
     }
 }

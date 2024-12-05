@@ -1,10 +1,13 @@
 [package]
 name = "sample-extension"
-authors.workspace = true
-edition.workspace = true
-version.workspace = true
-rust-version.workspace = true
-readme.workspace = true
+version = "0.1.0"
+edition = "2021"
+categories = ["simulation"]
+keywords = ["kageshirei", "agent", "library", "terminal", "emulator"]
+repository = "https://github.com/Kageshirei/KageShirei"
+license-file = "../../LICENSE"
+description = "A library for the KageShirei agent that provides Win32 functionality."
+readme = "README.md"
 
 [dependencies]
 kageshirei-extensions = { path = "../../libs/kageshirei-extensions" }

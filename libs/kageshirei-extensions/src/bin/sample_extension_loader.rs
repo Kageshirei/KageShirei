@@ -1,3 +1,9 @@
+//! Sample code to load extensions from a folder named `./extensions`
+
+#![allow(clippy::print_stdout, reason = "This is a sample code")]
+#![allow(clippy::print_stderr, reason = "This is a sample code")]
+#![allow(clippy::expect_used, reason = "This is a sample code")]
+
 use std::sync::Arc;
 
 use glob::glob;
@@ -24,23 +30,24 @@ async fn main() {
     ));
 
     let suffix = if cfg!(windows) { ".dll" } else { ".so" };
-    for entry in glob(format!("./extensions/*{}", suffix).as_str()).expect("Failed to read glob pattern") {
-        if let Ok(path) = entry {
-            println!("[::main] Loading extension from: {}", path.display());
+    for path in glob(format!("./extensions/*{}", suffix).as_str())
+        .expect("Failed to read glob pattern")
+        .flatten()
+    {
+        println!("[::main] Loading extension from: {}", path.display());
+        manager
+            .load(path.to_str().unwrap())
+            .expect("Failed to load extension");
+        println!(
+            "[::main] Extension loaded, extra info below:\n{}",
             manager
-                .load(path.to_str().unwrap())
-                .expect("Failed to load extension");
-            println!(
-                "[::main] Extension loaded, extra info below:\n{}",
-                manager
-                    .get_by_path(path.to_str().unwrap())
-                    .unwrap()
-                    .describe()
-            );
-        }
+                .get_by_path(path.to_str().unwrap())
+                .unwrap()
+                .describe()
+        );
     }
 
-    if manager.len() == 0 {
+    if manager.is_empty() {
         eprintln!("[::main] No extensions loaded");
     }
     else {

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::dependency_injection::DependencyInjector;
 
 #[async_trait::async_trait]
-pub trait KageshireiExtension {
+pub trait KageshireiExtension: Send + Sync {
     /// Get the name of the extension
     fn name(&self) -> &'static str;
 
