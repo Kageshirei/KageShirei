@@ -37,13 +37,13 @@ fn print_type<T>(_: T) -> String { std::any::type_name::<T>().to_owned() }
 ///
 /// The input function must have the following characteristics:
 /// 1. It must be asynchronous.
-/// 2. Its first argument must be of type `Arc<Box<T>>`, where `T` is the context type.
+/// 2. Its first argument must be of type `Arc<T>`, where `T` is the context type.
 /// 3. It must return `Result<(), String>`.
 ///
 /// Example usage:
 /// ```rust ignore
 /// #[registerable_hook]
-/// async fn my_hook(context: Arc<Box<MyContext>>) -> Result<(), String> {
+/// async fn my_hook(context: Arc<MyContext>) -> Result<(), String> {
 ///     // Logic here
 ///     Ok(())
 /// }
@@ -76,7 +76,7 @@ pub fn registerable_hook(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     // Check if the first segment is `Arc`.
                     if first_segment_name == "Arc" {
                         // Extract the generic arguments of `Arc`.
-                        let PathArguments::AngleBracketed(args) = &first_segment.arguments
+                        /*let PathArguments::AngleBracketed(args) = &first_segment.arguments
                         else {
                             panic!("Expected type `Arc<T>` but found something else.");
                         };
@@ -98,9 +98,9 @@ pub fn registerable_hook(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         let second_segment_name = second_segment.ident.to_string();
 
                         // Check if the second segment is `Box`.
-                        if second_segment_name == "Box" {
+                        if second_segment_name == "Box" {*/
                             // Extract the generic arguments of `Box<T>`.
-                            let PathArguments::AngleBracketed(box_args) = &second_segment.arguments
+                            let PathArguments::AngleBracketed(box_args) = &first_segment.arguments
                             else {
                                 panic!("Expected type `Arc<Box<T>>` but found something else.");
                             };
@@ -112,11 +112,11 @@ pub fn registerable_hook(_attr: TokenStream, item: TokenStream) -> TokenStream {
                             };
 
                             // Return the extracted context type.
-                            quote! { #context_type }
+                            quote! { #context_type }/*
                         }
                         else {
                             panic!("Expected type `Arc<Box<T>>` but found something else.");
-                        }
+                        }*/
                     }
                     else {
                         panic!("Expected type `Arc<Box<T>>` but found something else.");
@@ -154,8 +154,8 @@ pub fn registerable_hook(_attr: TokenStream, item: TokenStream) -> TokenStream {
             ///
             /// # Returns
             /// A closure that wraps the hook function call.
-            pub fn register() -> impl Fn(&Arc<Box<#context_type>>) -> Pin<Box<dyn std::future::Future<Output = Result<(), String>> + Send>> {
-                move |ctx: &Arc<Box<#context_type>>| {
+            pub fn register() -> impl Fn(&Arc<#context_type>) -> Pin<Box<dyn std::future::Future<Output = Result<(), String>> + Send>> {
+                move |ctx: &Arc<#context_type>| {
                     Box::pin(Self::call(ctx.clone()))
                 }
             }
@@ -172,7 +172,7 @@ pub fn registerable_hook(_attr: TokenStream, item: TokenStream) -> TokenStream {
             /// # Returns
             ///
             /// An `async` result indicating success (`Ok(())`) or failure (`Err(String)`).
-            pub async fn call(#context_arg_name: Arc<Box<#context_type>>) -> Result<(), String> {
+            pub async fn call(#context_arg_name: Arc<#context_type>) -> Result<(), String> {
                 // Original function logic
                 #(#fn_body)*
             }

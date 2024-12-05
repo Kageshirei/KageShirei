@@ -14,9 +14,8 @@ use tokio::sync::RwLock;
 
 /// The type of hook function, this is a boxed function that takes a boxed `Any` and returns a
 /// future (aka async function with arbitrary context)
-type HookFn = Box<
-    dyn Fn(Arc<Box<dyn Any + Send + Sync>>) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> + Send + Sync,
->;
+type HookFn =
+    Box<dyn Fn(Arc<dyn Any + Send + Sync>) -> Pin<Box<dyn Future<Output = Result<(), String>> + Send>> + Send + Sync>;
 
 /// The metadata of a hook
 #[derive(Debug, Clone)]
@@ -45,9 +44,7 @@ impl Hook {
     }
 
     /// Run the hook
-    pub async fn run(&self, context: Arc<Box<dyn Any + Send + Sync>>) -> Result<(), String> {
-        (self.hook)(context).await
-    }
+    pub async fn run(&self, context: Arc<dyn Any + Send + Sync>) -> Result<(), String> { (self.hook)(context).await }
 
     /// Get the priority of the hook
     pub const fn priority(&self) -> u8 { self.metadata.priority }
@@ -136,7 +133,7 @@ impl HookRegistry {
         let rw_locked_hooks = self.hooks.read().await;
         if let Some(hooks) = rw_locked_hooks.get(hood_id) {
             // Type-erase the context
-            let context = Arc::new(Box::new(context) as Box<dyn Any + Send + Sync>);
+            let context = Arc::new(context) as Arc<dyn Any + Send + Sync>;
 
             let mut errors = Vec::<String>::new();
 
@@ -197,7 +194,7 @@ mod tests {
         let hook = Hook::new(metadata.clone(), hook_fn);
 
         // Run the hook
-        let context = Arc::new(Box::new(()) as Box<dyn Any + Send + Sync>);
+        let context = Arc::new(()) as Arc<dyn Any + Send + Sync>;
         assert!(hook.run(context).await.is_ok());
 
         // Verify state increment
@@ -351,7 +348,7 @@ mod tests {
     struct TestContext {
         value: Mutex<i32>,
     }
-    async fn increase_context_value(context: Arc<Box<TestContext>>) -> Result<(), String> {
+    async fn increase_context_value(context: Arc<TestContext>) -> Result<(), String> {
         let mut guard = context.value.lock().await;
         *guard += 1;
 
@@ -361,9 +358,9 @@ mod tests {
     async fn test_hook_registry_registration_with_standard_function() {
         let registry = HookRegistry::new();
 
-        let context = Arc::new(Box::new(TestContext {
+        let context = Arc::new(TestContext {
             value: Mutex::new(0),
-        }));
+        });
 
         registry
             .register(
@@ -372,7 +369,7 @@ mod tests {
                     priority:    0,
                     description: "Increment context value by 1".to_string(),
                 },
-                move |ctx: &Arc<Box<TestContext>>| Box::pin(increase_context_value(ctx.clone())),
+                move |ctx: &Arc<TestContext>| Box::pin(increase_context_value(ctx.clone())),
             )
             .await;
 
@@ -382,7 +379,7 @@ mod tests {
     }
 
     #[registerable_hook]
-    async fn increase_context_value_derive_macro(context: Arc<Box<TestContext>>) -> Result<(), String> {
+    async fn increase_context_value_derive_macro(context: Arc<TestContext>) -> Result<(), String> {
         let mut guard = context.value.lock().await;
         *guard += 1;
 
@@ -392,9 +389,9 @@ mod tests {
     async fn test_hook_registry_registration_with_derive_function() {
         let registry = HookRegistry::new();
 
-        let context = Arc::new(Box::new(TestContext {
+        let context = Arc::new(TestContext {
             value: Mutex::new(0),
-        }));
+        });
 
         registry
             .register(
