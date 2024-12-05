@@ -11,6 +11,7 @@ use std::{
 
 use itertools::Itertools as _;
 use tokio::sync::RwLock;
+use tracing::debug;
 
 /// The type of hook function, this is a boxed function that takes a boxed `Any` and returns a
 /// future (aka async function with arbitrary context)
@@ -94,6 +95,8 @@ impl HookRegistry {
                       end of the function. ref to line: `let mut hooks = ...`"
         )]
 
+        debug!("Registering hook with id '{}'", hook_id);
+
         let hook = Arc::new(hook);
 
         // Lock the hooks map
@@ -101,6 +104,9 @@ impl HookRegistry {
 
         // If the entry doesn't exist, create it
         let entry = hooks.entry(hook_id.to_owned()).or_insert_with(Vec::new);
+
+        debug!("Hook with id '{}' has {} hooks", hook_id, entry.len());
+        debug!("Adding hook to id '{}'", hook_id);
 
         // Push the hook into the registry
         entry.push(Hook {
@@ -119,10 +125,13 @@ impl HookRegistry {
                 })
             }),
         });
+
+        debug!("New hook added to id '{}'", hook_id);
+        debug!("Hook with id '{}' now has {} hooks", hook_id, entry.len());
     }
 
     /// Run all hooks for a given name
-    pub async fn trigger<C>(&self, hood_id: &str, context: C) -> Result<(), Vec<String>>
+    pub async fn trigger<C>(&self, hook_id: &str, context: C) -> Result<(), Vec<String>>
     where
         C: 'static + Any + Send + Sync,
     {
@@ -130,8 +139,13 @@ impl HookRegistry {
             clippy::significant_drop_tightening,
             reason = "The hooks are not dropped as they are used into the if-let construct below"
         )]
+
+        debug!("Triggering hooks for id '{}'", hook_id);
+
         let rw_locked_hooks = self.hooks.read().await;
-        if let Some(hooks) = rw_locked_hooks.get(hood_id) {
+        if let Some(hooks) = rw_locked_hooks.get(hook_id) {
+            debug!("Found {} hooks for id '{}'", hooks.len(), hook_id);
+
             // Type-erase the context
             let context = Arc::new(context) as Arc<dyn Any + Send + Sync>;
 
@@ -151,6 +165,10 @@ impl HookRegistry {
                 Err(errors)
             };
         }
+        else {
+            debug!("No hooks found for id '{}'", hook_id);
+        }
+
         Ok(())
     }
 }

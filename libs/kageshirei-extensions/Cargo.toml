@@ -16,6 +16,7 @@ tokio = {version = "1.41.1", features = ["full"]}
 async-trait = "0.1.83"
 itertools = "0.13.0"
 kageshirei-extensions-macros = {path = "../kageshirei-extensions-macros"}
+tracing = "0.1.41"
 
 [lints]
 workspace = true

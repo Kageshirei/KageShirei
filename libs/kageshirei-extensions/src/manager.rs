@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use libloading::Library;
+use tracing::{debug, field::debug};
 
 use crate::{
     dependency_injection::{AgentDependencies, DependencyInjector, GuiDependencies, ServerDependencies},
@@ -85,6 +86,7 @@ impl ExtensionManager {
     /// }
     /// ```
     pub fn load(&mut self, path: &str) -> Result<(), String> {
+        debug!("Loading extension from: {}", path);
         // Load the shared library
         let lib = unsafe { Library::new(path).map_err(|e| e.to_string())? };
 
@@ -107,33 +109,51 @@ impl ExtensionManager {
             extension,
         });
 
+        debug!(
+            "Extension loaded, extra info below:\n{}",
+            self.extensions.last().unwrap().extension.describe()
+        );
         Ok(())
     }
 
     /// Initialize all extensions
     pub async fn initialize(&self) {
         for ext in &self.extensions {
+            debug!("Initializing extension: {}", ext.extension().name());
+
             ext.extension()
                 .initialize(self.dependency_injector.clone())
                 .await;
+
+            debug!("Initialized extension: {}", ext.extension().name());
         }
     }
 
     /// Unload an extension
     pub async fn unload(&mut self, index: usize) {
+        debug!(
+            "Unloading extension at index {}: {}",
+            index,
+            self.extensions[index].extension().name()
+        );
+
         // remove the extension from the vector
         let extension = self.extensions.remove(index);
         // then terminate and drop it
         extension.extension().terminate().await;
         drop(extension);
+        debug("Extension unloaded");
 
         // Unload the library
         let library = self.libraries.remove(index);
         drop(library);
+        debug("Library unloaded");
     }
 
     /// Terminate all extensions and unload their shared libraries
     pub async fn terminate(&mut self) {
+        debug!("Terminating all extensions");
+
         for i in 0 .. self.extensions.len() {
             self.unload(i).await;
         }
