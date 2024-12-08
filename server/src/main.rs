@@ -86,6 +86,10 @@ fn main() -> Result<(), String> {
     trace!("Parsed arguments: {:?}", args);
 
     // Install the default AWS LC provider
+    #[allow(
+        clippy::let_underscore_must_use,
+        reason = "The result of install_default is not used as it has no impact on the application flow."
+    )]
     let _ = crypto::aws_lc_rs::default_provider().install_default();
 
     match args.command {

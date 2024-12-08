@@ -788,7 +788,7 @@ impl<'a> Coffee<'a> {
             }
             let section_base = section_base.unwrap();
 
-            /// Safety: VirtualFree is safe to call with a valid pointer and size.
+            // Safety: VirtualFree is safe to call with a valid pointer and size.
             unsafe {
                 let _ = VirtualFree(*section_base as *mut c_void, 0, MEM_RELEASE);
             }

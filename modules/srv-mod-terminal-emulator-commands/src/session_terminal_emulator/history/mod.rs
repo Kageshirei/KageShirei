@@ -28,6 +28,11 @@ pub struct TerminalSessionHistoryArguments {
 }
 
 #[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "The repetition in the name highlights that this enum defines specific subcommands related to history \
+              operations."
+)]
 pub enum HistorySubcommands {
     /// Restore a list of commands from the history
     #[serde(rename = "restore")]

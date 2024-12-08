@@ -5,7 +5,7 @@ use axum::{
     body::{Body, Bytes},
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Response},
+    response::{IntoResponse as _, Response},
     routing::post,
     Router,
 };
@@ -116,6 +116,10 @@ pub fn heuristic_variant_1(Path((id_position, path)): Path<(String, String)>) ->
 /// - 0 to 2: decoy strings, unused
 /// - 3: the actual id of the request to parse
 /// - 4+: other decoy strings, unused
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "Repetition in the name clarifies that this handler implements a specific heuristic logic."
+)]
 pub fn heuristic_handler_variant_2(Path(path): Path<String>) -> Option<String> {
     // Extract the ID by finding the first 32-character segment
     let id = path
@@ -147,8 +151,8 @@ async fn unified_post_handler(
 
     if pieces.len() >= 2 &&
         let Some(id) = heuristic_variant_1(Path((
-            pieces.get(0).unwrap_or(&"").to_string(),
-            pieces.iter().skip(1).map(|v| *v).collect::<String>(),
+            pieces.first().unwrap_or(&"").to_string(),
+            pieces.iter().skip(1).copied().collect::<String>(),
         )))
     {
         return handle_post_request(state, headers, body, id).await;
@@ -174,8 +178,8 @@ async fn unified_get_handler(path: Path<String>, state: State<HandlerSharedState
 
     if pieces.len() >= 2 &&
         let Some(id) = heuristic_variant_1(Path((
-            pieces.get(0).unwrap_or(&"").to_string(),
-            pieces.iter().skip(1).map(|v| *v).collect::<String>(),
+            pieces.first().unwrap_or(&"").to_string(),
+            pieces.iter().skip(1).copied().collect::<String>(),
         )))
     {
         return handle_get_request(state, id).await;

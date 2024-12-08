@@ -27,6 +27,10 @@ pub fn bytes_to_string(bytes: &[u8]) -> String { bytes.iter().map(|b| *b as char
 /// # Returns
 ///
 /// The decoded body or a failed response
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "The name repetition clarifies the purpose of the function."
+)]
 pub fn decode_or_fail_response(encoder: &Encoder, body: Vec<u8>) -> Result<Vec<u8>, BaseHandlerResponse> {
     let decoded = match *encoder {
         Encoder::Hex => HexEncoder.decode(bytes_to_string(body.as_slice()).as_str()),

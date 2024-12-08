@@ -21,6 +21,11 @@ pub struct TerminalSessionMakeArguments {
 
 /// Make something enumeration, a list of possible subcommands
 #[derive(Subcommand, Debug, PartialEq, Eq, Serialize)]
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "Repetition in the name emphasizes that this enum represents distinct subcommands for the 'Make' \
+              functionality."
+)]
 pub enum MakeSubcommands {
     /// Make a new notification and broadcast it to all connected clients
     #[serde(rename = "notification")]

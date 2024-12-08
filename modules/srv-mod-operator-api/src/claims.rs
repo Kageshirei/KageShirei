@@ -11,6 +11,11 @@ use super::{errors::ApiServerError, jwt_keys::API_SERVER_JWT_KEYS};
 
 /// The JWT claims for the api server
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "The repetition in the name ensures clarity by explicitly identifying this struct as the representation \
+              of JWT claims."
+)]
 pub struct JwtClaims {
     /// Expiration time (as UTC timestamp)
     pub exp: u64,

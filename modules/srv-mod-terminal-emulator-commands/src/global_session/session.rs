@@ -19,6 +19,11 @@ pub struct GlobalSessionTerminalSessionsArguments {
 
 /// The record of a terminal session
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "Repetition in the name emphasizes the purpose of this struct, which holds unparsed details about \
+              session opening."
+)]
 pub struct SessionOpeningRecordUnparsed {
     /// The identifier of the session
     pub id:       String,
@@ -30,6 +35,11 @@ pub struct SessionOpeningRecordUnparsed {
 
 /// The record of a terminal session
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(
+    clippy::module_name_repetitions,
+    reason = "The repetition in the name clarifies that this struct encapsulates the details of a terminal session \
+              record."
+)]
 pub struct SessionOpeningRecord {
     /// The hostname of the session
     pub hostname: String,
