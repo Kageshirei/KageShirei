@@ -108,151 +108,220 @@ impl Protocol for HttpProtocol {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-// use alloc::string::ToString;
-//
-// use axum::{body::Bytes, http::HeaderMap, routing::get, Router};
-// use tokio::select;
-// use tokio_util::sync::CancellationToken;
-//
-// use super::*;
-//
-// async fn make_dummy_server(cancellation_token: CancellationToken, router: Router<()>, port: u16)
-// { let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port))
-// .await
-// .unwrap();
-//
-// axum::serve(listener, router)
-// .with_graceful_shutdown(async move {
-// select! {
-// _ = cancellation_token.cancelled() => {},
-// }
-// })
-// .await
-// .unwrap();
-// }
-//
-// async fn handler_post(headers: HeaderMap, body: Bytes) -> String {
-// assert_eq!(headers.get("content-type").unwrap(), "text/plain");
-// assert_eq!(
-// headers.get("X-Request-ID").unwrap(),
-// "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
-// );
-// assert_eq!(
-// headers.get("X-Identifier").unwrap(),
-// "an3a8hlnrr4638d30yef0oz5sncjdx5w"
-// );
-// assert_eq!(body.to_vec(), b"bar".to_vec());
-//
-// "Ok".to_owned()
-// }
-//
-// async fn handler_get(headers: HeaderMap) -> String {
-// assert_eq!(
-// headers.get("X-Request-ID").unwrap(),
-// "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
-// );
-// assert_eq!(
-// headers.get("X-Identifier").unwrap(),
-// "an3a8hlnrr4638d30yef0oz5sncjdx5w"
-// );
-//
-// "Ok".to_owned()
-// }
-//
-// #[tokio::test]
-// #[serial_test::serial]
-// async fn test_send() {
-// let cancellation_token = CancellationToken::new();
-//
-// let router = Router::new().route("/", get(handler_get).post(handler_post));
-//
-// let call = make_dummy_server(cancellation_token.clone(), router, 8081);
-// let server_handle = tokio::spawn(async move {
-// call.await;
-// });
-//
-// let mut protocol = HttpProtocol::new("http://localhost:8001".to_string());
-//
-// let data = b"bar".to_vec();
-// let result = protocol
-// .send(
-// data,
-// Some(Arc::new(Metadata {
-// request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
-// agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-// command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-// path:       None,
-// })),
-// )
-// .await;
-//
-// if let Err(e) = result {
-// match e {
-// ProtocolError::SendingError(s) => {
-// panic!("SendingError: {}", unsafe { s.unwrap_unchecked() });
-// },
-// ProtocolError::ReceivingError(s) => {
-// panic!("ReceivingError: {}", unsafe { s.unwrap_unchecked() });
-// },
-// ProtocolError::InitializationError(s) => {
-// panic!("InitializationError: {}", s);
-// },
-// ProtocolError::Generic(s) => {
-// panic!("Generic: {}", s);
-// },
-// ProtocolError::ConnectionError => {
-// panic!("ConnectionError: ");
-// },
-// ProtocolError::DisconnectionError => {
-// panic!("DisconnectionError: ");
-// },
-// ProtocolError::MessageError => {
-// panic!("MessageError: ");
-// },
-// ProtocolError::ReceiveMessageError => {
-// panic!("ReceiveMessageError: ");
-// },
-// }
-// }
-// if let Ok(result) = result {
-// panic!("Result: {:?}", result);
-// }
-//
-// assert_eq!(result, b"Ok".to_vec());
-//
-// cancellation_token.cancel();
-// server_handle.await.unwrap();
-// }
-//
-// #[tokio::test]
-// #[serial_test::serial]
-// async fn test_receive() {
-// let cancellation_token = CancellationToken::new();
-//
-// let router = Router::new().route("/", get(handler_get).post(handler_post));
-//
-// let call = make_dummy_server(cancellation_token.clone(), router, 8080);
-// let server_handle = tokio::spawn(async move {
-// call.await;
-// });
-//
-// let mut protocol = HttpProtocol::new("http://localhost:8080".to_string());
-//
-// let result = protocol
-// .receive(Some(Arc::new(Metadata {
-// request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
-// agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
-// command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
-// path:       None,
-// })))
-// .await;
-//
-// let result = unsafe { result.unwrap_unchecked() };
-// assert_eq!(result, b"Ok".to_vec());
-//
-// cancellation_token.cancel();
-// server_handle.await.unwrap();
-// }
-// }
+#[cfg(test)]
+mod tests {
+    use std::{convert::Infallible, net::SocketAddr};
+
+    use http_body_util::{BodyExt, Full};
+    use hyper::{body::Bytes, server::conn::http1, service::service_fn, Method, Request, Response};
+    use hyper_util::rt::TokioIo;
+    use tokio::{net::TcpListener, sync::watch};
+
+    use super::*;
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[serial_test::serial]
+    async fn test_send() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let server_addr = "127.0.0.1";
+        let server_port = 8000;
+
+        let addr = ([127, 0, 0, 1], server_port).into();
+
+        let (server_handle, shutdown_tx) = make_dummy_server(addr);
+
+        let mut protocol = HttpProtocol::new(format!("http://{}:{}", server_addr, server_port));
+
+        let protocol_result = tokio::spawn(async move {
+            protocol
+                .receive(Some(Arc::new(Metadata {
+                    request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
+                    agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
+                    command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
+                    path:       None,
+                })))
+                .await
+        });
+
+        match protocol_result.await.unwrap() {
+            Ok(result) => unsafe {
+                println!(
+                    "[CLIENT] response: {:?}",
+                    String::from_utf8_unchecked(result.as_slice().to_owned())
+                );
+            },
+            Err(e) => {
+                match e {
+                    ProtocolError::SendingError(s) => {
+                        panic!("SendingError: {}", unsafe { s.unwrap_unchecked() });
+                    },
+                    ProtocolError::ReceivingError(s) => {
+                        panic!("ReceivingError: {}", unsafe { s.unwrap_unchecked() });
+                    },
+                    ProtocolError::InitializationError(s) => {
+                        panic!("InitializationError: {}", s);
+                    },
+                    ProtocolError::Generic(s) => {
+                        panic!("Generic: {}", s);
+                    },
+                    ProtocolError::ConnectionError => {
+                        panic!("ConnectionError");
+                    },
+                    ProtocolError::DisconnectionError => {
+                        panic!("DisconnectionError");
+                    },
+                    ProtocolError::MessageError => {
+                        panic!("MessageError");
+                    },
+                    ProtocolError::ReceiveMessageError => {
+                        panic!("ReceiveMessageError");
+                    },
+                }
+            },
+        }
+
+        let _ = shutdown_tx.send(());
+        println!("[CLIENT] server shutdown signal sent.");
+
+        server_handle.await.unwrap();
+        println!("[SERVER] terminated.");
+
+        Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    #[serial_test::serial]
+    async fn test_receive() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let server_addr = "127.0.0.1";
+        let server_port = 8000;
+        let addr = ([127, 0, 0, 1], server_port).into();
+
+        let (server_handle, shutdown_tx) = make_dummy_server(addr);
+
+        let mut protocol = HttpProtocol::new(format!("http://{}:{}", server_addr, server_port));
+
+        let data = b"bar".to_vec();
+
+        let protocol_result = tokio::spawn(async move {
+            protocol
+                .send(
+                    data,
+                    Some(Arc::new(Metadata {
+                        request_id: "an3a8hlnrr4638d30yef0oz5sncjdx5v".to_string(),
+                        agent_id:   "an3a8hlnrr4638d30yef0oz5sncjdx5x".to_string(),
+                        command_id: "an3a8hlnrr4638d30yef0oz5sncjdx5w".to_string(),
+                        path:       None,
+                    })),
+                )
+                .await
+        });
+
+        match protocol_result.await.unwrap() {
+            Ok(result) => unsafe {
+                println!(
+                    "[CLIENT] response: {:?}",
+                    String::from_utf8_unchecked(result.as_slice().to_owned())
+                );
+            },
+            Err(e) => {
+                match e {
+                    ProtocolError::SendingError(s) => {
+                        panic!("SendingError: {}", unsafe { s.unwrap_unchecked() });
+                    },
+                    ProtocolError::ReceivingError(s) => {
+                        panic!("ReceivingError: {}", unsafe { s.unwrap_unchecked() });
+                    },
+                    ProtocolError::InitializationError(s) => {
+                        panic!("InitializationError: {}", s);
+                    },
+                    ProtocolError::Generic(s) => {
+                        panic!("Generic: {}", s);
+                    },
+                    ProtocolError::ConnectionError => {
+                        panic!("ConnectionError");
+                    },
+                    ProtocolError::DisconnectionError => {
+                        panic!("DisconnectionError");
+                    },
+                    ProtocolError::MessageError => {
+                        panic!("MessageError");
+                    },
+                    ProtocolError::ReceiveMessageError => {
+                        panic!("ReceiveMessageError");
+                    },
+                }
+            },
+        }
+
+        let _ = shutdown_tx.send(());
+        println!("[CLIENT] server shutdown signal sent.");
+
+        server_handle.await.unwrap();
+        println!("[SERVER] terminated.");
+
+        Ok(())
+    }
+
+    async fn handler(r: Request<hyper::body::Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
+        let headers = r.headers();
+
+        assert_eq!(
+            headers.get("x-request-id").unwrap(),
+            "an3a8hlnrr4638d30yef0oz5sncjdx5v.an3a8hlnrr4638d30yef0oz5sncjdx5x"
+        );
+        assert_eq!(
+            headers.get("x-identifier").unwrap(),
+            "an3a8hlnrr4638d30yef0oz5sncjdx5w"
+        );
+
+        println!("[SERVER] received request:");
+        println!("\t{:?} {} {}", r.version(), r.method(), r.uri());
+
+        for (key, value) in headers {
+            println!("\t{:<15}: {}", key, value.to_str().unwrap());
+        }
+        println!();
+
+        if r.method() == Method::POST {
+            let body = r.collect().await.unwrap();
+            let bytes_body = body.to_bytes();
+            assert_eq!(bytes_body, Bytes::from("bar"));
+            println!(
+                "\tBody: {:?}\n",
+                String::from_utf8(bytes_body.to_vec()).unwrap()
+            );
+        }
+
+        Ok(Response::new(Full::new(Bytes::from("Ok"))))
+    }
+
+    pub fn make_dummy_server(addr: SocketAddr) -> (tokio::task::JoinHandle<()>, watch::Sender<()>) {
+        let (shutdown_tx, mut shutdown_rx) = watch::channel(());
+
+        let handle = tokio::spawn(async move {
+            let listener = TcpListener::bind(addr).await.unwrap();
+            println!("[SERVER] running at http://{}", addr);
+
+            loop {
+                tokio::select! {
+                    Ok((tcp, _)) = listener.accept() => {
+                        let io = TokioIo::new(tcp);
+                        tokio::task::spawn(async move {
+                            if let Err(err) = http1::Builder::new()
+                                .serve_connection(io, service_fn(handler))
+                                .await
+                            {
+                                println!("[SERVER] error serving connection: {:?}", err);
+                            }
+                        });
+                    }
+                    _ = shutdown_rx.changed() => {
+                        println!("[SERVER] shutdown signal received, closing server.");
+                        break;
+                    }
+                }
+            }
+        });
+
+        (handle, shutdown_tx)
+    }
+}
