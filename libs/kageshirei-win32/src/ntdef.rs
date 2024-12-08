@@ -1,5 +1,5 @@
 use core::{
-    ffi::{c_long, c_ulong, c_ushort, c_void},
+    ffi::{c_long, c_ushort, c_void},
     ptr::{self, null_mut},
 };
 
@@ -11,9 +11,12 @@ pub type NTSTATUS = i32;
 pub type HANDLE = *mut c_void;
 pub type PHANDLE = *mut HANDLE;
 pub type LONG = c_long;
-pub type ULONG = c_ulong;
+#[cfg(target_os = "windows")]
+pub type ULONG = u32;
+#[cfg(not(target_os = "windows"))]
+pub type ULONG = u32;
 pub type PVOID = *mut c_void;
-pub type AccessMask = ULONG;
+pub type AccessMask = u32;
 pub type USHORT = c_ushort;
 #[expect(
     non_camel_case_types,
@@ -22,7 +25,7 @@ pub type USHORT = c_ushort;
 pub type SIZE_T = usize;
 pub type ULONGLONG = u64;
 pub type LONGLONG = i64;
-pub type DWORD = c_ulong;
+pub type DWORD = u32;
 
 pub type HRESULT = i32;
 pub type HSTRING = *mut c_void;
@@ -285,7 +288,7 @@ impl ClientId {
 #[derive(Copy, Clone)]
 pub struct SectionPointer {
     pub section_pointer: PVOID,
-    pub check_sum:       c_ulong,
+    pub check_sum:       u32,
 }
 
 #[repr(C)]
@@ -296,7 +299,7 @@ pub union HashLinksOrSectionPointer {
 
 #[repr(C)]
 pub union TimeDateStampOrLoadedImports {
-    pub time_date_stamp: c_ulong,
+    pub time_date_stamp: u32,
     pub loaded_imports:  PVOID,
 }
 
@@ -307,10 +310,10 @@ pub struct LoaderDataTableEntry {
     pub in_initialization_order_links: ListEntry,
     pub dll_base: PVOID,
     pub entry_point: PVOID,
-    pub size_of_image: c_ulong,
+    pub size_of_image: u32,
     pub full_dll_name: UnicodeString,
     pub base_dll_name: UnicodeString,
-    pub flags: c_ulong,
+    pub flags: u32,
     pub load_count: i16,
     pub tls_index: i16,
     pub hash_links_or_section_pointer: HashLinksOrSectionPointer,
@@ -324,8 +327,8 @@ pub struct LoaderDataTableEntry {
 
 #[repr(C)]
 pub struct PebLoaderData {
-    pub length: c_ulong,
-    pub initialized: c_ulong,
+    pub length: u32,
+    pub initialized: u32,
     pub ss_handle: PVOID,
     pub in_load_order_module_list: ListEntry,
     pub in_memory_order_module_list: ListEntry,
@@ -347,47 +350,47 @@ pub struct PEB {
     pub fast_peb_lock: PVOID,
     pub fast_peb_lock_routine: PVOID,
     pub fast_peb_unlock_routine: PVOID,
-    pub environment_update_count: c_ulong,
+    pub environment_update_count: u32,
     pub kernel_callback_table: *const PVOID,
     pub event_log_section: PVOID,
     pub event_log: PVOID,
     pub free_list: PVOID,
-    pub tls_expansion_counter: c_ulong,
+    pub tls_expansion_counter: u32,
     pub tls_bitmap: PVOID,
-    pub tls_bitmap_bits: [c_ulong; 2],
+    pub tls_bitmap_bits: [u32; 2],
     pub read_only_shared_memory_base: PVOID,
     pub read_only_shared_memory_heap: PVOID,
     pub read_only_static_server_data: *const PVOID,
     pub ansi_code_page_data: PVOID,
     pub oem_code_page_data: PVOID,
     pub unicode_case_table_data: PVOID,
-    pub number_of_processors: c_ulong,
-    pub nt_global_flag: c_ulong,
+    pub number_of_processors: u32,
+    pub nt_global_flag: u32,
     pub spare_2: [u8; 4],
     pub critical_section_timeout: i64,
-    pub heap_segment_reserve: c_ulong,
-    pub heap_segment_commit: c_ulong,
-    pub heap_de_commit_total_free_threshold: c_ulong,
-    pub heap_de_commit_free_block_threshold: c_ulong,
-    pub number_of_heaps: c_ulong,
-    pub maximum_number_of_heaps: c_ulong,
+    pub heap_segment_reserve: u32,
+    pub heap_segment_commit: u32,
+    pub heap_de_commit_total_free_threshold: u32,
+    pub heap_de_commit_free_block_threshold: u32,
+    pub number_of_heaps: u32,
+    pub maximum_number_of_heaps: u32,
     pub process_heaps: *const *const PVOID,
     pub gdi_shared_handle_table: PVOID,
     pub process_starter_helper: PVOID,
     pub gdi_dc_attribute_list: PVOID,
     pub loader_lock: PVOID,
-    pub os_major_version: c_ulong,
-    pub os_minor_version: c_ulong,
-    pub os_build_number: c_ulong,
-    pub os_platform_id: c_ulong,
-    pub image_sub_system: c_ulong,
-    pub image_sub_system_major_version: c_ulong,
-    pub image_sub_system_minor_version: c_ulong,
-    pub gdi_handle_buffer: [c_ulong; 22],
-    pub post_process_init_routine: c_ulong,
-    pub tls_expansion_bitmap: c_ulong,
+    pub os_major_version: u32,
+    pub os_minor_version: u32,
+    pub os_build_number: u32,
+    pub os_platform_id: u32,
+    pub image_sub_system: u32,
+    pub image_sub_system_major_version: u32,
+    pub image_sub_system_minor_version: u32,
+    pub gdi_handle_buffer: [u32; 22],
+    pub post_process_init_routine: u32,
+    pub tls_expansion_bitmap: u32,
     pub tls_expansion_bitmap_bits: [u8; 80],
-    pub session_id: c_ulong,
+    pub session_id: u32,
 }
 
 pub struct CURDIR {
@@ -1061,16 +1064,14 @@ pub const FILE_TRAVERSE: AccessMask = 0x00000020;
 
 /// Generic read access mask for a file.
 pub const FILE_GENERIC_READ: u32 =
-    (STANDARD_RIGHTS_READ | FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE) as u32;
+    STANDARD_RIGHTS_READ | FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE;
 
 /// Generic write access mask for a file.
 pub const FILE_GENERIC_WRITE: u32 =
-    (STANDARD_RIGHTS_WRITE | FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | FILE_APPEND_DATA | SYNCHRONIZE)
-        as u32;
+    STANDARD_RIGHTS_WRITE | FILE_WRITE_DATA | FILE_WRITE_ATTRIBUTES | FILE_WRITE_EA | FILE_APPEND_DATA | SYNCHRONIZE;
 
 /// Generic execute access mask for a file.
-pub const FILE_GENERIC_EXECUTE: u32 =
-    (STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE) as u32;
+pub const FILE_GENERIC_EXECUTE: u32 = STANDARD_RIGHTS_EXECUTE | FILE_READ_ATTRIBUTES | FILE_EXECUTE | SYNCHRONIZE;
 
 /// IoStatusBlock return value indicating a file was created.
 pub const FILE_CREATED: u32 = 0x00000001;
@@ -1550,7 +1551,7 @@ pub const RTL_USER_PROC_IMAGE_KEY_MISSING: u32 = 0x00004000;
 pub const RTL_USER_PROC_OPTIN_PROCESS: u32 = 0x00020000;
 
 /// Provides all possible access rights to a thread.
-pub const THREAD_ALL_ACCESS: u32 = (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xffff) as u32;
+pub const THREAD_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xffff_u32;
 
 /// Mask to extract the attribute number from a PS_ATTRIBUTE value.
 pub const PS_ATTRIBUTE_NUMBER_MASK: usize = 0x0000ffff;
