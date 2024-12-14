@@ -19,8 +19,6 @@ The project is still in its early stages, we have many features planned, we'll p
 <summary>Features summary</summary>
 
 - [Working features](#working-features)
-- [Planned features](#planned-features)
-- [Ideas / Future features](#ideas--future-features)
 
 </details>
 
@@ -33,34 +31,6 @@ The project is still in its early stages, we have many features planned, we'll p
 #### Server
 
 - None :(
-
-### Planned features
-
-#### Agent
-
-- None :(
-
-#### Server
-
-- None :(
-
-### Ideas / Future features
-
-#### Agent
-
-- Multiple connections setup to connect back to the server, ordered by priority. (e.g. DNS, HTTP, HTTPS,
-  etc). This will allow the agent to be more resilient to network restrictions.
-- Protobuf communication between the agent and the server.
-- JSON communication between the agent and the server.
-- Ability to execute tasks on the agent.
-- File/folder management on the agent (similar to explorer.exe).
-- Extract information about the target machine (e.g. OS, architecture, etc).
-- Ability to execute shell commands.
-- Ability to execute PowerShell commands.
-- Ability to execute Python scripts.
-- HTTP/HTTPS connection to the server.
-- DNS connection to the server.
-- Feature toggles. (conditional compilation)
 
 ## Server installation
 
