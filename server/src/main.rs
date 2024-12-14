@@ -2,10 +2,12 @@
 
 #![feature(duration_constructors)]
 
+use std::sync::Arc;
+
 use clap::Parser as _;
 use log::trace;
 use rustls::{crypto, crypto::CryptoProvider};
-use srv_mod_config::RootConfig;
+use srv_mod_config::{RootConfig, EXTENSIONS_MANAGER};
 
 use crate::{
     async_main::async_main,
@@ -22,6 +24,7 @@ mod auto_migrate;
 mod cli;
 mod cli_cmd_compile;
 mod cli_cmd_generate;
+mod hook_contexes;
 mod servers;
 
 /// Sets up the logging for the application.
@@ -80,7 +83,7 @@ fn setup_logging(debug_level: u8) -> Result<(), String> {
 }
 
 fn main() -> Result<(), String> {
-    let args = CliArguments::parse();
+    let mut args = Arc::new(CliArguments::parse());
 
     setup_logging(args.debug)?;
     trace!("Parsed arguments: {:?}", args);
@@ -88,7 +91,24 @@ fn main() -> Result<(), String> {
     // Install the default AWS LC provider
     let _ = crypto::aws_lc_rs::default_provider().install_default();
 
-    match args.command {
+    let server_dependencies = unsafe {
+        // Load all extensions from the `./extensions` directory
+        EXTENSIONS_MANAGER.load_all_from("./extensions")?;
+
+        // Initialize the loaded extensions
+        async_ctx::enter(EXTENSIONS_MANAGER.initialize());
+
+        // Get the server dependencies
+        EXTENSIONS_MANAGER.get_server_deps()
+    };
+
+    async_ctx::enter(server_dependencies.registry.trigger(
+        "on_server_start",
+        hook_contexes::OnServerStart::new(args.clone()),
+    ))
+    .map_err(|e| e.join("\n"))?;
+
+    match &args.command {
         Commands::Compile(compile_args) => {
             match compile_args.command {
                 cli::compile::CompileSubcommands::Agent => {
@@ -100,7 +120,7 @@ fn main() -> Result<(), String> {
             }
         },
         Commands::Generate(generate_args) => {
-            match generate_args.command {
+            match &generate_args.command {
                 GenerateSubcommands::Jwt => {
                     cli_cmd_generate::jwt::generate_jwt()?;
                 },

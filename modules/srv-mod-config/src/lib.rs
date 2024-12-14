@@ -32,7 +32,7 @@ pub type SharedConfig = Arc<RwLock<RootConfig>>;
 pub type ReadOnlyConfig<'a> = RwLockReadGuard<'a, RootConfig>;
 
 /// The extension manager for the server
-pub static EXTENSIONS_MANAGER: Lazy<ExtensionManager> = Lazy::new(|| ExtensionManager::default());
+pub static mut EXTENSIONS_MANAGER: Lazy<ExtensionManager> = Lazy::new(|| ExtensionManager::default());
 
 /// Root server configuration
 #[derive(Serialize, Deserialize, Debug, Validate, Clone, Default)]

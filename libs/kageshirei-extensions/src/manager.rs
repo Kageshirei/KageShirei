@@ -5,6 +5,7 @@ use std::{
     sync::Arc,
 };
 
+use glob::glob;
 use libloading::Library;
 use tracing::{debug, field::debug};
 
@@ -129,6 +130,38 @@ impl ExtensionManager {
             "Extension loaded, extra info below:\n{}",
             self.extensions.last().unwrap().extension.describe()
         );
+        Ok(())
+    }
+
+    /// Load all extensions from a directory
+    ///
+    /// This function will load all shared libraries from the specified directory.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - The path to the directory containing the shared libraries, e.g. `./extensions` it
+    ///   will internally use glob to find all shared libraries in the directory.
+    pub fn load_all_from(&mut self, path: &str) -> Result<(), String> {
+        let suffix = if cfg!(windows) { ".dll" } else { ".so" };
+        let glob_path = format!("{}/*{}", path, suffix);
+
+        debug!("Loading extensions from: {}", glob_path);
+
+        let paths = glob(glob_path.as_str());
+
+        if let Err(e) = paths {
+            return Err(e.to_string());
+        }
+
+        let paths = paths.unwrap();
+
+        for path in paths.flatten() {
+            debug!("Loading extension from: {}", path.display());
+
+            self.load(path.to_str().unwrap())
+                .expect("Failed to load extension");
+        }
+
         Ok(())
     }
 
