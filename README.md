@@ -7,14 +7,9 @@ KageShirei is a modern, highly-customizable, command and control framework for r
 The project is structured into 4 main components:
 
 - An `agent` that will be deployed on the target machine
-- A `server` responsible for the management of agents, connections, tasks etc.
+- A `server` responsible for the management of agents, connections, and tasks
 - A `command-and-control-gui` that will be used by red team operators to interact with the server
 - A series of `libs` that will be shared between the different components
-- A `scripts` folder that contains useful scripts for the development of the project
-- A series of `modules` that packs and implements features and functionalities for both the agent and the server, a
-  common format is used to name them:
-  - `[srv-]mod-<name>` where `srv` is optional and stands for server, `mod` stands for module, and `<name>` is the name
-    of the module.
 
 ## Features & status
 
@@ -24,8 +19,6 @@ The project is still in its early stages, we have many features planned, we'll p
 <summary>Features summary</summary>
 
 - [Working features](#working-features)
-- [Planned features](#planned-features)
-- [Ideas / Future features](#ideas--future-features)
 
 </details>
 
@@ -33,48 +26,20 @@ The project is still in its early stages, we have many features planned, we'll p
 
 #### Agent
 
-- Check out the docs repository
+- None :(
 
 #### Server
 
-- Check out the docs repository
-
-### Planned features
-
-#### Agent
-
-- Check out the docs repository
-
-#### Server
-
-- Check out the docs repository
-
-### Ideas / Future features
-
-#### Agent
-
-- Multiple connections setup to connect back to the server, ordered by priority. (e.g. DNS, HTTP, HTTPS,
-  etc). This will allow the agent to be more resilient to network restrictions.
-- Protobuf communication between the agent and the server.
-- JSON communication between the agent and the server.
-- Ability to execute tasks on the agent.
-- File/folder management on the agent (similar to explorer.exe).
-- Extract information about the target machine (e.g. OS, architecture, etc).
-- Ability to execute shell commands.
-- Ability to execute PowerShell commands.
-- Ability to execute Python scripts.
-- HTTP/HTTPS connection to the server.
-- DNS connection to the server.
-- Feature toggles. (conditional compilation)
+- None :(
 
 ## Server installation
 
 ### Requirements
 
-The server should come with no dependencies at all, most of its features should be able to run both on *nix and
+The server should come with no dependencies at all, most of its features should be able to run both on \*nix and
 Windows systems.
 
-Compilation must be done before running it (aka, no precompiled binaries). To compile the server only, clone the
+Compilation must be done before running it (no precompiled binaries). To compile the server only, clone the
 repository and run the following commands:
 
 ```bash
@@ -96,10 +61,15 @@ optimized for performances (instead of size such as the agent and the control pa
 
 Refer to the [server's own documentation](server/README.md) for a list of commands and usage instructions.
 
+#### Building on windows?
+
+It can be done, even if some features are not available.
+Refer to [this comment](https://github.com/diesel-rs/diesel/issues/587#issuecomment-574934244) for instruction on how to
+overcome some common issues.
+
 ### The server component superpowers
 
-The server component apart from being the main component of the KageShirei framework, it also has some superpowers that
-makes
+The server component apart from being the main component of the KageShirei framework, it also has some superpowers that makes
 it a very versatile tool.
 
 - **Agent compilation on demand**: The server can compile the agent on demand, this means that you can compile the agent
