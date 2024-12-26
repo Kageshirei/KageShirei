@@ -915,7 +915,8 @@ pub const STARTF_USESHOWWINDOW: u32 = 0x00000001;
 /// Creates the process without displaying a window.
 pub const CREATE_NO_WINDOW: u32 = 0x08000000;
 
-pub struct TokenInformationClass(pub i32);
+// pub struct TokenInformationClass(pub i32);
+
 pub struct TokenAccessMask(pub u32);
 // pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(8u32);
 pub const TOKEN_READ: TokenAccessMask = TokenAccessMask(0x0002_0008u32);
@@ -2024,4 +2025,88 @@ pub enum MemoryInformationClass {
     MemoryPrivilegedBasicInformation,
     MemoryEnclaveImageInformation,
     MemoryBasicInformationCapped,
+}
+
+pub const TOKEN_ASSIGN_PRIMARY: u32 = 0x0001;
+pub const TOKEN_DUPLICATE: u32 = 0x0002;
+pub const TOKEN_IMPERSONATE: u32 = 0x0004;
+pub const TOKEN_QUERY_SOURCE: u32 = 0x0010;
+pub const TOKEN_ADJUST_GROUPS: u32 = 0x0040;
+pub const TOKEN_ADJUST_DEFAULT: u32 = 0x0080;
+pub const TOKEN_ADJUST_SESSIONID: u32 = 0x0100;
+pub const TOKEN_ALL_ACCESS_P: u32 = STANDARD_RIGHTS_REQUIRED |
+    TOKEN_ASSIGN_PRIMARY |
+    TOKEN_DUPLICATE |
+    TOKEN_IMPERSONATE |
+    TOKEN_QUERY |
+    TOKEN_QUERY_SOURCE |
+    TOKEN_ADJUST_PRIVILEGES |
+    TOKEN_ADJUST_GROUPS |
+    TOKEN_ADJUST_DEFAULT;
+pub const TOKEN_ALL_ACCESS: u32 = TOKEN_ALL_ACCESS_P | TOKEN_ADJUST_SESSIONID;
+
+#[repr(C)]
+pub enum SecurityImpersonationLevel {
+    SecurityAnonymous,
+    SecurityIdentification,
+    SecurityImpersonation,
+    SecurityDelegation,
+}
+
+#[repr(C)]
+pub struct TokenUser {
+    pub user: SidAndAttributes,
+}
+
+#[repr(C)]
+pub struct TokenElevation {
+    pub token_is_elevated: u32,
+}
+
+pub enum TokenInformationClass {
+    TokenUser = 1,
+    TokenGroups,
+    TokenPrivileges,
+    TokenOwner,
+    TokenPrimaryGroup,
+    TokenDefaultDacl,
+    TokenSource,
+    TokenType,
+    TokenImpersonationLevel,
+    TokenStatistics,
+    TokenRestrictedSids,
+    TokenSessionId,
+    TokenGroupsAndPrivileges,
+    TokenSessionReference,
+    TokenSandBoxInert,
+    TokenAuditPolicy,
+    TokenOrigin,
+    TokenElevationType,
+    TokenLinkedToken,
+    TokenElevation,
+    TokenHasRestrictions,
+    TokenAccessInformation,
+    TokenVirtualizationAllowed,
+    TokenVirtualizationEnabled,
+    TokenIntegrityLevel,
+    TokenUIAccess,
+    TokenMandatoryPolicy,
+    TokenLogonSid,
+    TokenIsAppContainer,
+    TokenCapabilities,
+    TokenAppContainerSid,
+    TokenAppContainerNumber,
+    TokenUserClaimAttributes,
+    TokenDeviceClaimAttributes,
+    TokenRestrictedUserClaimAttributes,
+    TokenRestrictedDeviceClaimAttributes,
+    TokenDeviceGroups,
+    TokenRestrictedDeviceGroups,
+    TokenSecurityAttributes,
+    TokenIsRestricted,
+    TokenProcessTrustLevel,
+    TokenPrivateNameSpace,
+    TokenSingletonAttributes,
+    TokenBnoIsolation,
+    MaxTokenInfoClass,
 }

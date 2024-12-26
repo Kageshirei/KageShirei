@@ -917,31 +917,37 @@ pub unsafe fn nt_process_snapshot(snapshot: &mut *mut SystemProcessInformation, 
     // let mut buffer = Vec::new();
     // buffer.resize(length as usize, 0); // Initialize buffer with the required length.
 
-    // Second call to actually retrieve the process information into the allocated buffer.
-    status = instance().ntdll.nt_query_system_information.run(
-        SystemInformationClass::SystemProcessInformation as u32,
-        buffer.as_mut_ptr() as *mut c_void, // Provide the allocated buffer.
-        length,                             // Buffer length.
-        &mut length,                        // Update the actual size used.
-    );
+    loop {
+        // Second call to actually retrieve the process information into the allocated buffer.
+        status = instance().ntdll.nt_query_system_information.run(
+            SystemInformationClass::SystemProcessInformation as u32,
+            buffer.as_mut_ptr() as *mut c_void, // Provide the allocated buffer.
+            length,                             // Buffer length.
+            &mut length,                        // Update the actual size used.
+        );
 
-    // Check if the process information retrieval was successful.
-    if !NT_SUCCESS(status) {
+        // Check if the process information retrieval was successful.
+        if NT_SUCCESS(status) {
+            // Cast the buffer to the SystemProcessInformation structure.
+            *snapshot = buffer.as_mut_ptr() as *mut SystemProcessInformation;
+            *size = length as usize;
+
+            // Transfer ownership of the buffer so it isn't deallocated.
+            // By turning it into a Box, Rust will ensure it stays alive until explicitly dropped elsewhere.
+            Box::leak(buffer);
+
+            return status;
+        }
+
+        // If we get STATUS_INFO_LENGTH_MISMATCH again, it means the process list changed
+        // between calls. We'll reallocate the buffer to the new length and try again.
+        if status == STATUS_INFO_LENGTH_MISMATCH {
+            buffer = vec![0u8; length as usize].into_boxed_slice();
+            continue;
+        }
+
         return status;
     }
-
-    // Cast the buffer to the SystemProcessInformation structure.
-    *snapshot = buffer.as_mut_ptr() as *mut SystemProcessInformation;
-    *size = length as usize;
-
-    // // Keep the buffer alive by preventing its deallocation.
-    // core::mem::forget(buffer);
-
-    // Transfer ownership of the buffer so it isn't deallocated.
-    // By turning it into a Box, Rust will ensure it stays alive until explicitly dropped elsewhere.
-    Box::leak(buffer);
-
-    status
 }
 
 /// Creates a new thread in the current process using the NT API `NtCreateThreadEx`.

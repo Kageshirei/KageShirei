@@ -24,7 +24,7 @@ where
 {
     #[cfg(feature = "proto-http-winhttp")]
     {
-        let boxed_protocol: Box<HttpProtocol> = Box::new(HttpProtocol::new("http://localhost".to_owned()));
+        let boxed_protocol: Box<HttpProtocol> = Box::new(HttpProtocol::new("http://192.168.3.173:8081".to_owned()));
         let boxed_formatter: Box<FormatJson> = Box::new(FormatJson);
 
         unsafe {
