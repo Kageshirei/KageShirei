@@ -3276,17 +3276,15 @@ dependencies = [
 name = "mod-protocol-json"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "bytes",
- "http-body-util",
- "hyper",
- "hyper-util",
  "kageshirei-communication-protocol",
- "kageshirei-win32",
- "mod-agentcore",
- "mod-win32",
+ "kageshirei-crypt",
  "reqwest",
- "serial_test",
+ "serde",
+ "serde_json",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]
@@ -3305,6 +3303,16 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "mod-std-runtime"
+version = "0.1.0"
+dependencies = [
+ "kageshirei-communication-protocol",
+ "kageshirei-runtime",
+ "serde",
 ]
 
 [[package]]
@@ -3888,7 +3896,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec4c6225c69b4ca778c0aea097321a64c421cf4577b331c61b229267edabb6f8"
 dependencies = [
  "heck 0.4.1",
- "itertools",
+ "proc-macro-error",
  "proc-macro2",
  "quote",
  "syn 2.0.79",
@@ -4952,6 +4960,16 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "sct"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
+dependencies = [
+ "ring",
+ "untrusted",
+]
 
 [[package]]
 name = "sdd"
