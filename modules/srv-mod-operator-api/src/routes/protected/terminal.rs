@@ -1,10 +1,9 @@
-//! The terminal route module
-
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use axum::{
+    debug_handler,
     extract::{Query, State},
-    response::Response,
+    response::{IntoResponse, Response},
     routing::post,
     Json,
     Router,
@@ -13,10 +12,12 @@ use serde::{Deserialize, Serialize};
 use srv_mod_entity::{
     entities::{agent, terminal_history, user},
     partial_models::terminal_history::full_history_record::FullHistoryRecord,
-    sea_orm::{prelude::*, ActiveValue::Set, Condition, QueryOrder as _, QuerySelect as _},
+    sea_orm::{prelude::*, ActiveValue::Set, Condition, QueryOrder, QuerySelect},
 };
 use srv_mod_terminal_emulator_commands::{
-    command_handler::{CommandHandler as _, HandleArguments, HandleArgumentsSession, HandleArgumentsUser},
+    command_handler::{CommandHandler, HandleArguments, HandleArgumentsSession, HandleArgumentsUser},
+    global_session::GlobalSessionTerminalEmulatorCommands,
+    session_terminal_emulator::SessionTerminalEmulatorCommands,
     Command,
     StyledStr,
 };
@@ -27,24 +28,23 @@ use crate::{
     claims::JwtClaims,
     errors::ApiServerError,
     request_body_from_content_type::InferBody,
+    routes::public::authenticate::AuthenticatePostResponse,
     state::ApiServerSharedState,
 };
 
-/// The payload for the terminal command route
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct TerminalCommand {
     /// The raw command written in the terminal emulator
     command:    String,
-    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent
-    /// id). If empty the "global" terminal session is used.
+    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent id). If empty the
+    /// "global" terminal session is used.
     session_id: Option<String>,
 }
 
-/// The response for the terminal command route
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 struct TerminalCommandResponse {
-    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent
-    /// id). If empty the "global" terminal session is used.
+    /// The terminal session ID, if any. This is used to identify the terminal session (aka agent id). If empty the
+    /// "global" terminal session is used.
     session_id: Option<String>,
     /// The raw command written in the terminal emulator
     command:    String,
@@ -66,12 +66,12 @@ fn update_command_state(
 
         loop {
             // Update the command in the database.
-            // This update is fallible as a race condition exists where the command might not exist in the
-            // database when the update is attempted.
+            // This update is fallible as a race condition exists where the command might not exist in the database
+            // when the update is attempted.
             // If the update fails, sleep for 200ms before retrying.
             let result = terminal_history::Entity::update_many()
                 .set(terminal_history::ActiveModel {
-                    output: Set(Some(movable_response.to_owned())),
+                    output: Set(Some(movable_response.to_string())),
                     exit_code: Set(Some(exit_code)),
                     ..Default::default()
                 })
@@ -110,6 +110,8 @@ async fn get_current_username(
     command: &str,
 ) -> Result<String, Response> {
     let user = user::Entity::find()
+        .select_only()
+        .column(user::Column::Username)
         .filter(user::Column::Id.eq(user_id))
         .one(&db)
         .await
@@ -140,10 +142,12 @@ async fn get_current_username(
 /// The hostname of the current session
 async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -> Result<String, Response> {
     if session_id == "global" {
-        Ok("kageshirei".to_owned())
+        Ok("kageshirei".to_string())
     }
     else {
         let agent = agent::Entity::find()
+            .select_only()
+            .column(agent::Column::Hostname)
             .filter(agent::Column::Id.eq(session_id))
             .one(&db)
             .await
@@ -163,11 +167,12 @@ async fn get_hostname(db: DatabaseConnection, session_id: &str, command: &str) -
 }
 
 /// The handler for the public authentication route
+#[debug_handler]
 #[instrument(name = "POST /terminal", skip(state))]
 async fn post_handler(
     State(state): State<ApiServerSharedState>,
     jwt_claims: JwtClaims,
-    InferBody(body): InferBody<TerminalCommand>,
+    InferBody(mut body): InferBody<TerminalCommand>,
 ) -> Result<Json<TerminalCommandResponse>, Response> {
     info!("Received terminal command");
 
@@ -176,7 +181,7 @@ async fn post_handler(
     let state = Arc::new(state);
 
     // Ensure the session_id is not empty
-    let session_id = body.session_id.unwrap_or("global".to_owned());
+    let session_id = body.session_id.unwrap_or("global".to_string());
 
     // clone the session_id and command to be able to move them into the spawned thread
     let mut storable_command = terminal_history::ActiveModel {
@@ -227,7 +232,7 @@ async fn post_handler(
         futures::future::join_all(pending_handlers).await;
 
         return Ok(Json(TerminalCommandResponse {
-            session_id: Some(session_id),
+            session_id: Some(session_id.to_string()),
             command: body.command,
             response,
         }));
@@ -276,7 +281,7 @@ async fn post_handler(
     let response = match response {
         Ok(response) => response,
         Err(e) => {
-            let response = e.clone();
+            let response = e.to_string();
             let movable_response = response.clone();
             let cloned_state = state.clone();
 
@@ -294,7 +299,7 @@ async fn post_handler(
             return Err(ApiServerError::make_terminal_emulator_error(
                 session_id.as_str(),
                 body.command.as_str(),
-                e.as_str(),
+                e.to_string().as_str(),
             ));
         },
     };
@@ -314,7 +319,7 @@ async fn post_handler(
     futures::future::join_all(pending_handlers).await;
 
     Ok(Json(TerminalCommandResponse {
-        session_id: Some(session_id),
+        session_id: Some(session_id.to_string()),
         command: serde_json::to_string(&cmd).unwrap(),
         response,
     }))
@@ -327,6 +332,7 @@ async fn post_handler(
 /// # Request parameters
 ///
 /// - `page` (optional): The page number to fetch. Defaults to 1
+#[debug_handler]
 #[instrument(name = "GET /terminal", skip(state))]
 async fn get_handler(
     State(state): State<ApiServerSharedState>,
@@ -335,12 +341,12 @@ async fn get_handler(
 ) -> Result<Json<Vec<FullHistoryRecord>>, ApiServerError> {
     let db = state.db_pool.clone();
 
-    let fallback_session_id = "global".to_owned();
+    let fallback_session_id = "global".to_string();
     let session_id_v = params.get("session_id").unwrap_or(&fallback_session_id);
 
     let mut page = params
         .get("page")
-        .and_then(|page| page.parse::<i64>().ok())
+        .and_then(|page| page.parse::<u64>().ok())
         .unwrap_or(1);
 
     // Ensure the page is not less than 1
@@ -381,7 +387,7 @@ async fn get_handler(
         .order_by_asc(terminal_history::Column::CreatedAt)
         .into_partial_model::<FullHistoryRecord>()
         .paginate(&db, page_size)
-        .fetch_page(page.saturating_sub(1) as u64)
+        .fetch_page(page - 1)
         .await
         .map_err(|e| {
             error!("Failed to fetch commands: {}", e.to_string());

@@ -22,9 +22,6 @@ use crate::common::dbj2_hash;
 #[cfg(target_arch = "x86_64")]
 pub fn nt_current_teb() -> *mut TEB {
     let teb_ptr: *mut TEB;
-    // Safety: This function uses inline assembly to retrieve the TEB pointer from the GS segment
-    // register. The GS segment register is used on x86_64 architecture to store the TEB pointer for
-    // the current thread.
     unsafe {
         asm!(
             "mov {}, gs:[0x30]",
@@ -38,7 +35,6 @@ pub fn nt_current_teb() -> *mut TEB {
 #[cfg(target_arch = "x86")]
 pub fn nt_current_teb() -> *const TEB {
     let teb_ptr: *const TEB;
-    // Safety: This function uses inline assembly to retrieve the TEB pointer from the FS segment
     unsafe {
         asm!(
             "mov {}, fs:[0x18]",
@@ -48,37 +44,28 @@ pub fn nt_current_teb() -> *const TEB {
     teb_ptr
 }
 
-/// Find the Process Environment Block (PEB) of the current process
-///
-/// # Safety
-/// This function involves unsafe operations and raw pointers, which require careful handling.
-pub unsafe fn nt_current_peb() -> *mut PEB { nt_current_teb().as_ref().unwrap().process_environment_block }
+pub fn nt_current_peb() -> *mut PEB {
+    unsafe {
+        return nt_current_teb().as_ref().unwrap().process_environment_block;
+    }
+}
 
 /// Gets the last error value for the current thread.
 ///
 /// This function retrieves the last error code set in the Thread Environment Block (TEB).
 /// It mimics the behavior of the `NtGetLastError` macro in C.
-///
-/// # Safety
-/// This function involves unsafe operations and raw pointers, which require careful handling.
 pub unsafe fn nt_get_last_error() -> u32 { nt_current_teb().as_ref().unwrap().last_error_value }
 
 /// Sets the last error value for the current thread.
 ///
 /// This function sets the last error code in the Thread Environment Block (TEB).
 /// It mimics the behavior of the `NtSetLastError` macro in C.
-///
-/// # Safety
-/// This function involves unsafe operations and raw pointers, which require careful handling.
 pub unsafe fn nt_set_last_error(error: u32) { nt_current_teb().as_mut().unwrap().last_error_value = error; }
 
 /// Retrieves a handle to the process heap.
 ///
-/// This function returns a handle to the heap used by the process, which is stored in the Process
-/// Environment Block (PEB). It mimics the behavior of the `NtProcessHeap` macro in C.
-///
-/// # Safety
-/// This function involves unsafe operations and raw pointers, which require careful handling.
+/// This function returns a handle to the heap used by the process, which is stored in the Process Environment Block
+/// (PEB). It mimics the behavior of the `NtProcessHeap` macro in C.
 pub unsafe fn nt_process_heap() -> HANDLE {
     nt_current_teb()
         .as_ref()
@@ -89,27 +76,20 @@ pub unsafe fn nt_process_heap() -> HANDLE {
         .process_heap
 }
 
-/// Retrieves the base address of a module by hashing its name and comparing it
-/// with the given hash, searching through the loaded modules in the Process Environment Block
-/// (PEB).
+/// Retrieves the base address of a module by its hash.
 ///
 /// # Safety
 ///
-/// This function involves unsafe operations and raw pointer dereferencing.
-/// Ensure that the PEB structure and its fields are valid before calling this function.
+/// This function involves unsafe operations and raw pointers, which require careful handling.
 ///
 /// # Parameters
 ///
-/// - `module_hash`: The hash of the module name to locate. The hashing algorithm used is
-///   `dbj2_hash`.
+/// - `module_hash`: The hash of the module name.
 ///
 /// # Returns
 ///
-/// A pointer to the base address of the module if found. Returns a null pointer if:
-/// - The PEB is null.
-/// - The PEB loader data is null.
-/// - The module is not found in the loaded modules list.
-pub unsafe fn peb_get_module(module_hash: u32) -> *mut u8 {
+/// The base address of the module as a `*mut u8`, or an `LoaderApiError` if the module is not found.
+pub unsafe fn ldr_module_peb(module_hash: u32) -> *mut u8 {
     // Get the PEB (Process Environment Block)
     let peb = nt_current_peb();
 
@@ -137,7 +117,7 @@ pub unsafe fn peb_get_module(module_hash: u32) -> *mut u8 {
         // Check if the hash of the DLL name matches the given hash
         if module_hash == dbj2_hash(dll_name_slice) {
             // Return the base address of the DLL
-            return (*module_list).dll_base as *mut u8;
+            return (*module_list).dll_base as _;
         }
 
         // Move to the next module in the list
@@ -173,12 +153,10 @@ pub unsafe fn get_nt_headers(base_addr: *mut u8) -> *mut ImageNtHeaders {
     }
 
     // Calculate the address of NT headers
-    let nt_headers = ((base_addr as isize)
-        .overflowing_add((*dos_header).e_lfanew as isize)
-        .0) as *mut ImageNtHeaders;
+    let nt_headers = (base_addr as isize + (*dos_header).e_lfanew as isize) as *mut ImageNtHeaders;
 
     // Check NT signature (PE\0\0)
-    if (*nt_headers).signature != IMAGE_NT_SIGNATURE {
+    if (*nt_headers).signature != IMAGE_NT_SIGNATURE as _ {
         return null_mut();
     }
 
@@ -210,9 +188,7 @@ pub unsafe fn get_nt_headers(base_addr: *mut u8) -> *mut ImageNtHeaders {
     }
 
     // Calculate the address of NT headers
-    let nt_headers = ((base_addr as isize)
-        .overflowing_add((*dos_header).e_lfanew as isize)
-        .0) as *mut ImageNtHeaders;
+    let nt_headers = (base_addr as isize + (*dos_header).e_lfanew as isize) as *mut ImageNtHeaders;
 
     // Check NT signature (PE\0\0)
     if (*nt_headers).signature != IMAGE_NT_SIGNATURE as _ {
@@ -237,9 +213,8 @@ pub unsafe fn get_nt_headers(base_addr: *mut u8) -> *mut ImageNtHeaders {
 ///
 /// ### Returns
 ///
-/// A pointer to the address of the resolved syscall function. Returns a null pointer if the
-/// function is not found.
-pub unsafe fn peb_get_function_addr(module_base: *mut u8, function_hash: usize) -> *mut u8 {
+/// A pointer to the address of the resolved syscall function. Returns a null pointer if the function is not found.
+pub unsafe fn ldr_function_addr(module_base: *mut u8, function_hash: usize) -> *mut u8 {
     // Get the NT headers for the NTDLL module
     let p_img_nt_headers = get_nt_headers(module_base);
 
@@ -260,38 +235,31 @@ pub unsafe fn peb_get_function_addr(module_base: *mut u8, function_hash: usize) 
     let array_of_ordinals = module_base.offset((*export_directory).address_of_name_ordinals as isize) as *const u16;
 
     // Create a slice from the array of names in the export directory
-    let names = core::slice::from_raw_parts(array_of_names, number_of_functions as usize);
+    let names = core::slice::from_raw_parts(array_of_names, number_of_functions as _);
 
     // Create a slice from the array of addresses in the export directory
-    let functions = core::slice::from_raw_parts(array_of_addresses, number_of_functions as usize);
+    let functions = core::slice::from_raw_parts(array_of_addresses, number_of_functions as _);
 
     // Create a slice from the array of ordinals in the export directory
-    let ordinals = core::slice::from_raw_parts(array_of_ordinals, number_of_functions as usize);
+    let ordinals = core::slice::from_raw_parts(array_of_ordinals, number_of_functions as _);
 
     // Iterate over the names to find the function with the matching hash
     for i in 0 .. number_of_functions {
         // Get the address of the current export name
-        if let Some(&name_rva) = names.get(i as usize) {
-            let name_addr = module_base.offset(name_rva as isize) as *const i8;
-            // Get the length of the C string
-            let name_len = string_length_a(name_addr as *const u8);
-            // Create a slice for the name
-            let name_slice: &[u8] = core::slice::from_raw_parts(name_addr as *const u8, name_len);
+        let name_addr = module_base.offset(names[i as usize] as isize) as *const i8;
+        // Get the length of the C string
+        let name_len = string_length_a(name_addr as _);
+        // Create a slice for the name
+        let name_slice: &[u8] = core::slice::from_raw_parts(name_addr as _, name_len);
 
-            // Check if the hash of the name matches the given hash
-            if function_hash as u32 == dbj2_hash(name_slice) {
-                // Use `get` to safely access the `ordinals` array
-                if let Some(&ordinal_value) = ordinals.get(i as usize) {
-                    let ordinal = ordinal_value as usize;
-                    // Use `get` to safely access the `functions` array
-                    if let Some(&function_rva) = functions.get(ordinal) {
-                        return module_base.offset(function_rva as isize);
-                    }
-                }
-            }
+        // Check if the hash of the name matches the given hash
+        if function_hash as u32 == dbj2_hash(name_slice) {
+            // Get the ordinal for the function
+            let ordinal = ordinals[i as usize] as usize;
+            return module_base.offset(functions[ordinal] as isize) as *mut u8;
         }
     }
 
     // Return null pointer if function is not found
-    null_mut()
+    return null_mut();
 }

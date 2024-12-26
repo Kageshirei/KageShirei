@@ -6,14 +6,12 @@ use std::{
 /// The `ThreadPool` struct manages a pool of worker threads that execute jobs.
 #[derive(Debug)]
 pub struct ThreadPool {
-    /// Vector of workers (threads) in the pool.
-    workers: Vec<Worker>,
-    /// Sender channel to dispatch jobs to the workers.
-    sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>,
+    workers: Vec<Worker>,                           // Vector of workers (threads) in the pool.
+    sender:  Option<Arc<Mutex<mpsc::Sender<Job>>>>, // Sender channel to dispatch jobs to the workers.
 }
 
-/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and
-/// must be `Send` and `'static`.
+/// Type alias for a job, which is a boxed closure that takes no arguments, returns nothing, and must be `Send` and
+/// `'static`.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -26,13 +24,8 @@ impl ThreadPool {
     /// # Returns
     ///
     /// * A new `ThreadPool` instance with the specified number of workers.
-    pub fn new(size: usize) -> Self {
-        let size = if size == 0 {
-            1 // Set the pool size to 1 if the specified size is 0.
-        }
-        else {
-            size // Set the pool size to the specified size.
-        };
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0); // Ensure the size of the pool is greater than 0.
 
         // Create a channel for sending jobs to workers. `sender` is used to send jobs,
         // and `receiver` is used by workers to receive jobs.
@@ -42,19 +35,17 @@ impl ThreadPool {
 
         let mut workers = Vec::with_capacity(size); // Create a vector with the capacity to hold all workers.
         for _ in 0 .. size {
-            workers.push(Worker::new(Arc::clone(&receiver))); // Create and push each worker to the
-                                                              // workers vector.
+            workers.push(Worker::new(Arc::clone(&receiver))); // Create and push each worker to the workers vector.
         }
 
         // Return a new ThreadPool with the specified workers and sender channel.
-        Self {
+        ThreadPool {
             workers,
             sender: Some(sender),
         }
     }
 
-    /// Method to execute a job on the thread pool. The job is sent to the worker threads via the
-    /// sender channel.
+    /// Method to execute a job on the thread pool. The job is sent to the worker threads via the sender channel.
     ///
     /// # Arguments
     ///
@@ -65,10 +56,9 @@ impl ThreadPool {
     where
         F: FnOnce() + Send + 'static,
     {
-        if let Some(sender) = self.sender.as_ref() {
+        if let Some(sender) = &self.sender {
             let job = Box::new(f); // Box the job (closure) to make it a heap-allocated trait object.
-            sender.lock().unwrap().send(job).unwrap(); // Send the job to the workers via the
-                                                       // channel.
+            sender.lock().unwrap().send(job).unwrap(); // Send the job to the workers via the channel.
         }
     }
 
@@ -87,8 +77,7 @@ impl ThreadPool {
 /// The `Worker` struct represents a single thread in the thread pool.
 #[derive(Debug)]
 struct Worker {
-    /// Handle to the thread, allowing it to be joined later.
-    handle: Option<thread::JoinHandle<()>>,
+    handle: Option<thread::JoinHandle<()>>, // Handle to the thread, allowing it to be joined later.
 }
 
 impl Worker {
@@ -101,7 +90,7 @@ impl Worker {
     /// # Returns
     ///
     /// * A `Worker` instance wrapping the thread handle.
-    fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Self {
+    fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let handle = thread::spawn(move || {
             loop {
                 // Lock the receiver to safely receive a job. If the channel is closed, break the loop and stop the
@@ -119,7 +108,7 @@ impl Worker {
             }
         });
 
-        Self {
+        Worker {
             handle: Some(handle), // Store the thread handle for later joining.
         }
     }
