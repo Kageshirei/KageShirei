@@ -15,10 +15,7 @@ pub type ULONG = u32;
 pub type PVOID = *mut c_void;
 pub type AccessMask = u32;
 pub type USHORT = c_ushort;
-#[expect(
-    non_camel_case_types,
-    reason = "Windows API types use screaming snake case for types, this aliases it"
-)]
+#[allow(non_camel_case_types)]
 pub type SIZE_T = usize;
 pub type ULONGLONG = u64;
 pub type LONGLONG = i64;
@@ -36,16 +33,10 @@ pub type BSTR = *const u16;
 
 pub type LPCWSTR = *const u16;
 pub type LPWSTR = *mut u16;
-#[expect(
-    non_camel_case_types,
-    reason = "Windows API types use screaming snake case for types, this aliases it"
-)]
+#[allow(non_camel_case_types)]
 pub type LPSECURITY_ATTRIBUTES = *mut SecurityAttributes;
 
-#[expect(
-    non_camel_case_types,
-    reason = "Windows API types use screaming snake case for types, this aliases it"
-)]
+#[allow(non_camel_case_types)]
 pub type ULONG_PTR = usize;
 
 pub type DWORD64 = u64;
@@ -214,46 +205,34 @@ pub struct UnicodeString {
     pub buffer:         *mut u16,
 }
 
-impl Default for UnicodeString {
-    fn default() -> Self { Self::new() }
-}
-
 impl UnicodeString {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        UnicodeString {
             length:         0,
             maximum_length: 0,
-            buffer:         null_mut(),
+            buffer:         ptr::null_mut(),
         }
     }
 
+    pub fn from_str(source_string: *const u16) -> Self {
+        let mut unicode_string = UnicodeString::new();
+        unicode_string.init(source_string);
+        unicode_string
+    }
+
     // RtlInitUnicodeString
-    #[expect(
-        clippy::not_unsafe_ptr_arg_deref,
-        reason = "The function implementation internally handles the case in which source_string is null making it a \
-                  good candidate to become safe"
-    )]
     pub fn init(&mut self, source_string: *const u16) {
         if !source_string.is_null() {
-            // Safety: source_string is a valid pointer to a null-terminated string
-            let dest_size = unsafe { string_length_w(source_string).saturating_mul(2) }; // 2 bytes per u16
+            let dest_size = string_length_w(source_string) * 2; // 2 bytes per u16
             self.length = dest_size as u16;
-            self.maximum_length = dest_size.saturating_add(2) as u16; // 2 bytes for the null terminator
+            self.maximum_length = (dest_size + 2) as u16; // 2 bytes for the null terminator
             self.buffer = source_string as *mut u16;
         }
         else {
             self.length = 0;
             self.maximum_length = 0;
-            self.buffer = null_mut();
+            self.buffer = ptr::null_mut();
         }
-    }
-}
-
-impl From<*const u16> for UnicodeString {
-    fn from(source_string: *const u16) -> Self {
-        let mut unicode_string = Self::new();
-        unicode_string.init(source_string);
-        unicode_string
     }
 }
 
@@ -263,18 +242,9 @@ pub struct ClientId {
     pub unique_thread:  HANDLE,
 }
 
-// Safety: ClientId is a pointer to itself, so it's safe to share across threads
-unsafe impl Sync for ClientId {}
-// Safety: ClientId is a pointer to itself, so it's safe to send across threads
-unsafe impl Send for ClientId {}
-
-impl Default for ClientId {
-    fn default() -> Self { Self::new() }
-}
-
 impl ClientId {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        ClientId {
             unique_process: ptr::null_mut(),
             unique_thread:  ptr::null_mut(),
         }
@@ -395,13 +365,9 @@ pub struct CURDIR {
     pub handle:   HANDLE,
 }
 
-impl Default for CURDIR {
-    fn default() -> Self { Self::new() }
-}
-
 impl CURDIR {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        CURDIR {
             dos_path: UnicodeString::new(),
             handle:   null_mut(),
         }
@@ -447,13 +413,9 @@ pub struct RtlUserProcessParameters {
     pub loader_threads:          u32,
 }
 
-impl Default for RtlUserProcessParameters {
-    fn default() -> Self { Self::new() }
-}
-
 impl RtlUserProcessParameters {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        RtlUserProcessParameters {
             maximum_length:          0,
             length:                  0,
             flags:                   0,
@@ -503,11 +465,6 @@ pub struct NtTib {
     pub arbitrary_user_pointer: *mut c_void,
     pub self_:                  *mut NtTib,
 }
-
-// Safety: NtTib is a pointer to itself, so it's safe to share across threads
-unsafe impl Sync for NtTib {}
-// Safety: NtTib is a pointer to itself, so it's safe to send across threads
-unsafe impl Send for NtTib {}
 
 #[cfg(target_arch = "x86")]
 #[repr(C)]
@@ -583,9 +540,7 @@ pub struct TEB {
     pub gdi_last_spare_stack_array: [u32; 0x200],
 }
 
-// Safety: TEB is a pointer to itself, so it's safe to share across threads
 unsafe impl Sync for TEB {}
-// Safety: TEB is a pointer to itself, so it's safe to send across threads
 unsafe impl Send for TEB {}
 
 #[repr(C)]
@@ -614,13 +569,9 @@ pub struct ObjectAttributes {
     pub security_quality_of_service: PVOID,
 }
 
-impl Default for ObjectAttributes {
-    fn default() -> Self { Self::new() }
-}
-
 impl ObjectAttributes {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        ObjectAttributes {
             length: 0,
             root_directory: ptr::null_mut(),
             object_name: ptr::null_mut(),
@@ -631,8 +582,8 @@ impl ObjectAttributes {
     }
 
     // InitializeObjectAttributes
-    pub fn initialize(p: &mut Self, n: *mut UnicodeString, a: ULONG, r: HANDLE, s: PVOID) {
-        p.length = core::mem::size_of::<Self>() as ULONG;
+    pub fn initialize(p: &mut ObjectAttributes, n: *mut UnicodeString, a: ULONG, r: HANDLE, s: PVOID) {
+        p.length = core::mem::size_of::<ObjectAttributes>() as ULONG;
         p.root_directory = r;
         p.attributes = a;
         p.object_name = n;
@@ -673,20 +624,16 @@ pub struct OSVersionInfo {
     pub dw_platform_id_2:          u32,
 }
 
-impl Default for OSVersionInfo {
-    fn default() -> Self { Self::new() }
-}
-
 impl OSVersionInfo {
-    pub const fn new() -> Self {
-        Self {
-            dw_os_version_info_size:   core::mem::size_of::<Self>() as u32,
+    pub fn new() -> Self {
+        OSVersionInfo {
+            dw_os_version_info_size:   core::mem::size_of::<OSVersionInfo>() as u32,
             dw_major_version:          0,
             dw_minor_version:          0,
             dw_build_number:           0,
             dw_platform_id:            0,
             sz_csd_version:            [0; 128],
-            dw_os_version_info_size_2: core::mem::size_of::<Self>() as u32,
+            dw_os_version_info_size_2: core::mem::size_of::<OSVersionInfo>() as u32,
             dw_major_version_2:        0,
             dw_minor_version_2:        0,
             dw_build_number_2:         0,
@@ -774,14 +721,10 @@ pub struct StartupInfoA {
     pub h_std_error:       *mut c_void,
 }
 
-impl Default for StartupInfoA {
-    fn default() -> Self { Self::new() }
-}
-
 impl StartupInfoA {
-    pub const fn new() -> Self {
-        Self {
-            cb:                core::mem::size_of::<Self>() as u32,
+    pub fn new() -> Self {
+        StartupInfoA {
+            cb:                core::mem::size_of::<StartupInfoA>() as u32,
             lp_reserved:       ptr::null_mut(),
             lp_desktop:        ptr::null_mut(),
             lp_title:          ptr::null_mut(),
@@ -825,14 +768,10 @@ pub struct StartupInfoW {
     pub h_std_error:       *mut c_void,
 }
 
-impl Default for StartupInfoW {
-    fn default() -> Self { Self::new() }
-}
-
 impl StartupInfoW {
-    pub const fn new() -> Self {
-        Self {
-            cb:                core::mem::size_of::<Self>() as u32,
+    pub fn new() -> Self {
+        StartupInfoW {
+            cb:                core::mem::size_of::<StartupInfoW>() as u32,
             lp_reserved:       ptr::null_mut(),
             lp_desktop:        ptr::null_mut(),
             lp_title:          ptr::null_mut(),
@@ -862,13 +801,9 @@ pub struct ProcessInformation {
     pub dw_thread_id:  u32,
 }
 
-impl Default for ProcessInformation {
-    fn default() -> Self { Self::new() }
-}
-
 impl ProcessInformation {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        ProcessInformation {
             h_process:     ptr::null_mut(),
             h_thread:      ptr::null_mut(),
             dw_process_id: 0,
@@ -919,7 +854,7 @@ pub const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub struct TokenAccessMask(pub u32);
 // pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(8u32);
-pub const TOKEN_READ: TokenAccessMask = TokenAccessMask(0x0002_0008u32);
+pub const TOKEN_READ: TokenAccessMask = TokenAccessMask(131080u32);
 // pub const TOKEN_QUERY: TokenAccessMask = TokenAccessMask(0x0008);
 // pub const TOKEN_ADJUST_PRIVILEGES: TokenAccessMask = TokenAccessMask(0x0020);
 
@@ -927,11 +862,11 @@ pub const TOKEN_QUERY: AccessMask = 0x0008;
 pub const TOKEN_ADJUST_PRIVILEGES: AccessMask = 0x0020;
 pub const TOKEN_INTEGRITY_LEVEL: u32 = 25;
 
-pub const SECURITY_MANDATORY_UNTRUSTED_RID: u32 = 0x0000_0000;
-pub const SECURITY_MANDATORY_LOW_RID: u32 = 0x0000_1000;
-pub const SECURITY_MANDATORY_MEDIUM_RID: u32 = 0x0000_2000;
-pub const SECURITY_MANDATORY_HIGH_RID: u32 = 0x0000_3000;
-pub const SECURITY_MANDATORY_SYSTEM_RID: u32 = 0x0000_4000;
+pub const SECURITY_MANDATORY_UNTRUSTED_RID: u32 = 0x00000000;
+pub const SECURITY_MANDATORY_LOW_RID: u32 = 0x00001000;
+pub const SECURITY_MANDATORY_MEDIUM_RID: u32 = 0x00002000;
+pub const SECURITY_MANDATORY_HIGH_RID: u32 = 0x00003000;
+pub const SECURITY_MANDATORY_SYSTEM_RID: u32 = 0x00004000;
 
 #[repr(C)]
 pub struct Sid {
@@ -984,18 +919,14 @@ pub struct IoStatusBlock {
     pub information: ULONG,
 }
 
-impl Default for IoStatusBlock {
-    fn default() -> Self { Self::new() }
-}
-
 impl IoStatusBlock {
     /// Creates a new `IoStatusBlock` with default values.
     ///
     /// # Returns
     ///
     /// A new instance of `IoStatusBlock` with default initialization.
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        IoStatusBlock {
             u:           IO_STATUS_BLOCK_u {
                 status: 0,
             },
@@ -1097,16 +1028,14 @@ pub const FILE_CREATE: u32 = 0x00000002;
 pub const FILE_OPEN_IF: u32 = 0x00000003;
 /// Disposition value specifying to overwrite an existing file or fail if it does not exist.
 pub const FILE_OVERWRITE: u32 = 0x00000004;
-/// Disposition value specifying to overwrite an existing file or create a new one if it does not
-/// exist.
+/// Disposition value specifying to overwrite an existing file or create a new one if it does not exist.
 pub const FILE_OVERWRITE_IF: u32 = 0x00000005;
 
 /// Option to indicate that the file to be created or opened is a directory.
 pub const FILE_DIRECTORY_FILE: u32 = 0x00000001;
 /// Option to ensure the file being opened is not a directory.
 pub const FILE_NON_DIRECTORY_FILE: u32 = 0x00000040;
-/// Option to ensure that all writes to the file are transferred to the file before the write
-/// operation completes.
+/// Option to ensure that all writes to the file are transferred to the file before the write operation completes.
 pub const FILE_WRITE_THROUGH: u32 = 0x00000002;
 /// Option indicating that all file accesses must be sequential.
 pub const FILE_SEQUENTIAL_ONLY: u32 = 0x00000004;
@@ -1114,16 +1043,13 @@ pub const FILE_SEQUENTIAL_ONLY: u32 = 0x00000004;
 pub const FILE_RANDOM_ACCESS: u32 = 0x00000008;
 /// Option indicating that the file cannot be cached or buffered.
 pub const FILE_NO_INTERMEDIATE_BUFFERING: u32 = 0x00000010;
-/// Option indicating that all file operations are performed synchronously and are subject to alert
-/// termination.
+/// Option indicating that all file operations are performed synchronously and are subject to alert termination.
 pub const FILE_SYNCHRONOUS_IO_ALERT: u32 = 0x00000010;
-/// Option indicating that all file operations are performed synchronously without alert
-/// termination.
+/// Option indicating that all file operations are performed synchronously without alert termination.
 pub const FILE_SYNCHRONOUS_IO_NONALERT: u32 = 0x00000020;
 /// Option to create a tree connection for the file through the network.
 pub const FILE_CREATE_TREE_CONNECTION: u32 = 0x00000080;
-/// Option to fail the operation if the file has extended attributes that the caller does not
-/// understand.
+/// Option to fail the operation if the file has extended attributes that the caller does not understand.
 pub const FILE_NO_EA_KNOWLEDGE: u32 = 0x00000200;
 /// Option to open a file with a reparse point and bypass the normal reparse point processing.
 pub const FILE_OPEN_REPARSE_POINT: u32 = 0x00200000;
@@ -1133,13 +1059,11 @@ pub const FILE_DELETE_ON_CLOSE: u32 = 0x00001000;
 pub const FILE_OPEN_BY_FILE_ID: u32 = 0x00002000;
 /// Option indicating that the file is opened for backup intent.
 pub const FILE_OPEN_FOR_BACKUP_INTENT: u32 = 0x00004000;
-/// Option to allow the application to request a filter opportunistic lock (oplock) to prevent share
-/// violations.
+/// Option to allow the application to request a filter opportunistic lock (oplock) to prevent share violations.
 pub const FILE_RESERVE_OPFILTER: u32 = 0x00100000;
 /// Option to open the file and request an opportunistic lock (oplock) as a single atomic operation.
 pub const FILE_OPEN_REQUIRING_OPLOCK: u32 = 0x00010000;
-/// Option to complete the operation immediately with a successful alternative status if the target
-/// file is oplocked.
+/// Option to complete the operation immediately with a successful alternative status if the target file is oplocked.
 pub const FILE_COMPLETE_IF_OPLOCKED: u32 = 0x00020000;
 
 /// FILE_PIPE_BYTE_STREAM_TYPE specifies that the named pipe will be of a byte stream type.
@@ -1174,13 +1098,9 @@ pub struct LargeInteger {
     pub high_part: i32,
 }
 
-impl Default for LargeInteger {
-    fn default() -> Self { Self::new() }
-}
-
 impl LargeInteger {
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        LargeInteger {
             high_part: 0,
             low_part:  0,
         }
@@ -1339,12 +1259,8 @@ pub struct PsCreateInitialFlagBits {
     pub bits: ULONG, // Rappresenta tutti i bit in un singolo campo da 32 bit
 }
 
-impl Default for PsCreateInitialFlagBits {
-    fn default() -> Self { Self::new() }
-}
-
 impl PsCreateInitialFlagBits {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         let mut bits: ULONG = 0;
         bits |= 1 << 0; // WriteOutputOnExit : 1;
         bits |= 1 << 1; // DetectManifest : 1;
@@ -1354,7 +1270,7 @@ impl PsCreateInitialFlagBits {
         bits |= 8 << 8; // SpareBits2 : 8;
         bits |= 16 << 16; // ProhibitedImageCharacteristics : 16;
 
-        Self {
+        PsCreateInitialFlagBits {
             bits,
         }
     }
@@ -1381,12 +1297,8 @@ pub struct PsCreateSuccessFlagBits {
     pub bits: ULONG, // Rappresenta tutti i bit in un singolo campo da 32 bit
 }
 
-impl Default for PsCreateSuccessFlagBits {
-    fn default() -> Self { Self::new() }
-}
-
 impl PsCreateSuccessFlagBits {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         let mut bits: ULONG = 0;
         bits |= 1 << 0; // ProtectedProcess : 1;
         bits |= 1 << 1; // AddressSpaceOverride : 1;
@@ -1397,7 +1309,7 @@ impl PsCreateSuccessFlagBits {
         bits |= 8 << 8; // SpareBits2 : 8;
         bits |= 16 << 16; // SpareBits3 : 16;
 
-        Self {
+        PsCreateSuccessFlagBits {
             bits,
         }
     }
@@ -1448,7 +1360,7 @@ pub struct PsAttributeList {
 
 impl PsAttribute {
     pub const fn new(attribute: usize, size: usize, value: usize, return_length: *mut usize) -> Self {
-        Self {
+        PsAttribute {
             attribute,
             size,
             value: PsAttributeValueUnion {
@@ -1459,7 +1371,7 @@ impl PsAttribute {
     }
 
     pub const fn new_ptr(attribute: usize, size: usize, value_ptr: PVOID, return_length: *mut usize) -> Self {
-        Self {
+        PsAttribute {
             attribute,
             size,
             value: PsAttributeValueUnion {
@@ -1563,9 +1475,8 @@ pub const PS_ATTRIBUTE_ADDITIVE: usize = 0x40000000;
 /// This constant enables a mitigation policy that blocks non-Microsoft binaries
 /// from loading into the process. The policy is always enforced.
 ///
-/// This constant is equivalent to
-/// `PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON` in the Windows API,
-/// defined as `0x00000001ui64 << 44`.
+/// This constant is equivalent to `PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON`
+/// in the Windows API, defined as `0x00000001ui64 << 44`.
 pub const PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON: u64 = 0x00000001u64 << 44;
 
 #[repr(C)]
@@ -1854,20 +1765,14 @@ pub struct SystemProcessInformation2 {
 }
 
 #[repr(C)]
-#[expect(
-    non_snake_case,
-    reason = "The CONTEXT structure is a Windows API structure"
-)]
+#[allow(non_snake_case)]
 pub struct M128A {
     pub Low:  ULONGLONG,
     pub High: LONGLONG,
 }
 
 #[repr(C)]
-#[expect(
-    non_snake_case,
-    reason = "The CONTEXT structure is a Windows API structure"
-)]
+#[allow(non_snake_case)]
 pub struct CONTEXT {
     pub P1Home:               DWORD64,
     pub P2Home:               DWORD64,
@@ -1917,17 +1822,17 @@ pub struct CONTEXT {
     pub LastExceptionFromRip: DWORD64,
 }
 
-pub const HEAP_NO_SERIALIZE: DWORD = 0x0000_0001;
-pub const HEAP_GROWABLE: DWORD = 0x0000_0002;
-pub const HEAP_GENERATE_EXCEPTIONS: DWORD = 0x0000_0004;
-pub const HEAP_ZERO_MEMORY: DWORD = 0x0000_0008;
-pub const HEAP_REALLOC_IN_PLACE_ONLY: DWORD = 0x0000_0010;
-pub const HEAP_TAIL_CHECKING_ENABLED: DWORD = 0x0000_0020;
-pub const HEAP_FREE_CHECKING_ENABLED: DWORD = 0x0000_0040;
-pub const HEAP_DISABLE_COALESCE_ON_FREE: DWORD = 0x0000_0080;
-pub const HEAP_CREATE_ALIGN_16: DWORD = 0x0001_0000;
-pub const HEAP_CREATE_ENABLE_TRACING: DWORD = 0x0002_0000;
-pub const HEAP_CREATE_ENABLE_EXECUTE: DWORD = 0x0004_0000;
+pub const HEAP_NO_SERIALIZE: DWORD = 0x00000001;
+pub const HEAP_GROWABLE: DWORD = 0x00000002;
+pub const HEAP_GENERATE_EXCEPTIONS: DWORD = 0x00000004;
+pub const HEAP_ZERO_MEMORY: DWORD = 0x00000008;
+pub const HEAP_REALLOC_IN_PLACE_ONLY: DWORD = 0x00000010;
+pub const HEAP_TAIL_CHECKING_ENABLED: DWORD = 0x00000020;
+pub const HEAP_FREE_CHECKING_ENABLED: DWORD = 0x00000040;
+pub const HEAP_DISABLE_COALESCE_ON_FREE: DWORD = 0x00000080;
+pub const HEAP_CREATE_ALIGN_16: DWORD = 0x00010000;
+pub const HEAP_CREATE_ENABLE_TRACING: DWORD = 0x00020000;
+pub const HEAP_CREATE_ENABLE_EXECUTE: DWORD = 0x00040000;
 pub const HEAP_MAXIMUM_TAG: DWORD = 0x0fff;
 pub const HEAP_PSEUDO_TAG_FLAG: DWORD = 0x8000;
 pub const HEAP_TAG_SHIFT: usize = 18;
@@ -1953,8 +1858,7 @@ pub enum RtlPathType {
     /// Example: `C:\Folder\File.txt`
     RtlPathTypeDriveAbsolute,
 
-    /// Drive relative path, where the path is relative to the current directory on a specific
-    /// drive.
+    /// Drive relative path, where the path is relative to the current directory on a specific drive.
     ///
     /// Example: `C:Folder\File.txt`
     RtlPathTypeDriveRelative,
@@ -1987,18 +1891,14 @@ pub struct RtlRelativeNameU {
     pub cur_dir_ref:          *mut RtlpCurdirRef,
 }
 
-impl Default for RtlRelativeNameU {
-    fn default() -> Self { Self::new() }
-}
-
 impl RtlRelativeNameU {
     /// Creates a new `RtlRelativeNameU` with default values.
     ///
     /// # Returns
     /// A new instance of `RtlRelativeNameU` with an empty `UnicodeString`, a null `HANDLE`,
     /// and a null pointer for `cur_dir_ref`.
-    pub const fn new() -> Self {
-        Self {
+    pub fn new() -> Self {
+        RtlRelativeNameU {
             relative_name:        UnicodeString::new(), // Initialize with an empty UnicodeString
             containing_directory: null_mut(),           // Set HANDLE to null
             cur_dir_ref:          null_mut(),           // Set pointer to null
@@ -2011,7 +1911,7 @@ pub struct RtlpCurdirRef {
     pub directory_handle: HANDLE,
 }
 
-pub const UNICODE_STRING_MAX_BYTES: u32 = 0xfffe;
+pub const UNICODE_STRING_MAX_BYTES: u32 = 65534;
 
 pub enum MemoryInformationClass {
     MemoryBasicInformation,

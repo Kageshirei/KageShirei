@@ -18,7 +18,7 @@ pub struct FullSessionRecord {
     /// The username of whose runs the agent
     pub username:           String,
     /// The internal IP(s) of the victim (multiple network interfaces)
-    pub network_interfaces: NetworkInterfaceArray,
+    pub network_interfaces: Vec<NetworkInterface>,
     /// The process ID of the agent
     pub pid:                i64,
     /// The parent process ID of the agent

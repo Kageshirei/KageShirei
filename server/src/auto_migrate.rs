@@ -1,9 +1,7 @@
-//! This module contains the logic for running the database migrations.
-
 use log::info;
 use srv_mod_config::ReadOnlyConfig;
 use srv_mod_entity::sea_orm::{ConnectOptions, Database, DatabaseConnection};
-use srv_mod_migration::{Migrator, MigratorTrait as _};
+use srv_mod_migration::{Migrator, MigratorTrait};
 use tracing::error;
 
 /// Runs the database migrations and returns a connection to the database.

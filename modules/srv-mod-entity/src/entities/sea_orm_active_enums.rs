@@ -68,27 +68,27 @@ impl From<agent::Column> for AgentField {
         }
     }
 }
-impl From<AgentField> for agent::Column {
-    fn from(val: AgentField) -> Self {
-        match val {
-            AgentField::CreatedAt => Self::CreatedAt,
-            AgentField::Cwd => Self::Cwd,
-            AgentField::Domain => Self::Domain,
-            AgentField::Hostname => Self::Hostname,
-            AgentField::Id => Self::Id,
-            AgentField::Integrity => Self::Integrity,
-            AgentField::NetworkInterfaces => Self::NetworkInterfaces,
-            AgentField::OperatingSystem => Self::OperatingSystem,
-            AgentField::Pid => Self::Pid,
-            AgentField::Ppid => Self::Ppid,
-            AgentField::ProcessName => Self::ProcessName,
-            AgentField::Secret => Self::Secret,
-            AgentField::ServerSecret => Self::ServerSecret,
-            AgentField::Signature => Self::Signature,
-            AgentField::TerminatedAt => Self::TerminatedAt,
-            AgentField::UpdatedAt => Self::UpdatedAt,
-            AgentField::Username => Self::Username,
-            AgentField::Agent => Self::Id, // This is the Table alias used in the migration
+impl Into<agent::Column> for AgentField {
+    fn into(self) -> agent::Column {
+        match self {
+            Self::CreatedAt => agent::Column::CreatedAt,
+            Self::Cwd => agent::Column::Cwd,
+            Self::Domain => agent::Column::Domain,
+            Self::Hostname => agent::Column::Hostname,
+            Self::Id => agent::Column::Id,
+            Self::Integrity => agent::Column::Integrity,
+            Self::NetworkInterfaces => agent::Column::NetworkInterfaces,
+            Self::OperatingSystem => agent::Column::OperatingSystem,
+            Self::Pid => agent::Column::Pid,
+            Self::Ppid => agent::Column::Ppid,
+            Self::ProcessName => agent::Column::ProcessName,
+            Self::Secret => agent::Column::Secret,
+            Self::ServerSecret => agent::Column::ServerSecret,
+            Self::Signature => agent::Column::Signature,
+            Self::TerminatedAt => agent::Column::TerminatedAt,
+            Self::UpdatedAt => agent::Column::UpdatedAt,
+            Self::Username => agent::Column::Username,
+            Self::Agent => agent::Column::Id, // This is the Table alias used in the migration
         }
     }
 }
@@ -126,16 +126,16 @@ impl From<i16> for AgentIntegrity {
     }
 }
 
-impl From<AgentIntegrity> for i16 {
-    fn from(val: AgentIntegrity) -> Self {
-        match val {
+impl Into<i16> for AgentIntegrity {
+    fn into(self) -> i16 {
+        match self {
             AgentIntegrity::Untrusted => 0x0000,
             AgentIntegrity::Low => 0x1000,
             AgentIntegrity::Medium => 0x2000,
             AgentIntegrity::High => 0x3000,
             AgentIntegrity::System => 0x4000,
             AgentIntegrity::ProtectedProcess => 0x5000,
-            AgentIntegrity::Invalid => Self::MAX,
+            AgentIntegrity::Invalid => i16::MAX,
         }
     }
 }
@@ -181,15 +181,15 @@ impl From<String> for FilterOperation {
         }
     }
 }
-impl From<FilterOperation> for String {
-    fn from(val: FilterOperation) -> Self {
-        match val {
-            FilterOperation::Contains => "contains".to_owned(),
-            FilterOperation::EndsWith => "ends_with".to_owned(),
-            FilterOperation::Equals => "equals".to_owned(),
-            FilterOperation::NotContains => "not_contains".to_owned(),
-            FilterOperation::NotEquals => "not_equals".to_owned(),
-            FilterOperation::StartsWith => "starts_with".to_owned(),
+impl Into<String> for FilterOperation {
+    fn into(self) -> String {
+        match self {
+            FilterOperation::Contains => "contains".to_string(),
+            FilterOperation::EndsWith => "ends_with".to_string(),
+            FilterOperation::Equals => "equals".to_string(),
+            FilterOperation::NotContains => "not_contains".to_string(),
+            FilterOperation::NotEquals => "not_equals".to_string(),
+            FilterOperation::StartsWith => "starts_with".to_string(),
         }
     }
 }
@@ -219,14 +219,14 @@ impl From<String> for LogLevel {
         }
     }
 }
-impl From<LogLevel> for String {
-    fn from(val: LogLevel) -> Self {
-        match val {
-            LogLevel::Debug => "debug".to_owned(),
-            LogLevel::Error => "error".to_owned(),
-            LogLevel::Info => "info".to_owned(),
-            LogLevel::Trace => "trace".to_owned(),
-            LogLevel::Warning => "warning".to_owned(),
+impl Into<String> for LogLevel {
+    fn into(self) -> String {
+        match self {
+            LogLevel::Debug => "debug".to_string(),
+            LogLevel::Error => "error".to_string(),
+            LogLevel::Info => "info".to_string(),
+            LogLevel::Trace => "trace".to_string(),
+            LogLevel::Warning => "warning".to_string(),
         }
     }
 }
@@ -247,11 +247,11 @@ impl From<String> for LogicalOperator {
         }
     }
 }
-impl From<LogicalOperator> for String {
-    fn from(val: LogicalOperator) -> Self {
-        match val {
-            LogicalOperator::And => "and".to_owned(),
-            LogicalOperator::Or => "or".to_owned(),
+impl Into<String> for LogicalOperator {
+    fn into(self) -> String {
+        match self {
+            LogicalOperator::And => "and".to_string(),
+            LogicalOperator::Or => "or".to_string(),
         }
     }
 }

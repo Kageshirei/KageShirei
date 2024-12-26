@@ -6,7 +6,7 @@ export interface Agent {
     /**
      * The OS name
      */
-    operating_system: string;
+    operative_system: string;
     /**
      * The victim hostname
      */
@@ -22,15 +22,15 @@ export interface Agent {
     /**
      * The internal IP of the victim
      */
-    network_interfaces: NetworkInterfaceArray;
+    ip: string;
     /**
      * The process ID of the agent
      */
-    pid: number;
+    process_id: number;
     /**
      * The parent process ID of the agent
      */
-    ppid: number;
+    parent_process_id: number;
     /**
      * The process name of the agent
      */
@@ -38,19 +38,9 @@ export interface Agent {
     /**
      * Current process integrity level
      */
-    integrity: string;
+    integrity_level: number;
     /**
      * The current working directory of the agent
      */
     cwd: string;
-}
-
-export interface NetworkInterfaceArray {
-    network_interfaces: NetworkInterface[];
-}
-
-export interface NetworkInterface {
-    name?: string | null,
-    address?: string | null,
-    dhcp_server?: string | null,
 }

@@ -1,64 +1,18 @@
-use alloc::string::String;
-use core::error::Error as ErrorTrait;
-#[cfg(any(feature = "server", test))]
-use core::fmt::{Debug, Display, Formatter};
+use std::{
+    error::Error,
+    fmt::{Debug, Display, Formatter},
+};
 
-#[derive(Clone, PartialEq, Eq)]
-pub enum Format {
-    /// No data have been provided.
-    EmptyData,
-    /// The data provided is invalid, it does not match the expected format.
-    InvalidData,
-    /// A generic error occurred.
-    Generic(String),
-}
-
-#[cfg(any(feature = "server", test))]
-impl Debug for Format {
-    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-        // Delegate to Display
-        write!(f, "{}", self)
-    }
-}
-
-#[cfg(any(feature = "server", test))]
-impl Display for Format {
-    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-        #[expect(
-            clippy::pattern_type_mismatch,
-            reason = "Cannot dereference into the Display trait implementation"
-        )]
-        match self {
-            Self::EmptyData => {
-                write!(f, "No data have been provided.")
-            },
-            Self::InvalidData => {
-                write!(
-                    f,
-                    "The data provided is invalid, it does not match the expected format."
-                )
-            },
-            Self::Generic(e) => {
-                write!(f, "A generic error occurred: {}", e)
-            },
-        }
-    }
-}
-
-#[cfg(any(feature = "server", test))]
-impl ErrorTrait for Format {}
-
-#[derive(Clone, PartialEq, Eq)]
-pub enum Protocol {
-    // TODO: Check if the error variants are correct, probably they are not
-    /// Error when trying to send data. Takes a parameter to indicate the reason.
-    SendingError(Option<String>),
-    /// Error when trying to receive data. Takes a parameter to indicate the reason.
-    ReceivingError(Option<String>),
-    /// Error when trying to initialize the protocol.
-    InitializationError(String),
-    /// A generic error occurred.
-    Generic(String),
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub enum ProtocolError {
+    /// Error when trying to deserialize data.
+    DeserializationError,
+    /// Error when trying to serialize data.
+    SerializationError,
+    /// Error when trying to send data.
+    SendingError,
+    /// Error when trying to receive data.
+    ReceivingError,
     /// Error when trying to connect to a server.
     ConnectionError,
     /// Error when trying to disconnect from a server.
@@ -69,63 +23,19 @@ pub enum Protocol {
     ReceiveMessageError,
 }
 
-#[cfg(any(feature = "server", test))]
-impl Debug for Protocol {
-    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-        // Delegate to Display
-        write!(f, "{}", self)
-    }
-}
-
-#[cfg(any(feature = "server", test))]
-impl Display for Protocol {
-    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-        #[expect(
-            clippy::pattern_type_mismatch,
-            reason = "Cannot dereference into the Display trait implementation"
-        )]
+impl Display for ProtocolError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::SendingError(reason) => {
-                if let Some(reason) = reason {
-                    write!(f, "Error when trying to send data: {}", reason)
-                }
-                else {
-                    write!(f, "Error when trying to send data.")
-                }
-            },
-            Self::ReceivingError(reason) => {
-                if let Some(reason) = reason {
-                    write!(f, "Error when trying to receive data: {}", reason)
-                }
-                else {
-                    write!(f, "Error when trying to receive data.")
-                }
-            },
-            Self::ConnectionError => {
-                write!(f, "Error when trying to connect to a server.")
-            },
-            Self::DisconnectionError => {
-                write!(f, "Error when trying to disconnect from a server.")
-            },
-            Self::MessageError => {
-                write!(f, "Error when trying to send a message to a server.")
-            },
-            Self::ReceiveMessageError => {
-                write!(f, "Error when trying to receive a message from a server.")
-            },
-            Self::InitializationError(reason_or_errored_fragment) => {
-                write!(
-                    f,
-                    "Error when trying to initialize the protocol: {}",
-                    reason_or_errored_fragment
-                )
-            },
-            Self::Generic(e) => {
-                write!(f, "A generic error occurred: {}", e)
-            },
+            ProtocolError::DeserializationError => write!(f, "Error when trying to deserialize data."),
+            ProtocolError::SerializationError => write!(f, "Error when trying to serialize data."),
+            ProtocolError::SendingError => write!(f, "Error when trying to send data."),
+            ProtocolError::ReceivingError => write!(f, "Error when trying to receive data."),
+            ProtocolError::ConnectionError => write!(f, "Error when trying to connect to a server."),
+            ProtocolError::DisconnectionError => write!(f, "Error when trying to disconnect from a server."),
+            ProtocolError::MessageError => write!(f, "Error when trying to send a message to a server."),
+            ProtocolError::ReceiveMessageError => write!(f, "Error when trying to receive a message from a server."),
         }
     }
 }
 
-#[cfg(any(feature = "server", test))]
-impl ErrorTrait for Protocol {}
+impl Error for ProtocolError {}

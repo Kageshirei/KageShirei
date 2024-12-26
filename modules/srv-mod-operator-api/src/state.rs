@@ -1,5 +1,3 @@
-//! The shared state for the API server
-
 use std::sync::Arc;
 
 use srv_mod_config::{sse::common_server_state::SseEvent, SharedConfig};
