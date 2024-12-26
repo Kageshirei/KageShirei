@@ -4,7 +4,7 @@
 
 use clap::Parser as _;
 use log::trace;
-use rustls::{crypto, crypto::CryptoProvider};
+use rustls::crypto;
 use srv_mod_config::RootConfig;
 
 use crate::{

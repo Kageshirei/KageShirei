@@ -1549,7 +1549,7 @@ pub const RTL_USER_PROC_IMAGE_KEY_MISSING: u32 = 0x00004000;
 pub const RTL_USER_PROC_OPTIN_PROCESS: u32 = 0x00020000;
 
 /// Provides all possible access rights to a thread.
-pub const THREAD_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xffff_u32;
+pub const THREAD_ALL_ACCESS: u32 = STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0xffffu32;
 
 /// Mask to extract the attribute number from a PS_ATTRIBUTE value.
 pub const PS_ATTRIBUTE_NUMBER_MASK: usize = 0x0000ffff;

@@ -205,12 +205,11 @@ fn install_rust() -> Result<(), String> {
     Ok(())
 }
 
-
 /// Installs NVM
 fn install_nvm(shell: &str, config_file: &str) -> Result<(), String> {
     if Command::new("nvm").arg("--version").output().is_err() {
         info!("Installing NVM...");
-        let status = Command::new(&shell)
+        let status = Command::new(shell)
             .arg("-c")
             .arg("curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash")
             .status()
@@ -221,7 +220,7 @@ fn install_nvm(shell: &str, config_file: &str) -> Result<(), String> {
             return Err("Failed to install NVM".to_owned());
         }
 
-        let status = Command::new(&shell)
+        let status = Command::new(shell)
             .arg("-c")
             .arg(format!(". {} && nvm install --lts", config_file))
             .status()
@@ -240,7 +239,7 @@ fn install_nvm(shell: &str, config_file: &str) -> Result<(), String> {
 fn install_pnpm(shell: &str, config_file: &str) -> Result<(), String> {
     if Command::new("pnpm").arg("--version").output().is_err() {
         info!("Installing PNPM...");
-        let status = Command::new(&shell)
+        let status = Command::new(shell)
             .arg("-c")
             .arg(format!(". {} && npm i -g pnpm", config_file))
             .status()
@@ -275,10 +274,13 @@ fn install_xwin() -> Result<(), String> {
 /// Builds the client application
 fn build_command_and_control(shell: &str, config_file: &str) -> Result<(), String> {
     info!("Building the client application ...");
-    
-    let status = Command::new(&shell)
+
+    let status = Command::new(shell)
         .arg("-c")
-        .arg(format!(". {} && pnpm install && pnpm run tauri:build", config_file))
+        .arg(format!(
+            ". {} && pnpm install && pnpm run tauri:build",
+            config_file
+        ))
         .status()
         .expect("Failed to build the client application");
 
@@ -288,7 +290,7 @@ fn build_command_and_control(shell: &str, config_file: &str) -> Result<(), Strin
     }
 
     info!("Cross compiling for windows ...");
-    let status = Command::new(&shell)
+    let status = Command::new(shell)
         .arg("-c")
         .arg(format!(
             ". {} && pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
@@ -327,11 +329,10 @@ pub fn compile() -> Result<(), String> {
         // Determine the appropriate configuration file
         let config_file = if shell.contains("zsh") {
             format!("{}/.zshrc", home)
-        } else {
+        }
+        else {
             format!("{}/.bashrc", home)
         };
-
-
 
         // Ensure the command is executed as root
         check_root()?;
