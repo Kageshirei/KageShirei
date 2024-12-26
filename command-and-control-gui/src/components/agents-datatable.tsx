@@ -278,7 +278,7 @@ export const AgentsDatatable: FC<AgentsDatatableProps> = ({
             selectedRecords={selectedRecords}
             onSelectedRecordsChange={setSelectedRecords}
             selectionTrigger={"cell"}
-            records={records}
+            records={records as unknown as Agent[]}
             fetching={sessions.is_fetching}
             // @ts-ignore
             columns={effectiveColumns}

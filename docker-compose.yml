@@ -2,7 +2,7 @@ services:
   server-dedicated-machine:
     image: debian:latest
     container_name: kageshirei-server-dedicated-machine
-    entrypoint: /app/target/debug/kageshirei-server
+    entrypoint: /app/target/kageshirei-server
     command:
       - run
       - -c

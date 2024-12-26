@@ -15,7 +15,7 @@ use log::{error, info, warn};
 
 /// List of required Debian packages
 const REQUIRED_PACKAGES: [&str; 15] = [
-    "libwebkit2gtk-4.0-dev",
+    "libwebkit2gtk-4.1-dev",
     "build-essential",
     "curl",
     "wget",
@@ -205,11 +205,12 @@ fn install_rust() -> Result<(), String> {
     Ok(())
 }
 
+
 /// Installs NVM
-fn install_nvm() -> Result<(), String> {
+fn install_nvm(shell: &str, config_file: &str) -> Result<(), String> {
     if Command::new("nvm").arg("--version").output().is_err() {
         info!("Installing NVM...");
-        let status = Command::new("sh")
+        let status = Command::new(&shell)
             .arg("-c")
             .arg("curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash")
             .status()
@@ -220,11 +221,9 @@ fn install_nvm() -> Result<(), String> {
             return Err("Failed to install NVM".to_owned());
         }
 
-        let home = env::var("HOME").unwrap();
-
-        let status = Command::new("sh")
+        let status = Command::new(&shell)
             .arg("-c")
-            .arg(format!(". {}/.bashrc && nvm install --lts", home))
+            .arg(format!(". {} && nvm install --lts", config_file))
             .status()
             .expect("Failed to install the latest LTS Node.js version");
 
@@ -238,13 +237,12 @@ fn install_nvm() -> Result<(), String> {
 }
 
 /// Installs PNPM
-fn install_pnpm() -> Result<(), String> {
+fn install_pnpm(shell: &str, config_file: &str) -> Result<(), String> {
     if Command::new("pnpm").arg("--version").output().is_err() {
         info!("Installing PNPM...");
-        let home = env::var("HOME").unwrap();
-        let status = Command::new("sh")
+        let status = Command::new(&shell)
             .arg("-c")
-            .arg(format!(". {}/.bashrc && npm i -g pnpm", home))
+            .arg(format!(". {} && npm i -g pnpm", config_file))
             .status()
             .expect("Failed to install PNPM");
 
@@ -275,12 +273,12 @@ fn install_xwin() -> Result<(), String> {
 }
 
 /// Builds the client application
-fn build_command_and_control() -> Result<(), String> {
+fn build_command_and_control(shell: &str, config_file: &str) -> Result<(), String> {
     info!("Building the client application ...");
-    let home = env::var("HOME").unwrap();
-    let status = Command::new("sh")
+    
+    let status = Command::new(&shell)
         .arg("-c")
-        .arg(format!(". {}/.bashrc && pnpm run tauri:build", home))
+        .arg(format!(". {} && pnpm install && pnpm run tauri:build", config_file))
         .status()
         .expect("Failed to build the client application");
 
@@ -290,12 +288,11 @@ fn build_command_and_control() -> Result<(), String> {
     }
 
     info!("Cross compiling for windows ...");
-    let home = env::var("HOME").unwrap();
-    let status = Command::new("sh")
+    let status = Command::new(&shell)
         .arg("-c")
         .arg(format!(
-            ". {}/.bashrc && pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
-            home
+            ". {} && pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
+            config_file
         ))
         .status();
 
@@ -324,6 +321,18 @@ fn build_command_and_control() -> Result<(), String> {
 pub fn compile() -> Result<(), String> {
     #[cfg(unix)]
     {
+        let home = env::var("HOME").expect("HOME environment variable not found");
+        let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string()); // Default to bash if SHELL is not set
+
+        // Determine the appropriate configuration file
+        let config_file = if shell.contains("zsh") {
+            format!("{}/.zshrc", home)
+        } else {
+            format!("{}/.bashrc", home)
+        };
+
+
+
         // Ensure the command is executed as root
         check_root()?;
 
@@ -343,10 +352,10 @@ pub fn compile() -> Result<(), String> {
         install_rust()?;
 
         // Check and install NVM
-        install_nvm()?;
+        install_nvm(&shell, &config_file)?;
 
         // Check and install PNPM
-        install_pnpm()?;
+        install_pnpm(&shell, &config_file)?;
 
         // Change to the specified directory and run the PNPM build script
         let command_and_control_gui = "command-and-control-gui";
@@ -359,7 +368,7 @@ pub fn compile() -> Result<(), String> {
         install_xwin()?;
 
         // Build the client application
-        build_command_and_control()?;
+        build_command_and_control(&shell, &config_file)?;
         Ok(())
     }
     #[cfg(windows)]
