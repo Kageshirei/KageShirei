@@ -77,7 +77,7 @@ where
             let (_, path, request_id) = generate_path(32, 0, 6);
 
             // Prepare a new `TaskOutput` object to store metadata and task details.
-            let data = TaskOutput::new();
+            let mut data = TaskOutput::new();
 
             // Create the metadata object, which contains request ID, command ID, and agent ID.
             let metadata = Arc::new(Metadata {
@@ -87,7 +87,7 @@ where
                 path: Some(path),
             });
 
-            // data.with_metadata(metadata);
+            data.metadata = Some(metadata.clone());
 
             match formatter.write(data, None::<BTreeMap<&str, &str>>) {
                 Ok(data) => {
@@ -120,8 +120,8 @@ where
                                         });
                                     }
                                 },
-                                Err(_) => {
-                                    libc_eprintln!("Format error checkin response data");
+                                Err(e) => {
+                                    libc_eprintln!("{:?}", e);
                                 },
                             }
                         },
