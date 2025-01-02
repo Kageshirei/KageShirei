@@ -2,4 +2,4 @@
 /**/.env*
 /**/.idea
 /**/.vscode
-/**/!.env.example
+!/**/.env.example
