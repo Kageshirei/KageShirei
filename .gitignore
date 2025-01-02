@@ -3,3 +3,4 @@
 /**/.idea
 /**/.vscode
 !/**/.env.example
+.build/minio-data/**/*
