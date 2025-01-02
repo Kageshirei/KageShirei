@@ -14,17 +14,14 @@
   },
   "auth": [
     {
-      "type": "key",
+      "type": "auth",
       "id": 1,
       "key": {"$env": "SVC_TO_SVC_KEY"}
     }
   ],
   "service_discovery": {
-    "operator-system": {
+    "hello": {
       "base_url": "http://localhost:8080"
-    },
-    "agent-system": {
-      "base_url": "http://localhost:8081"
     }
   },
   "metrics": {
@@ -38,7 +35,7 @@
       "databases": {
         "kageshirei": {
           "username": "kageshirei",
-          "password": "kageshirei"
+          "password": {"$env": "DB_PASSWORD"}
         }
       }
     }

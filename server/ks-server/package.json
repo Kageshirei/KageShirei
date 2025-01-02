@@ -9,14 +9,17 @@
     "test": "vitest"
   },
   "devDependencies": {
-    "@types/node": "^20.5.7",
-    "typescript": "^5.2.2",
-    "vitest": "^1.5.0"
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.17.11",
+    "typescript": "^5.7.2",
+    "vitest": "^1.6.0"
   },
   "dependencies": {
-    "encore.dev": "^1.45.2"
+    "bcrypt": "^5.1.1",
+    "encore.dev": "^1.45.2",
+    "jsonwebtoken": "^9.0.2"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.13.0"
+    "@rollup/rollup-linux-x64-gnu": "^4.29.1"
   }
 }
