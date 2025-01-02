@@ -1,0 +1,82 @@
+{
+  "$schema": "https://encore.dev/schemas/infra.schema.json",
+  "metadata": {
+    "app_id": "kageshirei",
+    "env_name": "development",
+    "env_type": "development",
+    "cloud": "local",
+    "base_url": "http://localhost"
+  },
+  "graceful_shutdown": {
+    "total": 30,
+    "handlers": 20,
+    "shutdown_hooks": 10
+  },
+  "auth": [
+    {
+      "type": "key",
+      "id": 1,
+      "key": {"$env": "SVC_TO_SVC_KEY"}
+    }
+  ],
+  "service_discovery": {
+    "operator-system": {
+      "base_url": "http://localhost:8080"
+    },
+    "agent-system": {
+      "base_url": "http://localhost:8081"
+    }
+  },
+  "metrics": {
+    "type": "prometheus",
+    "collection_interval": 15,
+    "remote_write_url": "http://localhost:9090/api/v1/write"
+  },
+  "sql_servers": [
+    {
+      "host": "localhost:5432",
+      "databases": {
+        "kageshirei": {
+          "username": "kageshirei",
+          "password": "kageshirei"
+        }
+      }
+    }
+  ],
+  "secrets": {
+    "$env": "SECRETS_JSON"
+  },
+  "redis": {
+    "cache": {
+      "database_index": 0,
+      "host": "localhost:6379"
+    }
+  },
+  "pubsub": [
+    {
+      "type": "nsq",
+      "hosts": "localhost:4150",
+      "topics": {
+        "order-events": {
+          "name": "order-events-topic",
+          "subscriptions": {
+            "order-processor": {
+              "name": "order-processor-subscription"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "object_storage": [
+    {
+      "type": "s3",
+      "region": "custom-here-location",
+      "buckets": {
+        "my-gcs-bucket": {
+          "name": "my-gcs-bucket"
+        }
+      }
+    }
+  ]
+}

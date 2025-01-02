@@ -1,24 +1,136 @@
 services:
-  server-dedicated-machine:
-    image: debian:latest
-    container_name: kageshirei-server-dedicated-machine
-    entrypoint: /app/target/kageshirei-server
-    command:
-      - run
-      - -c
-      - /app/server/sample-config.json
-    volumes:
-      - ".:/app"
 
   # Development/testing database
-  postgres:
+  postgres-dev:
     image: postgres:latest
-    container_name: kageshirei-postgres
+    container_name: kageshirei-postgres-dev
     restart: always
     environment:
-      # Change these to your liking
+      # keep these the same, they are used in testing
       POSTGRES_PASSWORD: kageshirei
       POSTGRES_DB: kageshirei
       POSTGRES_USER: kageshirei
     ports:
       - "5432:5432"
+
+  # Production database
+  postgres-prod:
+    image: postgres:latest
+    container_name: kageshirei-postgres-prod
+    restart: always
+    environment:
+      # !! ALERT !!
+      # You MUST change these
+      POSTGRES_PASSWORD: kageshirei-prod
+      POSTGRES_DB: kageshirei-prod
+      POSTGRES_USER: kageshirei-prod
+    ports:
+      - "5432:5432"
+
+  # Development/testing Prometheus
+  prometheus-dev:
+    image: prom/prometheus:v3.1.0
+    container_name: kageshirei-prometheus-dev
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+        - ./.build/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  # Production Prometheus (with persistent data)
+  prometheus-prod:
+    image: prom/prometheus:v3.1.0
+    container_name: kageshirei-prometheus-prod
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+        - ./.build/prometheus.yml:/etc/prometheus/prometheus.yml
+        - prometheus-data:/prometheus
+
+  # Development/testing Redis
+  redis-dev:
+    image: redis/redis-stack:7.4.0-v1
+    container_name: kageshirei-redis-dev
+    restart: always
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+
+  # Production Redis (no configuration provided, you must add it if want to secure it - SUGGESTED)
+  redis-prod:
+    image: redis/redis-stack-server:7.4.0-v1
+    container_name: kageshirei-redis-prod
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # NSQ configuration (no difference here between dev and prod as it's an in-memory message queue)
+  # For production consider providing a safer configuration than the default, eventually with fallback servers
+  nsqlookupd:
+    image: nsqio/nsq
+    container_name: kageshirei-nsqlookupd
+    command: /nsqlookupd
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+  nsqd:
+    image: nsqio/nsq
+    container_name: kageshirei-nsqd
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+  nsqadmin:
+      image: nsqio/nsq
+      container_name: kageshirei-nsqadmin
+      command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+      depends_on:
+        - nsqlookupd
+      ports:
+        - "4171:4171"
+
+  # Development/testing Prometheus
+  minio-dev:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: kageshirei-minio-dev
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: kageshirei
+      MINIO_ROOT_PASSWORD: kageshirei
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./.build/minio-data:/data
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+
+  # Production database
+  minio-prod:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: kageshirei-minio-prod
+    restart: always
+    environment:
+      # !! ALERT !!
+      # You MUST change these
+      MINIO_ROOT_USER: kageshirei
+      MINIO_ROOT_PASSWORD: kageshirei
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./.build/minio-data:/data
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+
+volumes:
+  prometheus-data:
