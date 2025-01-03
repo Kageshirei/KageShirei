@@ -5,7 +5,7 @@
 	"lang": "typescript",
 	"build": {
 		"docker": {
-			"bundle_source": true
+          "bundle_source": false
 		},
 		"worker_pooling": true
 	},
